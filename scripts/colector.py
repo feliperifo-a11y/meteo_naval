@@ -160,13 +160,27 @@ REGIONES = {
     "LOSRIOS": (39.4, 40.2), "LOSLAGOS": (40.2, 43.75), "AYSEN": (43.75, 48.8), "MAGALLANES": (48.8, 56.0),
 }
 LUGARES = {
-    "ARICA": 18.35, "PISAGUA": 19.6, "IQUIQUE": 20.21, "TOCOPILLA": 22.09, "MEJILLONES": 23.1, "ANTOFAGASTA": 23.65,
-    "TALTAL": 25.4, "CHANARAL": 26.35, "CALDERA": 27.06, "HUASCO": 28.46, "COQUIMBO": 30.0, "LOSVILOS": 31.91,
-    "QUINTERO": 32.78, "VALPARAISO": 33.03, "SANANTONIO": 33.59, "PICHILEMU": 34.39, "CONSTITUCION": 35.33,
-    "TALCAHUANO": 36.7, "GOLFODEARAUCO": 37.2, "LEBU": 37.6, "ISLAMOCHA": 38.37, "CORRAL": 39.87, "VALDIVIA": 39.85,
-    "BAHIAMANSA": 40.58, "FAROCORONA": 41.8, "PUNTACORONA": 41.8, "CANALCHACAO": 41.8, "ANCUD": 41.87,
-    "QUELLON": 43.12, "GUAFO": 43.6, "MELINKA": 43.9, "ANNAPINK": 45.8, "GOLFODEPENAS": 47.1,
-    "EVANGELISTAS": 52.4, "CABODEHORNOS": 55.98, "DIEGORAMIREZ": 56.5,
+    # Norte grande y chico
+    "ARICA": 18.35, "PISAGUA": 19.6, "IQUIQUE": 20.21, "PATACHE": 20.8, "TOCOPILLA": 22.09, "MEJILLONES": 23.1,
+    "ANTOFAGASTA": 23.65, "PAPOSO": 25.0, "TALTAL": 25.4, "CHANARAL": 26.35, "CALDERA": 27.06, "HUASCO": 28.46,
+    "LASERENA": 29.9, "COQUIMBO": 30.0, "TONGOY": 30.26, "LENGUADEVACA": 30.24,
+    # Centro
+    "PICHIDANGUI": 32.14, "LOSMOLLES": 32.24, "LOSVILOS": 31.91, "PAPUDO": 32.5, "ZAPALLAR": 32.55, "QUINTERO": 32.78,
+    "VALPARAISO": 33.03, "CURAUMILLA": 33.1, "QUINTAY": 33.19, "ALGARROBO": 33.36, "CARTAGENA": 33.55, "PANUL": 33.58,
+    "SANANTONIO": 33.59, "SANTODOMINGO": 33.64, "NAVIDAD": 33.95, "TOPOCALMA": 34.13, "PICHILEMU": 34.39,
+    "BUCALEMU": 34.64, "BOYERUCA": 34.69, "LLICO": 34.77, "DUAO": 34.88, "ILOCA": 34.93, "CONSTITUCION": 35.33,
+    "PELLUHUE": 35.82, "CURANIPE": 35.84, "COBQUECURA": 36.13,
+    # Centro sur
+    "DICHATO": 36.55, "TOME": 36.62, "TALCAHUANO": 36.7, "SANVICENTE": 36.73, "CORONEL": 37.03, "LOTA": 37.09,
+    "GOLFODEARAUCO": 37.2, "LEBU": 37.6, "TIRUA": 38.34, "ISLAMOCHA": 38.37, "PUERTOSAAVEDRA": 38.78,
+    "QUEULE": 39.39, "MEHUIN": 39.43, "NIEBLA": 39.87, "CORRAL": 39.87, "VALDIVIA": 39.85, "PUNTAGALERA": 40.0,
+    "BAHIAMANSA": 40.58,
+    # Sur y austral
+    "MAULLIN": 41.62, "CARELMAPU": 41.75, "FAROCORONA": 41.8, "PUNTACORONA": 41.8, "CANALCHACAO": 41.8,
+    "ANCUD": 41.87, "PUERTOMONTT": 41.47, "CALBUCO": 41.77, "CASTRO": 42.48, "CHAITEN": 42.92, "QUELLON": 43.12,
+    "GUAFO": 43.6, "MELINKA": 43.9, "PUERTOAYSEN": 45.4, "CHACABUCO": 45.47, "ANNAPINK": 45.8, "GOLFODEPENAS": 47.1,
+    "PUERTONATALES": 51.73, "EVANGELISTAS": 52.4, "PUNTAARENAS": 53.15, "PUERTOWILLIAMS": 54.93,
+    "CABODEHORNOS": 55.98, "DIEGORAMIREZ": 56.5,
 }
 ISLAS = {  # nombre compacto → (lat, lon)
     "RAPANUI": (-27.12, -109.35), "ISLADEPASCUA": (-27.12, -109.35), "JUANFERNANDEZ": (-33.65, -79.0),
@@ -199,7 +213,10 @@ def ubicar(nombre: str):
             lats.append(v); resto = resto.replace(k, "|")
     if not lats:
         return None
-    return "banda", (min(lats), max(lats))
+    n, m = min(lats), max(lats)
+    if m - n < 0.3:                     # un solo lugar: franja de ±0,15° alrededor
+        n, m = n - 0.15, m + 0.15
+    return "banda", (n, m)
 
 
 # ============================================================ Lectura de avisos
@@ -438,6 +455,10 @@ def titulo(s: str) -> str:
     return " ".join(p if (i and p in MENORES) else p[:1].upper() + p[1:] for i, p in enumerate(pal))
 
 
+def zonas_validas(zonas):
+    return [z for z in zonas if z.get("areas") and z.get("geom", {}).get("coordinates")]
+
+
 def recolectar_avisos(geo: Geo) -> bool:
     ref = ahora_utc()
     previo = {a["url"]: a for a in leer_json(DATA / "avisos.json", {}).get("avisos", [])}
@@ -472,6 +493,7 @@ def recolectar_avisos(geo: Geo) -> bool:
             else:
                 zonas, res = leer_aviso_general(t, sector, ref, geo)
                 nota = ""
+            zonas = zonas_validas(zonas)
             a = {"tipo": tipo, "sector": sector, "codigo": codigo_legible(codigo(t)) or p["publicado"], "url": url, "pagina": p["pagina"],
                  "publicado": p["publicado"], "resumen": res, "nota": nota, "zonas": zonas, "_auto": True}
             if not zonas:
