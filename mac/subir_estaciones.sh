@@ -27,7 +27,7 @@ AHORA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # 2. Subida al repositorio (API de contenidos de GitHub)
 API="https://api.github.com/repos/$REPO/contents/$RUTA"
 H1="Authorization: Bearer $TOKEN"; H2="Accept: application/vnd.github+json"; H3="X-GitHub-Api-Version: 2022-11-28"
-SHA=$(curl -fsS --max-time 30 -H "$H1" -H "$H2" -H "$H3" "$API?ref=main" | grep -m1 '"sha"' | sed -E 's/.*"sha": *"([^"]+)".*/\1/')
+SHA=$(curl -fs --max-time 30 -H "$H1" -H "$H2" -H "$H3" "$API?ref=main" | grep -m1 '"sha"' | sed -E 's/.*"sha": *"([^"]+)".*/\1/')
 B64=$(base64 -i "$DIR/estaciones.json" | tr -d '\n')
 printf '{"message":"Estaciones %s (equipo local)","branch":"main","content":"%s"%s}' \
   "$AHORA" "$B64" "${SHA:+,\"sha\":\"$SHA\"}" > "$DIR/cuerpo.json"
