@@ -74,8 +74,8 @@ def escribir_json(p: Path, obj, compacto=False):
     tmp.replace(p)
 
 
-def get(url: str, **kw) -> requests.Response:
-    r = requests.get(url, headers=CABECERAS, timeout=40, **kw)
+def get(url: str, timeout: int = 40, **kw) -> requests.Response:
+    r = requests.get(url, headers=CABECERAS, timeout=timeout, **kw)
     r.raise_for_status()
     time.sleep(PAUSA)
     return r
@@ -88,7 +88,7 @@ CAMPOS = ["nombre", "codigo", "fecha", "latitud", "longitud", "viento", "direcci
 
 def recolectar_estaciones() -> bool:
     try:
-        datos = get(URL_ESTACIONES).json()
+        datos = get(URL_ESTACIONES, timeout=15).json()
         if not isinstance(datos, list) or not datos or "nombre" not in datos[0]:
             raise ValueError("respuesta sin la estructura esperada")
         limpio = [{k: d.get(k) for k in CAMPOS} for d in datos]
@@ -96,7 +96,7 @@ def recolectar_estaciones() -> bool:
         print(f"Estaciones: {len(limpio)} registros")
         return True
     except Exception as e:
-        errores.append(f"estaciones: {e}")
+        errores.append(f"estaciones (desde GitHub; se publica el último archivo enviado por el equipo local): {type(e).__name__}")
         print("ERROR estaciones:", e)
         return False
 

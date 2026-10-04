@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "data/avisos_manual.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "data/avisos_manual.json", "data/estaciones.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write

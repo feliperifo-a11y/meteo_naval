@@ -132,6 +132,23 @@ Si abres `index.html` con doble clic, el navegador no deja leer `data/*.json` y 
 - **Límites aproximados de METAREA XV:** los límites oceánicos (76°W, 78°W, ~80°W y ~98,5°W) se digitalizaron de la carta publicada (OMM N° 9, Vol. D, 2018) y son aproximados.
 - **Velocidad del viento:** la fuente de estaciones no informa su unidad.
 
+## Estaciones enviadas desde un Mac en Chile
+
+El servicio de estaciones no responde a los servidores de GitHub (están fuera de Chile). Por eso un Mac en Chile descarga las observaciones cada 20 minutos y las sube como `data/estaciones.json`; cada subida republica la página. Los avisos sí se leen desde GitHub.
+
+**Instalar (una vez, en Terminal):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar.sh -o /tmp/instalar.sh && bash /tmp/instalar.sh
+```
+
+Pide un *token* de GitHub con permiso de escritura solo sobre este repositorio y lo guarda en el Llavero de macOS.
+
+- **Revisar funcionamiento:** `tail ~/Library/Application\ Support/meteo_naval/registro.log`
+- **Desinstalar:** `bash ~/Library/Application\ Support/meteo_naval/desinstalar.sh`
+
+Las estaciones se actualizan solo mientras el Mac esté encendido y conectado. Si está apagado, la página muestra el último dato con el aviso naranjo de datos desactualizados.
+
 ## Si GitHub no puede descargar los datos
 
 Ejecuta el recolector en un computador en Chile y sube los JSON al repositorio:
