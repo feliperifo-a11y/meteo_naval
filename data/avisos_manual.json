@@ -1,0 +1,20 @@
+{
+  "_ayuda": "Correcciones manuales. 'ignorar': URLs de PDF que no se deben mostrar. 'corregir': por URL de PDF, campos que reemplazan lo leído automáticamente (útil cuando el PDF es una imagen). 'agregar': avisos completos escritos a mano. Formas de zona: 'franja' (borde costero), 'sector' (mar costero entre dos latitudes) o 'circulo' (centro [lat, lon] y radio en grados). Fechas en UTC con formato 2026-10-04T21:00:00Z. Latitudes Sur en grados positivos.",
+  "ignorar": [],
+  "corregir": {
+    "https://meteoarmada.directemar.cl/meteo/site/docs/20261001/20261001212118/aviso_mal_tiempo_area_oceanica_n_88.pdf": {
+      "tipo": "Aviso de mal tiempo",
+      "codigo": "MET110JC M/88",
+      "resumen": "Baja de 977 hPa en 49°S/86°W con desplazamiento E/SE. Viento W/NW 20/30 kt, rachas 40–45 kt; mar gruesa a muy gruesa.",
+      "zonas": [
+        {"nombre": "Corral a Faro Corona", "forma": "sector", "lat_norte": 39.87, "lat_sur": 41.8,
+         "desde": "2026-10-02T15:00:00Z", "hasta": "2026-10-04T22:00:00Z",
+         "detalle": "Viento W/NW 20/30 kt rachas 40 kt. Mar gruesa a muy gruesa (3,0/5,0 m)."},
+        {"nombre": "Faro Corona a Bahía Anna Pink", "forma": "sector", "lat_norte": 41.8, "lat_sur": 45.8,
+         "desde": "2026-10-02T15:00:00Z", "hasta": "2026-10-04T22:00:00Z",
+         "detalle": "Viento W/NW 20/30 kt rachas 45 kt. Mar muy gruesa (4,0/6,0 m)."}
+      ]
+    }
+  },
+  "agregar": []
+}

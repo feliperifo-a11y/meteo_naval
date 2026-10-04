@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard operativo meteorológico</title>
+<!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
+<style>/*LEAFLET_CSS*/</style>
+<style>
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5b6673; --line:#d6dce3; --head:#0f2a44; --headInk:#f2f6fa;
+  --ok:#2e7d32; --ret:#c77700; --no:#b3261e; --warn:#8a5a00; --chip:#f3f5f8;
+  --avV:#d32f2f; --avP:#1f6fb2; --avX:#8a939e;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10161d; --panel:#18212b; --ink:#e4e9ef; --muted:#9aa6b2; --line:#2b3644; --head:#0b1b2c; --headInk:#e9f0f7;
+  --ok:#5cb860; --ret:#e8a33a; --no:#ef6b62; --warn:#e8b45a; --chip:#222d39; --avX:#76808b; } }
+:root[data-theme="dark"]{ --bg:#10161d; --panel:#18212b; --ink:#e4e9ef; --muted:#9aa6b2; --line:#2b3644; --head:#0b1b2c; --headInk:#e9f0f7;
+  --ok:#5cb860; --ret:#e8a33a; --no:#ef6b62; --warn:#e8b45a; --chip:#222d39; --avX:#76808b; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--head);color:var(--headInk);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:.2px}
+header .sub{font-size:12.5px;opacity:.8}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:12.5px;border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{background:rgba(255,255,255,.1)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 50vw;gap:14px;padding:14px;align-items:start}
+.left{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;min-width:0;align-items:stretch}
+#grpAv,#grpEst{position:sticky;top:14px;height:calc(100vh - 28px);min-height:520px;display:flex;flex-direction:column}
+#avScroll{flex:1;overflow:auto;min-height:0}
+#grpEst .tblWrap{flex:1;max-height:none;min-height:0}
+#grpEst table{font-size:12.5px}
+.eN{min-width:110px}
+#grpEst td:nth-child(2){color:var(--muted)}
+@media (max-width:1700px){ #tbl th:nth-child(2), #tbl td:nth-child(2){display:none} #tbl th,#tbl td{padding:6px 5px} #grpEst table{font-size:12px} .eN{min-width:90px} #tbl th{font-size:10.5px} .kpi span{font-size:10.5px} }
+@media (max-width:1400px){ .left{grid-template-columns:1fr} #grpAv,#grpEst{position:static;height:auto;min-height:0} #avScroll{overflow:visible} #grpEst .tblWrap{max-height:70vh} }
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:12px 14px 8px;font-weight:650}
+.card h2.grpH{color:var(--headInk);text-transform:none;font-size:14.5px;letter-spacing:.2px}
+.grpH{display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;background:var(--head);color:var(--headInk);font-size:14px;font-weight:650;letter-spacing:.3px}
+.grpH .n{margin-left:auto;font-size:12px;font-weight:500;opacity:.8}
+.sub2{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:12px 14px 6px;font-weight:650;border-top:1px solid var(--line)}
+#mapWrap{position:sticky;top:14px;height:calc(100vh - 28px);min-height:520px}
+#map{position:absolute;inset:0;background:#c9dbe6}
+#baseStatus{position:absolute;left:50%;transform:translateX(-50%);top:10px;z-index:900;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;display:none}
+#baseStatus.on{display:block}
+#coordBox{position:absolute;right:10px;bottom:22px;z-index:800;background:rgba(255,255,255,.88);color:#18212b;border-radius:4px;padding:2px 7px;font:12px ui-monospace,Consolas,monospace;display:none}
+#layerBox{position:absolute;left:10px;bottom:24px;z-index:850;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.18);width:250px;max-height:58%;font-size:12.5px;display:flex;flex-direction:column}
+#layerBox .lbH{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;border-bottom:1px solid var(--line)}
+#layerBox .lbH button{border:0;color:var(--muted);padding:0 4px;font-size:14px}
+#layerBox.min .layers{display:none} #layerBox.min .lbH{border-bottom:0}
+#layerBox .layers{overflow:auto;padding:2px 10px 10px}
+#layerBox .layers label{padding:2px 0;gap:6px}
+#layerBox .grp{margin:7px 0 2px}
+@media (max-width:1050px){main{grid-template-columns:1fr} #mapWrap{order:-1;position:relative;top:auto;height:70vh} }
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 14px 10px}
+.kpi{background:var(--chip);border-radius:8px;padding:8px 6px;text-align:center}
+.kpi b{display:block;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:11px;color:var(--muted)}
+.layers .grp{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:10px 0 4px}
+.layers label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
+.layers svg{flex:none}
+.av{border-top:1px solid var(--line);padding:10px 14px}
+.av:first-of-type{border-top:0}
+.avT{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+.avT b{font-size:13.5px}
+.pill{font-size:11px;font-weight:650;border-radius:20px;padding:1px 8px;white-space:nowrap;color:#fff}
+.pill.R{background:#8a5a00}
+.pill.V{background:var(--avV)} .pill.P{background:var(--avP)} .pill.X{background:var(--avX)}
+.avM{font-size:12px;color:var(--muted);margin-top:2px}
+.avD{font-size:12.5px;margin-top:4px}
+.avA{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{font-size:11px;background:var(--chip);border:1px solid var(--line);border-radius:4px;padding:0 6px;cursor:pointer}
+.avL{font-size:12px;margin-top:4px}
+.av[data-n]{cursor:pointer;border-left:4px solid transparent}
+.av[data-n]:hover{background:var(--chip)}
+.av.sel{border-left-color:#d32f2f;background:var(--chip)}
+.avChk{display:inline-flex;align-items:center;margin-right:6px;cursor:pointer}.avChk input{width:16px;height:16px;cursor:pointer;margin:0}
+.avBar{display:flex;align-items:center;gap:6px;margin-top:6px}.avBar span{margin-right:auto}.avBar button{border-color:var(--line);color:var(--ink);padding:3px 9px;font-size:12px}.avBar button:hover{background:var(--chip)}
+.stale{margin:0 14px 10px;padding:8px 10px;border-radius:6px;background:#fff4e0;color:#6b4300;border:1px solid #e8b45a;font-size:12.5px}
+.stale button{border-color:#c77700;color:#6b4300;padding:2px 8px;margin-left:4px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .stale{background:#3a2a10;color:#f3d39b} :root:not([data-theme="light"]) .stale button{color:#f3d39b;border-color:#e8a33a}}
+.avN{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;margin-right:7px;vertical-align:1px}
+a{color:#1f6fb2} @media (prefers-color-scheme: dark){a{color:#7fb7ea}}
+.full{grid-column:1/-1}
+.tblTools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 14px 10px}
+.tblTools input,.tblTools select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.tblWrap{overflow:auto;max-height:75vh}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 7px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);cursor:pointer;user-select:none;z-index:1}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--chip)}
+tbody tr{cursor:pointer}
+.st{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.eN{white-space:normal;min-width:150px}
+.obs{white-space:normal;color:var(--muted);font-size:11.5px;font-weight:400;margin-top:2px;line-height:1.35}
+.flag{color:var(--warn);font-weight:600}
+.note{font-size:12px;color:var(--muted);padding:8px 14px 14px;line-height:1.5}
+.pp{font-size:12.5px;min-width:230px}
+.pp .ppT{font-weight:700;font-size:13.5px;margin-bottom:4px}
+.pp table{font-size:12px} .pp th,.pp td{padding:2px 6px 2px 0;border:0;white-space:normal} .pp th{position:static;text-transform:none;letter-spacing:0;color:#5b6673;font-weight:600;background:none}
+.mLbl{background:none;border:0}
+.mLbl span{display:inline-block;background:rgba(255,255,255,.85);color:#1d3b1d;border:1px solid #2f6b2f;border-radius:4px;padding:0 5px;font:700 12px system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%)}
+.mLbl.oc span{color:#5a4700;border-color:#8a6d00}.mLbl.an span{color:#4a2f57;border-color:#6b4a7a}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:640px;width:92vw}
+dialog textarea{width:100%;height:180px;font:12px ui-monospace,Consolas,monospace;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+dialog .row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+dialog button{border-color:var(--line)}
+@media (max-width:600px){ main{padding:8px} header{padding:10px 12px} .kpis{grid-template-columns:repeat(2,1fr)} #layerBox{width:240px} }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Dashboard operativo · Red de estaciones meteorológicas costeras</h1>
+    <div class="sub" id="hdrSub"></div>
+  </div>
+  <div class="hbtns">
+    <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
+  </div>
+</header>
+
+<main>
+  <div class="left">
+    <section class="card" id="grpAv">
+      <h2 class="grpH"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 20H2Z" fill="#f2c200" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9v5" stroke="#18212b" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.3" fill="#18212b"/></svg>1 · Avisos meteorológicos<span class="n" id="avCount"></span></h2>
+      <div style="font-size:12px;color:var(--muted);padding:8px 14px 6px;border-bottom:1px solid var(--line)">De norte a sur. Marque o desmarque cada aviso para verlo en el mapa; clic en el aviso para ubicarlo.
+        <div class="avBar"><span id="avVisTxt"></span><button type="button" id="avAll">Ver todos</button><button type="button" id="avNone">Ocultar todos</button></div></div>
+      <div id="avScroll"><div id="avList"></div>
+      <div class="note" id="avNote"></div></div>
+    </section>
+
+    <section class="card" id="grpEst">
+      <h2 class="grpH"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="#2e7d32" stroke="#fff" stroke-width="2"/></svg>2 · Operatividad de estaciones<span class="n" id="estCount"></span></h2>
+      <h3 class="sub2" style="border-top:0">Estado de la red</h3>
+      <div class="kpis">
+        <div class="kpi"><b id="kOk" style="color:var(--ok)">–</b><span>Operativas</span></div>
+        <div class="kpi"><b id="kRet" style="color:var(--ret)">–</b><span>Con retraso</span></div>
+        <div class="kpi"><b id="kNo" style="color:var(--no)">–</b><span>No operativas</span></div>
+        <div class="kpi"><b id="kFl" style="color:var(--warn)">–</b><span>Sensor dudoso</span></div>
+      </div>
+      <h3 class="sub2">Cuadro de estado operativo</h3>
+      <div class="tblTools">
+        <input type="search" id="q" placeholder="Buscar estación…" aria-label="Buscar estación">
+        <select id="fEst" aria-label="Filtrar por estado">
+          <option value="">Todos los estados</option>
+          <option value="ok">Operativas</option>
+          <option value="ret">Con retraso</option>
+          <option value="no">No operativas</option>
+          <option value="fl">Con sensor dudoso</option>
+        </select>
+        <select id="fArea" aria-label="Filtrar por subárea"><option value="">Todas las subáreas</option></select>
+        <span id="tblCount" style="color:var(--muted);font-size:12.5px"></span>
+      </div>
+      <div id="staleBox" class="stale" hidden><b>Datos de estaciones desactualizados.</b> <span id="staleTxt"></span>
+      </div>
+      <div class="tblWrap">
+        <table id="tbl">
+          <thead><tr>
+            <th data-k="lat">Estación</th><th data-k="area">Sub.</th><th data-k="estado">Estado</th>
+            <th data-k="age">Último dato</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note" style="border-top:1px solid var(--line)"><b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h o sin fecha válida. <span class="flag">Sensor dudoso:</span> transmite con valores imposibles o en cero. Clic en una fila para ver la estación y sus datos en el mapa.</div>
+    </section>
+  </div>
+
+  <section class="card" id="mapWrap">
+    <div id="map" role="application" aria-label="Mapa operativo"></div>
+    <div id="baseStatus"><span class="txt"></span></div>
+    <div id="coordBox"></div>
+    <div id="layerBox">
+      <div class="lbH" id="lbH"><span>Capas</span><button type="button" id="lbBtn" aria-label="Contraer o expandir capas">▾</button></div>
+      <div class="layers" id="layers"></div>
+    </div>
+  </section>
+</main>
+
+
+
+<script>/*LEAFLET_JS*/</script>
+<script>
+/*DATA*/
+</script>
+<script>
+"use strict";
+// ============================ Utilidades ============================
+const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+const P16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const cardinal = g => P16[Math.floor(((g % 360) + 371.25) / 22.5) % 16];
+const fmtLocal = d => d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+const fmtCorto = d => d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+const fmtUTC = d => d.toISOString().slice(8, 10) + '/' + d.toISOString().slice(5, 7) + ' ' + d.toISOString().slice(11, 16) + ' UTC';
+function edad(ms) {
+  if (ms < 0) ms = 0;
+  const m = Math.round(ms / 60000);
+  if (m < 60) return `${m} min`;
+  const h = m / 60;
+  if (h < 48) return `${nf(h, h < 10 ? 1 : 0)} h`;
+  const d = h / 24;
+  return d < 60 ? `${nf(d, 0)} días` : `${nf(d / 30.4, 0)} meses`;
+}
+// Fecha de la fuente: hora local de Chile continental sin zona. Se resuelve el desfase real con Intl.
+function parseLocalCL(s) {
+  if (!s || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return null;
+  const [d, t] = s.split('T'); const [Y, M, D] = d.split('-').map(Number); const [h, mi, se] = t.split(':').map(Number);
+  let utc = Date.UTC(Y, M - 1, D, h, mi, se || 0) + 4 * 3600e3; // primer intento: UTC-4
+  for (let i = 0; i < 2; i++) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utc));
+    const g = k => +parts.find(p => p.type === k).value;
+    const asLocal = Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second'));
+    utc += Date.UTC(Y, M - 1, D, h, mi, se || 0) - asLocal;
+  }
+  return new Date(utc);
+}
+const num = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
+
+// ============================ Estado de estaciones ============================
+const ST = {
+  ok: { txt: 'Operativa', color: 'var(--ok)', hex: '#2e7d32' },
+  ret: { txt: 'Con retraso', color: 'var(--ret)', hex: '#c77700' },
+  no: { txt: 'No operativa', color: 'var(--no)', hex: '#b3261e' },
+};
+const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 };
+function normalizar(arr) {
+  return arr.map(x => Array.isArray(x)
+    ? { nombre: x[0], codigo: x[1], fecha: x[2], lat: x[3], lon: x[4], dirG: num(x[5]), dirFuente: x[6], vel: num(x[7]), temp: num(x[8]), pres: num(x[9]), hum: num(x[10]), td: num(x[11]), area: x[12] }
+    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null })
+    .filter(s => isFinite(s.lat) && isFinite(s.lon));
+}
+function evaluar(s, ahora) {
+  const t = parseLocalCL(s.fecha);
+  const ms = t ? ahora - t : null;
+  let k, motivo;
+  if (!t) { k = 'no'; motivo = 'La fuente no entrega una fecha válida para el último dato.'; }
+  else if (ms <= UMBRAL.ok) { k = 'ok'; motivo = ''; }
+  else if (ms <= UMBRAL.ret) { k = 'ret'; motivo = `Último dato hace ${edad(ms)}.`; }
+  else { k = 'no'; motivo = `Sin transmisión desde hace ${edad(ms)}.`; }
+  const fl = [];
+  if (s.pres === 0) fl.push('presión en 0 hPa');
+  if (s.hum === 0) fl.push('humedad en 0 %');
+  if (s.temp === 0 && s.hum === 0) fl.push('temperatura en 0 °C junto a humedad 0 %');
+  if (s.td != null && s.temp != null && s.td > s.temp + 0.5 && !(s.temp === 0 && s.hum === 0)) fl.push(`punto de rocío (${nf(s.td)} °C) mayor que la temperatura`);
+  if (s.dirFuente === '---' || (s.dirG === 0 && s.vel === 0 && k === 'ok')) fl.push('viento sin dato');
+  return { k, t, ms, motivo, fl };
+}
+
+// ============================ Mapa ============================
+const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, maxBounds: [[-75, -135], [-5, -40]], maxBoundsViscosity: 0.8 });
+map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
+map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
+map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
+map.createPane('limPane'); map.getPane('limPane').style.zIndex = 400;
+map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
+map.createPane('stPane'); map.getPane('stPane').style.zIndex = 640;
+
+function decodePolyline6(str) {
+  const out = []; let i = 0, lat = 0, lon = 0;
+  while (i < str.length) {
+    for (let k = 0; k < 2; k++) {
+      let b, shift = 0, res = 0;
+      do { b = str.charCodeAt(i++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const d = (res & 1) ? ~(res >> 1) : (res >> 1);
+      if (k === 0) lat += d; else lon += d;
+    }
+    out.push([lat / 1e6, lon / 1e6]);
+  }
+  return out;
+}
+const fmtPos = (lat, lon) => {
+  const f = (v, p, n) => { const a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60; return `${d}°${m.toFixed(2).padStart(5, '0')}'${v < 0 ? n : p}`; };
+  return `${f(lat, 'N', 'S')} ${f(lon, 'E', 'W')}`;
+};
+
+// ---- Mapas base (con respaldo sin conexión) ----
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 18 });
+const ocean = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 });
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 18 });
+const offline = L.layerGroup();
+for (const c of LAND) for (const poly of c.p)
+  L.polygon(poly.map(decodePolyline6), { pane: 'landPane', color: '#9aa6b2', weight: 0.8, fillColor: '#eceee6', fillOpacity: 1, interactive: false }).addTo(offline);
+offline.getAttribution = () => 'Costa: Natural Earth';
+(function baseMaps() {
+  const NAMES = new Map([[ocean, 'Esri Océano'], [osm, 'OpenStreetMap'], [sat, 'Esri Satélite'], [offline, 'Sin conexión (costa incorporada)']]);
+  const FALLBACK = [ocean, osm];
+  const bs = document.getElementById('baseStatus');
+  const setBS = (html, hideMs) => { bs.classList.add('on'); bs.querySelector('.txt').innerHTML = html; clearTimeout(bs._t); if (hideMs) bs._t = setTimeout(() => bs.classList.remove('on'), hideMs); };
+  let cur = null, ok = 0, err = 0, timer = null; const tried = new Set();
+  const useBase = l => { if (cur && map.hasLayer(cur)) map.removeLayer(cur); map.addLayer(l); };
+  const goOffline = msg => { useBase(offline); setBS(msg); };
+  function fallback() { tried.add(cur); const next = FALLBACK.find(l => !tried.has(l)); if (next) { setBS(`${NAMES.get(cur)} no responde; probando ${NAMES.get(next)}…`); useBase(next); } else goOffline('Sin acceso a mapas en línea: se usa la costa incorporada.'); }
+  map.on('layeradd', e => {
+    if (!NAMES.has(e.layer) || e.layer === cur) return;
+    cur = e.layer; ok = 0; err = 0; clearTimeout(timer);
+    if (cur === offline) return;
+    setBS(`Cargando mapa base ${NAMES.get(cur)}…`);
+    timer = setTimeout(() => { if (ok === 0 && cur !== offline) fallback(); }, 9000);
+  });
+  for (const l of [ocean, osm, sat]) {
+    l.on('tileload', () => { if (l !== cur) return; ok++; if (ok === 1) { clearTimeout(timer); tried.clear(); setBS(`Mapa base: ${NAMES.get(l)}`, 2500); } });
+    l.on('tileerror', () => { if (l !== cur) return; err++; if (ok === 0 && err >= 6) { clearTimeout(timer); fallback(); } });
+  }
+  L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, {}, { position: 'topright' }).addTo(map);
+  if (navigator.onLine === false) goOffline('Equipo sin conexión: se usa la costa incorporada.'); else useBase(ocean);
+  const cb = document.getElementById('coordBox');
+  map.on('mousemove', e => { cb.style.display = 'block'; cb.textContent = `${fmtPos(e.latlng.lat, e.latlng.lng)}  ·  ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`; });
+  map.on('mouseout', () => { cb.style.display = 'none'; });
+  L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
+})();
+
+// ---- Símbolos de leyenda ----
+const lineSw = (c, dash, w = 2.4) => `<svg width="28" height="10" aria-hidden="true"><line x1="1" y1="5" x2="27" y2="5" stroke="${c}" stroke-width="${w}" ${dash ? `stroke-dasharray="${dash}"` : ''}/></svg>`;
+const fillSw = (c, f, dash) => `<svg width="22" height="14" aria-hidden="true"><rect x="1" y="1" width="20" height="12" rx="2" fill="${f}" stroke="${c}" stroke-width="1.6" ${dash ? `stroke-dasharray="${dash}"` : ''}/></svg>`;
+const dotSw = c => `<svg width="22" height="14" aria-hidden="true"><circle cx="11" cy="7" r="5.5" fill="${c}" stroke="#fff" stroke-width="1.5"/></svg>`;
+
+// ---- Límites marítimos (solo las 4 capas pedidas) ----
+const LIM_STYLE = {
+  'ZEE y PC': { name: 'ZEE y plataforma continental (200 M)', color: '#7b3294', weight: 2.2, dashArray: null, on: true },
+  'ZC': { name: 'Zona contigua (24 M)', color: '#4a4f57', weight: 1.5, dashArray: '3 4', on: false },
+  'MT': { name: 'Mar territorial (12 M)', color: '#c51b7d', weight: 1.6, dashArray: '8 3 2 3', on: true },
+};
+function buildLimits(ab) {
+  const st = LIM_STYLE[ab], g = L.layerGroup();
+  for (const l of LIMITES.filter(x => x.abrev === ab)) for (const s of l.segs)
+    L.polyline(decodePolyline6(s), { pane: 'limPane', color: st.color, weight: st.weight, dashArray: st.dashArray, opacity: 0.9 })
+      .bindTooltip(escH(l.nombre.replace(/\s+/g, ' ')), { sticky: true }).addTo(g);
+  return g;
+}
+
+// ============================ Avisos ============================
+function estadoAviso(a, ahora) {
+  const ini = new Date(a.desde), fin = new Date(a.hasta);
+  if (ahora < ini) return { k: 'P', txt: 'Próximo', ini, fin };
+  if (ahora <= fin) return { k: 'V', txt: 'Vigente', ini, fin };
+  return { k: 'X', txt: 'Expirado', ini, fin };
+}
+const AV_COL = { V: '#d32f2f', P: '#1f6fb2', X: '#8a939e' };
+
+// ============================ METAREA XV ============================
+const metFeat = new Map(METAREA.features.map(f => [f.properties.id, f]));
+const nombreArea = id => { const f = metFeat.get(id); return f ? (f.properties.tipo === 'costera' ? `Área ${id} · ${f.properties.nombre}` : f.properties.nombre) : id; };
+const corto = id => id.replace('X-', 'X ').replace('IX-', 'IX ');
+let metLayer, metLabels, avLayer, stLayer;
+const metById = new Map();
+
+function avisosEnArea(id, ahora) {
+  const out = [];
+  for (const a of AVISOS) for (const z of a.zonas) if (z.areas.includes(id)) { const e = estadoAviso(z, ahora); if (e.k !== 'X') out.push({ a, z, e }); }
+  return out;
+}
+// Colores de la carta METAREA XV publicada: costeras en verde, área X en amarillo, área IX en lila.
+const MET_COL = { costera: { line: '#2f6b2f', fill: '#7fbf7f' }, oceanica: { line: '#8a6d00', fill: '#f2df6b' }, antartica: { line: '#6b4a7a', fill: '#c9b3d6' } };
+function styleMet(f) {
+  const c = MET_COL[f.properties.tipo];
+  return { color: c.line, weight: 1.6, opacity: 0.95, dashArray: f.properties.tipo === 'costera' ? null : '6 4', fillColor: c.fill, fillOpacity: 0.22 };
+}
+function popupMet(f) {
+  const p = f.properties, ahora = Date.now();
+  const av = avisosEnArea(p.id, ahora);
+  const sts = ESTACIONES.filter(s => s.area === p.id);
+  const evs = sts.map(s => evaluar(s, ahora));
+  const c = { ok: 0, ret: 0, no: 0 }; evs.forEach(e => c[e.k]++);
+  let h = `<div class="pp"><div class="ppT">${escH(nombreArea(p.id))}</div>`;
+  h += `<div style="font-size:11.5px;color:#5b6673;margin-bottom:6px">METAREA XV · ${p.tipo === 'costera' ? 'subárea costera' : p.tipo === 'oceanica' ? 'área oceánica' : 'área antártica'}</div>`;
+  if (av.length) h += av.map(x => `<div style="margin:4px 0"><span class="pill ${x.e.k}">${x.e.txt}</span> <b>${escH(x.a.tipo)}</b><br><span style="font-size:11.5px">${escH(x.z.nombre)} · hasta ${fmtLocal(x.e.fin)}</span></div>`).join('');
+  else h += '<div style="color:#5b6673">Sin avisos vigentes ni próximos.</div>';
+  if (sts.length) h += `<div style="margin-top:6px;font-size:12px">Estaciones: <b style="color:${ST.ok.hex}">${c.ok}</b> operativas · <b style="color:${ST.ret.hex}">${c.ret}</b> con retraso · <b style="color:${ST.no.hex}">${c.no}</b> no operativas</div>`;
+  return h + '</div>';
+}
+function buildMet() {
+  metLayer = L.geoJSON(METAREA, { pane: 'metPane', style: styleMet, onEachFeature: (f, l) => { metById.set(f.properties.id, l); l.bindPopup(() => popupMet(f), { maxWidth: 320 }); l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true, direction: 'auto' }); } });
+  metLabels = L.layerGroup();
+  for (const f of METAREA.features) {
+    const p = f.properties; const txt = p.tipo === 'costera' ? p.id : corto(p.id).replace('X ', 'X·').replace('IX ', 'IX·');
+    L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'oceanica' ? ' oc' : p.tipo === 'antartica' ? ' an' : ''), html: `<span>${escH(txt)}</span>`, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(metLabels);
+  }
+  // divisorias internas punteadas que aparecen en la carta (25°S en área I; 56°S en área VIII)
+  L.polyline([[-25, -76], [-25, -70.4]], { pane: 'metPane', color: '#123a5c', weight: 1, dashArray: '2 4', opacity: 0.7, interactive: false }).addTo(metLabels);
+  L.polyline([[-56, -80], [-56, -64.7]], { pane: 'metPane', color: '#123a5c', weight: 1, dashArray: '2 4', opacity: 0.7, interactive: false }).addTo(metLabels);
+  return L.layerGroup([metLayer, metLabels]);
+}
+
+// Orden norte → sur según el límite norte del sector de cada aviso
+let AVISOS = [], AVISOS_META = {}, AV_ORD = [];
+function prepararAvisos(j) {
+  AVISOS = (j && j.avisos) || []; AVISOS_META = j || {};
+  AV_ORD = AVISOS.map((a, i) => ({ a, i, north: Math.max(-90, ...(a.zonas || []).map(z => z.north ?? -90)) })).sort((x, y) => y.north - x.north);
+  AV_ORD.forEach((o, n) => { o.a.num = n + 1; o.a.zonas = o.a.zonas || []; });
+}
+function popupAviso(a, z, e) {
+  return `<div class="pp"><div class="ppT"><span class="pill ${e.k}">${e.txt}</span> ${a.num}. ${escH(a.tipo)}</div>` +
+    `<table><tr><th>Sector</th><td>${escH(z.nombre)}</td></tr><tr><th>Validez</th><td>${fmtLocal(e.ini)} → ${fmtLocal(e.fin)} (hora Chile)<br><span style="color:#5b6673">${fmtUTC(e.ini)} → ${fmtUTC(e.fin)}</span></td></tr>` +
+    `<tr><th>Subáreas</th><td>${z.areas.map(id => escH(nombreArea(id))).join('<br>')}</td></tr>` +
+    (z.detalle ? `<tr><th>Condición</th><td>${escH(z.detalle)}</td></tr>` : '') +
+    `<tr><th>Código</th><td>${escH(a.codigo)}</td></tr></table>` +
+    (a.nota ? `<div style="font-size:11.5px;color:#8a5a00;margin-top:4px">${escH(a.nota)}</div>` : '') +
+    `<div style="margin-top:4px"><a href="${escH(a.url)}" target="_blank" rel="noopener">Documento original ↗</a></div></div>`;
+}
+const svgAv = (c, n) => `<svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M13 1.5 25 22.5H1Z" fill="${c}" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><text x="13" y="19" text-anchor="middle" font-family="system-ui,Arial" font-size="11" font-weight="700" fill="#fff">${n}</text></svg>`;
+// Capa de avisos: franja costera (marejadas), rectángulos sobre el mar (mal tiempo / trombas) y círculos en islas oceánicas.
+const avPolys = new Map();   // num → [capas]
+const avOculto = new Set();  // números de aviso ocultos en el mapa
+function buildAvisos() {
+  const g = L.layerGroup(), ahora = Date.now(), showExp = document.getElementById('chkExp')?.checked;
+  avPolys.clear();
+  for (const { a } of AV_ORD) for (const z of a.zonas) {
+    const e = estadoAviso(z, ahora);
+    if (e.k === 'X' && !showExp) continue;
+    if (avOculto.has(a.num)) continue;
+    const col = AV_COL[e.k], vig = e.k === 'V';
+    const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: col, weight: vig ? 1.8 : 1.5, dashArray: vig ? null : '6 4', fillColor: col, fillOpacity: vig ? 0.30 : 0.12 } })
+      .bindPopup(popupAviso(a, z, e), { maxWidth: 340 })
+      .bindTooltip(`${a.num}. ${escH(a.tipo)} · ${escH(z.nombre)} · ${e.txt}`, { sticky: true })
+      .on('click', () => { hlAviso = a; marcarLista(); });
+    lyr.addTo(g);
+    if (!avPolys.has(a.num)) avPolys.set(a.num, []);
+    avPolys.get(a.num).push(lyr);
+  }
+  return g;
+}
+let hlAviso = null;
+function resaltarAviso(a) {
+  hlAviso = a; marcarLista();
+  if (avOculto.has(a.num)) { avOculto.delete(a.num); const cb = document.querySelector(`#avList .avChk input[data-n="${a.num}"]`); if (cb) cb.checked = true; refreshAvLayer(); actualizarBarraAv(); }
+  if (!map.hasLayer(LAYERS.av.lyr)) { document.getElementById('chk_av').checked = true; LAYERS.av.set(true); }
+  const ls = avPolys.get(a.num) || []; if (!ls.length) return;
+  const fg = L.featureGroup(ls); map.fitBounds(fg.getBounds(), { maxZoom: 7, padding: [30, 30] });
+  ls.forEach(l => { l.setStyle({ weight: 4 }); setTimeout(() => l.setStyle({ weight: estadoAviso(a.zonas[0], Date.now()).k === 'V' ? 1.8 : 1.5 }), 2500); });
+  ls[0].openPopup();
+}
+function actualizarBarraAv() {
+  const tot = document.querySelectorAll('#avList .avChk input').length, vis = document.querySelectorAll('#avList .avChk input:checked').length;
+  document.getElementById('avVisTxt').textContent = `${vis} de ${tot} en el mapa`;
+}
+function setTodosAv(ver) {
+  document.querySelectorAll('#avList .avChk input').forEach(cb => { cb.checked = ver; const n = +cb.dataset.n; if (ver) avOculto.delete(n); else avOculto.add(n); });
+  if (ver && !map.hasLayer(LAYERS.av.lyr)) { document.getElementById('chk_av').checked = true; LAYERS.av.set(true); }
+  refreshAvLayer(); actualizarBarraAv();
+}
+function marcarLista() {
+  document.querySelectorAll('#avList .av').forEach(d => d.classList.toggle('sel', hlAviso && +d.dataset.n === hlAviso.num));
+}
+
+function renderAvisos() {
+  const ahora = Date.now(), box = document.getElementById('avList');
+  const showExp = document.getElementById('chkExp')?.checked;
+  const rows = AV_ORD.map(({ a }) => {
+    const es = a.zonas.map(z => estadoAviso(z, ahora));
+    if (!es.length) return { a, k: 'R', ini: null, fin: null, areas: [] };
+    const k = es.some(e => e.k === 'V') ? 'V' : es.some(e => e.k === 'P') ? 'P' : 'X';
+    const ini = new Date(Math.min(...es.map(e => +e.ini))), fin = new Date(Math.max(...es.map(e => +e.fin)));
+    return { a, k, ini, fin, areas: AREA_ORD.filter(id => a.zonas.some(z => z.areas.includes(id))) };
+  }).filter(r => showExp || r.k !== 'X');
+  const lbl = { V: 'Vigente', P: 'Próximo', X: 'Expirado', R: 'Por revisar' };
+  const nV = rows.filter(r => r.k === 'V').length, nP = rows.filter(r => r.k === 'P').length;
+  document.getElementById('avCount').textContent = `${nV} vigente${nV === 1 ? '' : 's'} · ${nP} próximo${nP === 1 ? '' : 's'}`;
+  box.innerHTML = rows.length ? rows.map(r => `<div class="av" data-n="${r.a.num}" title="Clic para ver la extensión del aviso en el mapa"><div class="avT"><b><label class="avChk" title="Mostrar u ocultar este aviso en el mapa"><input type="checkbox" data-n="${r.a.num}"${avOculto.has(r.a.num) ? '' : ' checked'}${r.k === 'R' ? ' disabled' : ''}></label><span class="avN" style="background:${AV_COL[r.k]}">${r.a.num}</span>${escH(r.a.tipo)}</b><span class="pill ${r.k}">${lbl[r.k]}</span></div>` +
+    `<div class="avM">${escH(r.a.sector)}</div>` +
+    (r.k === 'R' ? `<div class="avD" style="color:var(--warn)">${escH(r.a.motivo || 'No se pudo leer automáticamente.')} Consulte el documento original.</div>` :
+    `<div class="avD">${r.k === 'P' ? 'Inicia' : 'Desde'} ${fmtLocal(r.ini)} · hasta ${fmtLocal(r.fin)}${r.k === 'V' ? ` <span style="color:var(--muted)">(${edad(r.fin - ahora)} restantes)</span>` : ''}</div>`) +
+    (r.a.resumen ? `<div class="avD" style="color:var(--muted)">${escH(r.a.resumen)}</div>` : '') +
+    `<div class="avA"><span style="font-size:11px;color:var(--muted)">Subáreas:</span>${r.areas.map(id => `<span class="tag" data-area="${escH(id)}" title="${escH(nombreArea(id))}">${escH(corto(id))}</span>`).join('')}</div>` +
+    `<div class="avL">${escH(r.a.codigo)} · <a href="${escH(r.a.url)}" target="_blank" rel="noopener">documento ↗</a></div></div>`).join('')
+    : `<div class="av" style="color:var(--muted)">${AVISOS_META.actualizado ? 'No hay avisos vigentes ni próximos.' : 'Cargando avisos…'}</div>`;
+  box.querySelectorAll('.av[data-n]').forEach(d => d.addEventListener('click', ev => {
+    if (ev.target.closest('a,.tag,.avChk')) return;
+    const a = AVISOS.find(x => x.num === +d.dataset.n); if (a) resaltarAviso(a);
+  }));
+  box.querySelectorAll('.tag').forEach(t => t.addEventListener('click', () => {
+    const l = metById.get(t.dataset.area); if (!l) return;
+    if (!map.hasLayer(LAYERS.met.lyr)) { document.getElementById('chk_met').checked = true; LAYERS.met.set(true); }
+    map.fitBounds(l.getBounds(), { maxZoom: 6, padding: [20, 20] }); l.openPopup(l.getBounds().getCenter());
+  }));
+  box.querySelectorAll('.avChk input').forEach(cb => cb.addEventListener('change', () => {
+    const n = +cb.dataset.n; if (cb.checked) avOculto.delete(n); else avOculto.add(n);
+    refreshAvLayer(); actualizarBarraAv();
+  }));
+  actualizarBarraAv();
+  marcarLista();
+  document.getElementById('avNote').innerHTML = `Lista actualizada automáticamente el ${AVISOS_META.actualizado ? fmtLocal(new Date(AVISOS_META.actualizado)) : '–'} (hora Chile) desde el <a href="${escH(AVISOS_META.fuente || '#')}" target="_blank" rel="noopener">sitio público de avisos</a>. El estado se recalcula con la hora del equipo. En el mapa: marejadas como franja costera, mal tiempo y trombas como sectores sobre el mar, y Juan Fernández y Rapa Nui como áreas circulares. Rojo = vigente; azul punteado = próximo.` +
+    `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="chkExp"${showExp ? ' checked' : ''}> Mostrar avisos expirados</label>` +
+    `</div>`;
+  document.getElementById('chkExp').addEventListener('change', () => { renderAvisos(); refreshAvLayer(); });
+}
+function refreshAvLayer() {
+  const on = LAYERS.av.lyr && map.hasLayer(LAYERS.av.lyr);
+  if (LAYERS.av.lyr) map.removeLayer(LAYERS.av.lyr);
+  LAYERS.av.lyr = buildAvisos(); if (on) LAYERS.av.lyr.addTo(map);
+  if (metLayer) metLayer.setStyle(styleMet);
+}
+
+// ============================ Estaciones ============================
+let ESTACIONES = [];
+let FUENTE = { cuando: null };
+function asignarArea(s) {
+  if (s.area) return s.area;
+  // estaciones nuevas: subárea costera por latitud; islas oceánicas por posición
+  if (s.lon < -100) return 'X-NO';
+  if (s.lon < -77) return s.lat > -30 ? 'X-NE' : s.lat > -45 ? 'X-CE' : 'X-SE';
+  const a = -s.lat;
+  return a < 30 ? 'I' : a < 33.03 ? 'II' : a < 35.33 ? 'III' : a < 38.37 ? 'IV' : a < 41.8 ? 'V' : a < 48 ? 'VI' : a < 52.4 ? 'VII' : a < 60 ? 'VIII' : 'IX-PD';
+}
+const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL');
+function svgSt(c, flag) { return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="${c}" stroke="#fff" stroke-width="2"/>${flag ? '<circle cx="15.5" cy="4.5" r="3.6" fill="#f2c200" stroke="#fff" stroke-width="1.2"/>' : ''}</svg>`; }
+function popupSt(s, ev) {
+  const st = ST[ev.k];
+  const rows = [
+    ['Estado', `<b style="color:${st.hex}">${st.txt}</b>`],
+    ['Último dato', ev.t ? `${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}` : 'Sin fecha válida'],
+    ['Subárea', escH(nombreArea(s.area))],
+    ['Viento', s.dirG != null && s.dirFuente !== '---' ? `${s.dirG}° ${cardinal(s.dirG)} · ${nf(s.vel)}` + (s.dirFuente && s.dirFuente !== cardinal(s.dirG) ? ` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>` : '') : 'Sin dato'],
+    ['Temperatura', `${nf(s.temp)} °C`], ['Presión', `${nf(s.pres, 1)} hPa`], ['Humedad', `${nf(s.hum, 0)} %`], ['Punto de rocío', `${nf(s.td)} °C`],
+    ['Posición', fmtPos(s.lat, s.lon)],
+  ];
+  const fl = ev.fl.length ? `<div style="color:#8a5a00;margin-top:4px">⚠ Sensor dudoso: ${escH(ev.fl.join('; '))}.</div>` : '';
+  return `<div class="pp"><div class="ppT">${escH(nombreEst(s))}</div><table>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>${ev.motivo ? `<div style="margin-top:4px">${escH(ev.motivo)}</div>` : ''}${fl}</div>`;
+}
+const stMarkers = new Map();
+function buildEst() {
+  const g = L.layerGroup(), ahora = Date.now();
+  stMarkers.clear();
+  for (const s of ESTACIONES) {
+    const ev = evaluar(s, ahora);
+    const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: L.divIcon({ className: '', html: svgSt(ST[ev.k].hex, ev.fl.length > 0), iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: ev.k === 'ok' ? 0 : 500 })
+      .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320 })
+      .bindTooltip(`${escH(nombreEst(s))} · ${ST[ev.k].txt}${ev.k === 'ok' && s.temp != null ? ` · ${nf(s.temp)} °C` : ''}`, { direction: 'top', offset: [0, -8] });
+    m.addTo(g); stMarkers.set(s.codigo, m);
+  }
+  return g;
+}
+
+// ---- Cuadro de estado ----
+let sortK = 'lat', sortDir = -1;
+function renderTabla() {
+  const ahora = Date.now(), q = document.getElementById('q').value.trim().toLowerCase(), fe = document.getElementById('fEst').value, fa = document.getElementById('fArea').value;
+  const rows = ESTACIONES.map(s => ({ s, ev: evaluar(s, ahora) }));
+  const c = { ok: 0, ret: 0, no: 0, fl: 0 };
+  rows.forEach(r => { c[r.ev.k]++; if (r.ev.fl.length && r.ev.k !== 'no') c.fl++; });
+  document.getElementById('kOk').textContent = c.ok; document.getElementById('kRet').textContent = c.ret; document.getElementById('kNo').textContent = c.no; document.getElementById('kFl').textContent = c.fl; document.getElementById('estCount').textContent = `${rows.length} estaciones · ${c.ok} operativas`;
+  const ordE = { ok: 0, ret: 1, no: 2 };
+  const key = r => ({ lat: r.s.lat, area: AREA_ORD.indexOf(r.s.area) * 1000 - r.s.lat, estado: ordE[r.ev.k] * 1000 + (r.ev.ms ?? 1e15) / 1e12, t: r.ev.t ? +r.ev.t : -1, age: r.ev.ms ?? 1e15, dir: r.s.dirG ?? -1, vel: r.s.vel ?? -1, temp: r.s.temp ?? -99, pres: r.s.pres ?? -1, hum: r.s.hum ?? -1 }[sortK]);
+  const vis = rows.filter(r => (!q || nombreEst(r.s).toLowerCase().includes(q)) && (!fe || (fe === 'fl' ? (r.ev.fl.length && r.ev.k !== 'no') : r.ev.k === fe)) && (!fa || r.s.area === fa))
+    .sort((a, b) => (key(a) - key(b)) * sortDir);
+  const lastT = Math.max(...rows.map(r => r.ev.t ? +r.ev.t : 0)), staleMs = ahora - lastT;
+  const sb = document.getElementById('staleBox'); sb.hidden = !(rows.length && lastT > 0 && staleMs > UMBRAL.ok);
+  if (!sb.hidden) document.getElementById('staleTxt').textContent = `El dato más reciente de la red tiene ${edad(staleMs)}. Puede ser un retraso de la fuente o de la actualización automática, no necesariamente fallas de las estaciones.`;
+  document.getElementById('tblCount').textContent = `${vis.length} de ${rows.length} estaciones`;
+  document.querySelector('#tbl tbody').innerHTML = vis.map(({ s, ev }) => {
+    const st = ST[ev.k];
+    const obs = ev.fl.length ? `<span class="flag" title="${escH(ev.fl.join('; '))}">⚠ Sensor dudoso</span>` : (!ev.t ? 'Fecha inválida en la fuente' : '');
+    const sinV = s.dirFuente === '---' || s.dirG == null;
+    return `<tr data-c="${escH(s.codigo)}"><td class="eN"><b>${escH(nombreEst(s))}</b>${obs ? `<div class="obs">${obs}</div>` : ''}</td><td>${escH(corto(s.area))}</td>` +
+      `<td><span class="st" style="color:${st.color}"><span class="dot" style="background:${st.color}"></span>${st.txt}</span></td>` +
+      `<td>${ev.t ? `${fmtCorto(ev.t)}<div class="obs">hace ${edad(ev.ms)}</div>` : '<span style="color:var(--no)">Sin fecha</span>'}</td></tr>`;
+  }).join('');
+  document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.addEventListener('click', () => {
+    const m = stMarkers.get(tr.dataset.c); if (!m) return;
+    if (!map.hasLayer(LAYERS.est.lyr)) { document.getElementById('chk_est').checked = true; LAYERS.est.set(true); }
+    map.setView(m.getLatLng(), Math.max(map.getZoom(), 7)); m.openPopup();
+    if (window.innerWidth <= 1050) document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+}
+const AREA_ORD = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'X-NO', 'X-NE', 'X-CO', 'X-CE', 'X-SO', 'X-SE', 'IX-O', 'IX-C', 'IX-PD', 'IX-E', 'IX-W'];
+document.querySelectorAll('#tbl th[data-k]').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.k; if (sortK === k) sortDir *= -1; else { sortK = k; sortDir = (k === 'lat') ? -1 : 1; }
+  renderTabla();
+}));
+['q', 'fEst', 'fArea'].forEach(id => document.getElementById(id).addEventListener('input', renderTabla));
+
+// ============================ Panel de capas ============================
+const LAYERS = {};
+function addLayerRow(box, key, name, sw, on, build) {
+  const def = LAYERS[key] = { lyr: null, build };
+  def.set = v => { if (v) { def.lyr = def.lyr || def.build(); def.lyr.addTo(map); } else if (def.lyr) map.removeLayer(def.lyr); };
+  const row = document.createElement('label');
+  row.innerHTML = `<input type="checkbox" id="chk_${key}"${on ? ' checked' : ''}><span>${sw}</span><span>${escH(name)}</span>`;
+  row.querySelector('input').addEventListener('change', e => def.set(e.target.checked));
+  box.appendChild(row); if (on) def.set(true);
+}
+function renderCapas() {
+  const box = document.getElementById('layers');
+  const grp = t => { const d = document.createElement('div'); d.className = 'grp'; d.textContent = t; box.appendChild(d); };
+  grp('Operación');
+  addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), true, buildEst);
+  addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
+  addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
+  grp('Límites marítimos');
+  for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
+  const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);
+  const l2 = document.createElement('div'); l2.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px';
+  l2.innerHTML = Object.values(ST).map(s => `<span style="display:inline-flex;gap:5px;align-items:center">${dotSw(s.hex)}${s.txt}</span>`).join('') + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#2e7d32', true)}Sensor dudoso</span>`;
+  box.appendChild(l2);
+  const l3 = document.createElement('div'); l3.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin-top:6px';
+  l3.innerHTML = `<span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#d32f2f', 'rgba(211,47,47,.30)')}Aviso vigente</span><span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#1f6fb2', 'rgba(31,111,178,.12)', '4 3')}Aviso próximo</span>`;
+  box.appendChild(l3);
+  const n = document.createElement('div'); n.className = 'note'; n.style.cssText = 'padding:6px 0 0;font-size:11px';
+  n.innerHTML = 'METAREA XV digitalizada de la carta OMM N° 9, Vol. D (2018); meridianos oceánicos aproximados. <a href="https://web.directemar.cl/met/jturno/documentos/Metarea_15.PDF" target="_blank" rel="noopener">Carta ↗</a>';
+  box.appendChild(n);
+}
+
+// ============================ Datos publicados (JSON del repositorio) ============================
+// Un recolector automático actualiza data/estaciones.json, data/avisos.json y data/estado.json.
+// Si la página se abre como archivo local (sin servidor), se usan los datos incorporados al construirla.
+async function leerJSON(ruta) {
+  const r = await fetch(`${ruta}?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`${ruta}: HTTP ${r.status}`);
+  return r.json();
+}
+let ESTADO = null, PRIMERA = true;
+async function cargarDatos() {
+  const b = document.getElementById('btnRefresh'); b.disabled = true; b.textContent = 'Actualizando…';
+  let e = null, a = null;
+  try { [e, a, ESTADO] = await Promise.all([leerJSON('data/estaciones.json'), leerJSON('data/avisos.json'), leerJSON('data/estado.json').catch(() => null)]); }
+  catch (err) { if (PRIMERA) { e = RESPALDO.estaciones; a = RESPALDO.avisos; ESTADO = { respaldo: true }; } }
+  if (e) {
+    ESTACIONES = normalizar(e.datos || e); ESTACIONES.forEach(s => { s.area = asignarArea(s); });
+    FUENTE = { cuando: e.actualizado ? new Date(e.actualizado) : null, fuente: e.fuente };
+  }
+  if (a) prepararAvisos(a);
+  if (PRIMERA) initAreas();
+  PRIMERA = false;
+  refrescarTodo(true);
+  b.disabled = false; b.textContent = 'Actualizar';
+}
+document.getElementById('btnRefresh').addEventListener('click', cargarDatos);
+
+// ============================ Arranque ============================
+function refrescarTodo(rehacerEst) {
+  if (rehacerEst && LAYERS.est) { const on = LAYERS.est.lyr && map.hasLayer(LAYERS.est.lyr); if (LAYERS.est.lyr) map.removeLayer(LAYERS.est.lyr); LAYERS.est.lyr = buildEst(); if (on) LAYERS.est.lyr.addTo(map); }
+  renderTabla(); renderAvisos(); refreshAvLayer();
+  document.getElementById('hdrSub').textContent = `Hora Chile ${fmtLocal(new Date())} · ${ESTACIONES.length} estaciones · datos actualizados ${FUENTE.cuando ? fmtLocal(FUENTE.cuando) : '–'}${ESTADO && ESTADO.respaldo ? ' (copia incorporada: abra la página publicada para datos al día)' : ''}`;
+}
+function initAreas() { const sel = document.getElementById('fArea'); const pres = new Set(ESTACIONES.map(s => s.area)); AREA_ORD.filter(a => pres.has(a)).forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = nombreArea(a); sel.appendChild(o); }); }
+renderCapas();
+document.getElementById('avAll').addEventListener('click', () => setTodosAv(true));
+document.getElementById('avNone').addEventListener('click', () => setTodosAv(false));
+(function layerBox() {
+  const lb = document.getElementById('layerBox');
+  L.DomEvent.disableClickPropagation(lb); L.DomEvent.disableScrollPropagation(lb);
+  const tg = () => { lb.classList.toggle('min'); document.getElementById('lbBtn').textContent = lb.classList.contains('min') ? '▴' : '▾'; };
+  document.getElementById('lbH').addEventListener('click', tg);
+  if (window.innerWidth <= 600) tg();
+})();
+window.addEventListener('resize', () => map.invalidateSize());
+map.fitBounds([[-56.5, -82], [-17.5, -66]]);
+cargarDatos();
+setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
+setInterval(cargarDatos, 5 * 60000);                // vuelve a leer los datos publicados
+</script>
+</body>
+</html>
