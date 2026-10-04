@@ -5,6 +5,11 @@ on:
     - cron: "*/20 * * * *"     # cada 20 minutos (GitHub puede atrasarlo algunos minutos)
     - cron: "17 12 * * 1"      # lunes: latido semanal para que GitHub no pause las tareas programadas
   workflow_dispatch:            # botón "Run workflow" para ejecutarlo a mano
+    inputs:
+      releer:
+        description: "Volver a leer todos los PDF de avisos"
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: ["build/**", "data/avisos_manual.json", "data/geo/**", "scripts/**"]
@@ -44,6 +49,8 @@ jobs:
           curl -fsSL "$BASE/data/avisos.json" -o data/avisos.json || echo "Sin avisos previos publicados"
 
       - name: Recolectar datos
+        env:
+          RELEER: ${{ inputs.releer && '1' || '0' }}
         run: python scripts/colector.py
 
       - name: Construir la página

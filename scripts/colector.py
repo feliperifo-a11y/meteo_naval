@@ -20,6 +20,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -461,7 +462,7 @@ def recolectar_avisos(geo: Geo) -> bool:
             if url in ignorar:
                 continue
             sector = titulo(p["sector"])
-            if url in previo and previo[url].get("_auto") and not previo[url].get("revisar"):
+            if url in previo and previo[url].get("_auto") and not previo[url].get("revisar") and os.environ.get("RELEER") != "1":
                 avisos[url] = previo[url]; continue            # ya leído en una ejecución anterior
             t = texto_pdf(get(url).content)
             tipo = tipo_aviso(t, p["tipo_portada"])
