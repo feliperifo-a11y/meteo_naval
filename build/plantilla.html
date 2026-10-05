@@ -608,6 +608,7 @@ let BOYAS = [], BOYAS_META = {};
 const UMBRAL_BOYA = { ok: 3 * 3600e3, ret: 24 * 3600e3 };   // horas: operativa ≤ 3 h; con retraso ≤ 24 h
 function evaluarBoya(b, ahora) {
   const t = b.ultimo && b.ultimo.fecha ? new Date(b.ultimo.fecha) : null, ms = t ? ahora - t : null;
+  if (!t && b.error) return { k: 'sd', t, ms, motivo: 'El servidor del SHOA no permite la consulta automática de esta boya. Su estado puede revisarse en el visor oficial.', acceso: false };
   if (!t) return { k: 'no', t, ms, motivo: 'Sin datos en los últimos 7 días.' };
   if (ms <= UMBRAL_BOYA.ok) return { k: 'ok', t, ms, motivo: '' };
   if (ms <= UMBRAL_BOYA.ret) return { k: 'ret', t, ms, motivo: `Último dato hace ${edad(ms)}.` };
@@ -627,8 +628,8 @@ function popupBoya(b, ev) {
   const u = b.ultimo || {}, st = ST[ev.k];
   const v = (x, d, un) => x == null ? null : `${nf(x, d)}${un}`;
   const rows = [
-    ['Estado', `<b style="color:${st.hex}">${st.txt}</b>`],
-    ['Último dato', ev.t ? `${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}` : 'Sin datos en 7 días'],
+    ['Estado', `<b style="color:${st.hex}">${ev.acceso === false ? 'Sin acceso a datos' : st.txt}</b>`],
+    ['Último dato', ev.t ? `${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}` : (ev.acceso === false ? '—' : 'Sin datos en 7 días')],
     ['Altura significativa', v(u.hsig, 2, ' m')], ['Altura máxima', v(u.hmax, 2, ' m')],
     ['Período significativo', v(u.tsig, 1, ' s')], ['Período peak', v(u.tp, 1, ' s')],
     ['Dirección peak', u.dp != null ? `${nf(u.dp, 0)}°` : (u.tpdir != null ? `${nf(u.tpdir, 0)}°` : null)],
@@ -647,7 +648,7 @@ function buildBoyas() {
     const ev = evaluarBoya(b, ahora), u = b.ultimo || {};
     L.marker([b.lat, b.lon], { pane: 'boyaPane', icon: L.divIcon({ className: '', html: svgBoya(ST[ev.k].hex), iconSize: [24, 24], iconAnchor: [12, 12] }) })
       .bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320 })
-      .bindTooltip(`Boya ${escH(b.nombre)} · ${ST[ev.k].txt}${u.hsig != null ? ` · Hs ${nf(u.hsig, 2)} m` : ''}`, { direction: 'top', offset: [0, -10] })
+      .bindTooltip(`Boya ${escH(b.nombre)} · ${ev.acceso === false ? 'sin acceso a datos' : ST[ev.k].txt}${u.hsig != null ? ` · Hs ${nf(u.hsig, 2)} m` : ''}`, { direction: 'top', offset: [0, -10] })
       .addTo(g);
   }
   return g;

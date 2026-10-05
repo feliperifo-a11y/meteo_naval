@@ -70,12 +70,16 @@ GRAF=""     # La red EMA antigua no se descarga: el meteomapa no la muestra en s
 HIST=null
 
 # 2b. Boyas de oleaje del SHOA: se guardan solo las horas con medición (las últimas 72 por boya).
+# DESACTIVADO: el servidor del SHOA responde 403 a consultas automatizadas. Cambiar a 1 solo cuando
+# el SHOA autorice el acceso (por ejemplo, habilitando el identificador "dashboard-meteo-publico").
+BOYAS_ACTIVAS=0
 BOYAS_URLS="https://www.shoa.cl/boyas/consultar260_2.php https://www.shoa.cl/boyas/consultar_610501.php
 https://www.shoa.cl/boyas/consultar_610a01.php https://www.shoa.cl/boyas/consultar_810700.php
 https://www.shoa.cl/boyas/consultar_610401.php https://www.shoa.cl/boyas/consultar_520700.php
 https://www.shoa.cl/boyas/consultar_610701.php"
 ARGS=()
 n=0
+[ "$BOYAS_ACTIVAS" = "1" ] || BOYAS_URLS=""
 for u in $BOYAS_URLS; do
   n=$((n+1)); f="$DIR/boya_$n.json"; rm -f "$f"
   ud="$u"; [ -n "${MN_BOYAS_BASE:-}" ] && ud="$MN_BOYAS_BASE/$(basename "$u")"   # solo para pruebas
@@ -149,8 +153,8 @@ COD=$(curl -sS --max-time 60 -o "$DIR/respuesta.json" -w '%{http_code}' -X PUT -
   --data-binary @"$DIR/cuerpo.json" "$API")
 if [ "$COD" = "200" ] || [ "$COD" = "201" ]; then
   N_C=$(printf '%s' "$FICHAS" | grep -o '"codigoEstacion"' | wc -l | tr -d ' ')
-  N_B=$(( ${#ARGS[@]} / 2 ))
-  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell + $N_B/7 boyas subidas"
+  N_B=$(( ${#ARGS[@]} / 2 )); [ "$BOYAS_ACTIVAS" = "1" ] && TXT_B=" + $N_B/7 boyas" || TXT_B=""
+  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell$TXT_B subidas"
 else
   echo "$(ts) ERROR: GitHub respondió $COD — $(head -c 300 "$DIR/respuesta.json")"; exit 1
 fi

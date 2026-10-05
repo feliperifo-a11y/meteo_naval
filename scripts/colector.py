@@ -290,6 +290,9 @@ BOYAS = [
     ("Punta Arenas", "Triaxys", "https://www.shoa.cl/boyas/consultar_610701.php", -53.28113, -70.83745),
 ]
 VISOR_BOYAS = "https://www.shoa.cl/php/boyas?idioma=es"
+# El servidor del SHOA responde 403 a consultas automatizadas (desde GitHub y desde el equipo local).
+# Mientras no autorice el acceso, no se consulta; las boyas se muestran como "sin acceso a datos".
+BOYAS_DIRECTO = False
 CAMPOS_BOYA = ["hsig", "hmax", "tsig", "tp", "dp", "tpdir", "dm", "tw", "mb", "wsd", "wdir", "wmax", "taire", "rh"]
 
 
@@ -325,6 +328,8 @@ def recolectar_boyas(fuente_local: dict | None = None) -> bool:
         try:
             filas = (fuente_local or {}).get(url)
             if filas is None:
+                if not BOYAS_DIRECTO:
+                    raise PermissionError("el SHOA no permite la consulta automatizada (HTTP 403)")
                 filas = get(url, timeout=20).json()
             b.update(resumir_boya(filas))
             b["consultado"] = iso(ahora_utc())
@@ -332,13 +337,13 @@ def recolectar_boyas(fuente_local: dict | None = None) -> bool:
             fallas += 1
             p = previo.get(nombre, {})
             b.update({k: p.get(k) for k in ("ultimo", "serie", "posicion", "consultado")})
-            b["error"] = type(e).__name__
+            b["error"] = "sin_acceso" if isinstance(e, PermissionError) else type(e).__name__
         boyas.append(b)
-    if fallas:
+    if fallas and BOYAS_DIRECTO:
         errores.append(f"boyas: {fallas} de {len(BOYAS)} sin respuesta (se conserva el último dato)")
     escribir_json(DATA / "boyas.json", {"actualizado": iso(ahora_utc()), "visor": VISOR_BOYAS, "boyas": boyas}, compacto=True)
-    print(f"Boyas: {len(BOYAS) - fallas} de {len(BOYAS)} consultadas")
-    return fallas < len(BOYAS)
+    print(f"Boyas: {len(BOYAS) - fallas} de {len(BOYAS)} con datos")
+    return None if not BOYAS_DIRECTO and fallas == len(BOYAS) else fallas < len(BOYAS)
 
 
 # ============================================================ Geografía
