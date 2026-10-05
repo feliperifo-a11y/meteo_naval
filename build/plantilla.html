@@ -277,7 +277,8 @@ function evaluar(s, ahora) {
   if (s.temp === 0 && s.hum === 0) fl.push('temperatura en 0 °C junto a humedad 0 %');
   if (s.td != null && s.temp != null && s.td > s.temp + 0.5 && !(s.temp === 0 && s.hum === 0)) fl.push(`punto de rocío (${nf(s.td)} °C) mayor que la temperatura`);
   if (s.dirFuente === '---') fl.push('viento sin dato');   // 0° / 0 sostenido se evalúa como calma (umbral de 24 h)
-  if (k === 'ok') for (const [v, hrs] of congelados(s, ahora))   // solo si transmite: sin datos nuevos es obvio que no varíe fl.push(`${v} sin variación hace ${hrs >= 48 ? nf(hrs / 24, 0) + ' días' : nf(hrs, 0) + ' h'}`);
+  // Solo si transmite: sin datos nuevos es obvio que los valores no varíen.
+  if (k === 'ok') for (const [v, hrs] of congelados(s, ahora)) fl.push(`${v} sin variación hace ${hrs >= 48 ? nf(hrs / 24, 0) + ' días' : nf(hrs, 0) + ' h'}`);
   return { k, t, ms, motivo, fl, inferida };
 }
 
