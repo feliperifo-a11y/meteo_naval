@@ -107,6 +107,7 @@ def recolectar_estaciones() -> bool:
 #   top       estaciones con datos recientes y hora local del último dato
 #   fichas    último dato de las estaciones Campbell (código >= 100000)
 #   graficos  último valor por variable de las EMA activas
+#   graficos_campbell  último valor de las Campbell cuya ficha viene vacía
 #   historico último dato de presión de todas las EMA (se renueva una vez al día)
 # Aquí se convierten en filas con el mismo formato que las Capitanías de Puerto.
 PARAM = {7: "viento", 8: "velocidadDelViento", 11: "temperatura", 13: "puntoDeRocio", 14: "humedad", 16: "presion"}
@@ -152,12 +153,26 @@ def filas_ema(ema: dict) -> list:
         v, fecha, sin_datos = {}, None, False
         if campbell:
             f = fichas.get(str(cod)) or []
+            gc = (ema.get("graficos_campbell") or {}).get(str(cod)) or {}
             if f:
                 f = f[0]
                 fecha = (f.get("timeLocal") or "")[:19] or None     # hora local rotulada como +00:00
                 for p in f.get("parametros") or []:
                     if p.get("cdparam") in PARAM:
                         v[PARAM[p["cdparam"]]] = p.get("value")
+            elif gc:
+                # Ficha vacía: último dato de la serie. En la red Campbell la hora de la serie es UTC.
+                for p, k in PARAM.items():
+                    serie = (gc.get(str(p)) or {}).get("observaciones") or []
+                    if serie:
+                        v[k] = serie[0].get("nrparamValue")
+                        if fecha is None:
+                            try:
+                                d = datetime.strptime(serie[0]["time"][:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+                                fecha = d.astimezone(TZ).strftime("%Y-%m-%dT%H:%M:%S")
+                            except Exception:
+                                pass
+                sin_datos = fecha is None
             else:
                 sin_datos = True
         else:

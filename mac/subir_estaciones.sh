@@ -55,6 +55,15 @@ for id in $(printf '%s\n' $IDS_MAPA $IDS_TOP | sort -u); do
   [ "$id" -ge 100000 ] 2>/dev/null || continue
   r=$(get "$API_METEO/fichaEstacion/$id"); es_json "$r" || r=null
   FICHAS="$FICHAS${FICHAS:+,}\"$id\":$r"; sleep 0.3
+  # Si la ficha viene vacía (la estación se atrasó), se toma el último dato de su serie.
+  if [ "$r" = "[]" ] || [ "$r" = "null" ]; then
+    P=""
+    for p in 7 8 11 13 14 16; do
+      g=$(get "$API_METEO/graficoEstacion/$id/$p" | ultima); es_json "$g" || g=null
+      P="$P${P:+,}\"$p\":$g"; sleep 0.3
+    done
+    GRAF_C="${GRAF_C:-}${GRAF_C:+,}\"$id\":{$P}"
+  fi
 done
 GRAF=""     # EMA activas (listadas en "top"): último valor de cada variable
 for id in $IDS_TOP; do
@@ -83,8 +92,8 @@ AHORA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 armar() {
   printf '{"actualizado":"%s","fuente":"%s","origen":"equipo local","datos":' "$AHORA" "$FUENTE"
   cat "$DIR/obs.json"
-  [ "${1:-}" = "con_ema" ] && printf ',"ema":{"mapa":%s,"top":%s,"fichas":{%s},"graficos":{%s},"historico":%s}' \
-    "$MAPA" "$TOP" "$FICHAS" "$GRAF" "$HIST"
+  [ "${1:-}" = "con_ema" ] && printf ',"ema":{"mapa":%s,"top":%s,"fichas":{%s},"graficos":{%s},"graficos_campbell":{%s},"historico":%s}' \
+    "$MAPA" "$TOP" "$FICHAS" "$GRAF" "${GRAF_C:-}" "$HIST"
   printf '}'
 }
 json_valido() {

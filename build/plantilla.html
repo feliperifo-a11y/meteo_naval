@@ -213,7 +213,7 @@ function edad(ms) {
   const h = m / 60;
   if (h < 48) return `${nf(h, h < 10 ? 1 : 0)} h`;
   const d = h / 24;
-  return d < 60 ? `${nf(d, 0)} días` : `${nf(d / 30.4, 0)} meses`;
+  return d < 60 ? `${nf(d, 0)} días` : d < 730 ? `${nf(d / 30.4, 0)} meses` : `${nf(d / 365, 0)} años`;
 }
 // Fecha de la fuente: hora local de Chile continental sin zona. Se resuelve el desfase real con Intl.
 function parseLocalCL(s) {
@@ -277,7 +277,7 @@ function evaluar(s, ahora) {
   if (s.temp === 0 && s.hum === 0) fl.push('temperatura en 0 °C junto a humedad 0 %');
   if (s.td != null && s.temp != null && s.td > s.temp + 0.5 && !(s.temp === 0 && s.hum === 0)) fl.push(`punto de rocío (${nf(s.td)} °C) mayor que la temperatura`);
   if (s.dirFuente === '---') fl.push('viento sin dato');   // 0° / 0 sostenido se evalúa como calma (umbral de 24 h)
-  if (k !== 'no') for (const [v, hrs] of congelados(s, ahora)) fl.push(`${v} sin variación hace ${hrs >= 48 ? nf(hrs / 24, 0) + ' días' : nf(hrs, 0) + ' h'}`);
+  if (k === 'ok') for (const [v, hrs] of congelados(s, ahora))   // solo si transmite: sin datos nuevos es obvio que no varíe fl.push(`${v} sin variación hace ${hrs >= 48 ? nf(hrs / 24, 0) + ' días' : nf(hrs, 0) + ' h'}`);
   return { k, t, ms, motivo, fl, inferida };
 }
 
