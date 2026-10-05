@@ -46,7 +46,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in avisos.json seguimiento.json; do
+          for f in avisos.json seguimiento.json boyas.json; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
 
@@ -60,7 +60,7 @@ jobs:
           python scripts/construir_index.py
           mkdir -p _site/data
           cp index.html _site/
-          cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
+          cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json data/boyas.json _site/data/
 
       - uses: actions/upload-pages-artifact@v3
         with:

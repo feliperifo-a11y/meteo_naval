@@ -276,6 +276,70 @@ def procesar_seguimiento():
     escribir_json(DATA / "estaciones.json", anotar_estaciones(est, seg), compacto=True)
 
 
+# ============================================================ Boyas de oleaje (SHOA)
+# Cada enlace entrega una serie horaria de 7 días (hora UTC en "fecha_completa"); las horas sin
+# transmisión vienen con valores nulos. Se guarda el último dato y la altura significativa de 72 h.
+BOYAS = [
+    ("Iquique", "Triaxys", "https://www.shoa.cl/boyas/consultar260_2.php", -20.24103, -70.24267),
+    ("Antofagasta", "Triaxys", "https://www.shoa.cl/boyas/consultar_610501.php", -23.73590, -70.47170),
+    ("Concón", "Triaxys", "https://www.shoa.cl/boyas/consultar_610a01.php", -32.86374, -71.65882),
+    ("San Antonio", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_810700.php", -33.58946, -71.80803),
+    ("Talcahuano", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_610401.php", -36.56016, -73.34134),
+    ("Desertores", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_520700.php", -42.77400, -73.24367),
+    ("Punta Arenas", "Triaxys", "https://www.shoa.cl/boyas/consultar_610701.php", -53.28113, -70.83745),
+]
+VISOR_BOYAS = "https://www.shoa.cl/php/boyas?idioma=es"
+CAMPOS_BOYA = ["hsig", "hmax", "tsig", "tp", "dp", "tpdir", "dm", "tw", "mb", "wsd", "wdir", "wmax", "taire", "rh"]
+
+
+def _num(v):
+    try:
+        return None if v in (None, "") else float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def resumir_boya(filas: list) -> dict:
+    ok = [f for f in filas if _num(f.get("hsig")) is not None]
+    out = {"ultimo": None, "serie": [], "posicion": None}
+    if not ok:
+        return out
+    def utc(f):
+        return datetime.strptime(f["fecha_completa"][:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+    u = ok[-1]
+    out["ultimo"] = {"fecha": iso(utc(u)), **{k: _num(u.get(k)) for k in CAMPOS_BOYA if k in u}}
+    lat, lon = _num(u.get("latitud")), _num(u.get("longuitud"))
+    if lat is not None and lon is not None:
+        out["posicion"] = [lat, lon]
+    lim = utc(u) - timedelta(hours=72)
+    out["serie"] = [[iso(utc(f)), _num(f["hsig"])] for f in ok if utc(f) >= lim]
+    return out
+
+
+def recolectar_boyas(fuente_local: dict | None = None) -> bool:
+    previo = {b["nombre"]: b for b in leer_json(DATA / "boyas.json", {}).get("boyas", [])}
+    boyas, fallas = [], 0
+    for nombre, modelo, url, lat, lon in BOYAS:
+        b = {"nombre": nombre, "modelo": modelo, "url": url, "lat": lat, "lon": lon}
+        try:
+            filas = (fuente_local or {}).get(url)
+            if filas is None:
+                filas = get(url, timeout=20).json()
+            b.update(resumir_boya(filas))
+            b["consultado"] = iso(ahora_utc())
+        except Exception as e:
+            fallas += 1
+            p = previo.get(nombre, {})
+            b.update({k: p.get(k) for k in ("ultimo", "serie", "posicion", "consultado")})
+            b["error"] = type(e).__name__
+        boyas.append(b)
+    if fallas:
+        errores.append(f"boyas: {fallas} de {len(BOYAS)} sin respuesta (se conserva el último dato)")
+    escribir_json(DATA / "boyas.json", {"actualizado": iso(ahora_utc()), "visor": VISOR_BOYAS, "boyas": boyas}, compacto=True)
+    print(f"Boyas: {len(BOYAS) - fallas} de {len(BOYAS)} consultadas")
+    return fallas < len(BOYAS)
+
+
 # ============================================================ Geografía
 def _dec(s: str):
     out, i, lat, lon = [], 0, 0, 0
@@ -731,9 +795,10 @@ def main():
     if "--solo-avisos" not in args:
         ok_e = recolectar_estaciones()
         procesar_seguimiento()
+    ok_b = recolectar_boyas()
     if "--solo-estaciones" not in args:
         ok_a = recolectar_avisos(Geo())
-    escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a,
+    escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a, "boyas_ok": ok_b,
                                          "errores": errores, "duracion_s": round(time.time() - t0, 1)})
     # El flujo no se marca como fallido por errores de las fuentes: el dashboard muestra el último dato bueno.
     return 0
