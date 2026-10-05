@@ -149,6 +149,21 @@ Pide un *token* de GitHub con permiso de escritura solo sobre este repositorio y
 
 Las estaciones se actualizan solo mientras el Mac esté encendido y conectado. Si está apagado, la página muestra el último dato con el aviso naranjo de datos desactualizados.
 
+
+### Redes de estaciones
+
+El Mac descarga las tres redes que publica el meteomapa:
+
+| Red | Fuente | Símbolo |
+|---|---|---|
+| Capitanías de Puerto | `observaciones/directemar` | ● |
+| EMA Campbell | `mapa` + `fichaEstacion/{código}` | ■ |
+| EMA | `mapa` + `top` + `graficoEstacion/{código}/{variable}` | ■ |
+
+Detalles de la fuente que el recolector corrige: "Campbell Punta Delgada" aparece dos veces con datos idénticos (se usa el código 100006, de posición correcta); Paso Timbales trae la longitud con el punto decimal corrido; Porvenir figura en `top` pero no en `mapa` (se usa una posición aproximada de Bahía Chilota); las series de `graficoEstacion` vienen con la hora desplazada, por lo que para las EMA activas se usa la hora de `top`.
+
+El script del Mac se actualiza solo desde este repositorio en cada ejecución.
+
 ## Si GitHub no puede descargar los datos
 
 Ejecuta el recolector en un computador en Chile y sube los JSON al repositorio:

@@ -101,6 +101,110 @@ def recolectar_estaciones() -> bool:
         return False
 
 
+# ============================================================ Redes EMA y EMA Campbell
+# El equipo local agrega a data/estaciones.json un bloque "ema" con las respuestas del meteomapa:
+#   mapa      lista de estaciones (código, nombre, posición)
+#   top       estaciones con datos recientes y hora local del último dato
+#   fichas    último dato de las estaciones Campbell (código >= 100000)
+#   graficos  último valor por variable de las EMA activas
+#   historico último dato de presión de todas las EMA (se renueva una vez al día)
+# Aquí se convierten en filas con el mismo formato que las Capitanías de Puerto.
+PARAM = {7: "viento", 8: "velocidadDelViento", 11: "temperatura", 13: "puntoDeRocio", 14: "humedad", 16: "presion"}
+DUPLICADAS = {100001: 100006}   # "Campbell Punta Delgada" aparece dos veces con datos idénticos; 100006 tiene la posición correcta
+POSICIONES_EXTRA = {99635: ("Porvenir (Bahía Chilota)", -53.30, -70.37)}   # en "top" pero ausente del listado "mapa"
+CARDINALES = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+
+
+def _lon_ok(v):
+    v = float(v)
+    while abs(v) > 180:          # p. ej. Paso Timbales viene como -7029193
+        v /= 10
+    return v
+
+
+def _fmt(v, dec=1):
+    return None if v is None else f"{float(v):.{dec}f}"
+
+
+def _hora_grafico(t: str):
+    """Las series de graficoEstacion vienen desplazadas: su hora equivale a UTC+2 (comparada con 'top').
+    Se usa solo para estaciones sin dato reciente, donde un error de horas no cambia el diagnóstico."""
+    try:
+        d = datetime.strptime(t[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone(timedelta(hours=2)))
+        return d.astimezone(TZ).strftime("%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        return None
+
+
+def filas_ema(ema: dict) -> list:
+    mapa = ema.get("mapa") or []
+    top = {t["cduidestmeteo"]: t.get("ultimaFecha") for t in (ema.get("top") or [])}
+    fichas, graf, hist = ema.get("fichas") or {}, ema.get("graficos") or {}, ema.get("historico") or {}
+    estaciones = {m["CDuidestmeteo"]: (m["NMestmeteo"], float(m["NRLatitud"]), _lon_ok(m["NRLongitud"])) for m in mapa}
+    for cod, pos in POSICIONES_EXTRA.items():
+        if cod in top or cod in estaciones:
+            estaciones.setdefault(cod, pos)
+    filas = []
+    for cod, (nombre, lat, lon) in sorted(estaciones.items()):
+        if cod in DUPLICADAS:
+            continue
+        campbell = cod >= 100000
+        v, fecha, sin_datos = {}, None, False
+        if campbell:
+            f = fichas.get(str(cod)) or []
+            if f:
+                f = f[0]
+                fecha = (f.get("timeLocal") or "")[:19] or None     # hora local rotulada como +00:00
+                for p in f.get("parametros") or []:
+                    if p.get("cdparam") in PARAM:
+                        v[PARAM[p["cdparam"]]] = p.get("value")
+            else:
+                sin_datos = True
+        else:
+            g = graf.get(str(cod)) or {}
+            for p, k in PARAM.items():
+                serie = (g.get(str(p)) or {}).get("observaciones") or []
+                if serie:
+                    v[k] = serie[0].get("nrparamValue")
+            if cod in top:
+                fecha = (top[cod] or "")[:19] or None
+            else:
+                serie = (hist.get(str(cod)) or {}).get("observaciones") or []
+                if serie:
+                    fecha = _hora_grafico(serie[0].get("time", ""))
+                    v.setdefault("presion", serie[0].get("nrparamValue"))
+                else:
+                    sin_datos = True
+        dirg = v.get("viento")
+        filas.append({
+            "nombre": re.sub(r"^Campb?ell\s+", "", nombre).strip(),
+            "codigo": f"EMA-{cod}",
+            "fecha": fecha or "Sin datos",
+            "latitud": round(lat, 5), "longitud": round(lon, 5),
+            "viento": None if dirg is None else str(round(float(dirg)) % 360),
+            "direccionViento": None if dirg is None else CARDINALES[int((float(dirg) % 360 + 11.25) // 22.5) % 16],
+            "velocidadDelViento": _fmt(v.get("velocidadDelViento")),
+            "temperatura": _fmt(v.get("temperatura")), "presion": _fmt(v.get("presion"), 2),
+            "humedad": None if v.get("humedad") is None else str(round(float(v["humedad"]))),
+            "puntoDeRocio": _fmt(v.get("puntoDeRocio")),
+            "_red": "EMA Campbell" if campbell else "EMA",
+            "_sin_datos": sin_datos or None,
+        })
+    return filas
+
+
+def integrar_ema(est: dict) -> dict:
+    ema = est.pop("ema", None)
+    for r in est.get("datos", []):
+        r.setdefault("_red", "Capitanía de Puerto")
+    if ema:
+        try:
+            est["datos"] = [r for r in est["datos"] if not str(r.get("codigo", "")).startswith("EMA-")] + filas_ema(ema)
+        except Exception as e:
+            errores.append(f"redes EMA: {type(e).__name__}: {e}")
+    return est
+
+
 # ============================================================ Seguimiento de estaciones
 # Algunas estaciones transmiten sin hora válida ("Fecha inválida") o con sensores pegados en un valor.
 # Para distinguirlo, se guarda cuándo cambió por última vez cada variable de cada estación
@@ -115,7 +219,7 @@ def actualizar_seguimiento(est: dict, seg: dict) -> dict:
     estaciones = seg.setdefault("estaciones", {})
     for r in est.get("datos", []):
         cod = r.get("codigo")
-        if not cod:
+        if not cod or r.get("_sin_datos"):
             continue
         e = estaciones.setdefault(cod, {"valores": {}, "cambio": {}, "desde": ref})
         for v in VARS_SEG:
@@ -146,6 +250,7 @@ def procesar_seguimiento():
     est = leer_json(DATA / "estaciones.json", {})
     if not est.get("datos"):
         return
+    est = integrar_ema(est)
     seg = actualizar_seguimiento(est, leer_json(DATA / "seguimiento.json", {}))
     escribir_json(DATA / "seguimiento.json", seg, compacto=True)
     escribir_json(DATA / "estaciones.json", anotar_estaciones(est, seg), compacto=True)
