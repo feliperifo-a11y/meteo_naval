@@ -1277,7 +1277,8 @@ let BOYAS = [], BOYAS_META = {};
 const UMBRAL_BOYA = { ok: 3 * 3600e3, ret: 24 * 3600e3 };   // horas: operativa ≤ 3 h; con retraso ≤ 24 h
 function evaluarBoya(b, ahora) {
   const t = b.ultimo && b.ultimo.fecha ? new Date(b.ultimo.fecha) : null, ms = t ? ahora - t : null;
-  if (!t && b.error) return { k: 'sd', t, ms, motivo: 'El servidor del SHOA no permite la consulta automática de esta boya. Su estado puede revisarse en el visor oficial.', acceso: false };
+  if (!t && b.error === 'pendiente') return { k: 'sd', t, ms, motivo: 'Consultando al SHOA…', acceso: false };
+  if (!t && b.error) return { k: 'sd', t, ms, motivo: 'No fue posible consultar esta boya desde este navegador. Su estado puede revisarse en el visor oficial.', acceso: false };
   if (!t) return { k: 'no', t, ms, motivo: 'Sin datos en los últimos 7 días.' };
   if (ms <= UMBRAL_BOYA.ok) return { k: 'ok', t, ms, motivo: '' };
   if (ms <= UMBRAL_BOYA.ret) return { k: 'ret', t, ms, motivo: `Último dato hace ${edad(ms)}.` };
@@ -1306,6 +1307,7 @@ function popupBoya(b, ev) {
     ['Presión', v(u.mb, 1, ' hPa')], ['Viento', u.wsd != null ? `${u.wdir != null ? nf(u.wdir, 0) + '° · ' : ''}${nf(u.wsd, 1)}${u.wmax != null ? ' (ráfaga ' + nf(u.wmax, 1) + ')' : ''}` : null],
     ['Temp. del aire', v(u.taire, 1, ' °C')],
     ['Modelo', escH(b.modelo)], ['Fondeo', fmtPos(b.lat, b.lon)],
+    ['Consultado', b.consultado ? `${fmtLocal(new Date(b.consultado))}, desde este navegador` : null],
   ].filter(r => r[1] != null);
   return `<div class="pp"><div class="ppT">Boya ${escH(b.nombre)}</div><table>${rows.map(([k, x]) => `<tr><th>${k}</th><td>${x}</td></tr>`).join('')}</table>` +
     (ev.motivo ? `<div style="margin-top:4px">${escH(ev.motivo)}</div>` : '') + sparkBoya(b.serie) +
@@ -1322,6 +1324,52 @@ function buildBoyas() {
   }
   return g;
 }
+// Lectura en vivo desde el navegador de quien abre la página (el servidor del SHOA solo responde a navegadores).
+// Consulta POST con ?callback=cb; la respuesta viene envuelta en cb( … ). 168 filas horarias (7 días), hora UTC.
+const BOYAS_CATALOGO = [
+  ['Iquique', 'Triaxys', 'https://www.shoa.cl/boyas/consultar260_2.php', -20.24103, -70.24267],
+  ['Antofagasta', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610501.php', -23.73590, -70.47170],
+  ['Concón', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610a01.php', -32.86374, -71.65882],
+  ['San Antonio', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_810700.php', -33.58946, -71.80803],
+  ['Talcahuano', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_610401.php', -36.56016, -73.34134],
+  ['Desertores', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_520700.php', -42.77400, -73.24367],
+  ['Punta Arenas', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610701.php', -53.28113, -70.83745],
+];
+const CAMPOS_BOYA = ['hsig', 'hmax', 'tsig', 'tp', 'dp', 'tpdir', 'dm', 'tw', 'mb', 'wsd', 'wdir', 'wmax', 'taire', 'rh'];
+const numB = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
+const utcB = s => new Date(String(s).slice(0, 19).replace(' ', 'T') + 'Z');
+async function leerBoya(url) {
+  const c = new AbortController(), to = setTimeout(() => c.abort(), 30000);
+  try {
+    const r = await fetch(`${url}?callback=cb`, { method: 'POST', cache: 'no-store', signal: c.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    const m = txt.match(/^\s*cb\s*\(([\s\S]*)\)\s*;?\s*$/);
+    return JSON.parse(m ? m[1] : txt);
+  } finally { clearTimeout(to); }
+}
+function resumirBoya(filas) {
+  const ok = (filas || []).filter(f => f.idBoya && numB(f.hsig) != null).sort((a, b) => utcB(a.fecha_completa) - utcB(b.fecha_completa));
+  if (!ok.length) return { ultimo: null, serie: [] };
+  const u = ok[ok.length - 1], tu = utcB(u.fecha_completa), lim = +tu - 72 * 3600e3;
+  const ultimo = { fecha: tu.toISOString() };
+  CAMPOS_BOYA.forEach(k => { if (u[k] !== undefined) ultimo[k] = numB(u[k]); });
+  return { ultimo, serie: ok.filter(f => +utcB(f.fecha_completa) >= lim).map(f => [utcB(f.fecha_completa).toISOString(), numB(f.hsig)]),
+           posicion: numB(u.latitud) != null ? [numB(u.latitud), numB(u.longuitud)] : null };
+}
+let BOYAS_LEYENDO = false;
+async function cargarBoyasVivo() {
+  if (BOYAS_LEYENDO) return; BOYAS_LEYENDO = true;
+  if (!BOYAS.length) BOYAS = BOYAS_CATALOGO.map(([nombre, modelo, url, lat, lon]) => ({ nombre, modelo, url, lat, lon, ultimo: null, serie: [], error: 'pendiente' }));
+  refreshBoyas();
+  await Promise.all(BOYAS.map(async b => {
+    try { Object.assign(b, resumirBoya(await leerBoya(b.url)), { error: null, consultado: new Date().toISOString() }); }
+    catch (e) { if (!b.ultimo) b.error = 'navegador'; }
+  }));
+  BOYAS_LEYENDO = false;
+  refreshBoyas();
+}
+
 function refreshBoyas() {
   if (!LAYERS.boyas) return;
   const on = LAYERS.boyas.lyr && map.hasLayer(LAYERS.boyas.lyr);
@@ -1375,7 +1423,7 @@ async function cargarDatos() {
   let e = null, a = null, bo = null;
   try { [e, a, ESTADO, bo] = await Promise.all([leerJSON('data/estaciones.json'), leerJSON('data/avisos.json'), leerJSON('data/estado.json').catch(() => null), leerJSON('data/boyas.json').catch(() => null)]); }
   catch (err) { if (PRIMERA) { e = RESPALDO.estaciones; a = RESPALDO.avisos; bo = RESPALDO.boyas; ESTADO = { respaldo: true }; } }
-  if (bo) { BOYAS = bo.boyas || []; BOYAS_META = bo; }
+  if (bo) BOYAS_META = bo;   // las boyas se leen en vivo desde el navegador (cargarBoyasVivo)
   if (e) {
     ESTACIONES = normalizar(e.datos || e); ESTACIONES.forEach(s => { s.area = asignarArea(s); });
     FUENTE = { cuando: e.actualizado ? new Date(e.actualizado) : null, fuente: e.fuente };
@@ -1386,7 +1434,7 @@ async function cargarDatos() {
   refrescarTodo(true);
   b.disabled = false; b.textContent = 'Actualizar';
 }
-document.getElementById('btnRefresh').addEventListener('click', cargarDatos);
+document.getElementById('btnRefresh').addEventListener('click', () => { cargarDatos(); cargarBoyasVivo(); });
 
 // ============================ Arranque ============================
 function refrescarTodo(rehacerEst) {
@@ -1408,6 +1456,8 @@ document.getElementById('avNone').addEventListener('click', () => setTodosAv(fal
 window.addEventListener('resize', () => map.invalidateSize());
 map.fitBounds([[-56.5, -82], [-17.5, -66]]);
 cargarDatos();
+cargarBoyasVivo();
+setInterval(cargarBoyasVivo, 20 * 60000);           // boyas: misma frecuencia que el resto
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 setInterval(cargarDatos, 5 * 60000);                // vuelve a leer los datos publicados
 </script>
