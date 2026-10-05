@@ -41,12 +41,14 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Recuperar los avisos ya publicados
-        # Permite conservar avisos aún vigentes y no volver a leer PDFs ya procesados.
+      - name: Recuperar los datos ya publicados
+        # Conserva avisos vigentes y el seguimiento de estaciones entre ejecuciones.
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          curl -fsSL "$BASE/data/avisos.json" -o data/avisos.json || echo "Sin avisos previos publicados"
+          for f in avisos.json seguimiento.json; do
+            if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
+          done
 
       - name: Recolectar datos
         env:
@@ -58,7 +60,7 @@ jobs:
           python scripts/construir_index.py
           mkdir -p _site/data
           cp index.html _site/
-          cp data/estaciones.json data/avisos.json data/estado.json _site/data/
+          cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
 
       - uses: actions/upload-pages-artifact@v3
         with:

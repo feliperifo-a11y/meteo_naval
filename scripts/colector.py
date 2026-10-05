@@ -101,6 +101,56 @@ def recolectar_estaciones() -> bool:
         return False
 
 
+# ============================================================ Seguimiento de estaciones
+# Algunas estaciones transmiten sin hora válida ("Fecha inválida") o con sensores pegados en un valor.
+# Para distinguirlo, se guarda cuándo cambió por última vez cada variable de cada estación
+# (data/seguimiento.json) comparando cada subida con la anterior.
+VARS_SEG = ["temperatura", "presion", "humedad", "viento", "velocidadDelViento"]
+
+
+def actualizar_seguimiento(est: dict, seg: dict) -> dict:
+    ref = est.get("actualizado")
+    if not ref or seg.get("_ref") == ref:
+        return seg
+    estaciones = seg.setdefault("estaciones", {})
+    for r in est.get("datos", []):
+        cod = r.get("codigo")
+        if not cod:
+            continue
+        e = estaciones.setdefault(cod, {"valores": {}, "cambio": {}, "desde": ref})
+        for v in VARS_SEG:
+            val = r.get(v)
+            if v not in e["valores"] or e["valores"][v] != val:
+                e["valores"][v] = val
+                e["cambio"][v] = ref
+    seg["_ref"] = ref
+    return seg
+
+
+def anotar_estaciones(est: dict, seg: dict) -> dict:
+    """Agrega a cada estación la hora del último cambio de valores y desde cuándo está fija cada variable."""
+    estaciones = seg.get("estaciones", {})
+    for r in est.get("datos", []):
+        e = estaciones.get(r.get("codigo"))
+        if not e:
+            continue
+        # Solo se considera "cambio" lo observado después de la primera vez que se vio la estación.
+        cambios = [t for t in e["cambio"].values() if t > e["desde"]]
+        r["_cambio"] = max(cambios) if cambios else None
+        r["_fijo_desde"] = {v: (t if t > e["desde"] else e["desde"]) for v, t in e["cambio"].items()}
+        r["_seguido_desde"] = e["desde"]
+    return est
+
+
+def procesar_seguimiento():
+    est = leer_json(DATA / "estaciones.json", {})
+    if not est.get("datos"):
+        return
+    seg = actualizar_seguimiento(est, leer_json(DATA / "seguimiento.json", {}))
+    escribir_json(DATA / "seguimiento.json", seg, compacto=True)
+    escribir_json(DATA / "estaciones.json", anotar_estaciones(est, seg), compacto=True)
+
+
 # ============================================================ Geografía
 def _dec(s: str):
     out, i, lat, lon = [], 0, 0, 0
@@ -555,6 +605,7 @@ def main():
     ok_e = ok_a = None
     if "--solo-avisos" not in args:
         ok_e = recolectar_estaciones()
+        procesar_seguimiento()
     if "--solo-estaciones" not in args:
         ok_a = recolectar_avisos(Geo())
     escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a,

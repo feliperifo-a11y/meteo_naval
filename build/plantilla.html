@@ -166,7 +166,7 @@ dialog button{border-color:var(--line)}
           <tbody></tbody>
         </table>
       </div>
-      <div class="note" style="border-top:1px solid var(--line)"><b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h o sin fecha válida. <span class="flag">Sensor dudoso:</span> transmite con valores imposibles o en cero. Clic en una fila para ver la estación y sus datos en el mapa.</div>
+      <div class="note" style="border-top:1px solid var(--line)"><b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
     </section>
   </div>
 
@@ -231,24 +231,41 @@ const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 };
 function normalizar(arr) {
   return arr.map(x => Array.isArray(x)
     ? { nombre: x[0], codigo: x[1], fecha: x[2], lat: x[3], lon: x[4], dirG: num(x[5]), dirFuente: x[6], vel: num(x[7]), temp: num(x[8]), pres: num(x[9]), hum: num(x[10]), td: num(x[11]), area: x[12] }
-    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null })
+    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null, cambio: x._cambio ? new Date(x._cambio) : null, fijo: x._fijo_desde || null })
     .filter(s => isFinite(s.lat) && isFinite(s.lon));
 }
+// Umbrales de "sensor congelado": horas sin ningún cambio de valor mientras la estación sigue transmitiendo.
+const CONGELADO_H = { temperatura: 6, presion: 3, humedad: 6, viento: 6, viento_calma: 24 };
+function congelados(s, ahora) {
+  if (!s.fijo) return [];
+  const h = v => s.fijo[v] ? (ahora - new Date(s.fijo[v])) / 3600e3 : 0;
+  const out = [];
+  if (h('temperatura') >= CONGELADO_H.temperatura) out.push(['temperatura', h('temperatura')]);
+  if (h('presion') >= CONGELADO_H.presion) out.push(['presión', h('presion')]);
+  if (h('humedad') >= CONGELADO_H.humedad && !(s.hum >= 99)) out.push(['humedad', h('humedad')]);   // 100 % sostenido puede ser niebla
+  const hv = Math.min(h('viento'), h('velocidadDelViento'));
+  if (hv >= (s.vel === 0 ? CONGELADO_H.viento_calma : CONGELADO_H.viento)) out.push(['viento', hv]);
+  return out;
+}
 function evaluar(s, ahora) {
-  const t = parseLocalCL(s.fecha);
+  let t = parseLocalCL(s.fecha), inferida = false;
+  // Sin hora válida de la fuente: se usa la hora en que sus valores cambiaron por última vez (transmite aunque no informe la hora).
+  if (!t && s.cambio) { t = s.cambio; inferida = true; }
   const ms = t ? ahora - t : null;
   let k, motivo;
-  if (!t) { k = 'no'; motivo = 'La fuente no entrega una fecha válida para el último dato.'; }
+  if (!t) { k = 'no'; motivo = 'La fuente no entrega una fecha válida y sus valores no han cambiado desde que se monitorea.'; }
   else if (ms <= UMBRAL.ok) { k = 'ok'; motivo = ''; }
   else if (ms <= UMBRAL.ret) { k = 'ret'; motivo = `Último dato hace ${edad(ms)}.`; }
   else { k = 'no'; motivo = `Sin transmisión desde hace ${edad(ms)}.`; }
+  if (inferida) motivo = (motivo ? motivo + ' ' : '') + 'La fuente no informa la hora del dato; se usa la hora del último cambio de valores.';
   const fl = [];
   if (s.pres === 0) fl.push('presión en 0 hPa');
   if (s.hum === 0) fl.push('humedad en 0 %');
   if (s.temp === 0 && s.hum === 0) fl.push('temperatura en 0 °C junto a humedad 0 %');
   if (s.td != null && s.temp != null && s.td > s.temp + 0.5 && !(s.temp === 0 && s.hum === 0)) fl.push(`punto de rocío (${nf(s.td)} °C) mayor que la temperatura`);
-  if (s.dirFuente === '---' || (s.dirG === 0 && s.vel === 0 && k === 'ok')) fl.push('viento sin dato');
-  return { k, t, ms, motivo, fl };
+  if (s.dirFuente === '---') fl.push('viento sin dato');   // 0° / 0 sostenido se evalúa como calma (umbral de 24 h)
+  if (k !== 'no') for (const [v, hrs] of congelados(s, ahora)) fl.push(`${v} sin variación hace ${hrs >= 48 ? nf(hrs / 24, 0) + ' días' : nf(hrs, 0) + ' h'}`);
+  return { k, t, ms, motivo, fl, inferida };
 }
 
 // ============================ Mapa ============================
@@ -512,7 +529,7 @@ function popupSt(s, ev) {
   const st = ST[ev.k];
   const rows = [
     ['Estado', `<b style="color:${st.hex}">${st.txt}</b>`],
-    ['Último dato', ev.t ? `${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}` : 'Sin fecha válida'],
+    ['Último dato', ev.t ? `${ev.inferida ? '≈ ' : ''}${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}${ev.inferida ? '<br><span style="color:#8a5a00">Hora inferida: la fuente no la informa.</span>' : ''}` : 'Sin fecha válida'],
     ['Subárea', escH(nombreArea(s.area))],
     ['Viento', s.dirG != null && s.dirFuente !== '---' ? `${s.dirG}° ${cardinal(s.dirG)} · ${nf(s.vel)}` + (s.dirFuente && s.dirFuente !== cardinal(s.dirG) ? ` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>` : '') : 'Sin dato'],
     ['Temperatura', `${nf(s.temp)} °C`], ['Presión', `${nf(s.pres, 1)} hPa`], ['Humedad', `${nf(s.hum, 0)} %`], ['Punto de rocío', `${nf(s.td)} °C`],
@@ -553,11 +570,11 @@ function renderTabla() {
   document.getElementById('tblCount').textContent = `${vis.length} de ${rows.length} estaciones`;
   document.querySelector('#tbl tbody').innerHTML = vis.map(({ s, ev }) => {
     const st = ST[ev.k];
-    const obs = ev.fl.length ? `<span class="flag" title="${escH(ev.fl.join('; '))}">⚠ Sensor dudoso</span>` : (!ev.t ? 'Fecha inválida en la fuente' : '');
+    const obs = ev.fl.length ? `<span class="flag" title="${escH(ev.fl.join('; '))}">⚠ Sensor dudoso</span>` : (ev.inferida ? 'Sin hora en la fuente' : (!ev.t ? 'Fecha inválida en la fuente' : ''));
     const sinV = s.dirFuente === '---' || s.dirG == null;
     return `<tr data-c="${escH(s.codigo)}"><td class="eN"><b>${escH(nombreEst(s))}</b>${obs ? `<div class="obs">${obs}</div>` : ''}</td><td>${escH(corto(s.area))}</td>` +
       `<td><span class="st" style="color:${st.color}"><span class="dot" style="background:${st.color}"></span>${st.txt}</span></td>` +
-      `<td>${ev.t ? `${fmtCorto(ev.t)}<div class="obs">hace ${edad(ev.ms)}</div>` : '<span style="color:var(--no)">Sin fecha</span>'}</td></tr>`;
+      `<td>${ev.t ? `${ev.inferida ? '≈ ' : ''}${fmtCorto(ev.t)}<div class="obs">hace ${edad(ev.ms)}${ev.inferida ? ' · hora inferida' : ''}</div>` : '<span style="color:var(--no)">Sin fecha</span>'}</td></tr>`;
   }).join('');
   document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.addEventListener('click', () => {
     const m = stMarkers.get(tr.dataset.c); if (!m) return;
