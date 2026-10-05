@@ -3,6 +3,7 @@
 # repositorio como data/estaciones.json. GitHub republica la página automáticamente.
 #   - Red de Capitanías de Puerto: observaciones/directemar
 #   - Red EMA Campbell: mapa, top y fichaEstacion (o graficoEstacion si la ficha viene vacía)
+#   - Boyas de oleaje del SHOA (7): horas con medición de los últimos días
 # Lo ejecuta launchd cada 20 minutos. Se actualiza solo desde el repositorio.
 set -u
 REPO="feliperifo-a11y/meteo_naval"
@@ -68,11 +69,58 @@ done
 GRAF=""     # La red EMA antigua no se descarga: el meteomapa no la muestra en su mapa.
 HIST=null
 
+# 2b. Boyas de oleaje del SHOA: se guardan solo las horas con medición (las últimas 72 por boya).
+BOYAS_URLS="https://www.shoa.cl/boyas/consultar260_2.php https://www.shoa.cl/boyas/consultar_610501.php
+https://www.shoa.cl/boyas/consultar_610a01.php https://www.shoa.cl/boyas/consultar_810700.php
+https://www.shoa.cl/boyas/consultar_610401.php https://www.shoa.cl/boyas/consultar_520700.php
+https://www.shoa.cl/boyas/consultar_610701.php"
+ARGS=()
+n=0
+for u in $BOYAS_URLS; do
+  n=$((n+1)); f="$DIR/boya_$n.json"; rm -f "$f"
+  ud="$u"; [ -n "${MN_BOYAS_BASE:-}" ] && ud="$MN_BOYAS_BASE/$(basename "$u")"   # solo para pruebas
+  curl -fsS --max-time 40 -A "$UA" "$ud" -o "$f" 2>/dev/null && ARGS+=("$u" "$f")
+  sleep 0.5
+done
+compactar_boyas() {
+  if command -v osascript >/dev/null; then
+    osascript -l JavaScript - "$@" <<'JS'
+function run(argv) {
+  const out = {};
+  const campos = ["fecha_completa","latitud","longuitud","hsig","hmax","tsig","tp","dp","tpdir","dm","tw","mb","wsd","wdir","wmax","taire","rh"];
+  for (let i = 0; i + 1 < argv.length; i += 2) {
+    try {
+      const txt = $.NSString.stringWithContentsOfFileEncodingError(argv[i + 1], 4, null).js;
+      const filas = JSON.parse(txt).filter(r => r.hsig !== null && r.hsig !== "");
+      out[argv[i]] = filas.slice(-72).map(r => { const o = {}; campos.forEach(k => { if (r[k] !== undefined && r[k] !== null) o[k] = r[k]; }); return o; });
+    } catch (e) {}
+  }
+  return JSON.stringify(out);
+}
+JS
+  else
+    python3 - "$@" <<'PY'
+import json, sys
+a = sys.argv[1:]; out = {}
+campos = ["fecha_completa","latitud","longuitud","hsig","hmax","tsig","tp","dp","tpdir","dm","tw","mb","wsd","wdir","wmax","taire","rh"]
+for i in range(0, len(a) - 1, 2):
+    try:
+        filas = [r for r in json.load(open(a[i + 1])) if r.get("hsig") not in (None, "")]
+        out[a[i]] = [{k: r[k] for k in campos if r.get(k) is not None} for r in filas[-72:]]
+    except Exception:
+        pass
+print(json.dumps(out, separators=(",", ":")))
+PY
+  fi
+}
+BOYAS=$( [ ${#ARGS[@]} -gt 0 ] && compactar_boyas "${ARGS[@]}" ); es_json "$BOYAS" || BOYAS=null
+
 # 3. Archivo final (se valida antes de subir; si algo de las redes EMA viene mal, se sube sin ellas)
 AHORA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 armar() {
   printf '{"actualizado":"%s","fuente":"%s","origen":"equipo local","datos":' "$AHORA" "$FUENTE"
   cat "$DIR/obs.json"
+  printf ',"boyas":%s' "$BOYAS"
   [ "${1:-}" = "con_ema" ] && printf ',"ema":{"mapa":%s,"top":%s,"fichas":{%s},"graficos":{%s},"graficos_campbell":{%s},"historico":%s}' \
     "$MAPA" "$TOP" "$FICHAS" "$GRAF" "${GRAF_C:-}" "$HIST"
   printf '}'
@@ -101,7 +149,8 @@ COD=$(curl -sS --max-time 60 -o "$DIR/respuesta.json" -w '%{http_code}' -X PUT -
   --data-binary @"$DIR/cuerpo.json" "$API")
 if [ "$COD" = "200" ] || [ "$COD" = "201" ]; then
   N_C=$(printf '%s' "$FICHAS" | grep -o '"codigoEstacion"' | wc -l | tr -d ' ')
-  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell subidas"
+  N_B=$(( ${#ARGS[@]} / 2 ))
+  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell + $N_B/7 boyas subidas"
 else
   echo "$(ts) ERROR: GitHub respondió $COD — $(head -c 300 "$DIR/respuesta.json")"; exit 1
 fi

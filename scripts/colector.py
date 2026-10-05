@@ -214,6 +214,7 @@ def filas_ema(ema: dict) -> list:
 
 
 def integrar_ema(est: dict) -> dict:
+    est.pop("boyas", None)          # bloque de boyas enviado por el equipo local; se procesa aparte
     ema = est.pop("ema", None)
     for r in est.get("datos", []):
         r.setdefault("_red", "Capitanía de Puerto")
@@ -792,10 +793,11 @@ def main():
     args = set(sys.argv[1:])
     t0 = time.time()
     ok_e = ok_a = None
+    boyas_local = leer_json(DATA / "estaciones.json", {}).get("boyas")   # enviadas por el equipo local
     if "--solo-avisos" not in args:
         ok_e = recolectar_estaciones()
         procesar_seguimiento()
-    ok_b = recolectar_boyas()
+    ok_b = recolectar_boyas(boyas_local if isinstance(boyas_local, dict) else None)
     if "--solo-estaciones" not in args:
         ok_a = recolectar_avisos(Geo())
     escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a, "boyas_ok": ok_b,
