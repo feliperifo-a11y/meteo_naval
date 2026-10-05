@@ -2,7 +2,7 @@ name: Actualizar y publicar
 
 on:
   schedule:
-    - cron: "*/20 * * * *"     # cada 20 minutos (GitHub puede atrasarlo algunos minutos)
+    - cron: "7,27,47 * * * *"  # cada 20 min en :07, :27 y :47 (evita las horas en punto, más congestionadas en GitHub)
     - cron: "17 12 * * 1"      # lunes: latido semanal para que GitHub no pause las tareas programadas
   workflow_dispatch:            # botón "Run workflow" para ejecutarlo a mano
     inputs:
