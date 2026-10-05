@@ -18,6 +18,7 @@ Uso:  python scripts/colector.py            (todo)
 from __future__ import annotations
 
 import io
+import base64
 import json
 import math
 import os
@@ -214,7 +215,8 @@ def filas_ema(ema: dict) -> list:
 
 
 def integrar_ema(est: dict) -> dict:
-    est.pop("boyas", None)          # bloque de boyas enviado por el equipo local; se procesa aparte
+    est.pop("boyas", None)          # bloque antiguo del equipo local; ya no se usa
+    est.pop("zona_x_b64", None)     # boletín Zona X enviado por el equipo local; lo usa recolectar_avisos
     ema = est.pop("ema", None)
     for r in est.get("datos", []):
         r.setdefault("_red", "Capitanía de Puerto")
@@ -277,75 +279,6 @@ def procesar_seguimiento():
     escribir_json(DATA / "estaciones.json", anotar_estaciones(est, seg), compacto=True)
 
 
-# ============================================================ Boyas de oleaje (SHOA)
-# Cada enlace entrega una serie horaria de 7 días (hora UTC en "fecha_completa"); las horas sin
-# transmisión vienen con valores nulos. Se guarda el último dato y la altura significativa de 72 h.
-BOYAS = [
-    ("Iquique", "Triaxys", "https://www.shoa.cl/boyas/consultar260_2.php", -20.24103, -70.24267),
-    ("Antofagasta", "Triaxys", "https://www.shoa.cl/boyas/consultar_610501.php", -23.73590, -70.47170),
-    ("Concón", "Triaxys", "https://www.shoa.cl/boyas/consultar_610a01.php", -32.86374, -71.65882),
-    ("San Antonio", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_810700.php", -33.58946, -71.80803),
-    ("Talcahuano", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_610401.php", -36.56016, -73.34134),
-    ("Desertores", "Watchkeeper", "https://www.shoa.cl/boyas/consultar_520700.php", -42.77400, -73.24367),
-    ("Punta Arenas", "Triaxys", "https://www.shoa.cl/boyas/consultar_610701.php", -53.28113, -70.83745),
-]
-VISOR_BOYAS = "https://www.shoa.cl/php/boyas?idioma=es"
-# El servidor del SHOA responde 403 a consultas automatizadas (desde GitHub y desde el equipo local).
-# Mientras no autorice el acceso, no se consulta; las boyas se muestran como "sin acceso a datos".
-BOYAS_DIRECTO = False
-CAMPOS_BOYA = ["hsig", "hmax", "tsig", "tp", "dp", "tpdir", "dm", "tw", "mb", "wsd", "wdir", "wmax", "taire", "rh"]
-
-
-def _num(v):
-    try:
-        return None if v in (None, "") else float(v)
-    except (TypeError, ValueError):
-        return None
-
-
-def resumir_boya(filas: list) -> dict:
-    ok = [f for f in filas if _num(f.get("hsig")) is not None]
-    out = {"ultimo": None, "serie": [], "posicion": None}
-    if not ok:
-        return out
-    def utc(f):
-        return datetime.strptime(f["fecha_completa"][:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
-    u = ok[-1]
-    out["ultimo"] = {"fecha": iso(utc(u)), **{k: _num(u.get(k)) for k in CAMPOS_BOYA if k in u}}
-    lat, lon = _num(u.get("latitud")), _num(u.get("longuitud"))
-    if lat is not None and lon is not None:
-        out["posicion"] = [lat, lon]
-    lim = utc(u) - timedelta(hours=72)
-    out["serie"] = [[iso(utc(f)), _num(f["hsig"])] for f in ok if utc(f) >= lim]
-    return out
-
-
-def recolectar_boyas(fuente_local: dict | None = None) -> bool:
-    previo = {b["nombre"]: b for b in leer_json(DATA / "boyas.json", {}).get("boyas", [])}
-    boyas, fallas = [], 0
-    for nombre, modelo, url, lat, lon in BOYAS:
-        b = {"nombre": nombre, "modelo": modelo, "url": url, "lat": lat, "lon": lon}
-        try:
-            filas = (fuente_local or {}).get(url)
-            if filas is None:
-                if not BOYAS_DIRECTO:
-                    raise PermissionError("el SHOA no permite la consulta automatizada (HTTP 403)")
-                filas = get(url, timeout=20).json()
-            b.update(resumir_boya(filas))
-            b["consultado"] = iso(ahora_utc())
-        except Exception as e:
-            fallas += 1
-            p = previo.get(nombre, {})
-            b.update({k: p.get(k) for k in ("ultimo", "serie", "posicion", "consultado")})
-            b["error"] = "sin_acceso" if isinstance(e, PermissionError) else type(e).__name__
-        boyas.append(b)
-    if fallas and BOYAS_DIRECTO:
-        errores.append(f"boyas: {fallas} de {len(BOYAS)} sin respuesta (se conserva el último dato)")
-    escribir_json(DATA / "boyas.json", {"actualizado": iso(ahora_utc()), "visor": VISOR_BOYAS, "boyas": boyas}, compacto=True)
-    print(f"Boyas: {len(BOYAS) - fallas} de {len(BOYAS)} con datos")
-    return None if not BOYAS_DIRECTO and fallas == len(BOYAS) else fallas < len(BOYAS)
-
-
 # ============================================================ Geografía
 def _dec(s: str):
     out, i, lat, lon = [], 0, 0, 0
@@ -379,8 +312,12 @@ class Geo:
         self.costera = unary_union(costeras)
         self.franja = self.tierra.buffer(0.22).difference(self.tierra)
 
-    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None):
-        if forma == "circulo":
+    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None):
+        if forma == "rectangulo":   # sector de alta mar delimitado por latitudes y longitudes
+            n, s = sorted((-abs(lat_n), -abs(lat_s)), reverse=True)
+            e, w = sorted((-abs(lon_e), -abs(lon_w)), reverse=True)
+            g = box(w, s, e, n)
+        elif forma == "circulo":
             g = Point(centro[1], centro[0]).buffer(radio or 1.0, resolution=32)
         else:
             n, s = -abs(lat_n), -abs(lat_s)
@@ -704,18 +641,102 @@ def zonas_validas(zonas):
     return [z for z in zonas if z.get("areas") and z.get("geom", {}).get("coordinates")]
 
 
+# ============================================================ Boletín de alta mar, Zona X
+URL_ZONA_X = "https://web.directemar.cl/met/jturno/PRONOSTICOS/Cenmeteovalp/zonadiez.txt"
+PAGINA_ZONA_X = "https://meteoarmada.directemar.cl/meteo/zona-x"
+NUM = r"(\d+(?:[.,]\d+)?)"
+
+
+def _fecha_dhm(dd: int, hh: int, mi: int, ref: datetime) -> datetime:
+    """Día-hora-minuto UTC del boletín, en el mes más cercano a la fecha de referencia."""
+    cands = []
+    for dm in (-1, 0, 1):
+        y, m = ref.year, ref.month + dm
+        if m < 1: y, m = y - 1, 12
+        if m > 12: y, m = y + 1, 1
+        try:
+            cands.append(datetime(y, m, dd, hh, mi, tzinfo=UTC))
+        except ValueError:
+            pass
+    return min(cands, key=lambda d: abs(d - ref))
+
+
+def leer_zona_x(texto: str, ref: datetime, geo: Geo):
+    """Devuelve el aviso de la Parte I del boletín (temporal o mal tiempo) o None si no hay aviso."""
+    t = sin_acentos(texto.upper()).replace("\r", "")
+    v = re.search(r"VALIDO\s+(\d{2})(\d{2})(\d{2})\s+HASTA\s+(\d{2})(\d{2})(\d{2})", t)
+    if not v:
+        raise ValueError("el boletín Zona X no trae su validez")
+    em = re.search(r"EMITIDO\s*:\s*(\d{1,2})\s+([A-Z]+)\s+(\d{4})", t)
+    base = ref
+    if em and em.group(2) in MESES_L:
+        base = datetime(int(em.group(3)), MESES_L[em.group(2)], int(em.group(1)), 12, tzinfo=UTC)
+    desde = _fecha_dhm(*map(int, v.groups()[:3]), base)
+    hasta = _fecha_dhm(*map(int, v.groups()[3:]), desde + timedelta(days=1))
+    p1 = re.search(r"PARTE\s+I\s*:(.*?)(?=PARTE\s+II\b|\Z)", t, re.S)
+    if not p1:
+        return None
+    cab = p1.group(1).strip().split("\n")[0]
+    if "TEMPORAL" in cab: tipo = "Aviso de temporal"
+    elif "MAL TIEMPO" in cab: tipo = "Aviso de mal tiempo"
+    else: return None
+    zonas = []
+    pat = (r"SECTOR\s+([A-Z ]+?)\s*\(\s*LAT\s+" + NUM + r"\s+A\s+" + NUM + r"\s+SUR\s+Y\s+LONG\s+" + NUM +
+           r"\s+A\s+" + NUM + r"\s+W(?:ESTE|EST|OESTE)?\s*\)\s*:(.*?)(?=SECTOR\s+[A-Z ]+?\s*\(|\Z)")
+    for m in re.finditer(pat, p1.group(1), re.S):
+        la1, la2, lo1, lo2 = (float(x.replace(",", ".")) for x in m.groups()[1:5])
+        g = geo.zona("rectangulo", lat_n=la1, lat_s=la2, lon_e=lo1, lon_w=lo2)
+        zonas.append({"nombre": f"Zona X · {titulo(m.group(1))} ({la1:g}°–{la2:g}° S, {lo1:g}°–{lo2:g}° W)",
+                      "desde": iso(desde), "hasta": iso(hasta), "detalle": resumen_corto(m.group(6), 300), **g})
+    if not zonas:
+        return None
+    sin = re.search(r"PARTE\s+II\s*:\s*SITUACION\s+SINOPTICA\s*(\([^)]*\))?\.?(.*?)(?=PARTE\s+III\b|\Z)", t, re.S)
+    lineas = [re.sub(r"\bHPA\b", "hPa", l.strip().capitalize().replace("hpa", "HPA").upper()).replace("BAJA", "Baja").replace("ALTA", "Alta")
+              .replace("FRENTE", "Frente").replace("VAGUADA", "Vaguada") for l in (sin.group(2).strip().split("\n") if sin else []) if l.strip()]
+    res = ("Situación sinóptica: " + "; ".join(lineas) + ".") if lineas else ""
+    return {"tipo": tipo, "sector": "Zona X (alta mar)", "codigo": f"Boletín Zona X {v.group(1)}{v.group(2)}{v.group(3)} UTC",
+            "url": PAGINA_ZONA_X, "pagina": PAGINA_ZONA_X, "publicado": iso(desde), "resumen": resumen_corto(res, 260),
+            "nota": "", "zonas": zonas, "_auto": True, "zona_x": True}
+
+
+ZONA_X_LOCAL = None   # copia en base64 enviada por el equipo local (se lee al inicio de main)
+
+
+def texto_zona_x() -> str | None:
+    """Primero directo desde la fuente; si no responde, la copia enviada por el equipo local."""
+    try:
+        r = get(URL_ZONA_X, timeout=30)
+        try:
+            txt = r.content.decode("utf-8")
+        except UnicodeDecodeError:
+            txt = r.content.decode("latin-1")
+        if "ZONA X" in txt.upper():
+            return txt
+        raise ValueError("respuesta inesperada")
+    except Exception as e:
+        b64 = ZONA_X_LOCAL
+        if b64:
+            try:
+                return base64.b64decode(b64).decode("latin-1")
+            except Exception:
+                pass
+        errores.append(f"boletín Zona X: {e}")
+        return None
+
+
 def recolectar_avisos(geo: Geo) -> bool:
     ref = ahora_utc()
     previo = {a["url"]: a for a in leer_json(DATA / "avisos.json", {}).get("avisos", [])}
     manual = leer_json(DATA / "avisos_manual.json", {})
     ignorar = set(manual.get("ignorar", []))
     corregir = manual.get("corregir", {})
+    portada_ok = True
     try:
         portada = listar_portada(get(URL_AVISOS).text)
-    except Exception as e:
+    except Exception as e:                             # se conservan los avisos anteriores y se sigue con Zona X
         errores.append(f"portada de avisos: {e}")
         print("ERROR portada:", e)
-        return False
+        portada, portada_ok = [], False
     print(f"Portada: {len(portada)} avisos listados")
     avisos = {}
     for p in portada:
@@ -752,8 +773,22 @@ def recolectar_avisos(geo: Geo) -> bool:
             if p.get("pagina") in [v.get("pagina") for v in previo.values()]:
                 for u, v in previo.items():
                     if v.get("pagina") == p["pagina"]: avisos[u] = v
+    # Boletín de alta mar Zona X: Parte I (aviso de temporal o de mal tiempo)
+    zx_leido = False
+    txt = texto_zona_x()
+    if txt:
+        try:
+            zx = leer_zona_x(txt, ref, geo)
+            zx_leido = True
+            if zx:
+                avisos[zx["url"]] = zx
+            print(f"Zona X: {zx['tipo'] + ', ' + str(len(zx['zonas'])) + ' sector(es)' if zx else 'sin aviso'}")
+        except Exception as e:
+            errores.append(f"boletín Zona X: {e}")
     # Avisos que salieron de la portada pero siguen vigentes
     for u, v in previo.items():
+        if v.get("zona_x") and zx_leido:
+            continue                                   # el boletín vigente reemplaza al anterior
         if u not in avisos and u not in ignorar and v.get("zonas"):
             avisos[u] = v
     # Correcciones manuales y avisos agregados a mano
@@ -775,7 +810,7 @@ def recolectar_avisos(geo: Geo) -> bool:
     final.sort(key=lambda a: -max([z.get("north", -90) for z in a.get("zonas", [])] or [-90]))
     escribir_json(DATA / "avisos.json", {"actualizado": iso(ref), "fuente": URL_AVISOS, "avisos": final}, compacto=True)
     print(f"Avisos: {len(final)} publicados")
-    return True
+    return portada_ok
 
 
 def aplicar_manual(a: dict, geo: Geo) -> dict:
@@ -798,14 +833,14 @@ def main():
     args = set(sys.argv[1:])
     t0 = time.time()
     ok_e = ok_a = None
-    boyas_local = leer_json(DATA / "estaciones.json", {}).get("boyas")   # enviadas por el equipo local
+    global ZONA_X_LOCAL
+    ZONA_X_LOCAL = leer_json(DATA / "estaciones.json", {}).get("zona_x_b64")
     if "--solo-avisos" not in args:
         ok_e = recolectar_estaciones()
         procesar_seguimiento()
-    ok_b = recolectar_boyas(boyas_local if isinstance(boyas_local, dict) else None)
     if "--solo-estaciones" not in args:
         ok_a = recolectar_avisos(Geo())
-    escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a, "boyas_ok": ok_b,
+    escribir_json(DATA / "estado.json", {"ejecucion": iso(ahora_utc()), "estaciones_ok": ok_e, "avisos_ok": ok_a,
                                          "errores": errores, "duracion_s": round(time.time() - t0, 1)})
     # El flujo no se marca como fallido por errores de las fuentes: el dashboard muestra el último dato bueno.
     return 0

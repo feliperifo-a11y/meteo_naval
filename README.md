@@ -3,6 +3,7 @@
 Página pública que muestra, en un solo mapa:
 
 - **Avisos meteorológicos vigentes y próximos** (marejadas, mal tiempo, temporal, trombas), dibujados dentro de las subáreas METAREA XV que afectan.
+- **Avisos de temporal o mal tiempo en alta mar (Zona X)**: se leen de la Parte I del boletín de tiempo y mar de la Zona X y cada sector se dibuja como el rectángulo de latitudes y longitudes que indica el boletín.
 - **Operatividad de la red de estaciones meteorológicas costeras**: estado de cada estación según la antigüedad de su último dato.
 - Capas de referencia: METAREA XV, ZEE (200 M), zona contigua (24 M) y mar territorial (12 M).
 
@@ -17,6 +18,7 @@ GitHub Actions (cada 20 min)
    └─ scripts/colector.py
         ├─ descarga las observaciones de las estaciones      → data/estaciones.json
         ├─ lee la portada del sitio de avisos y cada PDF      → data/avisos.json
+        ├─ lee el boletín de alta mar Zona X (Parte I)        → data/avisos.json
         └─ deja un resumen de la ejecución y sus errores      → data/estado.json
    └─ scripts/construir_index.py  → index.html
    └─ publica index.html + data/*.json en GitHub Pages
@@ -146,6 +148,8 @@ Pide un *token* de GitHub con permiso de escritura solo sobre este repositorio y
 
 - **Revisar funcionamiento:** `tail ~/Library/Application\ Support/meteo_naval/registro.log`
 - **Desinstalar:** `bash ~/Library/Application\ Support/meteo_naval/desinstalar.sh`
+
+El Mac también envía una copia del boletín Zona X; GitHub la usa solo si no logra descargarlo directamente.
 
 Las estaciones se actualizan solo mientras el Mac esté encendido y conectado. Si está apagado, la página muestra el último dato con el aviso naranjo de datos desactualizados.
 

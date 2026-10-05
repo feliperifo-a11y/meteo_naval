@@ -14,8 +14,7 @@ def leer(p, defecto="null"):
     return p.read_text(encoding="utf-8") if p.exists() else defecto
 
 
-respaldo = {"estaciones": json.loads(leer(D / "estaciones.json", "{}")), "avisos": json.loads(leer(D / "avisos.json", "{}")),
-            "boyas": json.loads(leer(D / "boyas.json", "{}"))}
+respaldo = {"estaciones": json.loads(leer(D / "estaciones.json", "{}")), "avisos": json.loads(leer(D / "avisos.json", "{}"))}
 datos = "\n".join([
     "const LIMITES = " + leer(D / "geo" / "limites.json") + ";",
     "const LAND = " + leer(D / "geo" / "land.json") + ";",
