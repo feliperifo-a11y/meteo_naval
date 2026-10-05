@@ -312,8 +312,10 @@ class Geo:
         self.costera = unary_union(costeras)
         self.franja = self.tierra.buffer(0.22).difference(self.tierra)
 
-    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None):
-        if forma == "rectangulo":   # sector de alta mar delimitado por latitudes y longitudes
+    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None, area=None):
+        if forma == "area" and area in self.areas:      # subárea completa de la capa METAREA XV
+            g = self.areas[area]
+        elif forma in ("rectangulo", "area"):   # sector de alta mar delimitado por latitudes y longitudes
             n, s = sorted((-abs(lat_n), -abs(lat_s)), reverse=True)
             e, w = sorted((-abs(lon_e), -abs(lon_w)), reverse=True)
             g = box(w, s, e, n)
@@ -328,7 +330,7 @@ class Geo:
             else:
                 g = self.costera.intersection(box(-82, s, este, n))
         g = g.difference(self.tierra).buffer(0).simplify(0.01, preserve_topology=True)
-        areas = [k for k, a in self.areas.items() if a.intersection(g).area > 1e-4]
+        areas = [area] if forma == "area" and area in self.areas else [k for k, a in self.areas.items() if a.intersection(g).area > 1e-4]
         g = set_precision(g, 0.001)
         return {"geom": mapping(g), "areas": areas, "north": round(g.bounds[3], 3) if not g.is_empty else -90}
 
@@ -645,6 +647,8 @@ def zonas_validas(zonas):
 URL_ZONA_X = "https://web.directemar.cl/met/jturno/PRONOSTICOS/Cenmeteovalp/zonadiez.txt"
 PAGINA_ZONA_X = "https://meteoarmada.directemar.cl/meteo/zona-x"
 NUM = r"(\d+(?:[.,]\d+)?)"
+SECTORES_X = {"NORESTE": "X-NE", "NORWESTE": "X-NO", "NOROESTE": "X-NO", "CENTRAL ESTE": "X-CE",
+              "CENTRAL WESTE": "X-CO", "CENTRAL OESTE": "X-CO", "SURESTE": "X-SE", "SURWESTE": "X-SO", "SUROESTE": "X-SO"}
 
 
 def _fecha_dhm(dd: int, hh: int, mi: int, ref: datetime) -> datetime:
@@ -685,8 +689,10 @@ def leer_zona_x(texto: str, ref: datetime, geo: Geo):
            r"\s+A\s+" + NUM + r"\s+W(?:ESTE|EST|OESTE)?\s*\)\s*:(.*?)(?=SECTOR\s+[A-Z ]+?\s*\(|\Z)")
     for m in re.finditer(pat, p1.group(1), re.S):
         la1, la2, lo1, lo2 = (float(x.replace(",", ".")) for x in m.groups()[1:5])
-        g = geo.zona("rectangulo", lat_n=la1, lat_s=la2, lon_e=lo1, lon_w=lo2)
-        zonas.append({"nombre": f"Zona X · {titulo(m.group(1))} ({la1:g}°–{la2:g}° S, {lo1:g}°–{lo2:g}° W)",
+        sub = SECTORES_X.get(re.sub(r"\s+", " ", m.group(1)).strip())
+        # Se rellena la subárea completa de la capa METAREA XV; sin equivalencia, el rectángulo del boletín.
+        g = geo.zona("area" if sub else "rectangulo", lat_n=la1, lat_s=la2, lon_e=lo1, lon_w=lo2, area=sub)
+        zonas.append({"nombre": f"Zona X · Sector {titulo(m.group(1))}" + (f" ({sub})" if sub else f" ({la1:g}°–{la2:g}° S, {lo1:g}°–{lo2:g}° W)"),
                       "desde": iso(desde), "hasta": iso(hasta), "detalle": resumen_corto(m.group(6), 300), **g})
     if not zonas:
         return None
