@@ -101,7 +101,7 @@ def recolectar_estaciones() -> bool:
         return False
 
 
-# ============================================================ Redes EMA y EMA Campbell
+# ============================================================ Red EMA Campbell
 # El equipo local agrega a data/estaciones.json un bloque "ema" con las respuestas del meteomapa:
 #   mapa      lista de estaciones (código, nombre, posición)
 #   top       estaciones con datos recientes y hora local del último dato
@@ -147,9 +147,12 @@ def filas_ema(ema: dict) -> list:
             estaciones.setdefault(cod, pos)
     filas = []
     for cod, (nombre, lat, lon) in sorted(estaciones.items()):
-        if cod in DUPLICADAS:
+        # Se incluyen solo las estaciones que el meteomapa dibuja en su mapa: la red Campbell (código >= 100000).
+        # El listado "mapa" también trae la red EMA antigua (sin datos desde hace años, duplicados de Capitanías
+        # y coordenadas erróneas), que el meteomapa no muestra.
+        if cod in DUPLICADAS or cod < 100000:
             continue
-        campbell = cod >= 100000
+        campbell = True
         v, fecha, sin_datos = {}, None, False
         if campbell:
             f = fichas.get(str(cod)) or []
@@ -205,6 +208,8 @@ def filas_ema(ema: dict) -> list:
             "_red": "EMA Campbell" if campbell else "EMA",
             "_sin_datos": sin_datos or None,
         })
+    # Una Campbell sin ningún dato (ficha vacía y sin serie) tampoco aparece en el meteomapa.
+    filas = [f for f in filas if not f["_sin_datos"]]
     return filas
 
 

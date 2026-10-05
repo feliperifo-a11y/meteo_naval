@@ -2,7 +2,7 @@
 # Descarga desde este Mac (en Chile) las observaciones publicadas en el meteomapa y las sube al
 # repositorio como data/estaciones.json. GitHub republica la página automáticamente.
 #   - Red de Capitanías de Puerto: observaciones/directemar
-#   - Redes EMA y EMA Campbell: mapa, top, fichaEstacion (Campbell) y graficoEstacion (EMA)
+#   - Red EMA Campbell: mapa, top y fichaEstacion (o graficoEstacion si la ficha viene vacía)
 # Lo ejecuta launchd cada 20 minutos. Se actualiza solo desde el repositorio.
 set -u
 REPO="feliperifo-a11y/meteo_naval"
@@ -65,27 +65,8 @@ for id in $(printf '%s\n' $IDS_MAPA $IDS_TOP | sort -u); do
     GRAF_C="${GRAF_C:-}${GRAF_C:+,}\"$id\":{$P}"
   fi
 done
-GRAF=""     # EMA activas (listadas en "top"): último valor de cada variable
-for id in $IDS_TOP; do
-  [ "$id" -lt 100000 ] 2>/dev/null || continue
-  P=""
-  for p in 7 8 11 13 14 16; do
-    r=$(get "$API_METEO/graficoEstacion/$id/$p" | ultima); es_json "$r" || r=null
-    P="$P${P:+,}\"$p\":$r"; sleep 0.3
-  done
-  GRAF="$GRAF${GRAF:+,}\"$id\":{$P}"
-done
-# Una vez al día: último dato de presión de todas las EMA (para saber desde cuándo no transmiten).
-if [ -z "$(find "$DIR/historico.json" -mmin -1440 2>/dev/null)" ] && [ -n "$IDS_MAPA" ]; then
-  H=""
-  for id in $IDS_MAPA; do
-    [ "$id" -lt 100000 ] 2>/dev/null || continue
-    r=$(get "$API_METEO/graficoEstacion/$id/16" | ultima); es_json "$r" || r=null
-    H="$H${H:+,}\"$id\":$r"; sleep 0.3
-  done
-  printf '{%s}' "$H" > "$DIR/historico.json"
-fi
-HIST=$(cat "$DIR/historico.json" 2>/dev/null); es_json "$HIST" || HIST=null
+GRAF=""     # La red EMA antigua no se descarga: el meteomapa no la muestra en su mapa.
+HIST=null
 
 # 3. Archivo final (se valida antes de subir; si algo de las redes EMA viene mal, se sube sin ellas)
 AHORA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -119,8 +100,8 @@ printf '{"message":"Estaciones %s (equipo local)","branch":"main","content":"%s"
 COD=$(curl -sS --max-time 60 -o "$DIR/respuesta.json" -w '%{http_code}' -X PUT -H "$H1" -H "$H2" -H "$H3" \
   --data-binary @"$DIR/cuerpo.json" "$API")
 if [ "$COD" = "200" ] || [ "$COD" = "201" ]; then
-  N_EMA=$(printf '%s' "$IDS_MAPA" | grep -c . | tr -d ' ')
-  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_EMA EMA subidas"
+  N_C=$(printf '%s' "$FICHAS" | grep -o '"codigoEstacion"' | wc -l | tr -d ' ')
+  echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell subidas"
 else
   echo "$(ts) ERROR: GitHub respondió $COD — $(head -c 300 "$DIR/respuesta.json")"; exit 1
 fi

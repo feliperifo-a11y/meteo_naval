@@ -55,7 +55,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 50vw;gap:14px;padding:14px
 #layerBox .layers label{padding:2px 0;gap:6px}
 #layerBox .grp{margin:7px 0 2px}
 @media (max-width:1050px){main{grid-template-columns:1fr} #mapWrap{order:-1;position:relative;top:auto;height:70vh} }
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:4px 14px 10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 14px 10px}
 .kpi{background:var(--chip);border-radius:8px;padding:8px 6px;text-align:center}
 .kpi b{display:block;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
 .kpi span{font-size:11px;color:var(--muted)}
@@ -141,7 +141,6 @@ dialog button{border-color:var(--line)}
         <div class="kpi"><b id="kOk" style="color:var(--ok)">–</b><span>Operativas</span></div>
         <div class="kpi"><b id="kRet" style="color:var(--ret)">–</b><span>Con retraso</span></div>
         <div class="kpi"><b id="kNo" style="color:var(--no)">–</b><span>No operativas</span></div>
-        <div class="kpi" title="La fuente no publica ningún dato de estas estaciones"><b id="kSd" style="color:var(--muted)">–</b><span>Sin datos</span></div>
         <div class="kpi"><b id="kFl" style="color:var(--warn)">–</b><span>Sensor dudoso</span></div>
       </div>
       <h3 class="sub2">Cuadro de estado operativo</h3>
@@ -152,14 +151,12 @@ dialog button{border-color:var(--line)}
           <option value="ok">Operativas</option>
           <option value="ret">Con retraso</option>
           <option value="no">No operativas</option>
-          <option value="sd">Sin datos en la fuente</option>
           <option value="fl">Con sensor dudoso</option>
         </select>
         <select id="fRed" aria-label="Filtrar por red">
           <option value="">Todas las redes</option>
           <option value="Capitanía de Puerto">Capitanías de Puerto</option>
           <option value="EMA Campbell">EMA Campbell</option>
-          <option value="EMA">EMA</option>
         </select>
         <select id="fArea" aria-label="Filtrar por subárea"><option value="">Todas las subáreas</option></select>
         <span id="tblCount" style="color:var(--muted);font-size:12.5px"></span>
@@ -175,7 +172,7 @@ dialog button{border-color:var(--line)}
           <tbody></tbody>
         </table>
       </div>
-      <div class="note" style="border-top:1px solid var(--line)"><b>Redes:</b> Capitanías de Puerto (●), EMA y EMA Campbell (■), según el meteomapa. <b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
+      <div class="note" style="border-top:1px solid var(--line)"><b>Redes:</b> Capitanías de Puerto (●) y EMA Campbell (■): las mismas estaciones que dibuja el meteomapa. <b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
     </section>
   </div>
 
@@ -574,7 +571,7 @@ function renderTabla() {
   const rows = ESTACIONES.filter(s => !fr || s.red === fr).map(s => ({ s, ev: evaluar(s, ahora) }));
   const c = { ok: 0, ret: 0, no: 0, sd: 0, fl: 0 };
   rows.forEach(r => { c[r.ev.k]++; if (r.ev.fl.length && r.ev.k !== 'no') c.fl++; });
-  document.getElementById('kOk').textContent = c.ok; document.getElementById('kRet').textContent = c.ret; document.getElementById('kNo').textContent = c.no; document.getElementById('kFl').textContent = c.fl; document.getElementById('kSd').textContent = c.sd; document.getElementById('estCount').textContent = `${rows.length} estaciones · ${c.ok} operativas`;
+  document.getElementById('kOk').textContent = c.ok; document.getElementById('kRet').textContent = c.ret; document.getElementById('kNo').textContent = c.no; document.getElementById('kFl').textContent = c.fl; document.getElementById('estCount').textContent = `${rows.length} estaciones · ${c.ok} operativas`;
   const ordE = { ok: 0, ret: 1, no: 2, sd: 3 };
   const key = r => ({ lat: r.s.lat, area: AREA_ORD.indexOf(r.s.area) * 1000 - r.s.lat, estado: ordE[r.ev.k] * 1000 + (r.ev.ms ?? 1e15) / 1e12, t: r.ev.t ? +r.ev.t : -1, age: r.ev.ms ?? 1e15, dir: r.s.dirG ?? -1, vel: r.s.vel ?? -1, temp: r.s.temp ?? -99, pres: r.s.pres ?? -1, hum: r.s.hum ?? -1 }[sortK]);
   const vis = rows.filter(r => (!q || nombreEst(r.s).toLowerCase().includes(q)) && (!fe || (fe === 'fl' ? (r.ev.fl.length && r.ev.k !== 'no') : r.ev.k === fe)) && (!fa || r.s.area === fa))
@@ -626,7 +623,7 @@ function renderCapas() {
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
   const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);
   const l2 = document.createElement('div'); l2.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px';
-  l2.innerHTML = Object.values(ST).map(s => `<span style="display:inline-flex;gap:5px;align-items:center">${dotSw(s.hex)}${s.txt}</span>`).join('') + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, false)}Capitanía de Puerto</span><span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, true)}EMA / EMA Campbell</span>` + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#2e7d32', true)}Sensor dudoso</span>`;
+  l2.innerHTML = Object.values(ST).filter(s => s !== ST.sd).map(s => `<span style="display:inline-flex;gap:5px;align-items:center">${dotSw(s.hex)}${s.txt}</span>`).join('') + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, false)}Capitanía de Puerto</span><span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, true)}EMA Campbell</span>` + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#2e7d32', true)}Sensor dudoso</span>`;
   box.appendChild(l2);
   const l3 = document.createElement('div'); l3.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin-top:6px';
   l3.innerHTML = `<span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#d32f2f', 'rgba(211,47,47,.30)')}Aviso vigente</span><span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#1f6fb2', 'rgba(31,111,178,.12)', '4 3')}Aviso próximo</span>`;

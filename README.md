@@ -152,15 +152,14 @@ Las estaciones se actualizan solo mientras el Mac esté encendido y conectado. S
 
 ### Redes de estaciones
 
-El Mac descarga las tres redes que publica el meteomapa:
+El dashboard muestra las mismas estaciones que dibuja el meteomapa en su mapa:
 
 | Red | Fuente | Símbolo |
 |---|---|---|
-| Capitanías de Puerto | `observaciones/directemar` | ● |
-| EMA Campbell | `mapa` + `fichaEstacion/{código}` | ■ |
-| EMA | `mapa` + `top` + `graficoEstacion/{código}/{variable}` | ■ |
+| Capitanías de Puerto (43) | `observaciones/directemar` | ● |
+| EMA Campbell (8) | `top` + `fichaEstacion/{código}`; si la ficha viene vacía, `graficoEstacion` | ■ |
 
-Detalles de la fuente que el recolector corrige: "Campbell Punta Delgada" aparece dos veces con datos idénticos (se usa el código 100006, de posición correcta); Paso Timbales trae la longitud con el punto decimal corrido; Porvenir figura en `top` pero no en `mapa` (se usa una posición aproximada de Bahía Chilota); las series de `graficoEstacion` vienen con la hora desplazada, por lo que para las EMA activas se usa la hora de `top`.
+El listado `mapa` del servicio también incluye una red EMA antigua (sin datos desde hace años, duplicados de Capitanías y coordenadas erróneas) que el meteomapa no muestra; el dashboard tampoco la incluye. "Campbell Punta Delgada" aparece dos veces con datos idénticos: se usa el código 100006, de posición correcta.
 
 El script del Mac se actualiza solo desde este repositorio en cada ejecución.
 
