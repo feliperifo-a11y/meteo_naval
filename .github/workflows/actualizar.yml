@@ -64,7 +64,7 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data
-          cp index.html _site/
+          cp index.html version.txt _site/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
 
       - uses: actions/upload-pages-artifact@v3

@@ -3,6 +3,7 @@
 Los datos de estaciones y avisos se leen en el navegador desde data/*.json; aquí solo se incorpora
 una copia de respaldo para cuando la página se abre como archivo local.
 Ejecutar solo cuando cambie la plantilla o las capas:  python scripts/construir_index.py"""
+import hashlib
 import json
 from pathlib import Path
 
@@ -21,6 +22,11 @@ datos = "\n".join([
     "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
     "const RESPALDO = " + json.dumps(respaldo, ensure_ascii=False, separators=(",", ":")) + ";",
 ])
+# Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
+# Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
+(R / "version.txt").write_text(version + "\n", encoding="utf-8")
+datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
 html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css"))
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos))
 (R / "index.html").write_text(html, encoding="utf-8")

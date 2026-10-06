@@ -734,10 +734,8 @@ window.addEventListener('resize', () => map.invalidateSize());
 })();
 map.fitBounds([[-56.5, -82], [-17.5, -66]]);
 // Contador de visitas (servicio público gratuito; una visita por sesión del navegador). Si falla, no se muestra.
-(async function contarVisita() {
+async function contarVisita(nueva) {
   const base = 'https://abacus.jasoncameron.dev', clave = 'feliperifo-meteo-naval/visitas';
-  let nueva = true;
-  try { nueva = !sessionStorage.getItem('mn_visita'); sessionStorage.setItem('mn_visita', '1'); } catch (e) {}
   try {
     const c = new AbortController(); setTimeout(() => c.abort(), 8000);
     const r = await fetch(`${base}/${nueva ? 'hit' : 'get'}/${clave}`, { cache: 'no-store', signal: c.signal });
@@ -748,10 +746,24 @@ map.fitBounds([[-56.5, -82], [-17.5, -66]]);
       el.hidden = false;
     }
   } catch (e) {}
+}
+// Una visita por sesión del navegador; el número mostrado se renueva cada 5 minutos.
+(function () {
+  let nueva = true;
+  try { nueva = !sessionStorage.getItem('mn_visita'); sessionStorage.setItem('mn_visita', '1'); } catch (e) {}
+  contarVisita(nueva);
+  setInterval(() => contarVisita(false), 5 * 60000);
 })();
 cargarDatos();
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 setInterval(cargarDatos, 5 * 60000);                // vuelve a leer los datos publicados
+// Si se publicó una versión nueva de la página, la pestaña abierta se recarga sola (sin perder los paneles plegados).
+setInterval(async () => {
+  try {
+    const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim();
+    if (v && typeof VERSION_PAGINA !== 'undefined' && v !== VERSION_PAGINA) location.reload();
+  } catch (e) {}
+}, 5 * 60000);
 </script>
 </body>
 </html>
