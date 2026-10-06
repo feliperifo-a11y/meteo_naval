@@ -11,8 +11,13 @@ curl -fsSL "$URL" -o "$DEST/subir_estaciones.sh"
 chmod +x "$DEST/subir_estaciones.sh"
 
 echo "2/4 Token de GitHub (no se muestra al escribir; se guarda en el Llavero de macOS)."
-read -r -s -p "    Pegue el token y presione Enter: " TOKEN; echo
-[ -n "$TOKEN" ] || { echo "No se ingresó token."; exit 1; }
+# "|| true": si el token llega desde el portapapeles (pbpaste | bash instalar.sh) no trae salto de línea final
+read -r -s -p "    Pegue el token y presione Enter: " TOKEN || true; echo
+TOKEN=$(printf '%s' "$TOKEN" | grep -oE 'github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+' | head -1)
+[ -n "$TOKEN" ] || { echo "No se encontró un token de GitHub (debe empezar con github_pat_). Cópielo con el botón de copiar e intente de nuevo."; exit 1; }
+COD=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/feliperifo-a11y/meteo_naval)
+[ "$COD" = "200" ] || { echo "GitHub rechazó el token (código $COD). Revise que tenga acceso al repositorio meteo_naval."; exit 1; }
+echo "    Token válido."
 security add-generic-password -U -s meteo_naval_github -a meteo_naval -w "$TOKEN"
 unset TOKEN
 
