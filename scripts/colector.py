@@ -225,7 +225,155 @@ def integrar_ema(est: dict) -> dict:
             est["datos"] = [r for r in est["datos"] if not str(r.get("codigo", "")).startswith("EMA-")] + filas_ema(ema)
         except Exception as e:
             errores.append(f"redes EMA: {type(e).__name__}: {e}")
+    est["datos"] = [r for r in est["datos"] if r.get("_red") != RED_EXTRA] + filas_extra()
     return est
+
+
+# ============================================================ Redes complementarias
+# Faros IFOP (API pública), estaciones Weather Underground y WeatherLink. La configuración (sin claves)
+# está en data/estaciones_extra.json; las claves llegan como secretos del repositorio (variables de entorno).
+# Velocidades en nudos, temperatura en °C y presión en hPa.
+RED_EXTRA = "Red complementaria"
+MPH_KT, KMH_KT = 0.868976, 0.539957
+
+
+def _hora_local(d: datetime) -> str:
+    return d.astimezone(TZ).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _fila_extra(nombre, cod, lat, lon, fecha, fuente, dirg=None, vel=None, temp=None, pres=None, hum=None, td=None, racha=None):
+    ok = lambda v: v is not None and isinstance(v, (int, float)) and math.isfinite(v)
+    return {"nombre": nombre, "codigo": cod, "fecha": fecha or "Sin datos",
+            "latitud": round(float(lat), 5), "longitud": round(float(lon), 5),
+            "viento": str(round(dirg) % 360) if ok(dirg) else None,
+            "direccionViento": CARDINALES[int((dirg % 360 + 11.25) // 22.5) % 16] if ok(dirg) else None,
+            "velocidadDelViento": _fmt(vel) if ok(vel) else None,
+            "temperatura": _fmt(temp) if ok(temp) else None, "presion": _fmt(pres, 2) if ok(pres) else None,
+            "humedad": str(round(hum)) if ok(hum) else None, "puntoDeRocio": _fmt(td) if ok(td) else None,
+            "_racha": _fmt(racha) if ok(racha) else None, "_unidad_viento": "kt",
+            "_red": RED_EXTRA, "_fuente": fuente, "_sin_datos": None if fecha else True}
+
+
+def _ifop(e: dict) -> dict:
+    data = get(f"https://giscc.ifop.cl/siom-enoscc//get_est_met/{e['id']}", timeout=20).json()
+    ult, fecha = {}, None
+    for k, serie in (data.items() if isinstance(data, dict) else []):
+        it = ((serie or {}).get("data") or [None])[0] if isinstance(serie, dict) else None
+        if not isinstance(it, dict) or not it.get("y"):
+            continue
+        xs, ys = it.get("x") or [], it["y"]
+        i = max((j for j, y in enumerate(ys) if isinstance(y, (int, float))), default=None)
+        if i is None:
+            continue
+        kl = sin_acentos(k.lower())
+        # orden importante: la racha antes que la velocidad ("vel_max" contiene "vel")
+        for var, claves in (("racha", ("racha", "rafaga", "gust", "max")), ("dir", ("dir",)),
+                            ("vel", ("vel", "viento", "speed", "ff", "intens")), ("temp", ("temp",)),
+                            ("pres", ("pres", "barom", "qff", "qfe")), ("hum", ("hum",)), ("td", ("rocio", "dew"))):
+            if any(c in kl for c in claves):
+                if var not in ult:
+                    ult[var] = ys[i]
+                    if var in ("temp", "pres", "vel") and i < len(xs):
+                        x = xs[i]
+                        try:
+                            if isinstance(x, (int, float)):
+                                d = datetime.fromtimestamp(x / 1000 if x > 1e11 else x, tz=UTC)
+                            else:
+                                d = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+                                d = d if d.tzinfo else d.replace(tzinfo=TZ)   # sin zona: hora de Chile
+                            fecha = max(fecha, d) if fecha else d
+                        except Exception:
+                            pass
+                break
+    if os.environ.get("DEPURAR_IFOP") == "1":
+        print("  IFOP", e["id"], "series:", list(data)[:30] if isinstance(data, dict) else type(data).__name__)
+    return _fila_extra(e["nombre"], f"IFOP-{e['id']}", e["lat"], e["lon"], _hora_local(fecha) if fecha else None, "IFOP",
+                       ult.get("dir"), ult.get("vel"), ult.get("temp"), ult.get("pres"), ult.get("hum"), ult.get("td"), ult.get("racha"))
+
+
+def _wunderground(e: dict, clave: str) -> dict:
+    r = get(f"https://api.weather.com/v2/pws/observations/current?stationId={e['id']}&format=json&units=m"
+            f"&numericPrecision=decimal&apiKey={clave}", timeout=20)
+    o = r.json()["observations"][0]
+    m = o.get("metric") or {}
+    d = datetime.fromisoformat(o["obsTimeUtc"].replace("Z", "+00:00"))
+    kt = lambda v: None if v is None else v * KMH_KT
+    return _fila_extra(e["nombre"], f"WU-{e['id']}", e.get("lat", o.get("lat")), e.get("lon", o.get("lon")), _hora_local(d),
+                       "Weather Underground", o.get("winddir"), kt(m.get("windSpeed")), m.get("temp"), m.get("pressure"),
+                       o.get("humidity"), m.get("dewpt"), kt(m.get("windGust")))
+
+
+def _wl_get(ruta: str, clave: str, secreto: str):
+    r = requests.get(f"https://api.weatherlink.com/v2/{ruta}", params={"api-key": clave},
+                     headers={**CABECERAS, "X-Api-Secret": secreto}, timeout=20)
+    r.raise_for_status()
+    return r.json()
+
+
+def _weatherlink(e: dict, meta: dict, clave: str, secreto: str) -> dict:
+    st = meta[e["id"]]
+    cur = _wl_get(f"current/{e['id']}", clave, secreto)
+    v = {}
+    for sen in cur.get("sensors") or []:
+        for dato in sen.get("data") or []:
+            for k, x in dato.items():
+                if x is not None:
+                    v.setdefault(k, x)
+    f2c = lambda f: None if f is None else (f - 32) * 5 / 9
+    inhg = lambda p: None if p is None else p * 33.8639
+    mph = lambda w: None if w is None else w * MPH_KT
+    ts = v.get("ts")
+    fecha = _hora_local(datetime.fromtimestamp(ts, tz=UTC)) if ts else None
+    vel = v.get("wind_speed_avg_last_10_min", v.get("wind_speed_last", v.get("wind_speed")))
+    dirg = v.get("wind_dir_scalar_avg_last_10_min", v.get("wind_dir_last", v.get("wind_dir")))
+    racha = v.get("wind_speed_hi_last_10_min", v.get("wind_gust_10_min"))
+    pres = v.get("bar_sea_level", v.get("bar"))
+    return _fila_extra(e["nombre"], f"WL-{e['id']}", e.get("lat", st.get("latitude")), e.get("lon", st.get("longitude")), fecha,
+                       "WeatherLink", dirg, mph(vel), f2c(v.get("temp", v.get("temp_out"))), inhg(pres),
+                       v.get("hum", v.get("hum_out")), f2c(v.get("dew_point")), mph(racha))
+
+
+def filas_extra() -> list:
+    cfg = leer_json(DATA / "estaciones_extra.json", {})
+    filas, faltan = [], []
+    def intentar(e, fn, *a):
+        try:
+            filas.append(fn(e, *a))
+        except Exception as ex:
+            errores.append(f"{e['nombre']}: {type(ex).__name__}")
+            print("  ERROR", e["nombre"], type(ex).__name__, getattr(getattr(ex, "response", None), "status_code", ""))   # sin URL: llevaría la clave
+    for e in cfg.get("ifop", []):
+        intentar(e, _ifop)
+    wu = os.environ.get("WU_API_KEY", "").strip()
+    if wu:
+        for e in cfg.get("wunderground", []):
+            intentar(e, _wunderground, wu)
+    elif cfg.get("wunderground"):
+        faltan.append("WU_API_KEY")
+    k, sec = os.environ.get("WL_API_KEY", "").strip(), os.environ.get("WL_API_SECRET", "").strip()
+    if k and sec and cfg.get("weatherlink"):
+        try:
+            meta = {s["station_id"]: s for s in _wl_get("stations", k, sec).get("stations", [])}
+            print("  WeatherLink: estaciones de la cuenta:", [f"{i} {s.get('station_name')}" for i, s in meta.items()])
+            for e in cfg["weatherlink"]:
+                e = dict(e)
+                if "id" not in e:
+                    hall = [i for i, s in meta.items() if e["buscar"].lower() in sin_acentos(str(s.get("station_name", ""))).lower()]
+                    if not hall:
+                        errores.append(f"{e['nombre']}: no aparece en la cuenta WeatherLink"); continue
+                    e["id"] = hall[0]
+                if e["id"] not in meta:
+                    errores.append(f"{e['nombre']}: la estación {e['id']} no está en la cuenta WeatherLink"); continue
+                intentar(e, _weatherlink, meta, k, sec)
+        except Exception as ex:
+            errores.append(f"WeatherLink: {type(ex).__name__}")
+            print("  ERROR WeatherLink", type(ex).__name__, getattr(getattr(ex, "response", None), "status_code", ""))
+    elif cfg.get("weatherlink"):
+        faltan.append("WL_API_KEY/WL_API_SECRET")
+    if faltan:
+        print("Redes complementarias: faltan los secretos", ", ".join(faltan))
+    print(f"Redes complementarias: {len(filas)} estaciones")
+    return filas
 
 
 # ============================================================ Seguimiento de estaciones

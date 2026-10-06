@@ -134,6 +134,23 @@ Si abres `index.html` con doble clic, el navegador no deja leer `data/*.json` y 
 - **Límites aproximados de METAREA XV:** los límites oceánicos (76°W, 78°W, ~80°W y ~98,5°W) se digitalizaron de la carta publicada (OMM N° 9, Vol. D, 2018) y son aproximados.
 - **Velocidad del viento:** la fuente de estaciones no informa su unidad.
 
+## Red complementaria (faros IFOP, Weather Underground y WeatherLink)
+
+Además de las redes del meteomapa, el dashboard muestra (con el símbolo ◆) las estaciones listadas en `data/estaciones_extra.json`. GitHub las consulta en cada ejecución.
+
+- **IFOP** (Cabo Carranza, Isla Mocha): API pública, no requiere clave.
+- **Weather Underground** (Quiriquina, Hualpén) y **WeatherLink** (Montemar, Reloncaví, Sociber, Club de Yates de Recreo): requieren claves de API.
+
+**Las claves nunca se escriben en el repositorio**, porque es público. Se guardan como secretos: **Settings → Secrets and variables → Actions → New repository secret**, con estos nombres:
+
+| Secreto | Contenido |
+|---|---|
+| `WU_API_KEY` | Clave de API de Weather Underground |
+| `WL_API_KEY` | Clave API v2 de WeatherLink |
+| `WL_API_SECRET` | Secreto API de WeatherLink |
+
+Sin esos secretos, esas estaciones simplemente no aparecen. En WeatherLink, cada estación se indica por su número (`id`) o por una palabra de su nombre (`buscar`); el registro de cada ejecución en **Actions** lista las estaciones que tiene la cuenta.
+
 ## Estaciones enviadas desde un Mac en Chile
 
 El servicio de estaciones no responde a los servidores de GitHub (están fuera de Chile). Por eso un Mac en Chile descarga las observaciones cada 20 minutos y las sube como `data/estaciones.json`; cada subida republica la página. Los avisos sí se leen desde GitHub.

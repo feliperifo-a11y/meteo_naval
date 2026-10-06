@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "data/avisos_manual.json", "data/estaciones.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -53,6 +53,11 @@ jobs:
       - name: Recolectar datos
         env:
           RELEER: ${{ inputs.releer && '1' || '0' }}
+          # Claves de las redes complementarias: se guardan en Settings → Secrets and variables → Actions
+          WU_API_KEY: ${{ secrets.WU_API_KEY }}
+          WL_API_KEY: ${{ secrets.WL_API_KEY }}
+          WL_API_SECRET: ${{ secrets.WL_API_SECRET }}
+          DEPURAR_IFOP: "1"
         run: python scripts/colector.py
 
       - name: Construir la página

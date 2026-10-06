@@ -166,6 +166,7 @@ dialog button{border-color:var(--line)}
           <option value="">Todas las redes</option>
           <option value="Capitanía de Puerto">Capitanías de Puerto</option>
           <option value="EMA Campbell">EMA Campbell</option>
+          <option value="Red complementaria">Red complementaria</option>
         </select>
         <select id="fArea" aria-label="Filtrar por subárea"><option value="">Todas las subáreas</option></select>
         <span id="tblCount" style="color:var(--muted);font-size:12.5px"></span>
@@ -181,7 +182,7 @@ dialog button{border-color:var(--line)}
           <tbody></tbody>
         </table>
       </div>
-      <div class="note" style="border-top:1px solid var(--line)"><b>Redes:</b> Capitanías de Puerto (●) y EMA Campbell (■): las mismas estaciones que dibuja el meteomapa. <b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
+      <div class="note" style="border-top:1px solid var(--line)"><b>Redes:</b> Capitanías de Puerto (●) y EMA Campbell (■), las mismas que dibuja el meteomapa, y red complementaria (◆): faros y estaciones de IFOP, Weather Underground y WeatherLink. <b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
     </section>
   </div>
 
@@ -243,12 +244,12 @@ const ST = {
   no: { txt: 'No operativa', color: 'var(--no)', hex: '#b3261e' },
   sd: { txt: 'Sin datos', color: 'var(--muted)', hex: '#8a939e' },
 };
-const REDES = { 'Capitanía de Puerto': 'CP', 'EMA Campbell': 'Campbell', 'EMA': 'EMA' };
+const REDES = { 'Capitanía de Puerto': 'CP', 'EMA Campbell': 'Campbell', 'EMA': 'EMA', 'Red complementaria': 'Compl.' };
 const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 };
 function normalizar(arr) {
   return arr.map(x => Array.isArray(x)
     ? { nombre: x[0], codigo: x[1], fecha: x[2], lat: x[3], lon: x[4], dirG: num(x[5]), dirFuente: x[6], vel: num(x[7]), temp: num(x[8]), pres: num(x[9]), hum: num(x[10]), td: num(x[11]), area: x[12] }
-    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null, cambio: x._cambio ? new Date(x._cambio) : null, fijo: x._fijo_desde || null, red: x._red || 'Capitanía de Puerto', sinDatos: !!x._sin_datos })
+    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null, cambio: x._cambio ? new Date(x._cambio) : null, fijo: x._fijo_desde || null, red: x._red || 'Capitanía de Puerto', sinDatos: !!x._sin_datos, fuente: x._fuente || null, racha: num(x._racha), uVel: x._unidad_viento || '' })
     .filter(s => isFinite(s.lat) && isFinite(s.lon));
 }
 // Umbrales de "sensor congelado": horas sin ningún cambio de valor mientras la estación sigue transmitiendo.
@@ -544,15 +545,15 @@ function asignarArea(s) {
   return a < 30 ? 'I' : a < 33.03 ? 'II' : a < 35.33 ? 'III' : a < 38.37 ? 'IV' : a < 41.8 ? 'V' : a < 48 ? 'VI' : a < 52.4 ? 'VII' : a < 60 ? 'VIII' : 'IX-PD';
 }
 const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL');
-function svgSt(c, flag, cuadrado) { return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${cuadrado ? `<rect x="3.5" y="3.5" width="13" height="13" rx="2" fill="${c}" stroke="#fff" stroke-width="2"/>` : `<circle cx="10" cy="10" r="7" fill="${c}" stroke="#fff" stroke-width="2"/>`}${flag ? '<circle cx="15.5" cy="4.5" r="3.6" fill="#f2c200" stroke="#fff" stroke-width="1.2"/>' : ''}</svg>`; }
+function svgSt(c, flag, cuadrado) { return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${cuadrado === 'rombo' ? `<path d="M10 1.8 18.2 10 10 18.2 1.8 10Z" fill="${c}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>` : cuadrado ? `<rect x="3.5" y="3.5" width="13" height="13" rx="2" fill="${c}" stroke="#fff" stroke-width="2"/>` : `<circle cx="10" cy="10" r="7" fill="${c}" stroke="#fff" stroke-width="2"/>`}${flag ? '<circle cx="15.5" cy="4.5" r="3.6" fill="#f2c200" stroke="#fff" stroke-width="1.2"/>' : ''}</svg>`; }
 function popupSt(s, ev) {
   const st = ST[ev.k];
   const rows = [
     ['Estado', `<b style="color:${st.hex}">${st.txt}</b>`],
     ['Último dato', ev.t ? `${ev.inferida ? '≈ ' : ''}${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}${ev.inferida ? '<br><span style="color:#8a5a00">Hora inferida: la fuente no la informa.</span>' : ''}` : 'Sin fecha válida'],
-    ['Red', escH(s.red)],
+    ['Red', escH(s.red) + (s.fuente ? ` · ${escH(s.fuente)}` : '')],
     ['Subárea', escH(nombreArea(s.area))],
-    ['Viento', s.dirG != null && s.dirFuente !== '---' ? `${s.dirG}° ${cardinal(s.dirG)} · ${nf(s.vel)}` + (s.dirFuente && s.dirFuente !== cardinal(s.dirG) ? ` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>` : '') : 'Sin dato'],
+    ['Viento', s.dirG != null && s.dirFuente !== '---' ? `${s.dirG}° ${cardinal(s.dirG)} · ${nf(s.vel)}${s.uVel ? ' ' + s.uVel : ''}${s.racha != null ? ` (racha ${nf(s.racha)}${s.uVel ? ' ' + s.uVel : ''})` : ''}` + (s.dirFuente && s.dirFuente !== cardinal(s.dirG) ? ` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>` : '') : 'Sin dato'],
     ['Temperatura', `${nf(s.temp)} °C`], ['Presión', `${nf(s.pres, 1)} hPa`], ['Humedad', `${nf(s.hum, 0)} %`], ['Punto de rocío', `${nf(s.td)} °C`],
     ['Posición', fmtPos(s.lat, s.lon)],
   ];
@@ -565,7 +566,7 @@ function buildEst() {
   stMarkers.clear();
   for (const s of ESTACIONES) {
     const ev = evaluar(s, ahora);
-    const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: L.divIcon({ className: '', html: svgSt(ST[ev.k].hex, ev.fl.length > 0, s.red !== 'Capitanía de Puerto'), iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
+    const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: L.divIcon({ className: '', html: svgSt(ST[ev.k].hex, ev.fl.length > 0, s.red === 'Red complementaria' ? 'rombo' : s.red !== 'Capitanía de Puerto'), iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
       .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320 })
       .bindTooltip(`${escH(nombreEst(s))} · ${ST[ev.k].txt}${ev.k === 'ok' && s.temp != null ? ` · ${nf(s.temp)} °C` : ''}`, { direction: 'top', offset: [0, -8] });
     m.addTo(g); stMarkers.set(s.codigo, m);
@@ -632,7 +633,7 @@ function renderCapas() {
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
   const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);
   const l2 = document.createElement('div'); l2.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px';
-  l2.innerHTML = Object.values(ST).filter(s => s !== ST.sd).map(s => `<span style="display:inline-flex;gap:5px;align-items:center">${dotSw(s.hex)}${s.txt}</span>`).join('') + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, false)}Capitanía de Puerto</span><span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, true)}EMA Campbell</span>` + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#2e7d32', true)}Sensor dudoso</span>`;
+  l2.innerHTML = Object.values(ST).filter(s => s !== ST.sd).map(s => `<span style="display:inline-flex;gap:5px;align-items:center">${dotSw(s.hex)}${s.txt}</span>`).join('') + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, false)}Capitanía de Puerto</span><span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, true)}EMA Campbell</span><span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#5b6673', false, 'rombo')}Red complementaria</span>` + `<span style="display:inline-flex;gap:5px;align-items:center">${svgSt('#2e7d32', true)}Sensor dudoso</span>`;
   box.appendChild(l2);
   const l3 = document.createElement('div'); l3.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;margin-top:6px';
   l3.innerHTML = `<span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#d32f2f', 'rgba(211,47,47,.30)')}Aviso vigente</span><span style="display:inline-flex;gap:5px;align-items:center">${fillSw('#1f6fb2', 'rgba(31,111,178,.12)', '4 3')}Aviso próximo</span>`;

@@ -1,0 +1,17 @@
+{
+  "_nota": "Estaciones de redes complementarias. Aquí NO van claves: las claves se guardan como secretos del repositorio (WU_API_KEY, WL_API_KEY, WL_API_SECRET). Para WeatherLink se puede indicar el número de la estación (id) o una palabra de su nombre (buscar).",
+  "ifop": [
+    {"nombre": "Faro Cabo Carranza", "id": 22, "lat": -35.56087, "lon": -72.61788},
+    {"nombre": "Faro Isla Mocha", "id": 34, "lat": -38.38406, "lon": -73.87514}
+  ],
+  "wunderground": [
+    {"nombre": "Faro Isla Quiriquina", "id": "ITALCA20", "lat": -36.62582, "lon": -73.06066},
+    {"nombre": "Faro Punta Hualpén", "id": "IHUALP1", "lat": -36.74769, "lon": -73.19125}
+  ],
+  "weatherlink": [
+    {"nombre": "Viña del Mar (Montemar)", "id": 240087, "lat": -32.95708, "lon": -71.55036},
+    {"nombre": "Club Náutico Reloncaví", "id": 214661},
+    {"nombre": "Sociber (bahía de Valparaíso)", "buscar": "sociber", "lat": -33.03795, "lon": -71.62315},
+    {"nombre": "Club de Yates de Recreo", "buscar": "recreo"}
+  ]
+}
