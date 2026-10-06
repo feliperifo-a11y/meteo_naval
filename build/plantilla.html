@@ -55,6 +55,8 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 #map{position:absolute;inset:0;background:#c9dbe6}
 #baseStatus{position:absolute;left:50%;transform:translateX(-50%);top:10px;z-index:900;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;display:none}
 #baseStatus.on{display:block}
+#visitas{position:absolute;right:10px;bottom:50px;z-index:800;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.88);color:#3b4652;border-radius:4px;padding:2px 7px;font:11.5px system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+#visitas[hidden]{display:none}
 #coordBox{position:absolute;right:10px;bottom:22px;z-index:800;background:rgba(255,255,255,.88);color:#18212b;border-radius:4px;padding:2px 7px;font:12px ui-monospace,Consolas,monospace;display:none}
 #layerBox{position:absolute;left:10px;bottom:24px;z-index:850;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.18);width:250px;max-height:58%;font-size:12.5px;display:flex;flex-direction:column}
 #layerBox .lbH{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;border-bottom:1px solid var(--line)}
@@ -190,6 +192,7 @@ dialog button{border-color:var(--line)}
     <div id="map" role="application" aria-label="Mapa operativo"></div>
     <div id="baseStatus"><span class="txt"></span></div>
     <div id="coordBox"></div>
+    <div id="visitas" title="Visitas a esta página (se cuenta una por sesión del navegador)" hidden><svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span></span></div>
     <div id="layerBox">
       <div class="lbH" id="lbH"><span>Capas</span><button type="button" id="lbBtn" aria-label="Contraer o expandir capas">▾</button></div>
       <div class="layers" id="layers"></div>
@@ -708,6 +711,22 @@ window.addEventListener('resize', () => map.invalidateSize());
   ajustarMapa();
 })();
 map.fitBounds([[-56.5, -82], [-17.5, -66]]);
+// Contador de visitas (servicio público gratuito; una visita por sesión del navegador). Si falla, no se muestra.
+(async function contarVisita() {
+  const base = 'https://abacus.jasoncameron.dev', clave = 'feliperifo-meteo-naval/visitas';
+  let nueva = true;
+  try { nueva = !sessionStorage.getItem('mn_visita'); sessionStorage.setItem('mn_visita', '1'); } catch (e) {}
+  try {
+    const c = new AbortController(); setTimeout(() => c.abort(), 8000);
+    const r = await fetch(`${base}/${nueva ? 'hit' : 'get'}/${clave}`, { cache: 'no-store', signal: c.signal });
+    const v = (await r.json()).value;
+    if (typeof v === 'number') {
+      const el = document.getElementById('visitas');
+      el.querySelector('span').textContent = `${v.toLocaleString('es-CL')} visita${v === 1 ? '' : 's'}`;
+      el.hidden = false;
+    }
+  } catch (e) {}
+})();
 cargarDatos();
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 setInterval(cargarDatos, 5 * 60000);                // vuelve a leer los datos publicados
