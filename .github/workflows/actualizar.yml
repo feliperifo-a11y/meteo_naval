@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "app/**", "sw.js", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -64,7 +64,8 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data
-          cp index.html version.txt _site/
+          cp index.html version.txt sw.js _site/
+          cp -r app _site/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
 
       - uses: actions/upload-pages-artifact@v3

@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard operativo meteorológico</title>
+<link rel="manifest" href="app/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="app/favicon-32.png">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
+<meta name="theme-color" content="#0f2a44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Meteo Naval">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
 <style>/*LEAFLET_CSS*/</style>
 <style>
@@ -20,6 +28,12 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 .autorWrap{position:relative}
+.hbtns{position:relative}
+#btnInstalar{opacity:.8;font-size:12px;padding:5px 9px}
+#btnInstalar:hover{opacity:1}
+#btnInstalar[hidden],#instalarPop[hidden]{display:none}
+#instalarPop{position:absolute;right:0;top:calc(100% + 8px);z-index:2000;width:300px;max-width:calc(100vw - 24px);background:#fff;color:#18212b;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:12px 14px;font-size:13px;line-height:1.45}
+#instalarPop ol{margin:6px 0 0 18px;padding:0}#instalarPop p{margin:0}
 #btnAutor{border:1px solid rgba(255,255,255,.55);border-radius:4px;font-weight:600;letter-spacing:.2px;background:rgba(255,255,255,.06)}
 #autorPop{position:absolute;right:0;top:calc(100% + 8px);z-index:2000;width:320px;max-width:calc(100vw - 24px);background:#fff;color:#18212b;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:12px 14px;font-size:13px;line-height:1.45}
 #autorPop[hidden]{display:none}
@@ -145,6 +159,8 @@ dialog button{border-color:var(--line)}
         <p>Espero que la información sea de utilidad. Cualquier observación, corrección o sugerencia será muy bien recibida en <a href="mailto:feliperifo@gmail.com?subject=Dashboard%20meteorol%C3%B3gico%20costero">feliperifo@gmail.com</a>.</p>
       </div>
     </div>
+    <button type="button" id="btnInstalar" title="Instalar el dashboard en el celular" hidden><svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><rect x="6" y="2" width="12" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v7m-3-3 3 3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Instalar</button>
+    <div id="instalarPop" role="dialog" aria-label="Instalar en el celular" hidden></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
   </div>
 </header>
@@ -793,6 +809,29 @@ async function cargarDatos() {
   refrescarTodo(true);
   b.disabled = false; b.textContent = 'Actualizar';
 }
+// ============================ Instalar en el celular (aplicación web) ============================
+(function instalar() {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  const b = document.getElementById('btnInstalar'), pop = document.getElementById('instalarPop');
+  const instalada = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (instalada) return;                                   // ya abierta como aplicación: no se muestra el botón
+  const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const movil = ios || /Android|Mobi/.test(ua);
+  let aviso = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); aviso = e; b.hidden = false; });
+  b.hidden = false;                                        // en iPhone y en computador se muestran instrucciones
+  const mostrar = html => { pop.innerHTML = html; pop.hidden = false; };
+  b.addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!pop.hidden) { pop.hidden = true; return; }
+    if (aviso) { aviso.prompt(); const r = await aviso.userChoice.catch(() => null); if (r && r.outcome === 'accepted') b.hidden = true; aviso = null; return; }
+    if (ios) mostrar('<p><b>Instalar en iPhone o iPad</b></p><ol><li>Abra esta página en <b>Safari</b>.</li><li>Toque el botón <b>Compartir</b> (cuadrado con flecha hacia arriba).</li><li>Elija <b>Agregar a pantalla de inicio</b> y luego <b>Agregar</b>.</li></ol>');
+    else if (movil) mostrar('<p><b>Instalar en el celular</b></p><ol><li>Abra el menú del navegador (⋮).</li><li>Elija <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.</li></ol>');
+    else mostrar(`<p><b>Instalar en el celular</b></p><ol><li>Abra en el celular: <a href="${location.origin + location.pathname}" style="color:#1f5fa8;font-weight:600">${(location.host + location.pathname).replace(/\/$/, '')}</a></li><li>Toque <b>Instalar</b>, junto a «Actualizar», y siga las indicaciones.</li></ol><p style="margin-top:6px;color:#5b6673">Quedará con su ícono en la pantalla de inicio, como una aplicación.</p>`);
+  });
+  pop.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => { pop.hidden = true; });
+})();
 document.getElementById('btnRefresh').addEventListener('click', () => { cargarDatos(); cargarBoyasVivo(); });
 (function autor() {
   const b = document.getElementById('btnAutor'), pop = document.getElementById('autorPop');
