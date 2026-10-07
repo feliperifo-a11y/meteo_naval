@@ -1,9 +1,9 @@
-// Service worker mínimo: permite instalar el dashboard como aplicación en el celular.
-// No guarda copias: las páginas y datos propios se piden siempre a la red, para que estén al día.
-// Las consultas a otros sitios (boyas, contador) no se tocan.
+// Service worker mínimo: permite instalar el dashboard como aplicación.
+// Solo atiende la apertura de la página (siempre desde la red, sin copias guardadas);
+// íconos, datos y consultas a otros sitios no pasan por aquí.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
+  if (e.request.mode !== 'navigate') return;
   e.respondWith(fetch(e.request));
 });

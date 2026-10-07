@@ -64,7 +64,7 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data
-          cp index.html version.txt sw.js _site/
+          cp index.html version.txt sw.js apple-touch-icon.png apple-touch-icon-precomposed.png _site/
           cp -r app _site/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
 
