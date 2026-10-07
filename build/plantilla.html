@@ -697,7 +697,7 @@ const CAMPOS_BOYA = ['hsig', 'hmax', 'tsig', 'tp', 'dp', 'tpdir', 'dm', 'tw', 'm
 const numB = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
 const utcB = s => new Date(String(s).slice(0, 19).replace(' ', 'T') + 'Z');
 async function leerBoya(url) {
-  const c = new AbortController(), to = setTimeout(() => c.abort(), 30000);
+  const c = new AbortController(), to = setTimeout(() => c.abort(), 45000);
   try {
     const r = await fetch(`${url}?callback=cb`, { method: 'POST', cache: 'no-store', signal: c.signal });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -721,7 +721,9 @@ async function cargarBoyasVivo() {
   if (!BOYAS.length) BOYAS = BOYAS_CATALOGO.map(([nombre, modelo, url, lat, lon]) => ({ nombre, modelo, url, lat, lon, ultimo: null, serie: [], error: 'pendiente' }));
   refreshBoyas();
   await Promise.all(BOYAS.map(async b => {
-    try { Object.assign(b, resumirBoya(await leerBoya(b.url)), { error: null, consultado: new Date().toISOString() }); }
+    // Un reintento: el servidor de las boyas a veces tarda o corta la primera consulta.
+    const leer = async () => { try { return await leerBoya(b.url); } catch (e) { await new Promise(r => setTimeout(r, 5000)); return leerBoya(b.url); } };
+    try { Object.assign(b, resumirBoya(await leer()), { error: null, consultado: new Date().toISOString() }); }
     catch (e) { if (!b.ultimo) b.error = 'navegador'; }
   }));
   BOYAS_LEYENDO = false;
