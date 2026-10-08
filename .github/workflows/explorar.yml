@@ -1,12 +1,14 @@
 name: explorar-meteogramas
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   x:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
-          curl -s -m 40 "https://meteoarmada.directemar.cl/meteo/site/edic/base/port/Modelo_meteogramas.html" -o mg.html || true
-          wc -c mg.html || true
-          grep -oE 'meteograma_[A-Za-z0-9_]+\.png' mg.html | sort -u || true
-          echo ----; sed -e 's/<[^>]*>/ /g' mg.html | tr -s ' \n' | head -c 6000 || true
-          echo ----; grep -oE 'src="[^"]+\.js"' mg.html || true
+          mkdir -p tmp_explorar
+          curl -s -m 40 "https://meteoarmada.directemar.cl/meteo/site/edic/base/port/Modelo_meteogramas.html" -o tmp_explorar/mg.html || echo "fallo" > tmp_explorar/error.txt
+          git config user.name "explorador"; git config user.email "explorador@users.noreply.github.com"
+          git add tmp_explorar; git commit -m "temporal: catálogo de meteogramas" && git push
