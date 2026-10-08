@@ -91,10 +91,11 @@ Para cada bahía, por día calendario en hora de Chile (descarta días con menos
 - nubosidad: exactamente "Cubierto", "Nublado", "Parcial" o "Despejado"; nubosidad_detalle opcional y breve.
 - viento: dirección (rosa de 8 o 16 rumbos, desde donde sopla) e intensidad en nudos al estilo boletín (ej. "S/SW 10/15 kt, aumentando a 15/20 kt en la tarde").
 - precipitacion: solo si el meteograma la muestra; si no, cadena vacía.
+- temp_max y temp_min: temperatura máxima y mínima del día a 2 m (superficie), en °C, leídas de la línea azul del panel TT-2m, redondeadas a enteros.
 - inicializacion_utc: la inicialización que indica la imagen (ej. 2026-10-08T12).
 No inventes datos que el gráfico no muestre. Español técnico y breve.'
 
-ESQUEMA='{"type":"object","properties":{"bahias":{"type":"array","items":{"type":"object","properties":{"codigo":{"type":"string"},"inicializacion_utc":{"type":"string"},"situacion_sinoptica":{"type":"string"},"dias":{"type":"array","items":{"type":"object","properties":{"fecha":{"type":"string"},"nubosidad":{"type":"string","enum":["Cubierto","Nublado","Parcial","Despejado"]},"nubosidad_detalle":{"type":"string"},"viento":{"type":"string"},"precipitacion":{"type":"string"}},"required":["fecha","nubosidad","viento"]}}},"required":["codigo","situacion_sinoptica","dias"]}}},"required":["bahias"]}'
+ESQUEMA='{"type":"object","properties":{"bahias":{"type":"array","items":{"type":"object","properties":{"codigo":{"type":"string"},"inicializacion_utc":{"type":"string"},"situacion_sinoptica":{"type":"string"},"dias":{"type":"array","items":{"type":"object","properties":{"fecha":{"type":"string"},"nubosidad":{"type":"string","enum":["Cubierto","Nublado","Parcial","Despejado"]},"nubosidad_detalle":{"type":"string"},"viento":{"type":"string"},"precipitacion":{"type":"string"},"temp_max":{"type":"number"},"temp_min":{"type":"number"}},"required":["fecha","nubosidad","viento","temp_max","temp_min"]}}},"required":["codigo","situacion_sinoptica","dias"]}}},"required":["bahias"]}'
 
 # 3. Una consulta por zona (pocas consultas = menos uso del cupo)
 rm -f "$TRAB/res_"*.json

@@ -36,6 +36,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;font-weight:600;padding:6px 14px 4px}
 td{padding:6px 14px;border-top:1px solid var(--line);vertical-align:top}
 td.f{white-space:nowrap;font-weight:600}
+td.t{white-space:nowrap;font-weight:600}
+.tmax{color:#c0392b}.tmin{color:#1f5fa8}.tsep{color:var(--muted);margin:0 2px;font-weight:400}
+@media (prefers-color-scheme:dark){.tmax{color:#ff8a7a}.tmin{color:#7fb2ff}}
 .nb{display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
 .nb small{display:block;font-weight:400;color:var(--muted);white-space:normal}
 .pp{display:block;color:var(--acc);font-size:12px;margin-top:2px}
@@ -71,10 +74,10 @@ function tarjeta(b) {
   const p = b.pronostico;
   const enlace = `<a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a>`;
   if (!p) return `<div class="card"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div><div class="sin err">${escH(b.error || 'Sin pronóstico disponible.')}</div></div>`;
-  const filas = (p.dias || []).map(d => `<tr><td class="f">${fmtDia(d.fecha)}</td><td><span class="nb">${ICONO[d.nubosidad] || ''}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small style="display:block;color:var(--muted)">${escH(d.nubosidad_detalle)}</small>` : ''}</td><td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td></tr>`).join('');
+  const filas = (p.dias || []).map(d => `<tr><td class="f">${fmtDia(d.fecha)}</td><td class="t">${d.temp_max != null ? `<span class="tmax">${Math.round(d.temp_max)}°</span>` : '–'}<span class="tsep">/</span>${d.temp_min != null ? `<span class="tmin">${Math.round(d.temp_min)}°</span>` : '–'}</td><td><span class="nb">${ICONO[d.nubosidad] || ''}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small style="display:block;color:var(--muted)">${escH(d.nubosidad_detalle)}</small>` : ''}</td><td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td></tr>`).join('');
   return `<div class="card"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div>
     <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
-    <table><thead><tr><th>Día</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${filas}</tbody></table>
+    <table><thead><tr><th>Día</th><th title="Temperatura máxima / mínima a 2 m">Máx/Mín</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${filas}</tbody></table>
     <div class="pie">Corrida WRF ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</div></div>`;
 }
 function pintar() {

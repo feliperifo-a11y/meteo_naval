@@ -81,6 +81,7 @@ Redacta el pronóstico en español técnico y breve, por día calendario en hora
 - Nubosidad de cada día: exactamente una de estas categorías: "Cubierto", "Nublado", "Parcial" o "Despejado". Si cambia durante el día, puedes agregar un detalle breve (ej. "nubosidad baja en la mañana").
 - Viento de cada día: dirección en rosa de 8 o 16 rumbos y rango de intensidad en nudos con el formato de los boletines (ej. "S/SW 10/15 kt, aumentando a 15/20 kt en la tarde"). Usa la dirección de las barbas (desde donde sopla el viento).
 - Precipitación de cada día solo si el meteograma la muestra (ej. "Lloviznas débiles, 1,6 mm"); si no hay, déjalo vacío.
+- Temperatura máxima y mínima de cada día a 2 m (superficie), en °C, leídas de la línea azul del panel TT-2m, redondeadas a enteros.
 Lee los valores con cuidado; no inventes datos que el gráfico no muestra. Responde únicamente con la herramienta entregada."""
 
 HERRAMIENTA = {
@@ -101,8 +102,10 @@ HERRAMIENTA = {
                         "nubosidad_detalle": {"type": "string"},
                         "viento": {"type": "string"},
                         "precipitacion": {"type": "string"},
+                        "temp_max": {"type": "number"},
+                        "temp_min": {"type": "number"},
                     },
-                    "required": ["fecha", "nubosidad", "viento"],
+                    "required": ["fecha", "nubosidad", "viento", "temp_max", "temp_min"],
                 },
             },
         },
