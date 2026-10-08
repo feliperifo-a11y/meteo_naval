@@ -1,0 +1,12 @@
+name: explorar-meteogramas
+on: workflow_dispatch
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -m 40 "https://meteoarmada.directemar.cl/meteo/site/edic/base/port/Modelo_meteogramas.html" -o mg.html || true
+          wc -c mg.html || true
+          grep -oE 'meteograma_[A-Za-z0-9_]+\.png' mg.html | sort -u || true
+          echo ----; sed -e 's/<[^>]*>/ /g' mg.html | tr -s ' \n' | head -c 6000 || true
+          echo ----; grep -oE 'src="[^"]+\.js"' mg.html || true
