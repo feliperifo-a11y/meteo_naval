@@ -13,7 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="Meteo Naval">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
-<style>/*LEAFLET_CSS*/</style>
+<style>/*LEAFLET_CSS*/.iaIco{background:rgba(255,255,255,.92);border:1px solid #9aa6b2;border-radius:50%;display:flex!important;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:pointer}
+</style>
 <style>
 :root{
   --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5b6673; --line:#d6dce3; --head:#0f2a44; --headInk:#f2f6fa;
@@ -345,6 +346,7 @@ map.createPane('limPane'); map.getPane('limPane').style.zIndex = 400;
 map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 map.createPane('boyaPane'); map.getPane('boyaPane').style.zIndex = 650;
 map.createPane('stPane'); map.getPane('stPane').style.zIndex = 640;
+map.createPane('iaPane'); map.getPane('iaPane').style.zIndex = 620;
 
 function decodePolyline6(str) {
   const out = []; let i = 0, lat = 0, lon = 0;
@@ -767,6 +769,66 @@ function refreshBoyas() {
   LAYERS.boyas.lyr = buildBoyas(); if (on) LAYERS.boyas.lyr.addTo(map);
 }
 
+
+// ============================ Pronóstico WRF + IA en el mapa ============================
+// Un símbolo de nubosidad por bahía (día de hoy, o el primero disponible); al pasar el cursor se ve el resumen.
+const IA_POS = {
+  ARICA_norte_d03: [-18.470, -70.335], IQUIQUE_norte_d03: [-20.200, -70.170], PATACHE_norte_d03: [-20.800, -70.215],
+  TOCOPILLA_norte_d04: [-22.090, -70.225], ANTOFAGASTA_norte_d04: [-23.640, -70.420], CHANARAL_norte_d05: [-26.345, -70.655],
+  CALDERA_norte_d05: [-27.060, -70.840], COQUIMBO_centro_d07: [-29.940, -71.355], LOSVILOS_centro_d08: [-31.910, -71.530],
+  QUINTERO_centro_d08: [-32.770, -71.535], VALPARAISO_centro_d08: [-33.020, -71.630], SANANTONIO_centro_d08: [-33.580, -71.640],
+  LIRQUEN_centro_d09: [-36.700, -72.990], TALCAHUANO_centro_d09: [-36.690, -73.100], SANVICENTE_centro_d09: [-36.740, -73.165],
+  CORONEL_centro_d09: [-37.025, -73.180], LOTA_centro_d09: [-37.090, -73.170], LEBU_centro_d09: [-37.600, -73.690],
+  VALDIVIA_centro_d10: [-39.815, -73.245], CORRAL_centro_d10: [-39.870, -73.430], PUERTOMONTT_sur_d12: [-41.490, -72.950],
+  GCORONADO_sur_d12: [-41.700, -73.950], ANCUD_sur_d12: [-41.850, -73.850], CASTRO_sur_d12: [-42.480, -73.760],
+  QUELLON_sur_d12: [-43.120, -73.620], GOLFOCORCOVADO_sur_d12: [-43.400, -73.200], ISLAGUAFO_sur_d12: [-43.600, -74.720],
+  FAROEVANGELISTA_sur_d13: [-52.400, -75.100], PASOTAMAR_sur_d13: [-52.930, -73.800], SENOOTWAY_sur_d14: [-52.950, -71.400],
+  PUNTAARENAS_sur_d14: [-53.160, -70.880], BRECKNOCK_sur_d15: [-54.550, -71.300], TORTUOSO_sur_d11: [-53.620, -72.500],
+};
+const ICO_NUB = {
+  Despejado: '<circle cx="12" cy="12" r="5" fill="#f2b705"/><g stroke="#f2b705" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g>',
+  Parcial: '<circle cx="9" cy="9" r="4.5" fill="#f2b705"/><path d="M8 20h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 8 20Z" fill="#b8c2cc"/>',
+  Nublado: '<path d="M6 19h12a4.5 4.5 0 0 0 .6-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6 19Z" fill="#8a96a3"/>',
+  Cubierto: '<path d="M4 15h10a3.5 3.5 0 0 0 .4-7 4.7 4.7 0 0 0-9 1.3A2.9 2.9 0 0 0 4 15Z" fill="#a9b3bd"/><path d="M8 21h11a4 4 0 0 0 .5-8 5.3 5.3 0 0 0-10.2 1.4A3.3 3.3 0 0 0 8 21Z" fill="#5b6673"/>',
+};
+const svgNub = (n, px = 20) => `<svg width="${px}" height="${px}" viewBox="0 0 24 24" aria-hidden="true">${ICO_NUB[n] || '<circle cx="12" cy="12" r="4" fill="#8a96a3"/>'}</svg>`;
+let IA_DATOS = null;
+const hoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+function diaIA(p) {
+  const dias = (p && p.dias) || []; if (!dias.length) return null;
+  const hoy = hoyChile(); return dias.find(d => d.fecha >= hoy) || dias[dias.length - 1];
+}
+function fechaCorta(f) { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', ''); }
+function tipIA(b, d) {
+  const t = (d.temp_max != null || d.temp_min != null) ? `<div><b style="color:#c0392b">${d.temp_max != null ? Math.round(d.temp_max) + '°' : '–'}</b> / <b style="color:#1f5fa8">${d.temp_min != null ? Math.round(d.temp_min) + '°' : '–'}</b> <span style="opacity:.75">máx / mín</span></div>` : '';
+  return `<div style="width:240px;white-space:normal;line-height:1.35"><div style="font-weight:700;font-size:13px">${escH(b.nombre)}</div>` +
+    `<div style="opacity:.75;font-size:11px;margin-bottom:3px">WRF + IA · ${fechaCorta(d.fecha)}</div>` +
+    `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
+    (d.nubosidad_detalle ? `<div style="font-size:11.5px;opacity:.85">${escH(d.nubosidad_detalle)}</div>` : '') + t +
+    `<div style="margin-top:2px"><b>Viento:</b> ${escH(d.viento || '–')}</div>` +
+    (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') +
+    `<div style="opacity:.65;font-size:10.5px;margin-top:3px">Referencial y experimental · clic para ver el pronóstico completo</div></div>`;
+}
+function buildIA() {
+  const g = L.layerGroup();
+  for (const b of (IA_DATOS && IA_DATOS.bahias) || []) {
+    const pos = IA_POS[b.codigo], d = diaIA(b.pronostico);
+    if (!pos || !d) continue;
+    L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html: svgNub(d.nubosidad, 20), iconSize: [26, 26], iconAnchor: [38, 13] }) })   // dibujado 25 px al oeste (sobre el mar) para no tapar la estación
+      .bindTooltip(tipIA(b, d), { direction: 'top', offset: [-25, -12], opacity: 0.97 })
+      .on('click', () => window.open('ia.html', '_blank', 'noopener'))
+      .addTo(g);
+  }
+  return g;
+}
+function refreshIA() {
+  if (!LAYERS.ia) return;
+  const on = LAYERS.ia.lyr && map.hasLayer(LAYERS.ia.lyr);
+  if (LAYERS.ia.lyr) map.removeLayer(LAYERS.ia.lyr);
+  LAYERS.ia.lyr = buildIA(); if (on) LAYERS.ia.lyr.addTo(map);
+}
+async function cargarIA() { try { IA_DATOS = await leerJSON('data/wrf_ia.json'); refreshIA(); } catch (e) {} }
+
 // ============================ Panel de capas ============================
 const LAYERS = {};
 function addLayerRow(box, key, name, sw, on, build) {
@@ -783,6 +845,7 @@ function renderCapas() {
   grp('Operación');
   addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), true, buildEst);
   addLayerRow(box, 'boyas', 'Boyas meteoceanográficas', svgBoya('#1f6fb2', 16), true, buildBoyas);
+  addLayerRow(box, 'ia', 'Pronóstico WRF + IA (hoy)', svgNub('Parcial', 16), true, buildIA);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
   grp('Límites marítimos');
@@ -919,7 +982,10 @@ async function contarVisita(nueva) {
 cargarDatos();
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 cargarBoyasVivo();
-setInterval(cargarBoyasVivo, 20 * 60000);           // boyas: las lee el navegador de cada visitante cada 20 min
+setInterval(cargarBoyasVivo, 20 * 60000);
+cargarIA();
+setInterval(cargarIA, 15 * 60000);                 // pronóstico WRF + IA (se genera 06:00 y 18:00)
+setInterval(refreshIA, 30 * 60000);                // cambia de día a medianoche           // boyas: las lee el navegador de cada visitante cada 20 min
 setInterval(cargarDatos, 5 * 60000);                // vuelve a leer los datos publicados
 // Si se publicó una versión nueva de la página, la pestaña abierta se recarga sola (sin perder los paneles plegados).
 setInterval(async () => {
