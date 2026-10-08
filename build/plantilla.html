@@ -4,10 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard operativo meteorológico</title>
-<link rel="manifest" href="app/manifest.webmanifest?v=2">
-<link rel="icon" type="image/png" sizes="32x32" href="app/favicon-32.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="https://feliperifo-a11y.github.io/meteo_naval/app/icono-ios-180.png">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="https://feliperifo-a11y.github.io/meteo_naval/app/icono-ios-180.png">
+<link rel="apple-touch-icon" href="/meteo_naval/app/ios-180.png">
+<link rel="icon" type="image/png" href="/meteo_naval/app/ic-192.png">
+<link rel="manifest" href="/meteo_naval/app/app.webmanifest">
 <meta name="theme-color" content="#0f2a44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -837,7 +836,7 @@ async function cargarDatos() {
   else if (ios) pasos = `<li>Toque ${comp} <b>Compartir</b>, abajo en la pantalla (si no lo ve, toque <b>···</b> y luego <b>Compartir</b>).</li><li>Elija <b>Agregar a pantalla de inicio</b> y toque <b>Agregar</b>.</li>`;
   else if (android) pasos = '<li>Toque el menú <b>⋮</b> del navegador.</li><li>Elija <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.</li>';
   else pasos = '<li>Abra este enlace en su celular.</li><li>Siga los dos pasos que aparecerán.</li>';
-  document.getElementById('giCaja').innerHTML = `<img src="app/icono-192.png?v=2" alt=""><h3>Instalar Meteo Naval</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
+  document.getElementById('giCaja').innerHTML = `<img src="/meteo_naval/app/ic-192.png" alt=""><h3>Instalar Meteo Naval</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
   document.getElementById('giFlecha').style.display = (ios && safari) ? '' : 'none';
   const g = document.getElementById('guiaInst'); g.hidden = false;
   const cerrar = () => { g.hidden = true; };
@@ -845,7 +844,8 @@ async function cargarDatos() {
   g.addEventListener('click', e => { if (e.target === g) cerrar(); });
 })();
 // Aplicación web: la página sigue pudiendo instalarse desde el menú del navegador
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+// Sin service worker: se eliminan los registrados antes (el iPhone no lograba leer el ícono con él).
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
 document.getElementById('btnRefresh').addEventListener('click', () => { cargarDatos(); cargarBoyasVivo(); });
 (function autor() {
   const b = document.getElementById('btnAutor'), pop = document.getElementById('autorPop');

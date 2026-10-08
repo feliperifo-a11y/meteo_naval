@@ -1,9 +1,3 @@
-// Service worker mínimo: permite instalar el dashboard como aplicación.
-// Solo atiende la apertura de la página (siempre desde la red, sin copias guardadas);
-// íconos, datos y consultas a otros sitios no pasan por aquí.
+// Ya no se usa: este archivo se reemplaza para que los equipos que lo tenían lo den de baja solos.
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', e => {
-  if (e.request.mode !== 'navigate') return;
-  e.respondWith(fetch(e.request));
-});
+self.addEventListener('activate', e => e.waitUntil(self.registration.unregister()));
