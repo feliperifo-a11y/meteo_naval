@@ -29,6 +29,7 @@ h2{font-size:15px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
 .card .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
 .card .hd b{font-size:15.5px}
+.res{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px}
 .card .hd a{font-size:12px;color:var(--acc);white-space:nowrap}
 .sin{padding:10px 14px 4px;font-size:13px}
 .sin span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px}
@@ -55,7 +56,7 @@ td.t{white-space:nowrap;font-weight:600}
   <a class="btn" href="./">← Volver al dashboard</a>
 </header>
 <main>
-  <div class="aviso">Pronóstico escrito generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF de 3 km. Se actualiza solo con cada nueva corrida del modelo. Es un producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>
+  <div class="aviso">Pronóstico escrito generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica). Se actualiza solo con cada nueva corrida del modelo. Es un producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>
   <div class="zonas" id="zonas"></div>
   <div id="cont"><div class="vacio">Cargando pronósticos…</div></div>
 </main>
@@ -73,13 +74,14 @@ const fmtInit = s => { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})T
 let DATOS = null, ZONA = '', YA_SEL = false;
 function tarjeta(b) {
   const p = b.pronostico;
+  const res = `<span class="res">${escH(b.resolucion || '3 km')}</span>`;
   const enlace = `<a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a>`;
-  if (!p) return `<div class="card" id="b_${escH(b.codigo)}"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div><div class="sin err">${escH(b.error || 'Sin pronóstico disponible.')}</div></div>`;
+  if (!p) return `<div class="card" id="b_${escH(b.codigo)}"><div class="hd"><span><b>${escH(b.nombre)}</b>${res}</span>${enlace}</div><div class="sin err">${escH(b.error || 'Sin pronóstico disponible.')}</div></div>`;
   const filas = (p.dias || []).map(d => `<tr><td class="f">${fmtDia(d.fecha)}</td><td class="t">${d.temp_max != null ? `<span class="tmax">${Math.round(d.temp_max)}°</span>` : '–'}<span class="tsep">/</span>${d.temp_min != null ? `<span class="tmin">${Math.round(d.temp_min)}°</span>` : '–'}</td><td><span class="nb">${ICONO[d.nubosidad] || ''}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small style="display:block;color:var(--muted)">${escH(d.nubosidad_detalle)}</small>` : ''}</td><td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td></tr>`).join('');
-  return `<div class="card" id="b_${escH(b.codigo)}"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div>
+  return `<div class="card" id="b_${escH(b.codigo)}"><div class="hd"><span><b>${escH(b.nombre)}</b>${res}</span>${enlace}</div>
     <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
     <table><thead><tr><th>Día</th><th title="Temperatura máxima / mínima a 2 m">Máx/Mín</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${filas}</tbody></table>
-    <div class="pie">Corrida WRF ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</div></div>`;
+    <div class="pie">Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</div></div>`;
 }
 function pintar() {
   const zonas = [...new Set(DATOS.bahias.map(b => b.zona))];

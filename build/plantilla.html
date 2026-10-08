@@ -784,6 +784,16 @@ const IA_POS = {
   QUELLON_sur_d12: [-43.120, -73.620], GOLFOCORCOVADO_sur_d12: [-43.400, -73.200], ISLAGUAFO_sur_d12: [-43.600, -74.720],
   FAROEVANGELISTA_sur_d13: [-52.400, -75.100], PASOTAMAR_sur_d13: [-52.930, -73.800], SENOOTWAY_sur_d14: [-52.950, -71.400],
   PUNTAARENAS_sur_d14: [-53.160, -70.880], BRECKNOCK_sur_d15: [-54.550, -71.300], TORTUOSO_sur_d11: [-53.620, -72.500],
+  // 9 km
+  HUASCO_centro_d06: [-28.460, -71.225], CONSTITUCION_centro_d06: [-35.330, -72.420], ISLAMOCHA_centro_d06: [-38.370, -73.920],
+  PUERTOSAAVEDRA_centro_d06: [-38.785, -73.400], CMORALEDA_sur_d11: [-44.800, -73.450], PUERTOCHACABUCO_sur_d11: [-45.465, -72.825],
+  GOLFOPENAS_sur_d11: [-47.400, -75.000], PUERTONATALES_sur_d11: [-51.730, -72.510], PRIMERANGOSTURA_sur_d11: [-52.520, -69.600],
+  FROWARD_sur_d11: [-53.900, -71.300], PUERTOWILLIAMS_sur_d11: [-54.935, -67.610], CABODEHORNOS_sur_d11: [-55.980, -67.270],
+  // 10 km (Antártica)
+  A_FILDES_Antartica_d02: [-62.200, -58.950], A_BASEPRAT_Antartica_d02: [-62.480, -59.665], A_DECEPCION_Antartica_d02: [-62.970, -60.650],
+  A_BAHIAWHISKY_Antartica_d02: [-63.930, -57.950], A_BASEOHIGGINS_Antartica_d02: [-63.320, -57.900], A_ANTARCTIC_Antartica_d02: [-63.400, -56.900],
+  A_CALETASNOW_Antartica_d02: [-62.750, -61.350], A_GERLACHE_Antartica_d02: [-64.500, -62.300], A_BAHIAPARAISO_Antartica_d02: [-64.850, -62.900],
+  A_BAHIASOUTH_Antartica_d02: [-64.880, -63.580],
 };
 const ICO_NUB = {
   Despejado: '<circle cx="12" cy="12" r="5" fill="#f2b705"/><g stroke="#f2b705" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g>',
@@ -804,7 +814,7 @@ const tGrado = v => v != null ? Math.round(v) + '°' : '–';
 function tipIA(b, d) {
   const t = (d.temp_max != null || d.temp_min != null) ? `<div><b style="color:#1f5fa8">${tGrado(d.temp_min)}</b> / <b style="color:#c0392b">${tGrado(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` : '';
   return `<div style="width:240px;white-space:normal;line-height:1.35"><div style="font-weight:700;font-size:13px">${escH(b.nombre)}</div>` +
-    `<div style="opacity:.75;font-size:11px;margin-bottom:3px">WRF + IA · ${fechaCorta(d.fecha)}</div>` +
+    `<div style="opacity:.75;font-size:11px;margin-bottom:3px">WRF ${escH(b.resolucion || '3 km')} + IA · ${fechaCorta(d.fecha)}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
     (d.nubosidad_detalle ? `<div style="font-size:11.5px;opacity:.85">${escH(d.nubosidad_detalle)}</div>` : '') + t +
     `<div style="margin-top:2px"><b>Viento:</b> ${escH(d.viento || '–')}</div>` +
