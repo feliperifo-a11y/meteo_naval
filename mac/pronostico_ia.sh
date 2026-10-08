@@ -1,10 +1,10 @@
 #!/bin/bash
 # PRONÓSTICOS WRF + IA desde este Mac, con la suscripción de Claude (Claude Code), sin costo de API.
-# Cada hora revisa si cambió algún meteograma WRF de 3 km. Solo si hay corrida nueva:
+# A las 06:00 y a las 18:00 (hora de Chile) revisa si cambió algún meteograma WRF de 3 km. Solo si hay corrida nueva:
 #   1. descarga los meteogramas nuevos y los reduce de tamaño;
 #   2. le pide a Claude Code (sesión iniciada con su cuenta de Claude) el pronóstico escrito, por zona;
 #   3. sube el resultado al repositorio como data/wrf_ia.json (la página ia.html lo muestra).
-# Lo ejecuta launchd cada hora. Se actualiza solo desde el repositorio.
+# Lo ejecuta launchd a las 06:00 y 18:00 (si el Mac dormía, al despertar). Se actualiza solo desde el repositorio.
 set -u
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN      # siempre la suscripción, nunca la API pagada
 REPO="feliperifo-a11y/meteo_naval"

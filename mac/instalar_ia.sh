@@ -28,14 +28,17 @@ case "$R" in *OK*) echo "    Sesión correcta.";; *) echo "    Claude Code no re
 echo "2/4 Descargando el script…"
 curl -fsSL "$URL/pronostico_ia.sh" -o "$DEST/pronostico_ia.sh" && chmod +x "$DEST/pronostico_ia.sh"
 curl -fsSL "$URL/desinstalar_ia.sh" -o "$DEST/desinstalar_ia.sh" && chmod +x "$DEST/desinstalar_ia.sh"
-echo "3/4 Programando la revisión cada hora…"
+echo "3/4 Programando la revisión a las 06:00 y a las 18:00 (hora de este Mac)…"
 cat > "$PLIST" <<P
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>cl.meteonaval.ia</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$DEST/pronostico_ia.sh</string></array>
-  <key>StartInterval</key><integer>3600</integer>
+  <key>StartCalendarInterval</key><array>
+    <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
   <key>RunAtLoad</key><false/>
   <key>EnvironmentVariables</key><dict><key>PATH</key><string>$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
   <key>StandardOutPath</key><string>$DEST/registro_ia.log</string>
@@ -44,7 +47,11 @@ cat > "$PLIST" <<P
 P
 launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
-echo "4/4 Primera ejecución (puede tardar varios minutos: lee los 33 meteogramas)…"
-MN_FORZAR=1 MN_ACTUALIZADO=1 /bin/bash "$DEST/pronostico_ia.sh" | tee -a "$DEST/registro_ia.log"
+if [ -s "$DEST/ia/marcas.txt" ]; then
+  echo "4/4 Ya estaba instalado: se mantienen los pronósticos actuales (sin nueva lectura)."
+else
+  echo "4/4 Primera ejecución (puede tardar varios minutos: lee los 33 meteogramas)…"
+  MN_FORZAR=1 MN_ACTUALIZADO=1 /bin/bash "$DEST/pronostico_ia.sh" | tee -a "$DEST/registro_ia.log"
+fi
 echo; echo "Listo. Registro: $DEST/registro_ia.log"
 echo "Para desinstalar: bash \"$DEST/desinstalar_ia.sh\""
