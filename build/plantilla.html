@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Meteo Naval">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
-<style>/*LEAFLET_CSS*/.iaIco{background:rgba(255,255,255,.92);border:1px solid #9aa6b2;border-radius:50%;display:flex!important;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:pointer}
+<style>/*LEAFLET_CSS*/.iaIco{background:none;border:0;cursor:pointer}.iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}.iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}.iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}.iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}.iaDias{background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:3px;display:flex;gap:2px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25);font:12px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}.iaDias span{font-weight:700;font-size:11px;color:#0f2a44;padding:0 6px}.iaDias button{font:inherit;border:0;background:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:#18212b;text-transform:capitalize}.iaDias button.on{background:#0f2a44;color:#fff}
 </style>
 <style>
 :root{
@@ -792,15 +792,17 @@ const ICO_NUB = {
   Cubierto: '<path d="M4 15h10a3.5 3.5 0 0 0 .4-7 4.7 4.7 0 0 0-9 1.3A2.9 2.9 0 0 0 4 15Z" fill="#a9b3bd"/><path d="M8 21h11a4 4 0 0 0 .5-8 5.3 5.3 0 0 0-10.2 1.4A3.3 3.3 0 0 0 8 21Z" fill="#5b6673"/>',
 };
 const svgNub = (n, px = 20) => `<svg width="${px}" height="${px}" viewBox="0 0 24 24" aria-hidden="true">${ICO_NUB[n] || '<circle cx="12" cy="12" r="4" fill="#8a96a3"/>'}</svg>`;
-let IA_DATOS = null;
+let IA_DATOS = null, IA_DIA = 0;   // 0 = hoy, 1 = mañana, 2 = pasado mañana
 const hoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+const sumarDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function diaIA(p) {
   const dias = (p && p.dias) || []; if (!dias.length) return null;
-  const hoy = hoyChile(); return dias.find(d => d.fecha >= hoy) || dias[dias.length - 1];
+  return dias.find(d => d.fecha === sumarDias(hoyChile(), IA_DIA)) || null;
 }
 function fechaCorta(f) { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', ''); }
+const tGrado = v => v != null ? Math.round(v) + '°' : '–';
 function tipIA(b, d) {
-  const t = (d.temp_max != null || d.temp_min != null) ? `<div><b style="color:#c0392b">${d.temp_max != null ? Math.round(d.temp_max) + '°' : '–'}</b> / <b style="color:#1f5fa8">${d.temp_min != null ? Math.round(d.temp_min) + '°' : '–'}</b> <span style="opacity:.75">máx / mín</span></div>` : '';
+  const t = (d.temp_max != null || d.temp_min != null) ? `<div><b style="color:#1f5fa8">${tGrado(d.temp_min)}</b> / <b style="color:#c0392b">${tGrado(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` : '';
   return `<div style="width:240px;white-space:normal;line-height:1.35"><div style="font-weight:700;font-size:13px">${escH(b.nombre)}</div>` +
     `<div style="opacity:.75;font-size:11px;margin-bottom:3px">WRF + IA · ${fechaCorta(d.fecha)}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
@@ -809,24 +811,61 @@ function tipIA(b, d) {
     (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') +
     `<div style="opacity:.65;font-size:10.5px;margin-top:3px">Referencial y experimental · clic para ver el pronóstico completo</div></div>`;
 }
+// Etiqueta al estilo de los mapas de pronóstico por ciudad: ícono + nombre + mínima / máxima.
+// Se dibuja hacia el este del punto (sobre tierra) para no tapar la estación.
+function chipIA(b, d) {
+  return `<div class="iaChip">${svgNub(d.nubosidad, 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span>` +
+    `<span class="iaT"><b class="mn">${tGrado(d.temp_min)}</b><b class="mx">${tGrado(d.temp_max)}</b></span></div></div>`;
+}
 function buildIA() {
   const g = L.layerGroup();
   for (const b of (IA_DATOS && IA_DATOS.bahias) || []) {
     const pos = IA_POS[b.codigo], d = diaIA(b.pronostico);
     if (!pos || !d) continue;
-    L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html: svgNub(d.nubosidad, 20), iconSize: [26, 26], iconAnchor: [38, 13] }) })   // dibujado 25 px al oeste (sobre el mar) para no tapar la estación
-      .bindTooltip(tipIA(b, d), { direction: 'top', offset: [-25, -12], opacity: 0.97 })
+    L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html: chipIA(b, d), iconSize: null, iconAnchor: [-9, 15] }) })
+      .bindTooltip(tipIA(b, d), { direction: 'top', offset: [45, -16], opacity: 0.97 })
       .on('click', () => window.open('ia.html', '_blank', 'noopener'))
       .addTo(g);
   }
+  g.on('add', () => setTimeout(despejarIA, 0));
   return g;
 }
+// Con poco zoom muchas bahías quedan juntas: se oculta la etiqueta que choca con otra ya visible (de norte a sur).
+function despejarIA() {
+  const lyr = LAYERS.ia && LAYERS.ia.lyr; if (!lyr || !map.hasLayer(lyr)) return;
+  const vis = [];
+  lyr.eachLayer(m => {
+    const el = m.getElement(); if (!el) return;
+    el.style.display = '';
+    const r = el.getBoundingClientRect();
+    const choca = vis.some(v => r.left < v.right + 2 && r.right > v.left - 2 && r.top < v.bottom + 2 && r.bottom > v.top - 2);
+    if (choca) el.style.display = 'none'; else vis.push(r);
+  });
+}
+map.on('zoomend', () => setTimeout(despejarIA, 0));
 function refreshIA() {
   if (!LAYERS.ia) return;
   const on = LAYERS.ia.lyr && map.hasLayer(LAYERS.ia.lyr);
   if (LAYERS.ia.lyr) map.removeLayer(LAYERS.ia.lyr);
   LAYERS.ia.lyr = buildIA(); if (on) LAYERS.ia.lyr.addTo(map);
+  pintarDiasIA();
 }
+// Selector de día sobre el mapa (Hoy / Mañana / Pasado mañana)
+const ctlDiasIA = L.control({ position: 'topleft' });
+ctlDiasIA.onAdd = () => { const d = L.DomUtil.create('div', 'iaDias'); L.DomEvent.disableClickPropagation(d); return d; };
+ctlDiasIA.addTo(map);
+function pintarDiasIA() {
+  const box = document.querySelector('.iaDias'); if (!box) return;
+  const on = LAYERS.ia && LAYERS.ia.lyr && map.hasLayer(LAYERS.ia.lyr);
+  box.style.display = on && IA_DATOS ? '' : 'none';
+  const hoy = hoyChile();
+  box.innerHTML = '<span>WRF + IA</span>' + [0, 1, 2].map(n => {
+    const f = sumarDias(hoy, n), et = n === 0 ? 'Hoy' : new Date(f + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric' }).replace('.', '');
+    return `<button type="button" data-n="${n}" class="${n === IA_DIA ? 'on' : ''}">${et}</button>`;
+  }).join('');
+  box.querySelectorAll('button').forEach(bt => bt.onclick = () => { IA_DIA = +bt.dataset.n; refreshIA(); });
+}
+map.on('overlayadd overlayremove layeradd layerremove', e => { if (LAYERS.ia && e.layer === LAYERS.ia.lyr) pintarDiasIA(); });
 async function cargarIA() { try { IA_DATOS = await leerJSON('data/wrf_ia.json'); refreshIA(); } catch (e) {} }
 
 // ============================ Panel de capas ============================
