@@ -11,8 +11,17 @@ if [ -z "$CLAUDE" ]; then
   echo "Falta Claude Code. Instálelo con:  curl -fsSL https://claude.ai/install.sh | bash"
   echo "Luego ejecute  claude  una vez, inicie sesión con su cuenta de Claude, y vuelva a correr este instalador."; exit 1
 fi
-security find-generic-password -s meteo_naval_github -a meteo_naval -w >/dev/null 2>&1 \
-  || { echo "Falta el token de GitHub de meteo_naval (instale primero el envío de estaciones)."; exit 1; }
+# Token de GitHub: el mismo del envío de estaciones; si este Mac no lo tiene, se toma del portapapeles
+# (pbpaste | bash instalar_ia.sh) y se guarda en el Llavero.
+if ! security find-generic-password -s meteo_naval_github -a meteo_naval -w >/dev/null 2>&1; then
+  read -r -s TOKEN || true
+  TOKEN=$(printf '%s' "${TOKEN:-}" | grep -oE 'github_pat_[A-Za-z0-9_]+|ghp_[A-Za-z0-9]+' | head -1)
+  [ -n "$TOKEN" ] || { echo "Falta el token de GitHub. Cópielo en GitHub con el botón de copiar y ejecute:  pbpaste | bash /tmp/instalar_ia.sh"; exit 1; }
+  COD=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/feliperifo-a11y/meteo_naval)
+  [ "$COD" = "200" ] || { echo "GitHub rechazó el token (código $COD)."; exit 1; }
+  security add-generic-password -U -s meteo_naval_github -a meteo_naval -w "$TOKEN"; unset TOKEN
+  echo "Token de GitHub guardado en el Llavero."
+fi
 echo "1/4 Verificando la sesión de Claude Code (suscripción)…"
 R=$(env -u ANTHROPIC_API_KEY "$CLAUDE" -p "Responde solo: OK" 2>&1 | tail -1)
 case "$R" in *OK*) echo "    Sesión correcta.";; *) echo "    Claude Code no respondió: $R"; echo "    Ejecute  claude  , inicie sesión con su cuenta de Claude y repita."; exit 1;; esac
