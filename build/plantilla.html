@@ -824,7 +824,7 @@ function buildIA() {
     if (!pos || !d) continue;
     L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html: chipIA(b, d), iconSize: null, iconAnchor: [-9, 15] }) })
       .bindTooltip(tipIA(b, d), { direction: 'top', offset: [45, -16], opacity: 0.97 })
-      .on('click', () => window.open('ia.html', '_blank', 'noopener'))
+      .on('click', () => window.open('ia.html?bahia=' + encodeURIComponent(b.codigo), '_blank', 'noopener'))
       .addTo(g);
   }
   g.on('add', () => setTimeout(despejarIA, 0));
