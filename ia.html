@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA + WRF · Pronósticos de bahías</title>
+<link rel="manifest" href="app/manifest.webmanifest?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="app/favicon-32.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="https://feliperifo-a11y.github.io/meteo_naval/app/icono-ios-180.png">
+<meta name="theme-color" content="#0f2a44">
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#18212b;--muted:#5b6673;--line:#d6dce3;--head:#0f2a44;--headInk:#f2f6fa;--acc:#1f5fa8;
+  --cub:#5b6673;--nub:#7d8a97;--par:#c99a1c;--des:#e0a400}
+@media (prefers-color-scheme:dark){:root{--bg:#10161d;--panel:#18212b;--ink:#e4e9ef;--muted:#9aa6b2;--line:#2b3644;--head:#0b1b2c;--headInk:#e9f0f7;--acc:#7fb2ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--head);color:var(--headInk);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:19px;font-weight:650;letter-spacing:.2px}
+header .sub{font-size:12.5px;opacity:.8;margin-top:2px}
+header a.btn{color:inherit;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:5px 10px;font-size:12.5px}
+header a.btn:hover{background:rgba(255,255,255,.1)}
+main{max-width:1400px;margin:0 auto;padding:14px}
+.aviso{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.zonas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.zonas button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.zonas button.on{background:var(--head);color:var(--headInk);border-color:var(--head)}
+h2{font-size:15px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.card .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.card .hd b{font-size:15.5px}
+.card .hd a{font-size:12px;color:var(--acc);white-space:nowrap}
+.sin{padding:10px 14px 4px;font-size:13px}
+.sin span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;font-weight:600;padding:6px 14px 4px}
+td{padding:6px 14px;border-top:1px solid var(--line);vertical-align:top}
+td.f{white-space:nowrap;font-weight:600}
+.nb{display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
+.nb small{display:block;font-weight:400;color:var(--muted);white-space:normal}
+.pp{display:block;color:var(--acc);font-size:12px;margin-top:2px}
+.pie{margin-top:auto;padding:7px 14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line)}
+.err{color:#b3261e}
+.vacio{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;color:var(--muted)}
+@media (max-width:600px){main{padding:8px}.grid{grid-template-columns:1fr}td,th{padding-left:10px;padding-right:10px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>IA + WRF · Pronósticos de bahías</h1><div class="sub" id="sub">Cargando…</div></div>
+  <a class="btn" href="./">← Volver al dashboard</a>
+</header>
+<main>
+  <div class="aviso">Pronóstico escrito generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF de 3 km. Se actualiza solo con cada nueva corrida del modelo. Es un producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>
+  <div class="zonas" id="zonas"></div>
+  <div id="cont"><div class="vacio">Cargando pronósticos…</div></div>
+</main>
+<script>
+const ICONO = {
+  Despejado: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="var(--des)"/><g stroke="var(--des)" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>',
+  Parcial: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4.5" fill="var(--par)"/><path d="M8 20h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 8 20Z" fill="#b8c2cc"/></svg>',
+  Nublado: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h12a4.5 4.5 0 0 0 .6-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6 19Z" fill="var(--nub)"/></svg>',
+  Cubierto: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15h10a3.5 3.5 0 0 0 .4-7 4.7 4.7 0 0 0-9 1.3A2.9 2.9 0 0 0 4 15Z" fill="#9aa6b2"/><path d="M8 21h11a4 4 0 0 0 .5-8 5.3 5.3 0 0 0-10.2 1.4A3.3 3.3 0 0 0 8 21Z" fill="var(--cub)"/></svg>',
+};
+const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtHora = iso => { const d = new Date(iso); return isNaN(d) ? '–' : d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+const fmtDia = f => { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', ''); };
+const fmtInit = s => { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})T?(\d{2})/); return m ? `${m[3]}/${m[2]} ${m[4]}Z` : escH(s || '–'); };
+let DATOS = null, ZONA = '';
+function tarjeta(b) {
+  const p = b.pronostico;
+  const enlace = `<a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a>`;
+  if (!p) return `<div class="card"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div><div class="sin err">${escH(b.error || 'Sin pronóstico disponible.')}</div></div>`;
+  const filas = (p.dias || []).map(d => `<tr><td class="f">${fmtDia(d.fecha)}</td><td><span class="nb">${ICONO[d.nubosidad] || ''}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small style="display:block;color:var(--muted)">${escH(d.nubosidad_detalle)}</small>` : ''}</td><td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td></tr>`).join('');
+  return `<div class="card"><div class="hd"><b>${escH(b.nombre)}</b>${enlace}</div>
+    <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
+    <table><thead><tr><th>Día</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${filas}</tbody></table>
+    <div class="pie">Corrida WRF ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</div></div>`;
+}
+function pintar() {
+  const zonas = [...new Set(DATOS.bahias.map(b => b.zona))];
+  document.getElementById('zonas').innerHTML = ['', ...zonas].map(z => `<button type="button" data-z="${escH(z)}" class="${z === ZONA ? 'on' : ''}">${z ? escH(z) : 'Todas las zonas'}</button>`).join('');
+  document.querySelectorAll('#zonas button').forEach(b => b.onclick = () => { ZONA = b.dataset.z; try { localStorage.setItem('ia_zona', ZONA); } catch (e) {} pintar(); });
+  document.getElementById('cont').innerHTML = zonas.filter(z => !ZONA || z === ZONA).map(z =>
+    `<h2>${escH(z)}</h2><div class="grid">${DATOS.bahias.filter(b => b.zona === z).map(tarjeta).join('')}</div>`).join('');
+}
+async function cargar() {
+  try {
+    const r = await fetch('data/wrf_ia.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    DATOS = await r.json();
+    try { ZONA = localStorage.getItem('ia_zona') || ''; } catch (e) {}
+    const n = DATOS.bahias.filter(b => b.pronostico).length;
+    document.getElementById('sub').textContent = `${n} de ${DATOS.bahias.length} bahías con pronóstico · revisado ${fmtHora(DATOS.actualizado)} (hora Chile)`;
+    pintar();
+  } catch (e) {
+    document.getElementById('sub').textContent = 'Sin datos';
+    document.getElementById('cont').innerHTML = '<div class="vacio">Los pronósticos aún no están disponibles. Se generan con la próxima corrida del modelo.</div>';
+  }
+}
+cargar();
+setInterval(cargar, 10 * 60000);
+</script>
+</body>
+</html>

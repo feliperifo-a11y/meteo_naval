@@ -28,6 +28,9 @@
   --ok:#5cb860; --ret:#e8a33a; --no:#ef6b62; --warn:#e8b45a; --chip:#222d39; --avX:#76808b; }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.btnIA{color:inherit;text-decoration:none;font-size:12px;font-weight:650;letter-spacing:.3px;border:1px solid rgba(255,255,255,.55);border-radius:6px;padding:5px 10px;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));white-space:nowrap}
+.btnIA:hover{background:rgba(255,255,255,.18)}
+.hbtns{align-items:center}
 .autorWrap{position:relative}
 .hbtns{position:relative}
 #btnInstalar{opacity:.8;font-size:12px;padding:5px 9px}
@@ -153,6 +156,7 @@ dialog button{border-color:var(--line)}
     <div class="sub" id="hdrSub"></div>
   </div>
   <div class="hbtns">
+    <a class="btnIA" href="ia.html" title="Pronósticos escritos de bahías generados con IA a partir del modelo WRF de 3 km">PRONÓSTICOS WRF + IA</a>
     <div class="autorWrap">
       <button type="button" id="btnAutor" aria-expanded="false" aria-controls="autorPop">CF Felipe RIFO Espósito™</button>
       <div id="autorPop" role="dialog" aria-label="Acerca de este dashboard" hidden>
