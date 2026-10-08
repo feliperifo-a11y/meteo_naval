@@ -26,7 +26,7 @@ fi
 [ -x "$CLAUDE" ] || CLAUDE=$(command -v claude || true)
 [ -n "$CLAUDE" ] || { echo "$(ts) ERROR: Claude Code no está instalado"; exit 1; }
 
-# Bahías con meteograma WRF: zona|nombre|código|resolución (3 km; 9 km donde no hay 3 km; 10 km en la Antártica)
+# Bahías con meteograma WRF: zona|nombre|código|resolución (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández)
 BAHIAS="Zona Norte|Arica|ARICA_norte_d03|3 km
 Zona Norte|Iquique|IQUIQUE_norte_d03|3 km
 Zona Norte|Patache|PATACHE_norte_d03|3 km
@@ -40,6 +40,7 @@ Zona Central|Los Vilos|LOSVILOS_centro_d08|3 km
 Zona Central|Quintero|QUINTERO_centro_d08|3 km
 Zona Central|Valparaíso|VALPARAISO_centro_d08|3 km
 Zona Central|San Antonio|SANANTONIO_centro_d08|3 km
+Zona Central|Juan Fernández|ISLAROBINSONCRUSOE_1dom_d01|27 km
 Zona Central Sur|Constitución|CONSTITUCION_centro_d06|9 km
 Zona Central Sur|Lirquén|LIRQUEN_centro_d09|3 km
 Zona Central Sur|Talcahuano|TALCAHUANO_centro_d09|3 km
@@ -105,7 +106,7 @@ while IFS='|' read -r zona nombre cod m; do
   curl -fsS --max-time 60 "$BASE$cod.png" -o "$TRAB/img/$cod.png" && sips -Z 1600 "$TRAB/img/$cod.png" >/dev/null 2>&1
 done < "$TRAB/cambios.txt"
 
-INSTR='Eres meteorólogo marino. Cada imagen es el meteograma del modelo WRF (3, 9 o 10 km según el lugar) de una bahía de Chile o de la Antártica.
+INSTR='Eres meteorólogo marino. Cada imagen es el meteograma del modelo WRF (3, 9, 10 o 27 km según el lugar) de una bahía de Chile o de la Antártica.
 Paneles, de arriba hacia abajo: (1) perfil vertical de temperatura y viento 1000-100 hPa; (2) agua de nube por niveles (nubosidad) y techo de nubes; (3) temperatura (azul) y humedad relativa (rojo) a 2 m; (4) viento a 10 m: intensidad en nudos (línea azul) y dirección (barbas rojas, círculos = calma); (5) precipitación (barras, mm) y presión a nivel del mar (hPa); (6) alturas de 700 y 850 hPa; (7) temperatura y altura de 500 hPa. Si una imagen trae otros paneles u otro orden, guíate por los títulos de cada panel.
 Eje horizontal en UTC (día/hora, ej. 09/00z). Hora de Chile continental (y del Territorio Antártico) = UTC-3.
 Para cada bahía, por día calendario en hora de Chile (descarta días con menos de 6 horas de datos):
@@ -166,7 +167,7 @@ function run(argv) {
     return { ...p, ...base, error: c ? (p.pronostico ? 'pronóstico de la corrida anterior' : 'no se pudo generar') : (p.error || null) };
   });
   escribir(T + '/marcas.txt', Object.entries(marcas).map(([k, v]) => k + '|' + v).join('\n') + '\n');
-  escribir(T + '/wrf_ia.json', JSON.stringify({ actualizado: ahora, modelo_ia: 'Claude (suscripción, Claude Code)', resolucion: '3, 9 y 10 km',
+  escribir(T + '/wrf_ia.json', JSON.stringify({ actualizado: ahora, modelo_ia: 'Claude (suscripción, Claude Code)', resolucion: '3, 9, 10 y 27 km',
     fuente: 'https://meteoarmada.directemar.cl/meteo/site/edic/base/port/Modelo_meteogramas.html', estado: { nuevos: ok }, bahias }));
   return 'nuevos ' + ok;
 }

@@ -43,6 +43,7 @@ BAHIAS = [
     ("Zona Central", "Quintero", "QUINTERO_centro_d08"),
     ("Zona Central", "Valparaíso", "VALPARAISO_centro_d08"),
     ("Zona Central", "San Antonio", "SANANTONIO_centro_d08"),
+    ("Zona Central", "Juan Fernández", "ISLAROBINSONCRUSOE_1dom_d01"),
     ("Zona Central Sur", "Constitución", "CONSTITUCION_centro_d06"),
     ("Zona Central Sur", "Lirquén", "LIRQUEN_centro_d09"),
     ("Zona Central Sur", "Talcahuano", "TALCAHUANO_centro_d09"),
