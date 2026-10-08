@@ -150,6 +150,11 @@ def consultar_claude(png, nombre, clave):
 
 def main():
     clave = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not clave:
+        # Sin clave de API, los pronósticos los genera el Mac con la suscripción (mac/pronostico_ia.sh)
+        # y los sube a data/wrf_ia.json: aquí no se toca ese archivo.
+        print("WRF + IA: sin clave de API; se publica el archivo enviado por el equipo local.")
+        return 0
     previo = {}
     try:
         previo = {b["codigo"]: b for b in json.loads(SALIDA.read_text(encoding="utf-8")).get("bahias", [])}

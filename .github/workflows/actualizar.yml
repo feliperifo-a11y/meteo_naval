@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "app/**", "sw.js", "ia.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "app/**", "sw.js", "ia.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -46,7 +46,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in avisos.json seguimiento.json wrf_ia.json; do
+          for f in avisos.json seguimiento.json; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
 
