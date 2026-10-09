@@ -213,7 +213,7 @@ function pintarMapa() {
   }
   setTimeout(despejar, 0);
 }
-// Etiquetas: si las del área elegida (o las visibles) caben en una columna sobre el mar, se dibujan ahí con una
+// Etiquetas: si las del área elegida (o las visibles) caben en una columna a la derecha de la costa, se dibujan ahí con una
 // línea guía a su bahía, sin ocultar ninguna. Si no caben (todo Chile a la vez), se muestran las que caben y el resto como ícono.
 const capaGuias = L.layerGroup().addTo(map);
 function despejar() {
@@ -239,20 +239,22 @@ function despejar() {
 function columna(grupo) {
   if (!grupo.length) return true;
   const H = 36, tam = map.getSize();
-  if (grupo.length * H > tam.y - 24) return false;
+  if (grupo.length * H > tam.y - 46) return false;
   const pts = grupo.map(([c, m]) => ({ c, m, p: map.latLngToContainerPoint(m.getLatLng()) })).sort((a, b) => a.p.y - b.p.y);
   // posiciones verticales sin superposición, lo más cerca posible de cada bahía
   let prev = -Infinity; pts.forEach(o => { o.y = Math.max(o.p.y - H / 2, prev + H); prev = o.y; });
-  const exceso = pts[pts.length - 1].y + H - (tam.y - 12); if (exceso > 0) { pts.forEach(o => o.y -= exceso); let pr = 12 - H; pts.forEach(o => { o.y = Math.max(o.y, pr + H); pr = o.y; }); }
+  const exceso = pts[pts.length - 1].y + H - (tam.y - 34);   // sin tapar la escala if (exceso > 0) { pts.forEach(o => o.y -= exceso); let pr = 12 - H; pts.forEach(o => { o.y = Math.max(o.y, pr + H); pr = o.y; }); }
   // Columna junto a la costa: se ignoran puntos aislados mar adentro (p. ej. Juan Fernández) para ubicarla.
   const xs = pts.map(o => o.p.x).sort((a, b) => a - b), med = xs[Math.floor(xs.length / 2)];
   const cerca = xs.filter(x => Math.abs(x - med) < 160), ANCHO = 135;
   const wX = Math.min(...cerca) - 35, eX = Math.max(...cerca) + 35;
-  const wTodos = xs[0] - 35;                // primero, a la izquierda de todas las bahías
+  const eTodos = xs[xs.length - 1] + 35, wTodos = xs[0] - 35;
+  // Preferencia: a la derecha de las bahías (sobre tierra); si no cabe en pantalla, a la izquierda.
   let oeste, colX;
-  if (wTodos - ANCHO >= 6) { oeste = true; colX = wTodos; }
-  else if (wX - ANCHO >= 6) { oeste = true; colX = wX; }
+  if (eTodos + ANCHO <= tam.x - 6) { oeste = false; colX = eTodos; }
   else if (eX + ANCHO <= tam.x - 6) { oeste = false; colX = eX; }
+  else if (wTodos - ANCHO >= 6) { oeste = true; colX = wTodos; }
+  else if (wX - ANCHO >= 6) { oeste = true; colX = wX; }
   else return false;
   for (const o of pts) {
     const el = o.m.getElement().querySelector('.iaM'); el.classList.add('corto');
@@ -272,7 +274,7 @@ function encuadrar() {
   const pts = visibles().map(b => IA_POS[b.codigo]).filter(Boolean);
   if (!pts.length) return;
   if (!ZONA) { map.fitBounds([[-56.5, -82], [-17.5, -66]]); return; }
-  map.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 8 });
+  map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 8, paddingTopLeft: [20, 20], paddingBottomRight: [160, 20] });   // espacio a la derecha para las etiquetas
 }
 
 // ============================ Panel de pronósticos ============================
