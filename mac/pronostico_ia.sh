@@ -1,11 +1,12 @@
 #!/bin/bash
 # PRONÓSTICOS WRF + IA desde este Mac, con la suscripción de Claude (Claude Code), sin costo de API.
-# A las 12:30 (corrida 12Z) y 02:00 (corrida 00Z) revisa si cambió algún meteograma WRF.
+# Cada hora (minuto 30) revisa si cambió algún meteograma WRF: la consulta es liviana (solo la fecha de cada imagen)
+# y la IA trabaja únicamente cuando hay corrida nueva, así se toman la 00Z y la 12Z apenas se publican.
 # Solo si hay corrida nueva:
 #   1. descarga los meteogramas nuevos y los reduce de tamaño;
 #   2. le pide a Claude Code (sesión iniciada con su cuenta de Claude) el pronóstico escrito, por zona;
 #   3. sube el resultado al repositorio como data/wrf_ia.json (la página ia.html lo muestra).
-# Lo ejecuta launchd a las 12:30 y 02:00 (si el Mac dormía, al despertar). Se actualiza solo desde el repositorio.
+# Lo ejecuta launchd cada hora a los :30 (si el Mac dormía, al despertar). Se actualiza solo desde el repositorio.
 set -u
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN      # siempre la suscripción, nunca la API pagada
 REPO="feliperifo-a11y/meteo_naval"
@@ -99,7 +100,7 @@ while IFS='|' read -r zona nombre cod res; do
 done <<< "$BAHIAS"
 N=$(wc -l < "$TRAB/cambios.txt" | tr -d ' ')
 [ "$N" -gt 0 ] || { echo "$(ts) Sin corrida nueva"; exit 0; }
-echo "$(ts) $N meteogramas nuevos"
+echo "$(ts) $N meteogramas nuevos (publicados: $(head -1 "$TRAB/cambios.txt" | cut -d'|' -f4))"
 
 # 2. Descarga y reducción (menos peso = menos consumo de la suscripción)
 rm -f "$TRAB/img/"*.png
