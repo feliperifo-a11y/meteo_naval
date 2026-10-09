@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard operativo meteorológico</title>
-<link rel="apple-touch-icon" href="/meteo_naval/app/ios-180.png">
-<link rel="icon" type="image/png" href="/meteo_naval/app/ic-192.png">
-<link rel="manifest" href="/meteo_naval/app/app.webmanifest">
+<link rel="apple-touch-icon" href="app/ios-180.png">
+<link rel="icon" type="image/png" href="app/ic-192.png">
+<link rel="manifest" href="app/app.webmanifest">
 <meta name="theme-color" content="#0f2a44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -919,7 +919,7 @@ async function cargarDatos() {
   else if (ios) pasos = `<li>Toque ${comp} <b>Compartir</b>, abajo en la pantalla (si no lo ve, toque <b>···</b> y luego <b>Compartir</b>).</li><li>Elija <b>Agregar a pantalla de inicio</b> y toque <b>Agregar</b>.</li>`;
   else if (android) pasos = '<li>Toque el menú <b>⋮</b> del navegador.</li><li>Elija <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.</li>';
   else pasos = '<li>Abra este enlace en su celular.</li><li>Siga los dos pasos que aparecerán.</li>';
-  document.getElementById('giCaja').innerHTML = `<img src="/meteo_naval/app/ic-192.png" alt=""><h3>Instalar Meteo Naval</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
+  document.getElementById('giCaja').innerHTML = `<img src="app/ic-192.png" alt=""><h3>Instalar Meteo Naval</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
   document.getElementById('giFlecha').style.display = (ios && safari) ? '' : 'none';
   const g = document.getElementById('guiaInst'); g.hidden = false;
   const cerrar = () => { g.hidden = true; };
