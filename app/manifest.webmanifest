@@ -1,6 +1,6 @@
 {
   "name": "Dashboard meteorológico costero",
-  "short_name": "Meteo Naval",
+  "short_name": "MeteoIA",
   "description": "Avisos meteorológicos, estaciones costeras y boyas en un solo mapa.",
   "lang": "es-CL",
   "start_url": "../",

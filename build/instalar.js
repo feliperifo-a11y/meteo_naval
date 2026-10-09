@@ -32,7 +32,7 @@
   document.head.appendChild(css);
   const bar = document.createElement('div');
   bar.id = 'instBar'; bar.hidden = true;
-  bar.innerHTML = '<img src="app/ic-192.png" alt=""><div><b>Instalar Meteo Naval</b><span>Ábrala como app, en su propia ventana</span></div><button type="button" class="ib">Instalar</button><button type="button" class="ix" aria-label="Cerrar">×</button>';
+  bar.innerHTML = '<img src="app/ic-192.png" alt=""><div><b>Instalar MeteoIA</b><span>Ábrala como app, en su propia ventana</span></div><button type="button" class="ib">Instalar</button><button type="button" class="ix" aria-label="Cerrar">×</button>';
   document.body.appendChild(bar);
   const cerrar = () => { bar.hidden = true; try { localStorage.setItem('mn_inst_cerrado', String(Date.now() + 14 * 864e5)); } catch (e) {} };
   bar.querySelector('.ix').onclick = cerrar;
@@ -40,7 +40,7 @@
   const ayuda = pasos => {
     let a = document.getElementById('instAyuda');
     if (!a) { a = document.createElement('div'); a.id = 'instAyuda'; document.body.appendChild(a); a.addEventListener('click', e => { if (e.target === a) a.hidden = true; }); }
-    a.innerHTML = `<div class="c"><img src="app/ic-192.png" alt=""><h3>Instalar Meteo Naval</h3><ol>${pasos}</ol><button type="button">Entendido</button></div>`;
+    a.innerHTML = `<div class="c"><img src="app/ic-192.png" alt=""><h3>Instalar MeteoIA</h3><ol>${pasos}</ol><button type="button">Entendido</button></div>`;
     a.querySelector('button').onclick = () => { a.hidden = true; };
     a.hidden = false;
   };

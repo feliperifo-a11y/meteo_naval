@@ -10,7 +10,8 @@
 <meta name="theme-color" content="#0f2a44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Meteo Naval">
+<meta name="apple-mobile-web-app-title" content="MeteoIA">
+<meta name="application-name" content="MeteoIA">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
 <style>/*LEAFLET_CSS*/.iaIco{background:none;border:0;cursor:pointer}.iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}.iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}.iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}.iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}.iaDias{background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:3px;display:flex;gap:2px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25);font:12px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}.iaDias span{font-weight:700;font-size:11px;color:#0f2a44;padding:0 6px}.iaDias button{font:inherit;border:0;background:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:#18212b;text-transform:capitalize}.iaDias button.on{background:#0f2a44;color:#fff}
@@ -919,7 +920,7 @@ async function cargarDatos() {
   else if (ios) pasos = `<li>Toque ${comp} <b>Compartir</b>, abajo en la pantalla (si no lo ve, toque <b>···</b> y luego <b>Compartir</b>).</li><li>Elija <b>Agregar a pantalla de inicio</b> y toque <b>Agregar</b>.</li>`;
   else if (android) pasos = '<li>Toque el menú <b>⋮</b> del navegador.</li><li>Elija <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.</li>';
   else pasos = '<li>Abra este enlace en su celular.</li><li>Siga los dos pasos que aparecerán.</li>';
-  document.getElementById('giCaja').innerHTML = `<img src="app/ic-192.png" alt=""><h3>Instalar Meteo Naval</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
+  document.getElementById('giCaja').innerHTML = `<img src="app/ic-192.png" alt=""><h3>Instalar MeteoIA</h3><p class="s">Queda en su pantalla de inicio, como una aplicación.</p><ol>${pasos}</ol><button type="button" id="giCerrar">Entendido</button>`;
   document.getElementById('giFlecha').style.display = (ios && safari) ? '' : 'none';
   const g = document.getElementById('guiaInst'); g.hidden = false;
   const cerrar = () => { g.hidden = true; };

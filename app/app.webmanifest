@@ -1,7 +1,7 @@
 {
   "id": "../",
-  "name": "Meteo Naval",
-  "short_name": "Meteo Naval",
+  "name": "MeteoIA",
+  "short_name": "MeteoIA",
   "start_url": "../",
   "scope": "../",
   "display": "standalone",
