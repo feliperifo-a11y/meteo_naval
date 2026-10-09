@@ -28,7 +28,7 @@ case "$R" in *OK*) echo "    Sesión correcta.";; *) echo "    Claude Code no re
 echo "2/4 Descargando el script…"
 curl -fsSL "$URL/pronostico_ia.sh" -o "$DEST/pronostico_ia.sh" && chmod +x "$DEST/pronostico_ia.sh"
 curl -fsSL "$URL/desinstalar_ia.sh" -o "$DEST/desinstalar_ia.sh" && chmod +x "$DEST/desinstalar_ia.sh"
-echo "3/4 Programando la revisión a las 21:00 y 04:00 (hora de este Mac; fuera del horario de trabajo)…"
+echo "3/4 Programando la revisión a las 12:30 y 04:00 (hora de este Mac)…"
 cat > "$PLIST" <<P
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -36,7 +36,7 @@ cat > "$PLIST" <<P
   <key>Label</key><string>cl.meteonaval.ia</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$DEST/pronostico_ia.sh</string></array>
   <key>StartCalendarInterval</key><array>
-    <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
   </array>
   <key>RunAtLoad</key><false/>
