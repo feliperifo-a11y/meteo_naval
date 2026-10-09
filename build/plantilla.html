@@ -329,7 +329,7 @@ function evaluar(s, ahora) {
 }
 
 // ============================ Mapa ============================
-const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, maxBounds: [[-75, -135], [-5, -40]], maxBoundsViscosity: 0.8 });
+const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, maxBounds: [[-80, -140], [12, -30]], maxBoundsViscosity: 0.8 });
 map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
@@ -453,7 +453,7 @@ function popupMet(f) {
   return h + '</div>';
 }
 function buildMet() {
-  metLayer = L.geoJSON(METAREA, { pane: 'metPane', style: styleMet, onEachFeature: (f, l) => { metById.set(f.properties.id, l); l.bindPopup(() => popupMet(f), { maxWidth: 320 }); l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true, direction: 'auto' }); } });
+  metLayer = L.geoJSON(METAREA, { pane: 'metPane', style: styleMet, onEachFeature: (f, l) => { metById.set(f.properties.id, l); l.bindPopup(() => popupMet(f), { maxWidth: 320, autoPanPadding: [30, 40] }); l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true, direction: 'auto' }); } });
   metLabels = L.layerGroup();
   for (const f of METAREA.features) {
     const p = f.properties; const txt = p.tipo === 'costera' ? p.id : corto(p.id).replace('X ', 'X·').replace('IX ', 'IX·');
@@ -494,7 +494,7 @@ function buildAvisos() {
     if (avOculto.has(a.num)) continue;
     const col = AV_COL[e.k], vig = e.k === 'V';
     const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: col, weight: vig ? 1.8 : 1.5, dashArray: vig ? null : '6 4', fillColor: col, fillOpacity: vig ? 0.30 : 0.12 } })
-      .bindPopup(popupAviso(a, z, e), { maxWidth: 340 })
+      .bindPopup(popupAviso(a, z, e), { maxWidth: 340, autoPanPadding: [30, 40] })
       .bindTooltip(`${a.num}. ${escH(a.tipo)} · ${escH(z.nombre)} · ${e.txt}`, { sticky: true })
       .on('click', () => { hlAviso = a; marcarLista(); });
     lyr.addTo(g);
@@ -608,7 +608,7 @@ function buildEst() {
   for (const s of ESTACIONES) {
     const ev = evaluar(s, ahora);
     const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: L.divIcon({ className: '', html: svgSt(ST[ev.k].hex, ev.fl.length > 0, s.red === 'Red complementaria' ? 'rombo' : s.red !== 'Capitanía de Puerto'), iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
-      .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320 })
+      .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320, autoPanPadding: [30, 40] })
       .bindTooltip(`${escH(nombreEst(s))} · ${ST[ev.k].txt}${ev.k === 'ok' && s.temp != null ? ` · ${nf(s.temp)} °C` : ''}`, { direction: 'top', offset: [0, -8] });
     m.addTo(g); stMarkers.set(s.codigo, m);
   }
@@ -699,7 +699,7 @@ function buildBoyas() {
   for (const b of BOYAS) {
     const ev = evaluarBoya(b, ahora), u = b.ultimo || {};
     L.marker([b.lat, b.lon], { pane: 'boyaPane', icon: L.divIcon({ className: '', html: svgBoya(ST[ev.k].hex), iconSize: [24, 24], iconAnchor: [12, 12] }) })
-      .bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320 })
+      .bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320, autoPanPadding: [30, 40] })
       .bindTooltip(`Boya ${escH(b.nombre)} · ${ev.acceso === false ? 'sin acceso a datos' : ST[ev.k].txt}${u.hsig != null ? ` · Hs ${nf(u.hsig, 2)} m` : ''}`, { direction: 'top', offset: [0, -10] })
       .addTo(g);
   }
@@ -940,6 +940,13 @@ document.getElementById('avNone').addEventListener('click', () => setTodosAv(fal
   if (window.innerWidth <= 600) tg();
 })();
 window.addEventListener('resize', () => map.invalidateSize());
+// Si una ventana del mapa queda bajo el panel de capas, el panel se contrae para no taparla.
+map.on('popupopen', e => setTimeout(() => {
+  const lb = document.getElementById('layerBox'), el = e.popup.getElement();
+  if (!el || lb.classList.contains('min')) return;
+  const a = el.getBoundingClientRect(), b = lb.getBoundingClientRect();
+  if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { lb.classList.add('min'); document.getElementById('lbBtn').textContent = '▴'; }
+}, 350));
 // Paneles replegables (se recuerda la elección en este navegador, si lo permite)
 (function paneles() {
   const leer = () => { try { return JSON.parse(localStorage.getItem('mn_plegados') || '[]'); } catch (e) { return []; } };
