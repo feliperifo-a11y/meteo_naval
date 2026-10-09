@@ -14,6 +14,7 @@
 <style>/*LEAFLET_CSS*/.marca{display:inline-flex;align-items:center;background:#fff;border-radius:8px;padding:4px 8px;margin-right:12px;flex:none}.marca img{height:30px;width:auto;display:block}
 .hIzq{display:flex;align-items:center}
 @media (max-width:600px){.marca img{height:24px}.marca{margin-right:8px}}
+.leaflet-popup-scrolled{border:0;overflow-y:auto}
 </style>
 <style>
 :root{--bg:#eef1f4;--panel:#fff;--ink:#18212b;--muted:#5b6673;--line:#d6dce3;--head:#0f2a44;--headInk:#f2f6fa;--chip:#f3f5f8;--acc:#1f5fa8;--mx:#c0392b;--mn:#1f5fa8}
@@ -153,10 +154,11 @@ const diaDe = b => { const ds = (b.pronostico && b.pronostico.dias) || []; retur
 const visibles = () => DATOS.bahias.filter(b => !ZONA || b.zona === ZONA);
 
 // ============================ Mapa: solo METAREA XV ============================
-const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25, maxBounds: [[-80, -140], [12, -30]], maxBoundsViscosity: 0.8 });
+const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25 });
 map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
+map.options.maxBoundsViscosity = 0.3;
 map.createPane('iaPane'); map.getPane('iaPane').style.zIndex = 620;
 function decodePolyline6(str) {
   const out = []; let i = 0, lat = 0, lon = 0;
@@ -214,6 +216,23 @@ function popupBahia(b) {
 }
 // Todas las bahías tienen siempre su recuadro (ícono, nombre, mín/máx) a la derecha de su punto, sin líneas.
 // Si dos recuadros chocan, se corren verticalmente lo justo; con poco zoom se usa un recuadro compacto de una línea.
+// Ventana de pronóstico: se ajusta al tamaño del mapa (con barra de desplazamiento si no cabe) y nunca queda cortada.
+function opcionesPopup() {
+  const t = map.getSize(), angosto = t.x < 520;
+  return { maxWidth: Math.min(460, t.x - 52), minWidth: Math.min(300, t.x - 52), maxHeight: Math.max(200, t.y - 80),
+           autoPan: false, offset: angosto ? [0, 0] : [40, 0], className: 'popIA' };
+}
+map.on('popupopen', e => {
+  const ajustar = () => {
+    const el = e.popup.getElement(); if (!el) return;
+    const a = el.getBoundingClientRect(), m = map.getContainer().getBoundingClientRect(), pad = 14;
+    let dx = 0, dy = 0;
+    if (a.top < m.top + pad) dy = a.top - (m.top + pad); else if (a.bottom > m.bottom - pad) dy = Math.min(a.bottom - (m.bottom - pad), a.top - (m.top + pad));
+    if (a.left < m.left + pad) dx = a.left - (m.left + pad); else if (a.right > m.right - pad) dx = Math.min(a.right - (m.right - pad), a.left - (m.left + pad));
+    if (dx || dy) map.panBy([dx, dy], { animate: true, duration: 0.3 });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(ajustar));
+});
 function pintarMapa() {
   capaIA.clearLayers(); marcadores.clear();
   for (const b of DATOS.bahias) {
@@ -224,7 +243,7 @@ function pintarMapa() {
     L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: ZONA && b.zona !== ZONA ? 0.6 : 1 })
       .on('click', () => { const m = marcadores.get(b.codigo); if (m) m.openPopup(); seleccionar(b.codigo, false, true); }).addTo(capaIA);
     const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: [0, 0], iconAnchor: [0, 0] }) })
-      .bindPopup(() => popupBahia(b), { maxWidth: 440, minWidth: 300, autoPanPadding: [30, 30], offset: [40, 0] })
+      .bindPopup(() => popupBahia(b), opcionesPopup())
       .on('click', () => seleccionar(b.codigo, false, true)).addTo(capaIA);
     if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [40, -18], opacity: 0.97 });
     m.on('popupopen', () => m.closeTooltip());
