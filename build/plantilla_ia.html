@@ -62,6 +62,8 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 .biD .nb{display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap}
 .biD small{display:block;color:var(--muted)}
 .biD .pp{display:block;color:var(--acc)}
+.biD td.ola b,.pop td.ola b{white-space:nowrap}
+.olaL{color:var(--acc)}
 .biD .pie{font-size:11px;color:var(--muted);margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .biD a{color:var(--acc)}
 .err{color:#b3261e}
@@ -117,7 +119,7 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
       <div class="tools"><select id="selZona" aria-label="Área"></select><div class="dias" id="dias"></div></div>
     </div>
     <div id="lista"><div class="nota">Cargando pronósticos…</div></div>
-    <div class="nota">Generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández). Producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>
+    <div class="nota">Generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández). Oleaje: altura significativa máxima del día del modelo marino de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, en rangos de 1 m con su estado del mar (rizada &lt;0,5 · marejadilla 0,5–1,25 · marejada 1,25–2,5 · gruesa 2,5–4 · muy gruesa 4–6 · arbolada &gt;6 m), con dirección de procedencia y período; no resuelve fiordos ni canales angostos. Producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>
   </section>
   <section class="card" id="mapWrap">
     <div id="map" role="application" aria-label="Mapa de pronósticos"></div>
@@ -136,7 +138,16 @@ const sumarDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate
 const fDia = (f, larga) => { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', larga ? { weekday: 'long', day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''); };
 const tG = v => v != null ? Math.round(v) + '°' : '–';
 
-let DATOS = null, ZONA = '', DIA = 0, SEL = null, PRIMERA = true;
+let DATOS = null, ZONA = '', DIA = 0, SEL = null, PRIMERA = true, OLA = null;
+// Oleaje (data/oleaje.json, modelo marino Open-Meteo): Hs máxima del día en rangos de 1 m con su estado del mar.
+const olaDe = (b, fecha) => { const o = OLA && OLA.bahias && OLA.bahias[b.codigo]; return o && !o.sin_cobertura ? (o.dias || []).find(x => x.fecha === fecha) || null : null; };
+const sinOla = b => !!(OLA && OLA.bahias && OLA.bahias[b.codigo] && OLA.bahias[b.codigo].sin_cobertura);
+const fmtOla = o => `${escH(o.dir_txt || '–')}${o.periodo != null ? ' · ' + String(o.periodo).replace('.', ',') + ' s' : ''}`;
+function celdaOla(b, fecha) {
+  const o = olaDe(b, fecha);
+  if (!o) return `<td><small>${sinOla(b) ? 'Sin cobertura del modelo' : '–'}</small></td>`;
+  return `<td class="ola"><b>${escH(o.rango)}</b><small>${escH(o.estado)}</small><small>${fmtOla(o)}</small></td>`;
+}
 try { ZONA = localStorage.getItem('ia_zona') || ''; } catch (e) {}
 const diaDe = b => { const ds = (b.pronostico && b.pronostico.dias) || []; return ds.find(d => d.fecha === sumarDias(hoyChile(), DIA)) || null; };
 const visibles = () => DATOS.bahias.filter(b => !ZONA || b.zona === ZONA);
@@ -189,7 +200,8 @@ function tip(b, d) {
     `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
     (d.nubosidad_detalle ? `<div style="font-size:11.5px;opacity:.85">${escH(d.nubosidad_detalle)}</div>` : '') +
     `<div><b style="color:#1f5fa8">${tG(d.temp_min)}</b> / <b style="color:#c0392b">${tG(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` +
-    `<div><b>Viento:</b> ${escH(d.viento || '–')}</div>` + (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') + '</div>';
+    `<div><b>Viento:</b> ${escH(d.viento || '–')}</div>` +
+    (olaDe(b, d.fecha) ? (o => `<div><b>Oleaje:</b> ${escH(o.rango)} · ${escH(o.estado.toLowerCase())} <span style="opacity:.75">(${fmtOla(o)})</span></div>`)(olaDe(b, d.fecha)) : '') + (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') + '</div>';
 }
 // Pronóstico completo en una ventana sobre el mapa (situación sinóptica + tabla de todos los días)
 function popupBahia(b) {
@@ -197,7 +209,7 @@ function popupBahia(b) {
   if (!p) return `<div class="pop"><b>${escH(b.nombre)}</b><div class="err">${escH(b.error || 'Pronóstico aún no generado')}</div><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Ver meteograma ↗</a></div>`;
   return `<div class="pop"><div class="popH"><b>${escH(b.nombre)}</b><span class="res">${escH(b.resolucion || '3 km')}</span><span class="popZ">${escH(b.zona)}</span></div>
     <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
-    <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${(p.dias || []).map(filaDia).join('')}</tbody></table>
+    <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th><th>Oleaje</th></tr></thead><tbody>${(p.dias || []).map(d => filaDia(d, b)).join('')}</tbody></table>
     <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`;
 }
 // Todas las bahías tienen siempre su recuadro (ícono, nombre, mín/máx) a la derecha de su punto, sin líneas.
@@ -250,18 +262,19 @@ function encuadrar() {
 }
 
 // ============================ Panel de pronósticos ============================
-function filaDia(d) {
+function filaDia(d, b) {
   return `<tr><td class="f">${fDia(d.fecha)}</td><td class="t"><span class="mn">${tG(d.temp_min)}</span> / <span class="mx">${tG(d.temp_max)}</span></td>` +
     `<td><span class="nb">${svgNub(d.nubosidad, 16)}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small>${escH(d.nubosidad_detalle)}</small>` : ''}</td>` +
-    `<td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td></tr>`;
+    `<td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td>` + (b ? celdaOla(b, d.fecha) : '') + '</tr>';
 }
 function item(b) {
   const p = b.pronostico, d = diaDe(b);
   const res = `<span class="res">${escH(b.resolucion || '3 km')}</span>`;
   const resumen = d ? `<span class="biS">${svgNub(d.nubosidad, 20)}<span class="mn">${tG(d.temp_min)}</span><span class="mx">${tG(d.temp_max)}</span></span>` : '<span class="biS" style="color:var(--muted)">sin datos</span>';
-  const linea = d ? `<div class="biV">${escH(d.nubosidad)} · ${escH(d.viento)}</div>` : (!p ? `<div class="biV err">${escH(b.error || 'Pronóstico aún no generado')}</div>` : '');
+  const oD = d && olaDe(b, d.fecha);
+  const linea = d ? `<div class="biV">${escH(d.nubosidad)} · ${escH(d.viento)}${oD ? ` · <span class="olaL">Mar ${escH(oD.rango)} (${escH(oD.estado.toLowerCase())})</span>` : ''}</div>` : (!p ? `<div class="biV err">${escH(b.error || 'Pronóstico aún no generado')}</div>` : '');
   const det = p ? `<div class="biD"><div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
-      <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${(p.dias || []).map(filaDia).join('')}</tbody></table>
+      <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th><th>Oleaje</th></tr></thead><tbody>${(p.dias || []).map(d => filaDia(d, b)).join('')}</tbody></table>
       <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`
     : `<div class="biD"><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Ver meteograma ↗</a></div>`;
   return `<div class="bi${b.codigo === SEL ? ' sel' : ''}" data-c="${escH(b.codigo)}"><div class="biT"><b class="nm">${escH(b.nombre)}</b>${res}${resumen}</div>${linea}${det}</div>`;
@@ -299,6 +312,7 @@ async function cargar() {
     const r = await fetch('data/wrf_ia.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     DATOS = await r.json();
+    try { const ro = await fetch('data/oleaje.json?t=' + Date.now(), { cache: 'no-store' }); if (ro.ok) OLA = await ro.json(); } catch (e) {}
     if (PRIMERA) {
       // Desde el mapa del dashboard (?bahia=CÓDIGO) se abre el área de esa bahía con su pronóstico desplegado.
       let q = null; try { q = new URLSearchParams(location.search).get('bahia'); } catch (e) {}

@@ -20,6 +20,7 @@ GitHub Actions (cada 20 min)
         ├─ lee la portada del sitio de avisos y cada PDF      → data/avisos.json
         ├─ lee el boletín de alta mar Zona X (Parte I)        → data/avisos.json
         └─ deja un resumen de la ejecución y sus errores      → data/estado.json
+   └─ scripts/oleaje.py (máx. cada 3 h)                  → data/oleaje.json
    └─ scripts/construir_index.py  → index.html
    └─ publica index.html + data/*.json en GitHub Pages
 ```
@@ -35,6 +36,7 @@ La página lee los archivos `data/*.json` al abrirse y otra vez cada 5 minutos. 
 | `build/leaflet.js`, `build/leaflet.css` | Librería de mapas incorporada (funciona sin CDN) |
 | `scripts/colector.py` | Recolector de estaciones y avisos |
 | `scripts/construir_index.py` | Arma `index.html` desde la plantilla |
+| `scripts/oleaje.py` | Oleaje por bahía (Open-Meteo Marine) para la página WRF + IA → `data/oleaje.json` |
 | `data/avisos_manual.json` | **Correcciones manuales de avisos** (ver más abajo) |
 | `data/geo/` | Costa, METAREA XV y límites marítimos |
 | `.github/workflows/actualizar.yml` | Tarea programada que recolecta y publica |
