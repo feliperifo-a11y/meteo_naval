@@ -70,7 +70,30 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 .iaIco{background:none;border:0;cursor:pointer}
 .iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}
 .iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}
-.iaChip.sel{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
+.iaM{position:relative;width:26px;height:26px}
+.iaDot{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.95);border:1px solid #9aa6b2;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.iaM .iaChip{position:absolute;left:-2px;top:-3px}
+.iaM .iaDot{visibility:hidden}
+.iaM.corto .iaChip{display:none}.iaM.corto .iaDot{visibility:visible}
+.iaM.otra{opacity:.55}.iaM.otra:hover{opacity:1}
+.iaM.sel .iaChip,.iaM.sel .iaDot{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
+.iaM.sel{z-index:10;opacity:1}
+.iaIco.izq .iaChip{transform:translateX(-100%)}
+.iaChip.guia.sel{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
+.iaChip.sd .iaT{font-size:10px;color:#5b6673}
+.pop{font-size:12.5px;color:#18212b}
+.popH{display:flex;align-items:center;gap:6px;margin-bottom:5px}.popH b{font-size:14px}.popZ{margin-left:auto;font-size:11px;color:#5b6673}
+.pop .sin{font-size:12px;margin-bottom:6px}.pop .sin span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#5b6673}
+.pop table{width:100%;border-collapse:collapse;font-size:11.5px}
+.pop th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#5b6673;text-align:left;font-weight:600;padding:3px}
+.pop td{padding:4px 3px;border-top:1px solid #d6dce3;vertical-align:top}
+.pop td.f{white-space:nowrap;font-weight:600;text-transform:capitalize}.pop td.t{white-space:nowrap}
+.pop .nb{display:inline-flex;align-items:center;gap:3px;font-weight:600;white-space:nowrap}
+.pop small{display:block;color:#5b6673}.pop .pp{display:block;color:#1f5fa8}
+.pop .mn{color:#1f5fa8;font-weight:700}.pop .mx{color:#c0392b;font-weight:700}
+.pop .pie{font-size:10.5px;color:#5b6673;margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pop .res{font-size:10.5px;font-weight:600;color:#5b6673;border:1px solid #d6dce3;border-radius:4px;padding:0 4px}
+.leaflet-popup-content{margin:10px 12px}
 .iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}
 .iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}
 @media (max-width:1050px){main{flex-direction:column;align-items:stretch}#mapWrap{order:-1;position:relative;top:auto;height:60vh;flex:none}#grpIA{position:static;height:auto;min-height:0;width:auto}#lista{overflow:visible}}
@@ -85,7 +108,7 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 <main>
   <section class="card" id="grpIA">
     <h2 class="grpH"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4.5" fill="#f2b705"/><path d="M8 20h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 8 20Z" fill="#dfe5ea"/></svg>Pronósticos por bahía<span class="n" id="cuenta"></span></h2>
-    <div class="intro">De norte a sur. Elija el área y el día; clic en una bahía para ver su pronóstico completo y ubicarla en el mapa.
+    <div class="intro">De norte a sur. Elija el área y el día; clic en una bahía (en la lista o en el mapa) para ver su pronóstico completo.
       <div class="tools"><select id="selZona" aria-label="Área"></select><div class="dias" id="dias"></div></div>
     </div>
     <div id="lista"><div class="nota">Cargando pronósticos…</div></div>
@@ -163,26 +186,86 @@ function tip(b, d) {
     `<div><b style="color:#1f5fa8">${tG(d.temp_min)}</b> / <b style="color:#c0392b">${tG(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` +
     `<div><b>Viento:</b> ${escH(d.viento || '–')}</div>` + (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') + '</div>';
 }
+// Pronóstico completo en una ventana sobre el mapa (situación sinóptica + tabla de todos los días)
+function popupBahia(b) {
+  const p = b.pronostico;
+  if (!p) return `<div class="pop"><b>${escH(b.nombre)}</b><div class="err">${escH(b.error || 'Pronóstico aún no generado')}</div><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Ver meteograma ↗</a></div>`;
+  return `<div class="pop"><div class="popH"><b>${escH(b.nombre)}</b><span class="res">${escH(b.resolucion || '3 km')}</span><span class="popZ">${escH(b.zona)}</span></div>
+    <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
+    <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${(p.dias || []).map(filaDia).join('')}</tbody></table>
+    <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`;
+}
+// Todas las bahías están siempre en el mapa. La etiqueta completa (ícono, nombre, mín/máx) se muestra donde cabe;
+// donde chocaría con otra, queda solo el ícono de nubosidad (nunca se oculta un pronóstico).
 function pintarMapa() {
   capaIA.clearLayers(); marcadores.clear();
-  for (const b of visibles()) {
-    const pos = IA_POS[b.codigo], d = diaDe(b); if (!pos || !d) continue;
-    const html = `<div class="iaChip${b.codigo === SEL ? ' sel' : ''}">${svgNub(d.nubosidad, 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT"><b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b></span></div></div>`;
-    const m = L.marker(pos, { pane: 'iaPane', zIndexOffset: b.codigo === SEL ? 1000 : 0, icon: L.divIcon({ className: 'iaIco', html, iconSize: null, iconAnchor: [-9, 15] }) })
-      .bindTooltip(tip(b, d), { direction: 'top', offset: [45, -16], opacity: 0.97 })
-      .on('click', () => seleccionar(b.codigo, false)).addTo(capaIA);
+  for (const b of DATOS.bahias) {
+    const pos = IA_POS[b.codigo], d = diaDe(b); if (!pos) continue;
+    const chip = d ? `<div class="iaChip">${svgNub(d.nubosidad, 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT"><b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b></span></div></div>`
+                   : `<div class="iaChip sd">${svgNub('', 18)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">sin datos</span></div></div>`;
+    const html = `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${ZONA && b.zona !== ZONA ? ' otra' : ''}"><div class="iaDot">${svgNub(d ? d.nubosidad : '', 18)}</div>${chip}</div>`;
+    const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: null, iconAnchor: [13, 13] }) })
+      .bindPopup(() => popupBahia(b), { maxWidth: 440, minWidth: 300, autoPanPadding: [30, 30] })
+      .on('click', () => seleccionar(b.codigo, false, true)).addTo(capaIA);
+    if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [0, -14], opacity: 0.97 });
+    m.on('popupopen', () => m.closeTooltip());
     marcadores.set(b.codigo, m);
   }
   setTimeout(despejar, 0);
 }
-// Con poco zoom se ocultan las etiquetas que chocan (la seleccionada siempre se ve).
+// Etiquetas: si las del área elegida (o las visibles) caben en una columna sobre el mar, se dibujan ahí con una
+// línea guía a su bahía, sin ocultar ninguna. Si no caben (todo Chile a la vez), se muestran las que caben y el resto como ícono.
+const capaGuias = L.layerGroup().addTo(map);
 function despejar() {
-  const vis = [], orden = [...marcadores.entries()].sort((a, b) => (b[0] === SEL) - (a[0] === SEL));
-  for (const [cod, m] of orden) {
-    const el = m.getElement(); if (!el) continue; el.style.display = '';
-    const r = el.getBoundingClientRect();
-    if (vis.some(v => r.left < v.right + 2 && r.right > v.left - 2 && r.top < v.bottom + 2 && r.bottom > v.top - 2)) el.style.display = 'none'; else vis.push(r);
+  capaGuias.clearLayers();
+  const ents = [...marcadores.entries()].filter(([, m]) => m.getElement());
+  ents.forEach(([, m]) => { const b = m.getElement().querySelector('.iaM'); b.classList.remove('corto', 'guia'); });
+  const vista = map.getBounds().pad(-0.02);
+  const zonaDe = c => DATOS.bahias.find(b => b.codigo === c)?.zona;
+  const grupo = ents.filter(([c, m]) => (!ZONA || zonaDe(c) === ZONA) && vista.contains(m.getLatLng()));
+  if (columna(grupo)) { ents.filter(e => !grupo.includes(e)).forEach(([, m]) => m.getElement().querySelector('.iaM').classList.add('corto')); return; }
+  // Sin espacio para la columna: etiquetas donde caben, el resto como ícono.
+  const peso = c => (c === SEL ? 2 : 0) + (ZONA && zonaDe(c) === ZONA ? 1 : 0);
+  const orden = ents.sort((a, b) => peso(b[0]) - peso(a[0]));
+  const centro = el => { const r = el.querySelector('.iaDot').getBoundingClientRect(); return { left: r.left + 6, right: r.right - 6, top: r.top + 6, bottom: r.bottom - 6, el }; };
+  const puntos = orden.map(([, m]) => centro(m.getElement()));
+  const choca = (r, v) => r.left < v.right && r.right > v.left && r.top < v.bottom && r.bottom > v.top;
+  const puestos = [];
+  for (const [, m] of orden) {
+    const el = m.getElement(), box = el.querySelector('.iaM'), r = el.querySelector('.iaChip').getBoundingClientRect();
+    if (!puntos.some(v => v.el !== el && choca(r, v)) && !puestos.some(v => choca(r, v))) puestos.push(r); else box.classList.add('corto');
   }
+}
+function columna(grupo) {
+  if (!grupo.length) return true;
+  const H = 36, tam = map.getSize();
+  if (grupo.length * H > tam.y - 24) return false;
+  const pts = grupo.map(([c, m]) => ({ c, m, p: map.latLngToContainerPoint(m.getLatLng()) })).sort((a, b) => a.p.y - b.p.y);
+  // posiciones verticales sin superposición, lo más cerca posible de cada bahía
+  let prev = -Infinity; pts.forEach(o => { o.y = Math.max(o.p.y - H / 2, prev + H); prev = o.y; });
+  const exceso = pts[pts.length - 1].y + H - (tam.y - 12); if (exceso > 0) { pts.forEach(o => o.y -= exceso); let pr = 12 - H; pts.forEach(o => { o.y = Math.max(o.y, pr + H); pr = o.y; }); }
+  // Columna junto a la costa: se ignoran puntos aislados mar adentro (p. ej. Juan Fernández) para ubicarla.
+  const xs = pts.map(o => o.p.x).sort((a, b) => a - b), med = xs[Math.floor(xs.length / 2)];
+  const cerca = xs.filter(x => Math.abs(x - med) < 160), ANCHO = 135;
+  const wX = Math.min(...cerca) - 35, eX = Math.max(...cerca) + 35;
+  const wTodos = xs[0] - 35;                // primero, a la izquierda de todas las bahías
+  let oeste, colX;
+  if (wTodos - ANCHO >= 6) { oeste = true; colX = wTodos; }
+  else if (wX - ANCHO >= 6) { oeste = true; colX = wX; }
+  else if (eX + ANCHO <= tam.x - 6) { oeste = false; colX = eX; }
+  else return false;
+  for (const o of pts) {
+    const el = o.m.getElement().querySelector('.iaM'); el.classList.add('corto');
+    const b = DATOS.bahias.find(x => x.codigo === o.c), d = diaDe(b);
+    const destino = map.containerPointToLatLng([colX, o.y + H / 2 - 2]);
+    L.polyline([o.m.getLatLng(), destino], { color: '#0f2a44', weight: 1, opacity: 0.7, interactive: false }).addTo(capaGuias);
+    const html = `<div class="iaChip guia${o.c === SEL ? ' sel' : ''}">${svgNub(d ? d.nubosidad : '', 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">${d ? `<b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b>` : 'sin datos'}</span></div></div>`;
+    L.marker(destino, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco ' + (oeste ? 'izq' : 'der'), html, iconSize: null, iconAnchor: [0, 15] }) })
+      .on('click', () => { o.m.openPopup(); seleccionar(o.c, false, true); })
+      .bindTooltip(d ? tip(b, d) : escH(b.nombre), { direction: 'top', offset: [0, -16], opacity: 0.97 })
+      .addTo(capaGuias);
+  }
+  return true;
 }
 map.on('zoomend moveend', () => setTimeout(despejar, 0));
 function encuadrar() {
@@ -227,12 +310,15 @@ function pintarControles() {
   document.querySelectorAll('#dias button').forEach(bt => bt.onclick = () => { DIA = +bt.dataset.n; pintarControles(); todo(); });
 }
 function todo() { pintarLista(); pintarMapa(); }
-function seleccionar(cod, volar) {
+function seleccionar(cod, volar, desdeMapa) {
   SEL = SEL === cod && volar ? null : cod;
-  todo();
+  pintarLista();
+  marcadores.forEach((m, c) => { const el = m.getElement(); if (el) el.querySelector('.iaM').classList.toggle('sel', c === SEL); });
   const el = SEL && document.querySelector(`.bi[data-c="${CSS.escape(SEL)}"]`);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  if (SEL && volar && IA_POS[SEL]) map.flyTo(IA_POS[SEL], Math.max(map.getZoom(), 8), { duration: 0.8 });
+  if (SEL && volar && IA_POS[SEL]) { map.flyTo(IA_POS[SEL], Math.max(map.getZoom(), 7), { duration: 0.8 }); setTimeout(() => { const m = marcadores.get(SEL); if (m) m.openPopup(); }, 900); }
+  if (!SEL) map.closePopup();
+  despejar();
 }
 async function cargar() {
   try {
@@ -249,7 +335,7 @@ async function cargar() {
     const n = DATOS.bahias.filter(b => b.pronostico).length;
     document.getElementById('sub').textContent = `${n} de ${DATOS.bahias.length} lugares con pronóstico · revisado ${fmtHora(DATOS.actualizado)} (hora Chile)`;
     pintarControles(); todo();
-    if (PRIMERA) { encuadrar(); if (SEL) { if (IA_POS[SEL]) map.setView(IA_POS[SEL], 8); const el = document.querySelector('.bi.sel'); if (el) el.scrollIntoView({ block: 'center' }); } }
+    if (PRIMERA) { encuadrar(); if (SEL) { if (IA_POS[SEL]) { map.setView(IA_POS[SEL], 7); setTimeout(() => { const m = marcadores.get(SEL); if (m) m.openPopup(); }, 300); } const el = document.querySelector('.bi.sel'); if (el) el.scrollIntoView({ block: 'center' }); } }
     PRIMERA = false;
   } catch (e) {
     document.getElementById('sub').textContent = 'Sin datos';
