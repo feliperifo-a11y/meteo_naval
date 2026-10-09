@@ -70,16 +70,15 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 .iaIco{background:none;border:0;cursor:pointer}
 .iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}
 .iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}
-.iaM{position:relative;width:26px;height:26px}
-.iaDot{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.95);border:1px solid #9aa6b2;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
-.iaM .iaChip{position:absolute;left:-2px;top:-3px}
-.iaM .iaDot{visibility:hidden}
-.iaM.corto .iaChip{display:none}.iaM.corto .iaDot{visibility:visible}
-.iaM.otra{opacity:.55}.iaM.otra:hover{opacity:1}
-.iaM.sel .iaChip,.iaM.sel .iaDot{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
-.iaM.sel{z-index:10;opacity:1}
-.iaIco.izq .iaChip{transform:translateX(-100%)}
-.iaChip.guia.sel{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
+.iaM{position:relative;width:0;height:0}
+.iaDot{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#0f2a44;border:2px solid #fff;box-shadow:0 0 0 1px rgba(15,42,68,.5)}
+.iaM .iaChip{position:absolute;left:9px;top:-16px}
+.iaM.compacto .iaChip{top:-10px;padding:1px 5px 1px 2px;gap:3px;border-radius:4px}
+.iaM.compacto .iaTx{flex-direction:row;align-items:center;gap:4px}
+.iaM.compacto .iaN{font-size:10px}.iaM.compacto .iaT b{font-size:10.5px}.iaM.compacto .iaT .mn{margin-right:3px}
+.iaM.otra{opacity:.6}.iaM.otra:hover{opacity:1}
+.iaM.sel .iaChip{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
+.iaM.sel .iaDot{background:#ff8a00}
 .iaChip.sd .iaT{font-size:10px;color:#5b6673}
 .pop{font-size:12.5px;color:#18212b}
 .popH{display:flex;align-items:center;gap:6px;margin-bottom:5px}.popH b{font-size:14px}.popZ{margin-left:auto;font-size:11px;color:#5b6673}
@@ -195,86 +194,53 @@ function popupBahia(b) {
     <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th></tr></thead><tbody>${(p.dias || []).map(filaDia).join('')}</tbody></table>
     <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`;
 }
-// Todas las bahías están siempre en el mapa. La etiqueta completa (ícono, nombre, mín/máx) se muestra donde cabe;
-// donde chocaría con otra, queda solo el ícono de nubosidad (nunca se oculta un pronóstico).
+// Todas las bahías tienen siempre su recuadro (ícono, nombre, mín/máx) a la derecha de su punto, sin líneas.
+// Si dos recuadros chocan, se corren verticalmente lo justo; con poco zoom se usa un recuadro compacto de una línea.
 function pintarMapa() {
   capaIA.clearLayers(); marcadores.clear();
   for (const b of DATOS.bahias) {
     const pos = IA_POS[b.codigo], d = diaDe(b); if (!pos) continue;
-    const chip = d ? `<div class="iaChip">${svgNub(d.nubosidad, 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT"><b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b></span></div></div>`
-                   : `<div class="iaChip sd">${svgNub('', 18)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">sin datos</span></div></div>`;
-    const html = `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${ZONA && b.zona !== ZONA ? ' otra' : ''}"><div class="iaDot">${svgNub(d ? d.nubosidad : '', 18)}</div>${chip}</div>`;
-    const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: null, iconAnchor: [13, 13] }) })
-      .bindPopup(() => popupBahia(b), { maxWidth: 440, minWidth: 300, autoPanPadding: [30, 30] })
+    const chip = `<div class="iaChip${d ? '' : ' sd'}">${svgNub(d ? d.nubosidad : '', 20)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">${d ? `<b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b>` : 'sin datos'}</span></div></div>`;
+    const html = `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${ZONA && b.zona !== ZONA ? ' otra' : ''}">${chip}</div>`;
+    // El punto de la bahía va en una capa inferior: nunca tapa un recuadro.
+    L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: ZONA && b.zona !== ZONA ? 0.6 : 1 })
+      .on('click', () => { const m = marcadores.get(b.codigo); if (m) m.openPopup(); seleccionar(b.codigo, false, true); }).addTo(capaIA);
+    const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: [0, 0], iconAnchor: [0, 0] }) })
+      .bindPopup(() => popupBahia(b), { maxWidth: 440, minWidth: 300, autoPanPadding: [30, 30], offset: [40, 0] })
       .on('click', () => seleccionar(b.codigo, false, true)).addTo(capaIA);
-    if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [0, -14], opacity: 0.97 });
+    if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [40, -18], opacity: 0.97 });
     m.on('popupopen', () => m.closeTooltip());
     marcadores.set(b.codigo, m);
   }
   setTimeout(despejar, 0);
 }
-// Etiquetas: si las del área elegida (o las visibles) caben en una columna a la derecha de la costa, se dibujan ahí con una
-// línea guía a su bahía, sin ocultar ninguna. Si no caben (todo Chile a la vez), se muestran las que caben y el resto como ícono.
-const capaGuias = L.layerGroup().addTo(map);
 function despejar() {
-  capaGuias.clearLayers();
   const ents = [...marcadores.entries()].filter(([, m]) => m.getElement());
-  ents.forEach(([, m]) => { const b = m.getElement().querySelector('.iaM'); b.classList.remove('corto', 'guia'); });
-  const vista = map.getBounds().pad(-0.02);
-  const zonaDe = c => DATOS.bahias.find(b => b.codigo === c)?.zona;
-  const grupo = ents.filter(([c, m]) => (!ZONA || zonaDe(c) === ZONA) && vista.contains(m.getLatLng()));
-  if (columna(grupo)) { ents.filter(e => !grupo.includes(e)).forEach(([, m]) => m.getElement().querySelector('.iaM').classList.add('corto')); return; }
-  // Sin espacio para la columna: etiquetas donde caben, el resto como ícono.
-  const peso = c => (c === SEL ? 2 : 0) + (ZONA && zonaDe(c) === ZONA ? 1 : 0);
-  const orden = ents.sort((a, b) => peso(b[0]) - peso(a[0]));
-  const centro = el => { const r = el.querySelector('.iaDot').getBoundingClientRect(); return { left: r.left + 6, right: r.right - 6, top: r.top + 6, bottom: r.bottom - 6, el }; };
-  const puntos = orden.map(([, m]) => centro(m.getElement()));
-  const choca = (r, v) => r.left < v.right && r.right > v.left && r.top < v.bottom && r.bottom > v.top;
+  const compacto = map.getZoom() < 6;
+  const items = ents.map(([c, m]) => {
+    const box = m.getElement().querySelector('.iaM'), chip = box.querySelector('.iaChip');
+    box.classList.toggle('compacto', compacto); chip.style.top = '';
+    const p = map.latLngToContainerPoint(m.getLatLng()), r = chip.getBoundingClientRect();
+    return { c, chip, p, w: r.width, h: r.height, x: p.x + 9, y0: p.y - r.height / 2, dz: m.getElement() };
+  }).sort((a, b) => a.p.y - b.p.y);
   const puestos = [];
-  for (const [, m] of orden) {
-    const el = m.getElement(), box = el.querySelector('.iaM'), r = el.querySelector('.iaChip').getBoundingClientRect();
-    if (!puntos.some(v => v.el !== el && choca(r, v)) && !puestos.some(v => choca(r, v))) puestos.push(r); else box.classList.add('corto');
+  for (const it of items) {
+    let y = it.y0, mover = true, vueltas = 0;
+    while (mover && vueltas++ < 80) {
+      mover = false;
+      for (const q of puestos) if (it.x < q.x + q.w + 2 && it.x + it.w + 2 > q.x && y < q.y + q.h + 1 && y + it.h + 1 > q.y) { y = q.y + q.h + 1; mover = true; }
+    }
+    it.y = y; puestos.push(it);
+    it.chip.style.top = (y - it.p.y) + 'px';
+    it.dz.style.zIndex = 1000 + Math.round(it.p.y);
   }
 }
-function columna(grupo) {
-  if (!grupo.length) return true;
-  const H = 36, tam = map.getSize();
-  if (grupo.length * H > tam.y - 46) return false;
-  const pts = grupo.map(([c, m]) => ({ c, m, p: map.latLngToContainerPoint(m.getLatLng()) })).sort((a, b) => a.p.y - b.p.y);
-  // posiciones verticales sin superposición, lo más cerca posible de cada bahía
-  let prev = -Infinity; pts.forEach(o => { o.y = Math.max(o.p.y - H / 2, prev + H); prev = o.y; });
-  const exceso = pts[pts.length - 1].y + H - (tam.y - 34);   // sin tapar la escala if (exceso > 0) { pts.forEach(o => o.y -= exceso); let pr = 12 - H; pts.forEach(o => { o.y = Math.max(o.y, pr + H); pr = o.y; }); }
-  // Columna junto a la costa: se ignoran puntos aislados mar adentro (p. ej. Juan Fernández) para ubicarla.
-  const xs = pts.map(o => o.p.x).sort((a, b) => a - b), med = xs[Math.floor(xs.length / 2)];
-  const cerca = xs.filter(x => Math.abs(x - med) < 160), ANCHO = 135;
-  const wX = Math.min(...cerca) - 35, eX = Math.max(...cerca) + 35;
-  const eTodos = xs[xs.length - 1] + 35, wTodos = xs[0] - 35;
-  // Preferencia: a la derecha de las bahías (sobre tierra); si no cabe en pantalla, a la izquierda.
-  let oeste, colX;
-  if (eTodos + ANCHO <= tam.x - 6) { oeste = false; colX = eTodos; }
-  else if (eX + ANCHO <= tam.x - 6) { oeste = false; colX = eX; }
-  else if (wTodos - ANCHO >= 6) { oeste = true; colX = wTodos; }
-  else if (wX - ANCHO >= 6) { oeste = true; colX = wX; }
-  else return false;
-  for (const o of pts) {
-    const el = o.m.getElement().querySelector('.iaM'); el.classList.add('corto');
-    const b = DATOS.bahias.find(x => x.codigo === o.c), d = diaDe(b);
-    const destino = map.containerPointToLatLng([colX, o.y + H / 2 - 2]);
-    L.polyline([o.m.getLatLng(), destino], { color: '#0f2a44', weight: 1, opacity: 0.7, interactive: false }).addTo(capaGuias);
-    const html = `<div class="iaChip guia${o.c === SEL ? ' sel' : ''}">${svgNub(d ? d.nubosidad : '', 22)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">${d ? `<b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b>` : 'sin datos'}</span></div></div>`;
-    L.marker(destino, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco ' + (oeste ? 'izq' : 'der'), html, iconSize: null, iconAnchor: [0, 15] }) })
-      .on('click', () => { o.m.openPopup(); seleccionar(o.c, false, true); })
-      .bindTooltip(d ? tip(b, d) : escH(b.nombre), { direction: 'top', offset: [0, -16], opacity: 0.97 })
-      .addTo(capaGuias);
-  }
-  return true;
-}
-map.on('zoomend moveend', () => setTimeout(despejar, 0));
+map.on('zoomend', () => setTimeout(despejar, 0));
 function encuadrar() {
   const pts = visibles().map(b => IA_POS[b.codigo]).filter(Boolean);
   if (!pts.length) return;
   if (!ZONA) { map.fitBounds([[-56.5, -82], [-17.5, -66]]); return; }
-  map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 8, paddingTopLeft: [20, 20], paddingBottomRight: [160, 20] });   // espacio a la derecha para las etiquetas
+  map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 8, paddingTopLeft: [20, 20], paddingBottomRight: [150, 20] });   // espacio a la derecha para las etiquetas
 }
 
 // ============================ Panel de pronósticos ============================
