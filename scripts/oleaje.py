@@ -8,6 +8,7 @@ ia.html muestra como una variable más junto a nubosidad y viento.
 Por cada día se entrega la altura significativa máxima (Hs) expresada como rango de 1 m y su estado
 del mar, más la dirección dominante, el período y el mar de fondo:
 
+    Hs 0,42 m  ->  0,1 a 1,0 m  ·  Rizada a marejadilla   (el mínimo mostrado es 0,1 m, nunca 0,0)
     Hs 1,58 m  ->  1,0 a 2,0 m  ·  Marejadilla a marejada
     Hs 3,58 m  ->  3,0 a 4,0 m  ·  Gruesa
 
@@ -38,6 +39,7 @@ POSICIONES = RAIZ / "build" / "ia_comun.js"
 URL = "https://marine-api.open-meteo.com/v1/marine"
 DIAS = 5
 HORAS_VIGENCIA = 3
+MINIMO = 0.1   # límite inferior que se muestra cuando el rango parte en 0 m
 CABECERAS = {"User-Agent": "dashboard-meteo-publico/1.0 (oleaje WRF + IA)"}
 
 # (desde Hs en m, estado) — límite inferior inclusive. Escala usada en los pronósticos de la Armada.
@@ -73,9 +75,9 @@ def estado_hasta(v):
 
 
 def rango(hs):
-    """1,58 -> ('1,0 a 2,0 m', 'Marejadilla a marejada')."""
-    lo = math.floor(hs)
-    hi = lo + 1
+    """1,58 -> ('1,0 a 2,0 m', 'Marejadilla a marejada'); 0,42 -> ('0,1 a 1,0 m', 'Rizada a marejadilla')."""
+    lo = max(math.floor(hs), MINIMO)
+    hi = math.floor(hs) + 1
     e1, e2 = estado_desde(lo), estado_hasta(hi)
     estado = e1 if e1 == e2 else f"{e1} a {e2.lower()}"
     return f"{lo:.1f} a {hi:.1f} m".replace(".", ","), estado
@@ -154,9 +156,20 @@ def armar(c, d):
     return {"celda": [round(d["latitude"], 3), round(d["longitude"], 3)], "dias": dias}
 
 
+def reetiquetar():
+    """Sin consultar la fuente, recalcula rango y estado del archivo vigente (por si cambió la escala o el mínimo)."""
+    d = json.loads(SALIDA.read_text(encoding="utf-8"))
+    for b in d.get("bahias", {}).values():
+        for dia in b.get("dias", []):
+            dia["rango"], dia["estado"] = rango(dia["hs"])
+    d["escala"] = [{"desde": a, "estado": b} for a, b in ESCALA]
+    SALIDA.write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
 def main():
     if vigente():
-        print(f"oleaje.json tiene menos de {HORAS_VIGENCIA} h: no se consulta")
+        reetiquetar()
+        print(f"oleaje.json tiene menos de {HORAS_VIGENCIA} h: no se consulta (rangos recalculados)")
         return 0
     try:
         pos = leer_posiciones()
