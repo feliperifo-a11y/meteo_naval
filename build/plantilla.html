@@ -928,7 +928,7 @@ async function cargarDatos() {
 })();
 // Aplicación web: la página sigue pudiendo instalarse desde el menú del navegador
 // Sin service worker: se eliminan los registrados antes (el iPhone no lograba leer el ícono con él).
-if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => { if (/\/sw\.js$/.test((r.active || r.installing || r.waiting || {}).scriptURL || '')) r.unregister(); })).catch(() => {});
 document.getElementById('btnRefresh').addEventListener('click', () => { cargarDatos(); cargarBoyasVivo(); });
 (function autor() {
   const b = document.getElementById('btnAutor'), pop = document.getElementById('autorPop');
@@ -1015,5 +1015,6 @@ setInterval(async () => {
   } catch (e) {}
 }, 5 * 60000);
 </script>
+<script>/*INSTALAR*/</script>
 </body>
 </html>

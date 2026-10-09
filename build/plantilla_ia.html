@@ -317,5 +317,6 @@ setInterval(async () => {
   try { const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim(); if (v && v !== VERSION_PAGINA) location.reload(); } catch (e) {}
 }, 5 * 60000);
 </script>
+<script>/*INSTALAR*/</script>
 </body>
 </html>
