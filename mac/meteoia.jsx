@@ -33,7 +33,7 @@ const vientoCorto = t => { const s = String(t || ""), m = s.match(/[NSEW]{1,3}(?
 const nf = (v, d = 1) => v == null || v === "" || isNaN(+v) ? "–" : (+v).toLocaleString("es-CL", { minimumFractionDigits: d, maximumFractionDigits: d });
 const cardinal = g => ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(((+g % 360) + 360) % 360 / 22.5) % 16];
 
-export const datos = output => {
+const datos = output => {
   const [a, b] = String(output || "").split("@@SEP@@");
   const ia = JSON.parse(a), est = JSON.parse(b);
   const bahia = (ia.bahias || []).find(x => x.codigo === BAHIA) || {};
@@ -57,7 +57,7 @@ const mn = { color: "#9fc9ff", fontWeight: 600 }, mx = { color: "#ffb4a6", fontW
 export const render = ({ output, error }) => {
   let v = null;
   try { if (!error) v = datos(output); } catch (e) { v = null; }
-  if (!v) return <div style={tarjeta} onClick={abrir}><b>MeteoIA</b><div style={{ ...sub, marginTop: 8 }}>Sin conexión con meteoia.cl. Se reintenta en 10 minutos.</div></div>;
+  if (!v) return <div style={tarjeta} onClick={abrir}><b>MeteoIA</b><div style={Object.assign({}, sub, { marginTop: 8 })}>Sin conexión con meteoia.cl. Se reintenta en 10 minutos.</div></div>;
   const o = v.obs;
   const ahora = o ? `Ahora: ${o.viento != null && o.direccionViento !== "---" ? `${cardinal(o.viento)} ${nf(o.velocidadDelViento)} kt · ` : ""}${nf(o.temperatura)} °C · ${String(o.fecha || "").slice(11, 16)}` : "";
   return (
@@ -74,11 +74,11 @@ export const render = ({ output, error }) => {
         {v.dias.map(({ f, i, d }) => (
           <div key={f} style={{ width: "31%", textAlign: "center", fontSize: 12 }}>
             <b style={{ display: "block", fontSize: 12.5, marginBottom: 1 }}>{etiqueta(f, i)}</b>
-            {d ? <>
+            {d ? <div>
               <Icono n={d.nubosidad} />
               <div><span style={mn}>{d.temp_min != null ? Math.round(d.temp_min) + "°" : "–"}</span> / <span style={mx}>{d.temp_max != null ? Math.round(d.temp_max) + "°" : "–"}</span></div>
               <div style={sub}>{vientoCorto(d.viento)}</div>
-            </> : <div style={{ ...sub, marginTop: 10 }}>sin datos</div>}
+            </div> : <div style={Object.assign({}, sub, { marginTop: 10 })}>sin datos</div>}
           </div>
         ))}
       </div>
