@@ -1,7 +1,7 @@
 // MeteoIA · widget de escritorio para macOS (Übersicht)
 // Pronóstico WRF + IA de 3 días y observación actual de la bahía elegida. Se actualiza cada 10 minutos.
 // Clic en el widget: abre el pronóstico completo en meteoia.cl.
-import { run } from "uebersicht";
+import { React, run } from "uebersicht";
 
 // ---- Configuración ----
 const BAHIA = "VALPARAISO_centro_d08";   // código del meteograma (ver meteoia.cl/ia.html)
