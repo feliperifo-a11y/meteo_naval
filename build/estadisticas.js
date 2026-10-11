@@ -3,7 +3,7 @@
 // - GoatCounter: qué se usa dentro de la página (clics en botones, avisos, estaciones, bahías, capas).
 // Mientras los códigos estén vacíos no se carga nada.
 (function estadisticas() {
-  const CLOUDFLARE_TOKEN = '';   // token de Cloudflare Web Analytics (público)
+  const CLOUDFLARE_TOKEN = '62d3b34b679746b88bd3d864ec86b6f8';   // token de Cloudflare Web Analytics (público)
   const GOATCOUNTER = '';        // código del sitio en GoatCounter, p. ej. 'meteoia' → meteoia.goatcounter.com
   if (location.hostname === 'localhost' || location.protocol === 'file:') return;
 
