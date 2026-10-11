@@ -4,7 +4,7 @@
 // Mientras los códigos estén vacíos no se carga nada.
 (function estadisticas() {
   const CLOUDFLARE_TOKEN = '62d3b34b679746b88bd3d864ec86b6f8';   // token de Cloudflare Web Analytics (público)
-  const GOATCOUNTER = '';        // código del sitio en GoatCounter, p. ej. 'meteoia' → meteoia.goatcounter.com
+  const GOATCOUNTER = 'meteoia';        // código del sitio en GoatCounter, p. ej. 'meteoia' → meteoia.goatcounter.com
   if (location.hostname === 'localhost' || location.protocol === 'file:') return;
 
   if (CLOUDFLARE_TOKEN) {
