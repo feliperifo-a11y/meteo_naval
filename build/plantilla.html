@@ -16,6 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
 <style>/*LEAFLET_CSS*/.iaIco{background:none;border:0;cursor:pointer}.iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}.iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}.iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}.iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}.iaDias{background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:3px;display:flex;gap:2px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25);font:12px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}.iaDias span{font-weight:700;font-size:11px;color:#0f2a44;padding:0 6px}.iaDias button{font:inherit;border:0;background:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:#18212b;text-transform:capitalize}.iaDias button.on{background:#0f2a44;color:#fff}
+.leaflet-popup-scrolled{border:0;overflow-y:auto}
 </style>
 <style>
 :root{
@@ -329,7 +330,7 @@ function evaluar(s, ahora) {
 }
 
 // ============================ Mapa ============================
-const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, maxBounds: [[-80, -140], [12, -30]], maxBoundsViscosity: 0.8 });
+const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, });
 map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
@@ -940,6 +941,21 @@ document.getElementById('avNone').addEventListener('click', () => setTodosAv(fal
   if (window.innerWidth <= 600) tg();
 })();
 window.addEventListener('resize', () => map.invalidateSize());
+// Toda ventana del mapa (estación, boya, aviso, subárea) se muestra completa: alto máximo con
+// desplazamiento interno si no cabe, y el mapa se mueve lo necesario para dejarla dentro del recuadro.
+map.on('popupopen', e => {
+  const pop = e.popup, alto = Math.max(200, map.getSize().y - 70);
+  if (pop.options.maxHeight !== alto) { pop.options.maxHeight = alto; pop.update(); }
+  const ajustar = () => {
+    const el = pop.getElement(); if (!el) return;
+    const a = el.getBoundingClientRect(), m = map.getContainer().getBoundingClientRect(), pad = 12;
+    let dx = 0, dy = 0;
+    if (a.top < m.top + pad) dy = a.top - (m.top + pad); else if (a.bottom > m.bottom - pad) dy = Math.min(a.bottom - (m.bottom - pad), a.top - (m.top + pad));
+    if (a.left < m.left + pad) dx = a.left - (m.left + pad); else if (a.right > m.right - pad) dx = Math.min(a.right - (m.right - pad), a.left - (m.left + pad));
+    if (dx || dy) map.panBy([dx, dy], { animate: true, duration: 0.3 });
+  };
+  setTimeout(() => requestAnimationFrame(ajustar), 300);   // tras el ajuste propio de Leaflet
+});
 // Si una ventana del mapa queda bajo el panel de capas, el panel se contrae para no taparla.
 map.on('popupopen', e => setTimeout(() => {
   const lb = document.getElementById('layerBox'), el = e.popup.getElement();
