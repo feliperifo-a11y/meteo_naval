@@ -661,6 +661,7 @@ function evaluarBoya(b, ahora) {
   const t = b.ultimo && b.ultimo.fecha ? new Date(b.ultimo.fecha) : null, ms = t ? ahora - t : null;
   if (!t && b.error === 'pendiente') return { k: 'sd', t, ms, motivo: 'Consultando la boya…', acceso: false };
   if (!t && b.error) return { k: 'sd', t, ms, motivo: 'No fue posible consultar esta boya desde este navegador. Su estado puede revisarse en el visor oficial.', acceso: false };
+  if (!t && b.ajena) return { k: 'no', t, ms, motivo: 'La fuente no entrega datos propios de esta boya (responde con los de otra).' };
   if (!t) return { k: 'no', t, ms, motivo: 'Sin datos en los últimos 7 días.' };
   if (ms <= UMBRAL_BOYA.ok) return { k: 'ok', t, ms, motivo: '' };
   if (ms <= UMBRAL_BOYA.ret) return { k: 'ret', t, ms, motivo: `Último dato hace ${edad(ms)}.` };
@@ -709,11 +710,11 @@ function buildBoyas() {
 // Lectura en vivo desde el navegador de quien abre la página (el servidor del SHOA solo responde a navegadores).
 // Consulta POST con ?callback=cb; la respuesta viene envuelta en cb( … ). 168 filas horarias (7 días), hora UTC.
 const BOYAS_CATALOGO = [
-  ['Iquique', 'Triaxys', 'https://www.shoa.cl/boyas/consultar260_2.php', -20.24103, -70.24267],
+  ['Iquique', 'WatchKeeper', 'https://www.shoa.cl/boyas/consultar_610401.php', -20.23910, -70.24255],
   ['Antofagasta', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610501.php', -23.73590, -70.47170],
   ['Concón', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610a01.php', -32.86374, -71.65882],
   ['San Antonio', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_810700.php', -33.58946, -71.80803],
-  ['Talcahuano', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_610401.php', -36.56016, -73.34134],
+  ['Talcahuano', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_610402.php', -36.56016, -73.34134],
   ['Desertores', 'Watchkeeper', 'https://www.shoa.cl/boyas/consultar_520700.php', -42.77400, -73.24367],
   ['Punta Arenas', 'Triaxys', 'https://www.shoa.cl/boyas/consultar_610701.php', -53.28113, -70.83745],
 ];
@@ -747,7 +748,12 @@ async function cargarBoyasVivo() {
   await Promise.all(BOYAS.map(async b => {
     // Un reintento: el servidor de las boyas a veces tarda o corta la primera consulta.
     const leer = async () => { try { return await leerBoya(b.url); } catch (e) { await new Promise(r => setTimeout(r, 5000)); return leerBoya(b.url); } };
-    try { Object.assign(b, resumirBoya(await leer()), { error: null, consultado: new Date().toISOString() }); }
+    try {
+      const r = resumirBoya(await leer());
+      // Si la fuente entrega datos de otra boya (posición a más de ~50 km de la registrada), no se usan.
+      if (r.posicion && (Math.abs(r.posicion[0] - b.lat) > 0.5 || Math.abs(r.posicion[1] - b.lon) > 0.5)) { r.ultimo = null; r.serie = []; r.ajena = true; }
+      Object.assign(b, r, { error: null, consultado: new Date().toISOString() });
+    }
     catch (e) { if (!b.ultimo) b.error = 'navegador'; }
   }));
   BOYAS_LEYENDO = false;
