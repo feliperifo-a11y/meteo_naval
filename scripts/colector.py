@@ -961,6 +961,24 @@ def recolectar_avisos(geo: Geo) -> bool:
         if fin and fin < limite:
             continue
         final.append(a)
+    # Un mismo aviso puede aparecer dos veces en la portada (por ejemplo, en la página del sector y en una página
+    # genérica) con PDF de distinta dirección. Se deja uno solo por código + tipo + zonas, el del PDF más reciente.
+    def firma(a):
+        return (a.get("tipo"), a.get("codigo"), tuple(sorted((z.get("nombre"), z.get("desde"), z.get("hasta")) for z in a.get("zonas", []))))
+    def carpeta(a):
+        m = re.search(r"/docs/(\d{8})/(\d{14})/", a.get("url", ""))
+        return m.group(2) if m else ""
+    unicos = {}
+    for a in final:
+        k = firma(a)
+        if a.get("zona_x") or not a.get("codigo") or not a.get("zonas"):
+            unicos[id(a)] = a; continue
+        if k not in unicos or carpeta(a) > carpeta(unicos[k]):
+            if k in unicos: print(f"  Duplicado omitido: {unicos[k]['codigo']} ({unicos[k]['url']})")
+            unicos[k] = a
+        else:
+            print(f"  Duplicado omitido: {a['codigo']} ({a['url']})")
+    final = list(unicos.values())
     final.sort(key=lambda a: -max([z.get("north", -90) for z in a.get("zonas", [])] or [-90]))
     escribir_json(DATA / "avisos.json", {"actualizado": iso(ref), "fuente": URL_AVISOS, "avisos": final}, compacto=True)
     print(f"Avisos: {len(final)} publicados")
