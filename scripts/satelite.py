@@ -37,7 +37,7 @@ DATA = RAIZ / "data"
 URL = "https://web.directemar.cl/met/jturno/pub/GFS/color.png"
 PAGINA = "https://meteoarmada.directemar.cl/meteo/imagen-satelital-infraroja"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (capa satelite IR)"}
-VERSION = 1
+VERSION = 2
 
 TAMANO = (930, 795)
 # Georreferencia (ajuste con grilla y costa): x = (lon + 130)·KX ; y = −lat·KY
@@ -102,6 +102,40 @@ def rellenar(T, a, malos):
     return T[iy, ix], a[iy, ix]
 
 
+def pintar(t, rgb, vacio):
+    """Colores y transparencia según la temperatura de brillo."""
+    out = np.zeros(t.shape + (4,), np.uint8)
+    nube = (t < T_CLARO) & (t > T_COLOR)
+    out[nube, :3] = 255
+    out[nube, 3] = (np.clip((T_CLARO - t[nube]) / (T_CLARO - T_COLOR), 0, 1) * 0.55 * 255 + 25).astype(np.uint8)
+    fria = t <= T_COLOR
+    out[fria, :3] = rgb[fria].astype(np.uint8)
+    out[fria, 3] = 225
+    out[vacio] = 0
+    return out
+
+
+# Proyección estereográfica polar de la carta de superficie (la misma del mapa polar del dashboard)
+PA, PB, PSX, PSY, PL0 = 519.41, 866.82, 1125.44, 1001.72, -90.08
+POLAR_CAJA = (-500, -400, 1600, 1200)      # x0, y0, x1, y1 en píxeles de la carta (zona visible del mapa polar)
+
+
+def capa_polar(T, a, sin_dato):
+    """La misma capa, en la proyección estereográfica polar de la carta (para el mapa «Carta de superficie»)."""
+    from scipy.ndimage import map_coordinates
+    x0, y0, x1, y1 = POLAR_CAJA
+    xs, ys = np.meshgrid(np.arange(x0, x1, 1.0), np.arange(y0, y1, 1.0))
+    dx, dy = (xs - PA) / PSX, (PB - ys) / PSY
+    lat = np.degrees(2 * np.arctan(np.hypot(dx, dy))) - 90
+    lon = PL0 + np.degrees(np.arctan2(dx, dy))
+    X, Y = (lon - LON0) * KX, -lat * KY
+    fuera = (X < 0) | (X > TAMANO[0] - 1) | (Y < 0) | (Y > TAMANO[1] - 1) | (lat < SUR)
+    t = map_coordinates(T, [Y, X], order=1, mode="nearest")
+    rgb = np.stack([map_coordinates(a[..., i].astype(float), [Y, X], order=0, mode="nearest") for i in range(3)], -1)
+    vacio = fuera | (map_coordinates(sin_dato.astype(float), [Y, X], order=0, mode="nearest") > 0.5)
+    return Image.fromarray(pintar(t, rgb, vacio), "RGBA")
+
+
 def capa(T, a, sin_dato=None):
     from scipy.ndimage import map_coordinates
     ym0, ym1 = np.log(np.tan(np.pi / 4 + np.radians(SUR) / 2)), np.log(np.tan(np.pi / 4 + np.radians(NORTE) / 2))
@@ -113,15 +147,8 @@ def capa(T, a, sin_dato=None):
     X, Y = (LON - LON0) * KX, -LAT * KY
     t = map_coordinates(T, [Y, X], order=1, mode="nearest")
     rgb = np.stack([map_coordinates(a[..., i].astype(float), [Y, X], order=0, mode="nearest") for i in range(3)], -1)
-    out = np.zeros(LON.shape + (4,), np.uint8)
     vacio = map_coordinates(sin_dato.astype(float), [Y, X], order=0, mode="nearest") > 0.5 if sin_dato is not None else np.zeros(LON.shape, bool)
-    nube = (t < T_CLARO) & (t > T_COLOR)
-    out[nube, :3] = 255
-    out[nube, 3] = (np.clip((T_CLARO - t[nube]) / (T_CLARO - T_COLOR), 0, 1) * 0.55 * 255 + 25).astype(np.uint8)
-    fria = t <= T_COLOR
-    out[fria, :3] = rgb[fria].astype(np.uint8)
-    out[fria, 3] = 225
-    out[vacio] = 0                                   # logo, barra y rótulo: sin dato
+    out = pintar(t, rgb, vacio)
     return Image.fromarray(out, "RGBA"), [[SUR, OESTE], [NORTE, ESTE]]
 
 
@@ -171,12 +198,13 @@ def main():
     for x0, y0, x1, y1 in EXCLUIR:
         sin_dato[y0:y1, x0:x1] = True
     img, limites = capa(T, a_limpia, sin_dato)
+    capa_polar(T, a_limpia, sin_dato).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_polar.png", optimize=True)
     img.quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_ir.png", optimize=True)
     hora, sat, txt = hora_imagen(im)
     print("OCR:", txt, "→", hora)
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
             "hora": hora.strftime("%Y-%m-%dT%H:%MZ") if hora else None, "satelite": sat, "canal": "13 · IR onda larga",
-            "limites": limites, "umbral_nube_c": T_CLARO, "umbral_color_c": T_COLOR, "fuente": PAGINA, "imagen": URL}
+            "limites": limites, "polar": {"x0": POLAR_CAJA[0], "y0": POLAR_CAJA[1], "x1": POLAR_CAJA[2], "y1": POLAR_CAJA[3]}, "umbral_nube_c": T_CLARO, "umbral_color_c": T_COLOR, "fuente": PAGINA, "imagen": URL}
     (DATA / "satelite.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     print(f"Satélite: capa publicada ({img.size[0]}×{img.size[1]}), imagen {meta['hora']}")
 
