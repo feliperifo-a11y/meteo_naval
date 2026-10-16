@@ -50,7 +50,7 @@ CONTROL = [(-90, -20), (-90, -30), (-90, -40), (-100, -30), (-80, -30), (-110, -
 OESTE, ESTE, SUR, NORTE = -165.0, -40.0, -80.0, 2.0
 ANCHO_SALIDA = 3000
 NIVELES = list(range(940, 1061, 4))
-VERSION = 2          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
+VERSION = 3          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
 
 
 def fwd(lon, lat):
@@ -258,12 +258,14 @@ def main():
     m = mascara_color(arr)
     capa, limites, npx = reproyectar(m)
     capa.save(DATA / "carta_frentes.png", optimize=True)
+    (DATA / "carta.jpg").write_bytes(r.content)            # copia para la vista en proyección polar
     print(f"Frentes: {npx} píxeles reproyectados")
 
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
             "valida": valida.strftime("%Y-%m-%dT%H:%MZ") if valida else None,
             "corrida_carta": corrida.strftime("%Y-%m-%dT%HZ") if corrida else None,
-            "limites": limites, "fuente": PAGINA_CARTA, "imagen": URL_CARTA, "isobaras": None}
+            "limites": limites, "proyeccion": {"A": A, "B": B, "SX": SX, "SY": SY, "L0": L0, "ancho": TAMANO[0], "alto": TAMANO[1]},
+            "fuente": PAGINA_CARTA, "imagen": URL_CARTA, "isobaras": None}
 
     # Isobaras: misma corrida y hora de validez que la carta; si no está, la corrida más reciente que la cubra
     if valida:

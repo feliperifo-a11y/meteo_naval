@@ -46,7 +46,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png; do
+          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta.jpg; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
 
@@ -89,7 +89,7 @@ jobs:
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
-          for f in carta.json carta_isobaras.json carta_frentes.png; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
+          for f in carta.json carta_isobaras.json carta_frentes.png carta.jpg; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3
         with:
