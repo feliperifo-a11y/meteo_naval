@@ -50,7 +50,7 @@ CONTROL = [(-90, -20), (-90, -30), (-90, -40), (-100, -30), (-80, -30), (-110, -
 OESTE, ESTE, SUR, NORTE = -165.0, -40.0, -80.0, 2.0
 ANCHO_SALIDA = 3000
 NIVELES = list(range(940, 1061, 4))
-VERSION = 3          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
+VERSION = 4          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
 
 
 def fwd(lon, lat):
@@ -259,6 +259,11 @@ def main():
     capa, limites, npx = reproyectar(m)
     capa.save(DATA / "carta_frentes.png", optimize=True)
     (DATA / "carta.jpg").write_bytes(r.content)            # copia para la vista en proyección polar
+    # Frentes en la proyección original de la carta (para el mapa polar), fondo transparente
+    pol = np.zeros(m.shape + (4,), np.uint8)
+    for k, c in COLORES.items():
+        pol[m == k] = (*c, 255)
+    Image.fromarray(pol, "RGBA").save(DATA / "carta_frentes_polar.png", optimize=True)
     print(f"Frentes: {npx} píxeles reproyectados")
 
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,

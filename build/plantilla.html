@@ -57,6 +57,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-ap
 header{background:var(--head);color:var(--headInk);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between}
 .gridLbl span{position:absolute;transform:translate(-50%,0);font:700 11px/1 system-ui,sans-serif;color:#1f2a36;background:rgba(255,255,255,.85);padding:2px 4px;border-radius:3px;white-space:nowrap}
 .gridLbl.izq span{transform:translate(0,-50%)}
+.btnPolarMapa{background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:5px;padding:5px 7px;font:700 11.5px system-ui,sans-serif;color:#124a7a;cursor:pointer}
 .btnPolar{display:block;margin-top:6px;width:100%;border:1px solid #1f6fb2;background:#eaf3fb;color:#124a7a;border-radius:6px;padding:5px 6px;font-size:11.5px;font-weight:600;cursor:pointer}
 #dlgPolar{position:fixed;inset:0;z-index:5000;background:rgba(10,20,30,.72);display:flex;align-items:center;justify-content:center;padding:14px}
 #dlgPolar[hidden]{display:none}
@@ -65,8 +66,9 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 .polarCab #polarCapas{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
 .polarCab label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}
 .polarCab button{border:1px solid #c9d3dc;background:#fff;border-radius:6px;width:30px;height:28px;cursor:pointer;font-size:14px}
-#mapPolar{flex:1;background:#fff}
+#mapPolar{flex:1;background:#dbe8f1}
 .polarPie{padding:6px 12px;font-size:11.5px;color:#4a5868;border-top:1px solid #d6dee6}
+.isoLbl.azul span{color:#0b4f8a}
 .isoLbl span{position:absolute;transform:translate(-50%,-50%);font:600 10.5px/1 system-ui,sans-serif;color:#222;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap}
 .cartaInfo{background:rgba(255,255,255,.93);border:1px solid #c9d3dc;border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.4;color:#18212b;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:300px}
 header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:.2px}
@@ -896,7 +898,7 @@ async function cargarCarta() {
   CARTA_INFO = meta;
   const ctl = document.getElementById('cartaInfo');
   if (ctl) ctl.innerHTML = `<b>Carta sinóptica</b> · válida ${escH(fmtCarta(meta.valida))}<br>Isobaras: modelo GFS${meta.isobaras ? ` ${escH(fmtCarta(meta.isobaras.corrida))} +${meta.isobaras.fhr} h` : ' (no disponibles)'} · cada 4 hPa<br>Frentes y centros: <a href="${escH(meta.fuente)}" target="_blank" rel="noopener">carta de superficie ↗</a>` +
-    (meta.proyeccion ? `<button type="button" class="btnPolar" onclick="abrirPolar()">Ver en proyección de la carta (estereográfica polar)</button>` : '');
+    (meta.proyeccion ? `<button type="button" class="btnPolar" onclick="abrirPolar()">Ver mapa en proyección polar (como la carta)</button>` : '');
 }
 // Grilla de latitudes y longitudes (cada 10°) con rótulos en los bordes del mapa, como en la carta
 const GRILLA = L.layerGroup(), GRILLA_LBL = L.layerGroup();
@@ -943,8 +945,45 @@ function geomPolar(g) {
   return { ...g, coordinates: m(g.coordinates) };
 }
 const geoPolar = (g, opt) => L.geoJSON(geomPolar(g), { ...opt, coordsToLatLng: c => aPolar(c[1], c[0]) });
-function capasPolar() {
-  const ahora = Date.now(), C = {};
+async function capasPolar() {
+  const ahora = Date.now(), C = {}, P = c => aPolar(c[0], c[1]);
+  // Costa (Natural Earth incorporada) y fondo de mar
+  C.costa = L.layerGroup();
+  for (const c of LAND) for (const poly of c.p) {
+    const anillos = poly.map(decodePolyline6).filter(r => r.some(([la, lo]) => la < 15 && lo < -10 && lo > -190));
+    if (anillos.length) L.polygon(anillos.map(r => r.map(P)), { color: '#7d8a96', weight: 0.8, fillColor: '#efeee6', fillOpacity: 1, interactive: false }).addTo(C.costa);
+  }
+  // Grilla cada 10° con rótulos
+  C.grilla = L.layerGroup();
+  for (let lon = -180; lon <= 0; lon += 10) {
+    const pts = []; for (let la = 5; la >= -85; la -= 1) pts.push(aPolar(la, lon));
+    L.polyline(pts, { color: '#5b6673', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+    L.marker(aPolar(-2, lon), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°O</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
+  }
+  for (let la = 0; la >= -80; la -= 10) {
+    const pts = []; for (let lon = -180; lon <= 0; lon += 1) pts.push(aPolar(la, lon));
+    L.polyline(pts, { color: '#5b6673', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+    if (la) L.marker(aPolar(la, -125), { interactive: false, icon: L.divIcon({ className: 'gridLbl izq', html: `<span>${-la}°S</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
+  }
+  // Límites marítimos
+  C.lim = L.layerGroup();
+  for (const l of LIMITES) { const st = LIM_STYLE[l.abrev]; if (!st) continue;
+    for (const sg of l.segs) L.polyline(decodePolyline6(sg).map(P), { color: st.color, weight: st.weight, dashArray: st.dashArray, opacity: 0.9, interactive: false }).addTo(C.lim); }
+  // Isobaras GFS (vectoriales) y frentes
+  C.iso = L.layerGroup(); C.frentes = L.layerGroup();
+  try {
+    const iso = await leerJSON('data/carta_isobaras.json'), lbl = [];
+    for (const l of iso.lineas) {
+      L.polyline(l.c.map(P), { color: '#0b4f8a', weight: l.p === 1012 ? 1.7 : 1.15, opacity: 0.95, interactive: false }).addTo(C.iso);
+      if (l.c.length >= 12 && (l.p % 8 === 0 || l.c.length >= 30)) { const m = l.c[Math.floor(l.c.length / 2)];
+        if (!lbl.some(e => Math.abs(e[0] - m[0]) < 1.6 && Math.abs(e[1] - m[1]) < 2.2)) { lbl.push(m);
+          L.marker(P(m), { interactive: false, icon: L.divIcon({ className: 'isoLbl azul', html: `<span>${l.p}</span>`, iconSize: [0, 0] }) }).addTo(C.iso); } }
+    }
+  } catch (e) {}
+  const pr = CARTA_INFO.proyeccion, lim = [[-pr.alto, 0], [0, pr.ancho]];
+  L.imageOverlay('data/carta_frentes_polar.png?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim, { interactive: false }).addTo(C.frentes);
+  C.carta = L.imageOverlay('data/carta.jpg?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim, { opacity: 0.85, interactive: false });
+  // Capas del dashboard
   C.met = L.layerGroup();
   geoPolar(METAREA, { style: f => ({ color: '#2f6b2f', weight: 1.4, fillColor: '#7fbf7f', fillOpacity: 0.12 }), onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true }) }).addTo(C.met);
   for (const f of METAREA.features) { const p = f.properties; L.marker(aPolar(p.lp[0], p.lp[1]), { interactive: false, icon: L.divIcon({ className: 'mLbl', html: `<span>${escH(p.tipo === 'costera' ? p.id : corto(p.id))}</span>`, iconSize: [0, 0] }) }).addTo(C.met); }
@@ -965,26 +1004,35 @@ function capasPolar() {
       .bindTooltip('Boya ' + escH(b.nombre)).bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320 }).addTo(C.boyas); }
   return C;
 }
-function abrirPolar() {
-  if (!CARTA_INFO || !CARTA_INFO.proyeccion) return;
+async function abrirPolar() {
+  if (!CARTA_INFO) { try { CARTA_INFO = await leerJSON('data/carta.json'); } catch (e) { return; } }
+  if (!CARTA_INFO.proyeccion) return;
   const p = CARTA_INFO.proyeccion, dlg = document.getElementById('dlgPolar');
   dlg.hidden = false; document.body.style.overflow = 'hidden';
-  document.getElementById('polarTit').textContent = `Carta de superficie · válida ${fmtCarta(CARTA_INFO.valida)} · proyección estereográfica polar`;
+  document.getElementById('polarTit').textContent = `Mapa en proyección estereográfica polar · carta válida ${fmtCarta(CARTA_INFO.valida)}`;
   if (mapPolar) { mapPolar.remove(); mapPolar = null; }
-  mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 3, zoomSnap: 0.25, attributionControl: false });
+  mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, attributionControl: false });
   const lim = [[-p.alto, 0], [0, p.ancho]];
-  L.imageOverlay('data/carta.jpg?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim).addTo(mapPolar);
-  mapPolar.fitBounds(lim); mapPolar.setMaxBounds(L.latLngBounds(lim).pad(0.15));
-  POLAR_CAPAS = capasPolar();
-  const caja = document.getElementById('polarCapas'); caja.innerHTML = '';
-  [['met', 'METAREA XV', true], ['av', 'Avisos', true], ['est', 'Estaciones', true], ['boyas', 'Boyas', true]].forEach(([k, n, on]) => {
+  mapPolar.fitBounds(lim); mapPolar.setMaxBounds(L.latLngBounds(lim).pad(0.6));
+  const caja = document.getElementById('polarCapas'); caja.innerHTML = '<span style="opacity:.7">Cargando capas…</span>';
+  POLAR_CAPAS = await capasPolar();
+  caja.innerHTML = '';
+  const orden = [['carta', 'Carta original', false], ['costa', 'Costa', true], ['grilla', 'Grilla', true], ['lim', 'Límites marítimos', false], ['met', 'METAREA XV', true],
+    ['av', 'Avisos', true], ['iso', 'Isobaras GFS', true], ['frentes', 'Frentes', true], ['est', 'Estaciones', true], ['boyas', 'Boyas', true]];
+  const reordenar = () => orden.forEach(([k]) => { const l = POLAR_CAPAS[k]; if (mapPolar.hasLayer(l)) { mapPolar.removeLayer(l); l.addTo(mapPolar); } });
+  orden.forEach(([k, n, on]) => {
     const l = document.createElement('label'); l.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}> ${n}`;
-    l.querySelector('input').onchange = e => e.target.checked ? POLAR_CAPAS[k].addTo(mapPolar) : mapPolar.removeLayer(POLAR_CAPAS[k]);
+    l.querySelector('input').onchange = e => { if (e.target.checked) { POLAR_CAPAS[k].addTo(mapPolar); reordenar(); } else mapPolar.removeLayer(POLAR_CAPAS[k]); };
     caja.appendChild(l); if (on) POLAR_CAPAS[k].addTo(mapPolar);
   });
   setTimeout(() => { mapPolar.invalidateSize(); mapPolar.fitBounds(lim); }, 60);
   try { window.mnEvento && mnEvento('vista-polar'); } catch (e) {}
 }
+// Botón fijo en el mapa principal para abrir el mapa polar
+const PolarCtl = L.Control.extend({ options: { position: 'topleft' }, onAdd() {
+  const b = L.DomUtil.create('button', 'btnPolarMapa'); b.type = 'button'; b.title = 'Ver el mapa en proyección estereográfica polar (como la carta de superficie)';
+  b.innerHTML = 'Polar'; L.DomEvent.disableClickPropagation(b); b.onclick = abrirPolar; return b; } });
+new PolarCtl().addTo(map);
 function cerrarPolar() { document.getElementById('dlgPolar').hidden = true; document.body.style.overflow = ''; if (mapPolar) { mapPolar.remove(); mapPolar = null; } }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !document.getElementById('dlgPolar').hidden) cerrarPolar(); });
 
@@ -1185,7 +1233,7 @@ setInterval(async () => {
 <div id="dlgPolar" hidden><div class="polarCaja">
   <div class="polarCab"><b id="polarTit">Carta de superficie</b><span id="polarCapas"></span><button type="button" onclick="cerrarPolar()" title="Cerrar (Esc)">✕</button></div>
   <div id="mapPolar"></div>
-  <div class="polarPie">Fondo: carta de superficie original (isobaras GFS y frentes del análisis), sin deformar. Encima, las capas del dashboard llevadas a la misma proyección con su grilla ajustada (error &lt; 1 píxel).</div>
+  <div class="polarPie">Proyección estereográfica polar, la misma de la carta de superficie (ajustada a su grilla, error &lt; 1 píxel). Isobaras GFS en azul; active «Carta original» para superponerla y comparar.</div>
 </div></div>
 </body>
 </html>
