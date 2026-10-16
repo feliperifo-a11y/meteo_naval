@@ -1,0 +1,10 @@
+HTTP/1.1 403 Forbidden
+Content-Length: 1233
+Content-Type: text/html
+Server: 
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'self' *.directemar.cl;
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Date: Fri, 16 Oct 2026 11:46:11 GMT
+
