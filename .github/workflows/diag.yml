@@ -7,21 +7,14 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - name: Dependencias
+      - name: Descarga IR
         run: |
-          sudo apt-get install -y -qq tesseract-ocr >/dev/null
-          pip install -q requests pillow numpy scipy matplotlib pygrib
-      - name: Carta
-        env: { FORZAR: "1" }
-        run: python scripts/carta.py 2>&1 | tee diag/out/carta_log.txt
+          mkdir -p diag/ir
+          curl -sS -m 60 -D diag/ir/headers.txt -o diag/ir/color.png "https://web.directemar.cl/met/jturno/pub/GFS/color.png" || echo FALLO > diag/ir/error.txt
       - name: Publicar resultados en la rama
         run: |
-          cp data/carta.json data/carta_frentes.png diag/out/ 2>/dev/null || true
-          cp data/carta_isobaras.json diag/out/ 2>/dev/null || true
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/out && git commit -m "diag: carta" && git push || true
+          git add diag/ir && git commit -m "diag: IR" && git push || true
