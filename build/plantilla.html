@@ -1050,6 +1050,32 @@ map.on('layeradd layerremove', e => {
 });
 setInterval(() => { if (LAYERS.carta && LAYERS.carta.lyr && map.hasLayer(LAYERS.carta.lyr)) cargarCarta(); }, 20 * 60000);
 
+// ============================ Isobaras GFS (presión a nivel del mar, cada 4 hPa) ============================
+let ISO_GRUPO = null, ISO_VER = '', isoCtl = null;
+function buildIso() { ISO_GRUPO = L.layerGroup(); ISO_VER = ''; cargarIso(); return ISO_GRUPO; }
+async function cargarIso() {
+  if (!ISO_GRUPO) return;
+  let iso; try { iso = await leerJSON('data/carta_isobaras.json'); } catch (e) { return; }
+  const ver = iso.corrida + '+' + iso.fhr; if (ver === ISO_VER) return;
+  ISO_VER = ver; ISO_GRUPO.clearLayers();
+  const lbl = [];
+  for (const l of iso.lineas) {
+    L.polyline(l.c, { pane: 'cartaPane', color: '#1d2733', weight: l.p === 1012 ? 1.6 : 1.1, opacity: 0.85, interactive: false }).addTo(ISO_GRUPO);
+    if (l.c.length >= 12 && (l.p % 8 === 0 || l.c.length >= 30)) { const m = l.c[Math.floor(l.c.length / 2)];
+      if (!lbl.some(e => Math.abs(e[0] - m[0]) < 1.6 && Math.abs(e[1] - m[1]) < 2.2)) { lbl.push(m);
+        L.marker(m, { pane: 'cartaPane', interactive: false, icon: L.divIcon({ className: 'isoLbl', html: `<span>${l.p}</span>`, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(ISO_GRUPO); } }
+  }
+  const el = document.getElementById('isoInfo');
+  if (el) el.innerHTML = `<b>Isobaras</b> · presión a nivel del mar cada 4 hPa<br>Modelo GFS ${escH(fmtCarta(iso.corrida))} +${iso.fhr} h · válidas ${escH(fmtCarta(iso.valida))}<br><span style="color:#4a5868">Misma hora de la carta de superficie</span>`;
+}
+const IsoCtl = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const d = L.DomUtil.create('div', 'satInfo'); d.id = 'isoInfo'; L.DomEvent.disableClickPropagation(d); return d; } });
+map.on('layeradd layerremove', e => {
+  if (!LAYERS.iso || e.layer !== LAYERS.iso.lyr) return;
+  if (e.type === 'layeradd' && !isoCtl) { isoCtl = new IsoCtl().addTo(map); ISO_VER = ''; cargarIso(); }
+  if (e.type === 'layerremove' && isoCtl) { map.removeControl(isoCtl); isoCtl = null; }
+});
+setInterval(() => { if (LAYERS.iso && LAYERS.iso.lyr && map.hasLayer(LAYERS.iso.lyr)) cargarIso(); }, 20 * 60000);
+
 // ============================ Imagen satelital infrarroja (nubosidad) ============================
 // data/satelite_ir.png: nubosidad según la temperatura de brillo (GOES, canal 13), georreferenciada y en Mercator.
 let SAT_GRUPO = null, SAT_VER = '', satCtl = null;
@@ -1094,6 +1120,7 @@ function renderCapas() {
   addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), true, buildEst);
   addLayerRow(box, 'boyas', 'Boyas meteoceanográficas', svgBoya('#1f6fb2', 16), true, buildBoyas);
   addLayerRow(box, 'ia', 'Pronóstico WRF + IA', svgNub('Parcial', 16), false, buildIA);
+  addLayerRow(box, 'iso', 'Isobaras (presión, GFS)', lineSw('#1d2733', null, 1.6), false, buildIso);
   addLayerRow(box, 'sat', 'Imagen satelital IR (nubosidad)', '<span class="satSw"></span>', false, buildSat);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
