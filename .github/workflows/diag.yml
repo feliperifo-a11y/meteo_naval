@@ -1,0 +1,24 @@
+name: Diagnóstico carta
+on:
+  push:
+    branches: [diag-carta]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargas de prueba
+        run: |
+          mkdir -p diag/out
+          curl -sS -m 60 -D diag/out/carta_headers.txt -o diag/out/carta.jpg "https://web.directemar.cl/met/jturno/cartas/carta.jpg" || echo "carta FALLO" >> diag/out/errores.txt
+          curl -sS -m 60 -I "https://web.directemar.cl/met/jturno/cartas/" -o diag/out/dir_headers.txt || true
+          curl -sS -m 60 "https://meteoarmada.directemar.cl/meteo/cartas-sinopticas/carta-de-superficie-blanco-y-negro" -o diag/out/pagina.html || echo "pagina FALLO" >> diag/out/errores.txt
+          curl -sS -m 60 "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/" -o diag/out/nomads.html || echo "nomads FALLO" >> diag/out/errores.txt
+          ls -la diag/out
+      - name: Publicar resultados en la rama
+        run: |
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diag/out && git commit -m "diag: resultados" && git push || true
