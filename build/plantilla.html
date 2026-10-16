@@ -55,6 +55,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-ap
 .hIzq{display:flex;align-items:center}
 @media (max-width:600px){.marca img{height:24px}.marca{margin-right:8px}}
 header{background:var(--head);color:var(--headInk);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between}
+.isoLbl span{position:absolute;transform:translate(-50%,-50%);font:600 10.5px/1 system-ui,sans-serif;color:#222;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap}
+.cartaInfo{background:rgba(255,255,255,.93);border:1px solid #c9d3dc;border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.4;color:#18212b;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:300px}
 header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:.2px}
 header .sub{font-size:12.5px;opacity:.8}
 .hbtns{display:flex;gap:8px;flex-wrap:wrap}
@@ -335,6 +337,7 @@ map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
 map.createPane('limPane'); map.getPane('limPane').style.zIndex = 400;
+map.createPane('cartaPane'); map.getPane('cartaPane').style.zIndex = 390; map.getPane('cartaPane').style.pointerEvents = 'none';
 map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 map.createPane('boyaPane'); map.getPane('boyaPane').style.zIndex = 650;
 map.createPane('stPane'); map.getPane('stPane').style.zIndex = 640;
@@ -847,6 +850,51 @@ function pintarDiasIA() {
 map.on('overlayadd overlayremove layeradd layerremove', e => { if (LAYERS.ia && e.layer === LAYERS.ia.lyr) pintarDiasIA(); });
 async function cargarIA() { try { IA_DATOS = await leerJSON('data/wrf_ia.json'); refreshIA(); } catch (e) {} }
 
+// ============================ Carta sinóptica: isobaras GFS + frentes de la carta ============================
+// data/carta.json (metadatos), data/carta_isobaras.json (líneas cada 4 hPa) y data/carta_frentes.png (frentes y
+// centros A/B extraídos de la carta de superficie pública y reproyectados a la proyección del mapa).
+let CARTA_GRUPO = null, CARTA_VER = '', CARTA_INFO = null;
+const fmtCarta = iso => { if (!iso) return '–'; const d = new Date(iso.replace(/Z$/, ':00Z').replace(/(T\d{2}):00:00Z$/, '$1:00Z'));
+  return isNaN(d) ? iso : d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'UTC' }).replace('.', '') + ' ' + String(d.getUTCHours()).padStart(2, '0') + ' UTC'; };
+function buildCarta() { CARTA_GRUPO = L.layerGroup(); CARTA_VER = ''; cargarCarta(); return CARTA_GRUPO; }
+async function cargarCarta() {
+  if (!CARTA_GRUPO) return;
+  let meta, iso;
+  try { meta = await leerJSON('data/carta.json'); } catch (e) { return; }
+  const ver = (meta.last_modified || '') + (meta.isobaras ? meta.isobaras.corrida : '');
+  if (ver === CARTA_VER) return;
+  try { iso = meta.isobaras ? await leerJSON('data/carta_isobaras.json') : null; } catch (e) { iso = null; }
+  CARTA_VER = ver; CARTA_GRUPO.clearLayers();
+  const g = CARTA_GRUPO;
+  if (iso && iso.lineas) {
+    const etiquetas = [];
+    for (const l of iso.lineas) {
+      const ref = l.p % 8 === 0;
+      L.polyline(l.c, { pane: 'cartaPane', color: '#222', weight: l.p === 1012 ? 1.6 : 1.1, opacity: 0.85, interactive: false, smoothFactor: 1 }).addTo(g);
+      if (l.c.length >= 12 && (ref || l.c.length >= 30)) {
+        const m = l.c[Math.floor(l.c.length / 2)];
+        if (!etiquetas.some(e => Math.abs(e[0] - m[0]) < 1.6 && Math.abs(e[1] - m[1]) < 2.2)) {
+          etiquetas.push(m);
+          L.marker(m, { pane: 'cartaPane', interactive: false, icon: L.divIcon({ className: 'isoLbl', html: `<span>${l.p}</span>`, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(g);
+        }
+      }
+    }
+  }
+  if (meta.limites) L.imageOverlay('data/carta_frentes.png?v=' + encodeURIComponent(meta.last_modified || meta.actualizado), meta.limites, { pane: 'cartaPane', opacity: 1, interactive: false }).addTo(g);
+  CARTA_INFO = meta;
+  const ctl = document.getElementById('cartaInfo');
+  if (ctl) ctl.innerHTML = `<b>Carta sinóptica</b> · válida ${escH(fmtCarta(meta.valida))}<br>Isobaras: modelo GFS${meta.isobaras ? ` ${escH(fmtCarta(meta.isobaras.corrida))} +${meta.isobaras.fhr} h` : ' (no disponibles)'} · cada 4 hPa<br>Frentes y centros: <a href="${escH(meta.fuente)}" target="_blank" rel="noopener">carta de superficie ↗</a>`;
+}
+// Recuadro con la validez de la carta, visible solo con la capa activa
+const CartaCtl = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const d = L.DomUtil.create('div', 'cartaInfo'); d.id = 'cartaInfo'; L.DomEvent.disableClickPropagation(d); return d; } });
+let cartaCtl = null;
+map.on('layeradd layerremove', e => {
+  if (!LAYERS.carta || e.layer !== LAYERS.carta.lyr) return;
+  if (e.type === 'layeradd' && !cartaCtl) { cartaCtl = new CartaCtl().addTo(map); CARTA_VER = ''; cargarCarta(); }
+  if (e.type === 'layerremove' && cartaCtl) { map.removeControl(cartaCtl); cartaCtl = null; }
+});
+setInterval(() => { if (LAYERS.carta && LAYERS.carta.lyr && map.hasLayer(LAYERS.carta.lyr)) cargarCarta(); }, 20 * 60000);
+
 // ============================ Panel de capas ============================
 const LAYERS = {};
 function addLayerRow(box, key, name, sw, on, build) {
@@ -864,6 +912,7 @@ function renderCapas() {
   addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), true, buildEst);
   addLayerRow(box, 'boyas', 'Boyas meteoceanográficas', svgBoya('#1f6fb2', 16), true, buildBoyas);
   addLayerRow(box, 'ia', 'Pronóstico WRF + IA', svgNub('Parcial', 16), false, buildIA);
+  addLayerRow(box, 'carta', 'Carta sinóptica (isobaras y frentes)', lineSw('#2b2b2b', null, 2), false, buildCarta);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
   grp('Límites marítimos');
