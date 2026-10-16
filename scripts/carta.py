@@ -47,9 +47,10 @@ RECUADROS = [(55, 33, 360, 100), (720, 735, 995, 795)]   # título y leyenda (se
 CONTROL = [(-90, -20), (-90, -30), (-90, -40), (-100, -30), (-80, -30), (-110, -20), (-70, -20)]
 
 # Recorte de salida (grados) y resolución de la imagen reproyectada
-OESTE, ESTE, SUR, NORTE = -160.0, -45.0, -72.0, 2.0
+OESTE, ESTE, SUR, NORTE = -165.0, -40.0, -80.0, 2.0
 ANCHO_SALIDA = 3000
 NIVELES = list(range(940, 1061, 4))
+VERSION = 2          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
 
 
 def fwd(lon, lat):
@@ -204,6 +205,13 @@ def isobaras(grib):
     lons = np.where(lons > 180, lons - 360, lons)
     if lats[0, 0] > lats[-1, 0]:
         v, lats, lons = v[::-1], lats[::-1], lons[::-1]
+    # Solo dentro del área que cubre la carta, para que isobaras y frentes abarquen exactamente la misma zona
+    px, py = fwd(lons, lats)
+    x0, y0, x1, y1 = MARCO
+    fuera = (px < x0) | (px > x1) | (py < y0) | (py > y1)
+    for bx0, by0, bx1, by1 in RECUADROS:
+        fuera |= (px > bx0) & (px < bx1) & (py > by0) & (py < by1)
+    v = np.ma.masked_where(fuera, v)
     cs = plt.contour(lons, lats, v, levels=NIVELES)
     lineas = []
     for nivel, segs in zip(cs.levels, cs.allsegs):
@@ -216,7 +224,7 @@ def isobaras(grib):
     centros = []
     from scipy.ndimage import maximum_filter, minimum_filter
     for tipo, filtro, comp in (("A", maximum_filter, np.greater_equal), ("B", minimum_filter, np.less_equal)):
-        ext = comp(v, filtro(v, size=21, mode="nearest")) & (v == filtro(v, size=21, mode="nearest"))
+        ext = comp(v, filtro(v, size=21, mode="nearest")) & (v == filtro(v, size=21, mode="nearest")) & ~np.ma.getmaskarray(v)
         for i, j in zip(*np.where(ext)):
             if 3 < i < v.shape[0] - 4 and 3 < j < v.shape[1] - 4:
                 centros.append({"t": tipo, "p": round(float(v[i, j])), "c": [round(float(lats[i, j]), 2), round(float(lons[i, j]), 2)]})
@@ -233,7 +241,7 @@ def main():
         print("Carta: no se pudo descargar:", e)
         return
     lm = r.headers.get("Last-Modified", "")
-    if lm and lm == previo.get("last_modified") and os.environ.get("FORZAR") != "1":
+    if lm and lm == previo.get("last_modified") and previo.get("version") == VERSION and os.environ.get("FORZAR") != "1":
         print("Carta: sin cambios", lm)
         return
     im = Image.open(io.BytesIO(r.content)).convert("RGB")
@@ -252,7 +260,7 @@ def main():
     capa.save(DATA / "carta_frentes.png", optimize=True)
     print(f"Frentes: {npx} píxeles reproyectados")
 
-    meta = {"actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
+    meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
             "valida": valida.strftime("%Y-%m-%dT%H:%MZ") if valida else None,
             "corrida_carta": corrida.strftime("%Y-%m-%dT%HZ") if corrida else None,
             "limites": limites, "fuente": PAGINA_CARTA, "imagen": URL_CARTA, "isobaras": None}

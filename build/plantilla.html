@@ -897,7 +897,8 @@ function rotularGrilla() {
   const b = map.getBounds(), z = map.getZoom(), paso = z >= 6 ? 5 : 10;
   const nb = map.containerPointToLatLng([0, 14]).lat, wb = map.containerPointToLatLng([8, 0]).lng;
   for (let lon = Math.ceil(b.getWest() / paso) * paso; lon <= b.getEast(); lon += paso)
-    L.marker([nb, lon], { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°${lon < 0 ? 'O' : lon > 0 ? 'E' : ''}</span>`, iconSize: [0, 0] }) }).addTo(GRILLA_LBL);
+    { const ln = ((lon + 540) % 360) - 180;          // el mapa se repite al cruzar 180°: 240°O = 120°E
+      L.marker([nb, lon], { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(ln)}°${ln < 0 ? 'O' : ln > 0 && ln < 180 ? 'E' : ''}</span>`, iconSize: [0, 0] }) }).addTo(GRILLA_LBL); }
   for (let lat = Math.ceil(b.getSouth() / paso) * paso; lat <= b.getNorth(); lat += paso)
     L.marker([lat, wb], { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'gridLbl izq', html: `<span>${Math.abs(lat)}°${lat < 0 ? 'S' : lat > 0 ? 'N' : ''}</span>`, iconSize: [0, 0] }) }).addTo(GRILLA_LBL);
 }
@@ -1014,6 +1015,8 @@ document.getElementById('avNone').addEventListener('click', () => setTodosAv(fal
   if (window.innerWidth <= 600) tg();
 })();
 window.addEventListener('resize', () => map.invalidateSize());
+// Si cambia el ancho del mapa (paneles plegados, barra lateral), se vuelven a cargar las teselas del área nueva
+try { new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(document.getElementById('map')); } catch (e) {}
 // Toda ventana del mapa (estación, boya, aviso, subárea) se muestra completa: alto máximo con
 // desplazamiento interno si no cabe, y el mapa se mueve lo necesario para dejarla dentro del recuadro.
 map.on('popupopen', e => {
