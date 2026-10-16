@@ -7,18 +7,21 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Descargas de prueba
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Dependencias
         run: |
-          mkdir -p diag/out
-          curl -sS -m 60 -D diag/out/carta_headers.txt -o diag/out/carta.jpg "https://web.directemar.cl/met/jturno/cartas/carta.jpg" || echo "carta FALLO" >> diag/out/errores.txt
-          curl -sS -m 60 -I "https://web.directemar.cl/met/jturno/cartas/" -o diag/out/dir_headers.txt || true
-          curl -sS -m 60 "https://meteoarmada.directemar.cl/meteo/cartas-sinopticas/carta-de-superficie-blanco-y-negro" -o diag/out/pagina.html || echo "pagina FALLO" >> diag/out/errores.txt
-          curl -sS -m 60 "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/" -o diag/out/nomads.html || echo "nomads FALLO" >> diag/out/errores.txt
-          ls -la diag/out
+          sudo apt-get install -y -qq tesseract-ocr >/dev/null
+          pip install -q requests pillow numpy scipy matplotlib pygrib
+      - name: Carta
+        env: { FORZAR: "1" }
+        run: python scripts/carta.py 2>&1 | tee diag/out/carta_log.txt
       - name: Publicar resultados en la rama
         run: |
+          cp data/carta.json data/carta_frentes.png diag/out/ 2>/dev/null || true
+          cp data/carta_isobaras.json diag/out/ 2>/dev/null || true
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/out && git commit -m "diag: resultados" && git push || true
+          git add diag/out && git commit -m "diag: carta" && git push || true
