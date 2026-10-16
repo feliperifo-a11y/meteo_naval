@@ -1,0 +1,24 @@
+{
+ "actualizado": "2026-10-16T11:52:01Z",
+ "last_modified": "Thu, 15 Oct 2026 14:24:46 GMT",
+ "valida": "2026-10-16T06:00Z",
+ "corrida_carta": "2026-10-15T06Z",
+ "limites": [
+  [
+   -72.0,
+   -125.0
+  ],
+  [
+   2.0,
+   -45.0
+  ]
+ ],
+ "fuente": "https://meteoarmada.directemar.cl/meteo/cartas-sinopticas/carta-de-superficie-blanco-y-negro",
+ "imagen": "https://web.directemar.cl/met/jturno/cartas/carta.jpg",
+ "isobaras": {
+  "corrida": "2026-10-15T06Z",
+  "fhr": 24,
+  "origen": "AWS",
+  "lineas": 148
+ }
+}
