@@ -67,6 +67,15 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 .polarCab{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid #d6dee6;font-size:13px}
 .polarCab #polarCapas{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
 .polarCab label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}
+.btnSug{background:transparent;color:#cfe0f1;border:1px solid rgba(207,224,241,.5);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btnSug:hover{background:rgba(255,255,255,.12);color:#fff}
+#dlgSug{position:fixed;inset:0;z-index:6000;background:rgba(10,20,32,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+#dlgSug[hidden]{display:none}
+.sugCaja{background:#fff;color:#1d2733;border-radius:12px;max-width:420px;width:100%;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,.3);position:relative;font-size:14px;line-height:1.5}
+.sugCaja h3{margin:0 0 10px;font-size:17px;color:#0f2a44}
+.sugCaja p{margin:0 0 10px}
+.sugCaja a.sugMail{display:inline-block;margin-top:4px;background:#0f2a44;color:#fff;text-decoration:none;border-radius:7px;padding:8px 14px;font-weight:700}
+.sugCerrar{position:absolute;top:8px;right:10px;border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:#5a6b7c}
 .btnVolver{border:0;background:#0f2a44;color:#fff;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btnVolver:hover{background:#1b3f63}
 #polarCapasBox{margin-left:auto}
@@ -204,6 +213,7 @@ dialog button{border-color:var(--line)}
     <a class="btnIA" href="ia.html" title="Pronósticos por bahía generados con IA a partir del modelo WRF, con mapa">PRONÓSTICOS WRF + IA</a>
     <button type="button" class="btnCarta" onclick="abrirPolar()" title="Carta de superficie en proyección estereográfica polar: isobaras GFS, frentes, avisos, METAREA XV, estaciones y boyas">CARTA DE SUPERFICIE</button>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
+    <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
   </div>
 </header>
 
@@ -1326,6 +1336,18 @@ setInterval(async () => {
 }, 5 * 60000);
 </script>
 <script>/*INSTALAR*/</script>
+<div id="dlgSug" hidden onclick="if(event.target===this)cerrarSug()"><div class="sugCaja" role="dialog" aria-labelledby="sugTit">
+  <button type="button" class="sugCerrar" onclick="cerrarSug()" aria-label="Cerrar">✕</button>
+  <h3 id="sugTit">Sugerencias</h3>
+  <p>MeteoIA es una página pública y <b>sin fines de lucro</b>, creada para apoyar la toma de decisiones y la seguridad en la navegación.</p>
+  <p>Cualquier sugerencia o comentario será bienvenido. Envíelo a:</p>
+  <a class="sugMail" href="mailto:meteoiachile@gmail.com?subject=Sugerencia%20MeteoIA">meteoiachile@gmail.com</a>
+</div></div>
+<script>
+function abrirSug() { document.getElementById('dlgSug').hidden = false; try { window.mnEvento && mnEvento('sugerencias'); } catch (e) {} }
+function cerrarSug() { document.getElementById('dlgSug').hidden = true; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug(); });
+</script>
 <div id="dlgPolar" hidden><div class="polarCaja">
   <div class="polarCab">
     <button type="button" class="btnVolver" onclick="cerrarPolar()" title="Volver al dashboard (Esc)">‹ Volver al dashboard</button>
