@@ -450,9 +450,9 @@ const dotSw = c => `<svg width="22" height="14" aria-hidden="true"><circle cx="1
 
 // ---- Límites marítimos (solo las 4 capas pedidas) ----
 const LIM_STYLE = {
-  'ZEE y PC': { name: 'ZEE y plataforma continental (200 M)', color: '#7b3294', weight: 2.2, dashArray: null, on: true },
+  'ZEE y PC': { name: 'ZEE y plataforma continental (200 M)', color: '#7b3294', weight: 2.2, dashArray: null, on: false },
   'ZC': { name: 'Zona contigua (24 M)', color: '#4a4f57', weight: 1.5, dashArray: '3 4', on: false },
-  'MT': { name: 'Mar territorial (12 M)', color: '#c51b7d', weight: 1.6, dashArray: '8 3 2 3', on: true },
+  'MT': { name: 'Mar territorial (12 M)', color: '#c51b7d', weight: 1.6, dashArray: '8 3 2 3', on: false },
 };
 function buildLimits(ab) {
   const st = LIM_STYLE[ab], g = L.layerGroup();
@@ -1218,9 +1218,9 @@ function renderCapas() {
   const box = document.getElementById('layers');
   const grp = t => { const d = document.createElement('div'); d.className = 'grp'; d.textContent = t; box.appendChild(d); };
   grp('Operación');
-  addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), true, buildEst);
-  addLayerRow(box, 'boyas', 'Boyas meteoceanográficas', svgBoya('#1f6fb2', 16), true, buildBoyas);
-  addLayerRow(box, 'puertos', 'Puertos con restricción (SITPORT)', svgPuerto('#d32f2f', 16), true, buildPuertos);
+  addLayerRow(box, 'est', 'Estaciones meteorológicas', dotSw('#2e7d32'), false, buildEst);
+  addLayerRow(box, 'boyas', 'Boyas meteoceanográficas', svgBoya('#1f6fb2', 16), false, buildBoyas);
+  addLayerRow(box, 'puertos', 'Puertos con restricción (SITPORT)', svgPuerto('#d32f2f', 16), false, buildPuertos);
   addLayerRow(box, 'ia', 'Pronóstico WRF + IA', svgNub('Parcial', 16), false, buildIA);
   addLayerRow(box, 'iso', 'Isobaras (presión, GFS)', lineSw('#1d2733', null, 1.6), false, buildIso);
   addLayerRow(box, 'sat', 'Imagen satelital IR (nubosidad)', '<span class="satSw"></span>', false, buildSat);
