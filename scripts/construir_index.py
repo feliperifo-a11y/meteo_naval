@@ -24,7 +24,7 @@ datos = "\n".join([
 ])
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
-version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js")
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js")
                         + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
 (R / "version.txt").write_text(version + "\n", encoding="utf-8")
 datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
@@ -41,3 +41,9 @@ html_ia = (leer(B / "plantilla_ia.html").replace("/*LEAFLET_CSS*/", leer(B / "le
            .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "ia.html").write_text(html_ia, encoding="utf-8")
 print(f"ia.html: {len(html_ia) / 1024:.0f} KB")
+
+# Página de pronósticos marítimos publicados (bahías y áreas): misma estructura que la de WRF + IA.
+html_pron = (leer(B / "plantilla_pron.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
+             .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
+(R / "pronosticos.html").write_text(html_pron, encoding="utf-8")
+print(f"pronosticos.html: {len(html_pron) / 1024:.0f} KB")
