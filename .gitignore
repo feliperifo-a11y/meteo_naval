@@ -20,3 +20,4 @@ data/hielo.json
 data/hielo_*.png
 data/satelite_hielo.png
 data/satelite_vis_hielo.png
+data/boyas_estado.json

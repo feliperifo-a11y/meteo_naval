@@ -715,6 +715,10 @@ function evaluarBoya(b, ahora) {
   const t = b.ultimo && b.ultimo.fecha ? new Date(b.ultimo.fecha) : null, ms = t ? ahora - t : null;
   if (!t && b.error === 'pendiente') return { k: 'sd', t, ms, motivo: 'Consultando la boya…', acceso: false };
   if (!t && b.error) return { k: 'sd', t, ms, motivo: 'No fue posible consultar esta boya desde este navegador. Su estado puede revisarse en el visor oficial.', acceso: false };
+  // Estado declarado en el visor oficial: prevalece sobre la antigüedad del último dato
+  if (b.oficial === 'NO OPERATIVA') return { k: 'no', t, ms, motivo: 'Declarada no operativa en el visor oficial de boyas.' + (t ? ` Último dato hace ${edad(ms)}.` : '') };
+  if (b.oficial === 'OPERATIVA' && (!t || ms > UMBRAL_BOYA.ok))
+    return { k: 'ok', t, ms, oficial: true, motivo: `Declarada operativa en el visor oficial de boyas. ${t ? `Su último dato publicado es de hace ${edad(ms)}` : 'La fuente no entrega mediciones de los últimos 7 días'}; las mediciones recientes aún no están disponibles.` };
   if (!t && b.ajena) return { k: 'no', t, ms, motivo: 'La fuente no entrega datos propios de esta boya (responde con los de otra).' };
   if (!t) return { k: 'no', t, ms, motivo: 'Sin datos en los últimos 7 días.' };
   if (ms <= UMBRAL_BOYA.ok) return { k: 'ok', t, ms, motivo: '' };
@@ -799,6 +803,10 @@ async function cargarBoyasVivo() {
   if (BOYAS_LEYENDO) return; BOYAS_LEYENDO = true;
   if (!BOYAS.length) BOYAS = BOYAS_CATALOGO.map(([nombre, modelo, url, lat, lon]) => ({ nombre, modelo, url, lat, lon, ultimo: null, serie: [], error: 'pendiente' }));
   refreshBoyas();
+  try {   // estado declarado en el visor oficial (copiado por el flujo de actualización)
+    const eo = await leerJSON('data/boyas_estado.json'), norm = x => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    for (const b of BOYAS) { const o = (eo.boyas || []).find(x => norm(x.estacion) === norm(b.nombre)); if (o) b.oficial = o.estado; }
+  } catch (e) {}
   await Promise.all(BOYAS.map(async b => {
     // Un reintento: el servidor de las boyas a veces tarda o corta la primera consulta.
     const leer = async () => { try { return await leerBoya(b.url); } catch (e) { await new Promise(r => setTimeout(r, 5000)); return leerBoya(b.url); } };
