@@ -1,0 +1,101 @@
+{
+    "pronostico" : {
+        "pronostico_detallado" : [
+            {
+                "zona" : "Zona Uno (Arica a Coquimbo)",
+                "mar_oceanico" : "MAREJADILLA A MAREJADA (1.0/2.0 M) COMO MAR DE FONDO DEL SURWESTE EN AREA OCEANICA",
+                "id-zona" : 1,
+                "viento" : "N/NW 5/10 KT AUMENTANDO AL SUR DEL AREA 10/15 KT OCASIONAL 20 KT",
+                "nubosidad" : "CUBIERTO AM VARIANDO A DESPEJADO",
+                "visibilidad" : "BUENA (10 KM)",
+                "mar_bahia" : "RIZADA A MAREJADILLA EN BAHIAS.",
+                "situacion_sinoptica" : "CUÑA A CIRCULACION CICLONICA AL SUR DEL AREA.\n\nZONAS DOS A CUATRO (COQUIMBO A I.MOCHA):\nCUÑA A CIRCULACION CICLONICA."
+            },
+            {
+                "mar_bahia" : "RIZADA A MAREJADILLA EN BAHIAS.",
+                "situacion_sinoptica" : "CUÑA A CIRCULACION CICLONICA.",
+                "visibilidad" : "BUENA OCASIONAL REGULAR (10/8 KM) CHUBASCOS AISLADOS",
+                "nubosidad" : "CUBIERTO AM VARIANDO A PARCIAL",
+                "mar_oceanico" : "MAREJADA (1.5/2.5 M) COMO MAR DE FONDO DEL SURWESTE EN AREA OCEANICA",
+                "id-zona" : 2,
+                "viento" : "S/SW 5/12 KT ROLANDO AL N/NE 12/20 KT RACHAS 30 KT",
+                "zona" : "Zona Dos (Coquimbo a Valparaíso)"
+            },
+            {
+                "zona" : "Zona Tres (Valparaíso a Constitución)",
+                "visibilidad" : "BUENA OCASIONAL REGULAR (10/8 KM) CHUBASCOS AISLADOS",
+                "mar_bahia" : "RIZADA A MAREJADILLA EN BAHIAS.",
+                "situacion_sinoptica" : "CUÑA A CIRCULACION CICLONICA.",
+                "id-zona" : 3,
+                "mar_oceanico" : "MAREJADA (1.5/2.5 M) COMO MAR DE FONDO DEL SURWESTE EN AREA OCEANICA",
+                "viento" : "S/SW 10/15 KT ROLANDO AL N/NE 12/20 KT OCASIONAL 25 KT",
+                "nubosidad" : "CUBIERTO AM VARIANDO A PARCIAL"
+            },
+            {
+                "viento" : "N/NE 5/10 KT AUMENTANDO 10/15 KT OCASIONAL 20 KT",
+                "mar_oceanico" : "MAREJADA (1.5/2.5 M) COMO MAR DE FONDO DEL SURWESTE EN AREA OCEANICA",
+                "id-zona" : 4,
+                "nubosidad" : "CUBIERTO A NUBLADO",
+                "visibilidad" : "BUENA OCASIONAL REGULAR (10/8 KM) CHUBASCOS AISLADOS",
+                "situacion_sinoptica" : "CUÑA A CIRCULACION CICLONICA.",
+                "mar_bahia" : "RIZADA A MAREJADILLA EN BAHIAS.",
+                "zona" : "Zona Cuatro (Constitución a I.Mocha)"
+            },
+            {
+                "situacion_sinoptica" : "MARGEN ANTICICLONICO CON RESTOS DE INESTABILIDAD.",
+                "mar_bahia" : "RIZADA A MAREJADILLA EN BAHIAS.",
+                "visibilidad" : "BUENA OCASIONAL REGULAR (10/8 KM) CHUBASCOS AISLADOS",
+                "nubosidad" : "CUBIERTO AM VARIANDO A PARCIAL",
+                "mar_oceanico" : "MAREJADA (1.5/2.5 M) COMO MAR DE FONDO DEL SURWESTE EN AREA OCEANICA",
+                "id-zona" : 5,
+                "viento" : "CALMA A S/SW 10/15 KT",
+                "zona" : "Zona Cinco (I.Mocha a P.Montt)"
+            },
+            {
+                "nubosidad" : "PARCIAL A DESPEJADO",
+                "viento" : "S/SE 12/20 KT OCASIONAL 25 KT",
+                "id-zona" : 6,
+                "mar_oceanico" : "MAREJADA A GRUESA (2.0/3.0 M) COMO MAR DE FONDO DEL W/SW EN AREA OCEANICA.",
+                "mar_bahia" : "",
+                "situacion_sinoptica" : "MARGEN ANTICICLONICO.",
+                "visibilidad" : "BUENA (10 KM)",
+                "zona" : "Zona Seis (P.Montt a F.San Pedro)"
+            },
+            {
+                "zona" : "Zona Siete (F.San Pedro A F.Evangelistas)",
+                "situacion_sinoptica" : "INESTABLE A ANTICICLONICO. ",
+                "visibilidad" : "REGULAR A BUENA (6/10 KM) CHUBASCOS",
+                "nombre_tramo" : "(F.San Pedro A F.Evangelistas)",
+                "nubosidad" : "CUBIERTO A NUBLADO",
+                "viento" : "SW/S 10/15 KT ROLANDO Y AUMENTANDO FIN PERIODO AL S/SE 15/20 KT",
+                "id-zona" : "7",
+                "mar_oceanico" : "GRUESA A MAREJADA (3.0/2.0 M) COMO MAR DE FONDO DEL SURWESTE."
+            },
+            {
+                "nubosidad" : "CUBIERTO A PARCIAL",
+                "viento" : "NW/W 10/15 KT ROLANDO AL W/SW 20/25 KT",
+                "id-zona" : "8.1",
+                "mar_oceanico" : "GRUESA (3.0/4.0 M) COMO MAR DE FONDO DEL SURWESTE.",
+                "situacion_sinoptica" : "FRONTAL A ANTICICLONICO.",
+                "visibilidad" : "REGULAR A BUENA (8/10 KM) CHUBASCOS",
+                "nombre_tramo" : "(F.Evangelistas a Lat 56 GDS Sur)",
+                "zona" : "Zona Ocho (1) (F.Evangelistas a Lat 56 GDS Sur)"
+            },
+            {
+                "nubosidad" : "CUBIERTO A PARCIAL",
+                "mar_oceanico" : "GRUESA (2.5/3.5 M) COMO MAR DE FONDO DEL SW/W. ",
+                "id-zona" : "8.2",
+                "viento" : "W/NW 20/25 KT RACHAS 40 KT ROLANDO 200000 UTC AL SW/S 10/15 KT",
+                "situacion_sinoptica" : "FRONTAL A ANTICICLONICO.",
+                "visibilidad" : "REGULAR A BUENA (6/10 KM) LLUVIA/CHUBASCOS",
+                "nombre_tramo" : "(Lat 56 GDS Sur a Lat 60 GDS Sur)",
+                "zona" : "Zona Ocho (2) (F.Evangelistas a Lat 60 GDS Sur)"
+            }
+        ],
+        "periodo_validez" : {
+            "fin" : "201200 UTC",
+            "inicio" : "191200 UTC"
+        }
+    },
+    "titulo" : "Informe Meteorológico de Tiempo Marítimo desde Arica a Lat 60 GDS Sur"
+}
