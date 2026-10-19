@@ -656,7 +656,7 @@ function asignarArea(s) {
   const a = -s.lat;
   return a < 30 ? 'I' : a < 33.03 ? 'II' : a < 35.33 ? 'III' : a < 38.37 ? 'IV' : a < 41.8 ? 'V' : a < 48 ? 'VI' : a < 52.4 ? 'VII' : a < 60 ? 'VIII' : 'IX-PD';
 }
-const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL');
+const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI');
 function svgSt(c, flag, cuadrado) { return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${cuadrado === 'rombo' ? `<path d="M10 1.8 18.2 10 10 18.2 1.8 10Z" fill="${c}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>` : cuadrado ? `<rect x="3.5" y="3.5" width="13" height="13" rx="2" fill="${c}" stroke="#fff" stroke-width="2"/>` : `<circle cx="10" cy="10" r="7" fill="${c}" stroke="#fff" stroke-width="2"/>`}${flag ? '<circle cx="15.5" cy="4.5" r="3.6" fill="#f2c200" stroke="#fff" stroke-width="1.2"/>' : ''}</svg>`; }
 function popupSt(s, ev) {
   const st = ST[ev.k];

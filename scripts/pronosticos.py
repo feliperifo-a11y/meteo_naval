@@ -50,7 +50,7 @@ CATALOGO = [
     ("valparaiso", "Valparaíso", CN, "Cenmeteovalp/72/valpo72.txt", "/meteo/valparaiso", "bahia", [-33.03, -71.625]),
     ("sanantonio", "San Antonio", CN, "Cenmeteovalp/72/antonio72.txt", "/meteo/san-antonio", "bahia", [-33.585, -71.62]),
     ("pichilemu", "Pichilemu", CN, "Cenmeteovalp/72/pichilemu72.txt", "/meteo/pichilemu", "bahia", [-34.385, -72.01]),
-    ("pascua", "Isla de Pascua", IS, "Cenmeteovalp/72/pascua72.txt", "/meteo/isla-de-pascua", "bahia", [-27.15, -109.43]),
+    ("pascua", "Rapa Nui", IS, "Cenmeteovalp/72/pascua72.txt", "/meteo/isla-de-pascua", "bahia", [-27.15, -109.43]),
     ("juanfernandez", "Juan Fernández", IS, "Cenmeteovalp/72/fernandez72.txt", "/meteo/juan-fernandez", "bahia", [-33.635, -78.83]),
     ("constitucion", "Constitución", CS, "Cenmeteotalc/72/constitucion72.txt", "/meteo/constitucion", "bahia", [-35.33, -72.42]),
     ("lirquen", "Lirquén", CS, "Cenmeteotalc/72/lirquen72.txt", "/meteo/lirquen", "bahia", [-36.71, -72.975]),
