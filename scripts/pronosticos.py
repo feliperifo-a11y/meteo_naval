@@ -397,7 +397,7 @@ def parsear_zona_x(texto):
                     per["situacion"] = oracion(situacion) + (f" ({oracion(sit_t.group(1))})" if sit_t else "")
                 items.append({"codigo": "zx_" + cod.lower(), "nombre": "Zona X · " + NOM_X[cod], "grupo": "Alta mar (Zona X)", "tipo": "area",
                               "aviso": "Aviso de temporal" if parte == "aviso" else None,
-                              "rect": [[-max(la1, la2), -max(lo1, lo2)], [-min(la1, la2), -min(lo1, lo2)]],
+                              "metarea": "X-" + cod,   # mismo polígono de la capa base (límites del boletín, ajustados a las áreas costeras)
                               "periodos": [per]})
             continue
         i += 1

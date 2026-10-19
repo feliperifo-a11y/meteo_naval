@@ -133,7 +133,7 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
       <div class="tools"><select id="selZona" aria-label="Sector"></select><div class="dias" id="dias"></div></div>
     </div>
     <div id="lista"><div class="nota">Cargando pronósticos…</div></div>
-    <div class="nota">Pronósticos publicados para bahías, áreas y rutas marítimas, transcritos automáticamente desde los textos del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de pronósticos</a> y ordenados por día. Las bahías tienen pronóstico diurno (08–20 h), nocturno (20–08 h) y para los dos días siguientes; varias áreas solo tienen día y noche. Alta mar (Zona X), la Antártica y el pronóstico general marítimo cubren 24 h (horario UTC). En el mapa, los sectores de la Zona X se dibujan con los límites de latitud y longitud del boletín; las zonas del pronóstico general se muestran sobre las áreas de la METAREA XV; las demás áreas se marcan con un rombo en una posición aproximada. Ante cualquier duda, prevalece el texto original (enlace en cada pronóstico). Producto <b>referencial</b>: no reemplaza los avisos oficiales.</div>
+    <div class="nota">Pronósticos publicados para bahías, áreas y rutas marítimas, transcritos automáticamente desde los textos del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de pronósticos</a> y ordenados por día. Las bahías tienen pronóstico diurno (08–20 h), nocturno (20–08 h) y para los dos días siguientes; varias áreas solo tienen día y noche. Alta mar (Zona X), la Antártica y el pronóstico general marítimo cubren 24 h (horario UTC). En el mapa, los sectores de la Zona X usan los límites del boletín (95° W; 18°, 30°, 45° y 60° S) y su borde este coincide con el límite exterior de las áreas costeras I a VIII; las zonas del pronóstico general se muestran sobre las áreas de la METAREA XV; las demás áreas se marcan con un rombo en una posición aproximada. Ante cualquier duda, prevalece el texto original (enlace en cada pronóstico). Producto <b>referencial</b>: no reemplaza los avisos oficiales.</div>
   </section>
   <section class="card" id="mapWrap">
     <div id="map" role="application" aria-label="Mapa de pronósticos"></div>
@@ -256,7 +256,7 @@ map.on('popupopen', e => {
 });
 function pintarZonas() {
   capaZonas.clearLayers();
-  Object.values(MET_POR_ID).forEach(l => l.setStyle({ weight: 1.2, opacity: 0.6, fillOpacity: 0.08 }));
+  Object.entries(MET_POR_ID).forEach(([id, l]) => { const c = MET_COL[l.feature.properties.tipo]; l.setStyle({ color: c.line, fillColor: c.fill, weight: 1.2, opacity: 0.6, fillOpacity: 0.08, dashArray: l.feature.properties.tipo === 'costera' ? null : '6 4' }); });
   for (const it of DATOS.items) {
     if (it.rect) {
       const sel = it.codigo === SEL, av = !!it.aviso;
@@ -265,6 +265,8 @@ function pintarZonas() {
         .on('click', () => { const m = marcadores.get(it.codigo); if (m) m.openPopup(); seleccionar(it.codigo, false, true); }).addTo(capaZonas);
     }
   }
+  // Sectores con aviso (Zona X): el mismo polígono de la capa base, en rojo
+  for (const it of DATOS.items) if (it.aviso && it.metarea && MET_POR_ID[it.metarea]) MET_POR_ID[it.metarea].setStyle({ color: '#c62828', fillColor: '#ef9a9a', fillOpacity: 0.18, opacity: 0.9, dashArray: null });
   const s = SEL && DATOS.items.find(x => x.codigo === SEL);
   if (s && s.metarea && MET_POR_ID[s.metarea]) MET_POR_ID[s.metarea].setStyle({ weight: 3, opacity: 1, fillOpacity: 0.25 });
 }
