@@ -294,7 +294,9 @@ function pintarMapa() {
   setTimeout(despejar, 0);
 }
 
-const N1_PRON = new Set(['arica', 'iquique', 'antofagasta', 'valparaiso', 'talcahuano', 'puertomontt', 'puntaarenas', 'williams', 'fildes']);
+const N1_PRON = new Set(['arica', 'iquique', 'antofagasta', 'caldera', 'coquimbo', 'quintero', 'valparaiso', 'talcahuano', 'corral', 'puertomontt', 'chacabuco',
+  'penas', 'eden', 'trinidad', 'nelson', 'natales', 'skyring', 'otway', 'bocaoccidental', 'limiteoriental', 'gregorio', 'puntaarenas', 'chilota', 'mansa',
+  'williams', 'fildes', 'gen_7', 'gen_8_1']);
 const N2_PRON = new Set(['caldera', 'coquimbo', 'sanantonio', 'corral', 'chacabuco', 'natales', 'pascua', 'juanfernandez',
   'zx_no', 'zx_ne', 'zx_co', 'zx_ce', 'zx_so', 'zx_se', 'zix_central', 'zix_weste']);
 const NIVEL = c => N1_PRON.has(c) ? 1 : N2_PRON.has(c) ? 2 : 3;
@@ -302,6 +304,8 @@ const NIVEL = c => N1_PRON.has(c) ? 1 : N2_PRON.has(c) ? 2 : 3;
 // Siempre se muestran el lugar seleccionado y los del sector elegido. Los demás quedan como punto (clic para abrir).
 const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 ? 2 : 3; };
 function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.items.find(x => x.codigo === c) || {}).grupo === ZONA && map.getZoom() >= 5); }
+const CIUDADES = ['arica','iquique','antofagasta','valparaiso','talcahuano','puertomontt','puntaarenas','williams','fildes','natales'];
+const PRIORIDAD = c => CIUDADES.includes(c) ? 0 : 1;
 function despejar() {
   for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
   // Los puntos de los lugares secundarios también se ocultan con el mapa alejado
@@ -313,7 +317,7 @@ function despejar() {
     box.classList.toggle('compacto', compacto); chip.style.top = '';
     const p = map.latLngToContainerPoint(m.getLatLng()), r = chip.getBoundingClientRect();
     return { c, chip, p, w: r.width, h: r.height, x: p.x + 9, y0: p.y - r.height / 2, dz: m.getElement() };
-  }).sort((a, b) => a.p.y - b.p.y);
+  }).sort((a, b) => (PRIORIDAD(a.c) - PRIORIDAD(b.c)) || (a.p.y - b.p.y));   // las ciudades principales se ubican primero
   const puestos = [];
   for (const it of items) {
     let y = it.y0, mover = true, vueltas = 0;
