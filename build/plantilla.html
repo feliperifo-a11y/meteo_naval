@@ -633,7 +633,8 @@ let FUENTE = { cuando: null };
 function asignarArea(s) {
   if (s.area) return s.area;
   // estaciones nuevas: subárea costera por latitud; islas oceánicas por posición
-  if (s.lon < -100) return 'X-NO';
+  // límites de la Zona X según su boletín: división en 95° W
+  if (s.lon < -95) return s.lat > -30 ? 'X-NO' : s.lat > -45 ? 'X-CO' : 'X-SO';
   if (s.lon < -77) return s.lat > -30 ? 'X-NE' : s.lat > -45 ? 'X-CE' : 'X-SE';
   const a = -s.lat;
   return a < 30 ? 'I' : a < 33.03 ? 'II' : a < 35.33 ? 'III' : a < 38.37 ? 'IV' : a < 41.8 ? 'V' : a < 48 ? 'VI' : a < 52.4 ? 'VII' : a < 60 ? 'VIII' : 'IX-PD';
