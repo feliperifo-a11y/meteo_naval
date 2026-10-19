@@ -93,6 +93,8 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 #mapPolar{flex:1;background:#dbe8f1}
 .polarPie{padding:6px 12px;font-size:11.5px;color:#4a5868;border-top:1px solid #d6dee6}
 .satSw{display:inline-block;width:26px;height:10px;border-radius:2px;background:linear-gradient(90deg,#e8eef3,#00cce3,#001a81,#00ea0a,#ff9900,#e60000,#e566bc,#fff)}
+.visSw{display:inline-block;width:26px;height:10px;border-radius:2px;background:linear-gradient(90deg,#16283c,#8c98a5,#fff);border:1px solid #c9d3dc}
+.visBar{height:10px;margin:5px 0 1px;border-radius:2px;background:linear-gradient(90deg,rgba(22,40,60,.45),#8c98a5 45%,#fff);border:1px solid #c9d3dc}
 .satInfo{background:rgba(255,255,255,.94);border:1px solid #c9d3dc;border-radius:8px;padding:6px 9px;font-size:11.5px;line-height:1.4;color:#18212b;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:270px}
 .satBar{height:10px;margin:5px 0 1px;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,.25) 0%,#fff 28%,#00cce3 32%,#0073b2 37%,#001a81 42%,#00554d 47%,#00ea0a 52%,#99ff00 57%,#ff9900 62%,#e60000 67%,#330000 72%,#808080 77%,#e566bc 82%,#8c0d87 87%,#fff 93%);border:1px solid #c9d3dc}
 .satEsc{display:flex;justify-content:space-between;font-size:10.5px;color:#4a5868;margin-bottom:3px}
@@ -952,7 +954,7 @@ map.on('moveend zoomend', rotularGrilla);
 // ---- Vista en proyección estereográfica polar: la carta original de fondo y las capas del dashboard encima ----
 // Cada latitud/longitud se convierte al píxel de la carta con la misma proyección ajustada a su grilla:
 //   x = A + SX·ρ·sen(λ − λ0) ;  y = B − SY·ρ·cos(λ − λ0) ;  ρ = tan(45° + φ/2)
-let mapPolar = null, POLAR_CAPAS = {}, POLAR_SAT = null, polarSatCtl = null;
+let mapPolar = null, POLAR_CAPAS = {}, POLAR_SAT = null, polarSatCtl = null, POLAR_VIS = null, polarVisCtl = null;
 function aPolar(lat, lon) {
   const p = CARTA_INFO.proyeccion, r = Math.tan(Math.PI / 4 + lat * Math.PI / 360), d = (lon - p.L0) * Math.PI / 180;
   return L.latLng(-(p.B - p.SY * r * Math.cos(d)), p.A + p.SX * r * Math.sin(d));
@@ -1023,6 +1025,13 @@ async function capasPolar() {
       L.imageOverlay('data/satelite_polar.png?v=' + encodeURIComponent(sm.last_modified || ''), [[-q.y1, q.x0], [-q.y0, q.x1]], { opacity: 0.9, interactive: false }).addTo(C.sat);
       POLAR_SAT = sm; }
   } catch (e) {}
+  C.vis = L.layerGroup(); POLAR_VIS = null;
+  try {
+    const vm = await leerJSON('data/satelite_vis.json');
+    if (vm.polar) { const q = vm.polar;
+      L.imageOverlay('data/satelite_vis_polar.png?v=' + encodeURIComponent(vm.last_modified || ''), [[-q.y1, q.x0], [-q.y0, q.x1]], { opacity: 0.95, interactive: false }).addTo(C.vis);
+      POLAR_VIS = vm; }
+  } catch (e) {}
   // Capas del dashboard
   C.met = L.layerGroup();
   geoPolar(METAREA, { style: f => ({ color: '#2f6b2f', weight: 1.4, fillColor: '#7fbf7f', fillOpacity: 0.12 }), onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true }) }).addTo(C.met);
@@ -1052,19 +1061,19 @@ async function abrirPolar() {
   dlg.hidden = false; document.body.style.overflow = 'hidden';
   if (innerWidth <= 820) document.getElementById('polarCapasBox').open = false;
   document.getElementById('polarTit').textContent = `Carta de superficie · válida ${fmtCarta(CARTA_INFO.valida)} · proyección estereográfica polar`;
-  if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null;
+  if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
   mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, attributionControl: false });
   const lim = [[-p.alto, 0], [0, p.ancho]];
   mapPolar.fitBounds(lim); mapPolar.setMaxBounds(L.latLngBounds(lim).pad(0.6));
   const caja = document.getElementById('polarCapas'); caja.innerHTML = '<span style="opacity:.7">Cargando capas…</span>';
   POLAR_CAPAS = await capasPolar();
   caja.innerHTML = '';
-  const orden = [['carta', 'Carta original', false], ['costa', 'Costa', true], ['sat', 'Imagen satelital IR', false], ['grilla', 'Grilla', true], ['lim', 'Límites marítimos', false], ['met', 'METAREA XV', true],
+  const orden = [['carta', 'Carta original', false], ['costa', 'Costa', true], ['sat', 'Imagen satelital IR', false], ['vis', 'Imagen satelital visible', false], ['grilla', 'Grilla', true], ['lim', 'Límites marítimos', false], ['met', 'METAREA XV', true],
     ['av', 'Avisos', true], ['iso', 'Isobaras GFS', true], ['frentes', 'Frentes', true], ['est', 'Estaciones', true], ['boyas', 'Boyas', true]];
   const reordenar = () => orden.forEach(([k]) => { const l = POLAR_CAPAS[k]; if (mapPolar.hasLayer(l)) { mapPolar.removeLayer(l); l.addTo(mapPolar); } });
   orden.forEach(([k, n, on]) => {
     const l = document.createElement('label'); l.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}> ${n}`;
-    l.querySelector('input').onchange = e => { if (e.target.checked) { POLAR_CAPAS[k].addTo(mapPolar); reordenar(); } else mapPolar.removeLayer(POLAR_CAPAS[k]); if (k === 'sat') leyendaSatPolar(e.target.checked); };
+    l.querySelector('input').onchange = e => { if (e.target.checked) { POLAR_CAPAS[k].addTo(mapPolar); reordenar(); } else mapPolar.removeLayer(POLAR_CAPAS[k]); if (k === 'sat') leyendaSatPolar(e.target.checked); if (k === 'vis') leyendaVisPolar(e.target.checked); };
     caja.appendChild(l); if (on) POLAR_CAPAS[k].addTo(mapPolar);
   });
   setTimeout(() => { mapPolar.invalidateSize(); mapPolar.fitBounds(lim); }, 60);
@@ -1080,9 +1089,15 @@ function leyendaSatPolar(on) {
     return el; } });
   polarSatCtl = new C().addTo(mapPolar);
 }
+function leyendaVisPolar(on) {
+  if (polarVisCtl) { mapPolar.removeControl(polarVisCtl); polarVisCtl = null; }
+  if (!on || !POLAR_VIS) return;
+  const C = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const el = L.DomUtil.create('div', 'satInfo'); el.innerHTML = textoVis(POLAR_VIS, false); return el; } });
+  polarVisCtl = new C().addTo(mapPolar);
+}
 function cerrarPolar(desdeHistorial) {
   if (document.getElementById('dlgPolar').hidden) return;
-  document.getElementById('dlgPolar').hidden = true; document.body.style.overflow = ''; if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null;
+  document.getElementById('dlgPolar').hidden = true; document.body.style.overflow = ''; if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
   try { if (!desdeHistorial && history.state && history.state.carta) history.back(); else if (location.search.includes('carta')) history.replaceState(null, '', location.pathname); } catch (e) {}
   setTimeout(() => map.invalidateSize(), 50);
 }
@@ -1152,6 +1167,35 @@ map.on('layeradd layerremove', e => {
   if (e.type === 'layerremove' && satCtl) { map.removeControl(satCtl); satCtl = null; }
 });
 setInterval(() => { if (LAYERS.sat && LAYERS.sat.lyr && map.hasLayer(LAYERS.sat.lyr)) cargarSat(); }, 10 * 60000);
+
+// ============================ Imagen satelital visible (nubosidad diurna) ============================
+// data/satelite_vis.png: nubosidad según la reflectancia del canal visible (GOES, canal 01), corregida por la altura del Sol.
+let VIS_GRUPO = null, VIS_VER = '', visCtl = null;
+function textoVis(m, enlace) {
+  const d = m.hora ? new Date(m.hora.replace(/Z$/, ':00Z')) : null, ok = d && !isNaN(d);
+  const hc = ok ? d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '') : '';
+  const hu = ok ? `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC` : '';
+  const edad = ok ? Math.round((Date.now() - d) / 60000) : null;
+  return `<b>Imagen satelital visible</b> · ${escH(m.satelite || 'GOES')} canal 01<br>${hu ? `${hu} (${escH(hc)} hora Chile) · hace ${edad < 120 ? edad + ' min' : Math.round(edad / 60) + ' h'}` : ''}
+    <div class="visBar"></div><div class="satEsc"><span>despejado (oscuro)</span><span>nubes delgadas</span><span>densas</span></div>
+    Solo de día: la zona sin luz solar queda vacía. Nieve y hielo también se ven blancos.${enlace ? `<br><a href="${escH(m.fuente)}" target="_blank" rel="noopener">imagen original ↗</a>` : ''}`;
+}
+function buildVis() { VIS_GRUPO = L.layerGroup(); VIS_VER = ''; cargarVis(); return VIS_GRUPO; }
+async function cargarVis() {
+  if (!VIS_GRUPO) return;
+  let m; try { m = await leerJSON('data/satelite_vis.json'); } catch (e) { return; }
+  if (m.last_modified === VIS_VER) return;
+  VIS_VER = m.last_modified; VIS_GRUPO.clearLayers();
+  L.imageOverlay('data/satelite_vis.png?v=' + encodeURIComponent(m.last_modified || m.actualizado), m.limites, { pane: 'satPane', opacity: 0.95, interactive: false }).addTo(VIS_GRUPO);
+  const el = document.getElementById('visInfo'); if (el) el.innerHTML = textoVis(m, true);
+}
+const VisCtl = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const d = L.DomUtil.create('div', 'satInfo'); d.id = 'visInfo'; L.DomEvent.disableClickPropagation(d); return d; } });
+map.on('layeradd layerremove', e => {
+  if (!LAYERS.vis || e.layer !== LAYERS.vis.lyr) return;
+  if (e.type === 'layeradd' && !visCtl) { visCtl = new VisCtl().addTo(map); VIS_VER = ''; cargarVis(); }
+  if (e.type === 'layerremove' && visCtl) { map.removeControl(visCtl); visCtl = null; }
+});
+setInterval(() => { if (LAYERS.vis && LAYERS.vis.lyr && map.hasLayer(LAYERS.vis.lyr)) cargarVis(); }, 10 * 60000);
 
 // ============================ Puertos con restricción (SITPORT) ============================
 // Restricciones temporales publicadas por las capitanías de puerto en SITPORT; se consultan en vivo desde el navegador
@@ -1224,6 +1268,7 @@ function renderCapas() {
   addLayerRow(box, 'ia', 'Pronóstico WRF + IA', svgNub('Parcial', 16), false, buildIA);
   addLayerRow(box, 'iso', 'Isobaras (presión, GFS)', lineSw('#1d2733', null, 1.6), false, buildIso);
   addLayerRow(box, 'sat', 'Imagen satelital IR (nubosidad)', '<span class="satSw"></span>', false, buildSat);
+  addLayerRow(box, 'vis', 'Imagen satelital visible (nubosidad diurna)', '<span class="visSw"></span>', false, buildVis);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
   grp('Límites marítimos');

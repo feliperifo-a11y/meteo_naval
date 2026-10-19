@@ -10,3 +10,6 @@ data/satelite.json
 data/satelite_ir.png
 data/satelite_polar.png
 data/restricciones.json
+data/satelite_vis.json
+data/satelite_vis.png
+data/satelite_vis_polar.png
