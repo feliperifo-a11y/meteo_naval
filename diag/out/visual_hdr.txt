@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Content-Type: image/png
+Last-Modified: Mon, 19 Oct 2026 12:16:20 GMT
+Accept-Ranges: bytes
+Server: 
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'self' *.directemar.cl;
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Date: Mon, 19 Oct 2026 12:51:53 GMT
+Content-Length: 592147
+
