@@ -10,12 +10,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Descargar imágenes
+      - name: Descargar pronósticos
         run: |
-          mkdir -p diag/out
-          curl -sS -D diag/out/visual_hdr.txt -o diag/out/visual.png https://web.directemar.cl/met/jturno/pub/GFS/visual.png
-          curl -sS -o diag/out/color.png https://web.directemar.cl/met/jturno/pub/GFS/color.png
+          mkdir -p diag/pron
+          while read u; do f=$(basename "$u"); curl -sS -m 30 -D "diag/pron/$f.hdr" -o "diag/pron/$f" "$u" || echo "ERR $u" >> diag/pron/errores.txt; done < diag/urls.txt
       - name: Publicar resultados en la rama
         run: |
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/out && git commit -m "diag: visual" && git push || true
+          git add diag/pron && git commit -m "diag: pronosticos" && git push || true
