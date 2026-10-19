@@ -77,6 +77,21 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 .sugCaja a.sugMail{display:inline-block;margin-top:4px;background:#0f2a44;color:#fff;text-decoration:none;border-radius:7px;padding:8px 14px;font-weight:700}
 .sugCerrar{position:absolute;top:8px;right:10px;border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:#5a6b7c}
 .prL{max-height:260px;overflow:auto}.prR{border-top:1px solid #e3e8ee;padding:5px 0;font-size:12px;line-height:1.35}.prR:first-child{border-top:0}.prM{font-weight:700;color:#c62828}.prM span{font-weight:400;color:#5a6b7c}.prO{color:#37474f;margin-top:2px}.prF{color:#5a6b7c;font-size:11px;margin-top:2px}
+#alertasRT{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:4500;width:min(560px,calc(100% - 24px));border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.28);overflow:hidden;font-size:13.5px}
+#alertasRT[hidden]{display:none}
+#alertasRT.am{background:#fff8d6;border:2px solid #e0b100;color:#3d3000}
+#alertasRT.rj{background:#fff0ef;border:2px solid #c62828;color:#4a0d0b}
+.alCab{display:flex;align-items:center;gap:8px;padding:8px 12px;font-weight:800;letter-spacing:.3px}
+#alertasRT.am .alCab{background:#ffd84d}
+#alertasRT.rj .alCab{background:#c62828;color:#fff}
+.alCab button{margin-left:auto;border:0;background:rgba(0,0,0,.12);color:inherit;border-radius:6px;width:28px;height:28px;font-size:17px;line-height:1;cursor:pointer}
+.alLista{margin:0;padding:6px 12px 8px;list-style:none;max-height:42vh;overflow:auto}
+.alLista li{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(0,0,0,.08)}
+.alLista li:first-child{border-top:0}
+.alLista .ni{flex:none;font-size:10.5px;font-weight:800;border-radius:4px;padding:1px 6px;text-transform:uppercase}
+.alLista .ni.am{background:#ffd84d;color:#3d3000}.alLista .ni.rj{background:#c62828;color:#fff}
+.alLista small{display:block;opacity:.75}
+.alPie{padding:0 12px 8px;font-size:11px;opacity:.75}
 .btnVolver{border:0;background:#0f2a44;color:#fff;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btnVolver:hover{background:#1b3f63}
 #polarCapasBox{margin-left:auto}
@@ -222,6 +237,7 @@ dialog button{border-color:var(--line)}
   </div>
 </header>
 
+<div id="alertasRT" hidden role="alert" aria-live="polite"></div>
 <main>
   <div class="left">
     <section class="card" id="grpAv">
@@ -820,6 +836,7 @@ async function cargarBoyasVivo() {
   }));
   BOYAS_LEYENDO = false;
   refreshBoyas();
+  actualizarAlertas();
 }
 
 function refreshBoyas() {
@@ -829,6 +846,50 @@ function refreshBoyas() {
   LAYERS.boyas.lyr = buildBoyas(); if (on) LAYERS.boyas.lyr.addTo(map);
 }
 
+
+// ============================ Alertas en tiempo real ============================
+// Boyas (altura significativa reciente): ≥ 3 m amarilla, ≥ 4 m roja. Estaciones de Corral al norte (viento medio
+// reciente): > 20 kt amarilla, > 34 kt roja. Todo en un solo recuadro; al cerrarlo no vuelve a aparecer mientras
+// las alertas sigan siendo las mismas (reaparece si cambian o suben de nivel).
+const LAT_CORRAL = -39.95;
+const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
+function calcularAlertas() {
+  const ahora = Date.now(), out = [];
+  for (const b of BOYAS || []) {
+    const u = b.ultimo || {}, t = u.fecha ? new Date(u.fecha) : null;
+    if (u.hsig == null || !t || ahora - t > UMBRAL_BOYA.ret) continue;
+    if (u.hsig >= 4) out.push({ n: 'rj', id: 'b' + b.nombre + '4', txt: `Atención: oleaje sobre 4 metros en boya ${b.nombre}`, det: `Altura significativa ${nf(u.hsig, 2)} m${u.hmax != null ? ` · máxima ${nf(u.hmax, 2)} m` : ''} · ${fmtLocal(t)} (hora Chile)` });
+    else if (u.hsig >= 3) out.push({ n: 'am', id: 'b' + b.nombre + '3', txt: `Atención: oleaje sobre 3 metros en boya ${b.nombre}`, det: `Altura significativa ${nf(u.hsig, 2)} m${u.hmax != null ? ` · máxima ${nf(u.hmax, 2)} m` : ''} · ${fmtLocal(t)} (hora Chile)` });
+  }
+  for (const st of ESTACIONES || []) {
+    if (st.lat == null || st.lat < LAT_CORRAL) continue;
+    const ev = evaluar(st, ahora);
+    if (!(ev.k === 'ok' || ev.k === 'ret') || ev.fl.some(f => /viento/.test(f))) continue;
+    const kt = aKt(st.vel, st.uVel), r = aKt(st.racha, st.uVel);
+    if (kt == null || kt <= 20) continue;
+    const nom = nombreEst(st), dir = st.dirG != null ? `${cardinal(st.dirG)} ` : '';
+    const det = `Viento ${dir}${nf(kt, 0)} kt${r != null ? ` (racha ${nf(r, 0)} kt)` : ''} · ${ev.t ? fmtLocal(ev.t) + ' (hora Chile)' : ''}`;
+    if (kt > 34) out.push({ n: 'rj', id: 'e' + st.codigo + '34', txt: `Aviso por viento > 34 kt en ${nom}`, det });
+    else out.push({ n: 'am', id: 'e' + st.codigo + '20', txt: `Aviso por viento > 20 kt en ${nom}`, det });
+  }
+  return out.sort((a, b) => (a.n === b.n ? 0 : a.n === 'rj' ? -1 : 1));
+}
+let ALERTA_FIRMA = '';
+function actualizarAlertas() {
+  const el = document.getElementById('alertasRT'); if (!el) return;
+  const al = calcularAlertas(), firma = al.map(a => a.id).sort().join('|');
+  let cerrada = ''; try { cerrada = sessionStorage.getItem('alertas_cerradas') || ''; } catch (e) {}
+  if (!al.length || firma === cerrada) { el.hidden = true; ALERTA_FIRMA = firma; return; }
+  const roja = al.some(a => a.n === 'rj');
+  el.className = roja ? 'rj' : 'am';
+  el.innerHTML = `<div class="alCab"><span>⚠ ${al.length === 1 ? 'Alerta en tiempo real' : `${al.length} alertas en tiempo real`}</span><button type="button" aria-label="Cerrar" title="Cerrar">×</button></div>
+    <ul class="alLista">${al.map(a => `<li><span class="ni ${a.n}">${a.n === 'rj' ? 'Roja' : 'Amarilla'}</span><span><b>${escH(a.txt)}</b><small>${escH(a.det)}</small></span></li>`).join('')}</ul>
+    <div class="alPie">Según las últimas mediciones de boyas y estaciones costeras. Referencial: no reemplaza los avisos oficiales.</div>`;
+  el.querySelector('button').onclick = () => { el.hidden = true; try { sessionStorage.setItem('alertas_cerradas', firma); } catch (e) {} };
+  if (firma !== ALERTA_FIRMA) { try { window.mnEvento && mnEvento('alerta-tiempo-real'); } catch (e) {} }
+  ALERTA_FIRMA = firma; el.hidden = false;
+}
+setInterval(actualizarAlertas, 60000);
 
 // ============================ Pronóstico WRF + IA en el mapa ============================
 // Un símbolo de nubosidad por bahía (día de hoy, o el primero disponible); al pasar el cursor se ve el resumen.
@@ -1320,6 +1381,7 @@ async function cargarDatos() {
   if (PRIMERA) initAreas();
   PRIMERA = false;
   refrescarTodo(true);
+  actualizarAlertas();
   b.disabled = false; b.textContent = 'Actualizar';
 }
 // Enlace de instalación (…/meteo_naval/?instalar): guía de dos toques para dejar la página como aplicación.
