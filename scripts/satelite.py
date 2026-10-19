@@ -25,7 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -37,7 +37,7 @@ DATA = RAIZ / "data"
 URL = "https://web.directemar.cl/met/jturno/pub/GFS/color.png"
 PAGINA = "https://meteoarmada.directemar.cl/meteo/imagen-satelital-infraroja"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (capa satelite IR)"}
-VERSION = 3
+VERSION = 4
 
 TAMANO = (930, 795)
 # Georreferencia (ajuste con grilla y costa): x = (lon + 130)·KX ; y = −lat·KY
@@ -178,22 +178,37 @@ def capa(T, a, sin_dato=None):
     return Image.fromarray(out, "RGBA"), [[SUR, OESTE], [NORTE, ESTE]]
 
 
-def hora_imagen(im):
-    """Fecha y hora del rótulo inferior (OCR); sin OCR, None."""
+def hora_imagen(im, y0=768, y1=795, ref=None):
+    """Fecha y hora del rótulo inferior (OCR, con varios recortes y umbrales); sin lectura válida, None."""
     if not shutil.which("tesseract"):
         subprocess.run("sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr", shell=True, capture_output=True, timeout=240)
-    c = im.crop((0, 768, 480, 795)).convert("L")
-    c = c.resize((c.width * 4, c.height * 4), Image.LANCZOS).point(lambda v: 0 if v > 140 else 255)
-    with tempfile.TemporaryDirectory() as t:
-        p = Path(t) / "r.png"; c.save(p)
-        try:
-            txt = subprocess.run(["tesseract", str(p), "-", "--psm", "7"], capture_output=True, text=True, timeout=60).stdout
-        except Exception:
-            txt = ""
-    m = re.search(r"(\d{2})\s*/\s*(\d{2})\s*/?\s*(\d{4})\s*-\s*(\d{2})\s*:\s*(\d{2})", txt)
-    sat = re.search(r"GOES\s*-?\s*(\d+)", txt.upper())
-    hora = datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)), int(m.group(4)), int(m.group(5)), tzinfo=timezone.utc) if m else None
-    return hora, (f"GOES-{sat.group(1)}" if sat else "GOES"), txt.strip()
+    rx = re.compile(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/?\s*(20\d{2})\D{1,6}(\d{2})\D{0,3}(\d{2})")
+    sat_txt, ultimo = "GOES", ""
+    for x0 in (0, 230):
+        for umbral in (140, 110, 170, 90):
+            for psm in ("7", "6"):
+                c = im.crop((x0, y0, 480, y1)).convert("L")
+                c = c.resize((c.width * 4, c.height * 4), Image.LANCZOS).point(lambda v, u=umbral: 0 if v > u else 255)
+                with tempfile.TemporaryDirectory() as t:
+                    p = Path(t) / "r.png"; c.save(p)
+                    try:
+                        txt = subprocess.run(["tesseract", str(p), "-", "--psm", psm], capture_output=True, text=True, timeout=60).stdout
+                    except Exception:
+                        txt = ""
+                ultimo = txt.strip() or ultimo
+                sat = re.search(r"GOES\s*-?\s*(\d+)", txt.upper())
+                if sat:
+                    sat_txt = f"GOES-{sat.group(1)}"
+                m = rx.search(txt)
+                if not m:
+                    continue
+                try:
+                    hora = datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)), int(m.group(4)), int(m.group(5)), tzinfo=timezone.utc)
+                except ValueError:
+                    continue
+                if ref is None or abs((ref - hora).total_seconds()) < 6 * 3600:
+                    return hora, sat_txt, txt.strip()
+    return None, sat_txt, ultimo
 
 
 def main():
@@ -227,10 +242,20 @@ def main():
     capa_polar(T, a_limpia, sin_dato).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_polar.png", optimize=True)
     img.quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_ir.png", optimize=True)
     capa_hielo(T, a_limpia, sin_dato).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_hielo.png", optimize=True)
-    hora, sat, txt = hora_imagen(im)
+    ref = None
+    try:
+        from email.utils import parsedate_to_datetime
+        ref = parsedate_to_datetime(lm) if lm else None
+    except Exception:
+        pass
+    hora, sat, txt = hora_imagen(im, ref=ref)
+    aprox = False
+    if hora is None and ref is not None:   # sin lectura del rótulo: hora de publicación, redondeada a 10 min
+        hora = (ref - timedelta(minutes=15)).replace(second=0, microsecond=0)
+        hora = hora.replace(minute=hora.minute - hora.minute % 10); aprox = True
     print("OCR:", txt, "→", hora)
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
-            "hora": hora.strftime("%Y-%m-%dT%H:%MZ") if hora else None, "satelite": sat, "canal": "13 · IR onda larga",
+            "hora": hora.strftime("%Y-%m-%dT%H:%MZ") if hora else None, "hora_aprox": aprox, "satelite": sat, "canal": "13 · IR onda larga",
             "limites": limites, "polar": {"x0": POLAR_CAJA[0], "y0": POLAR_CAJA[1], "x1": POLAR_CAJA[2], "y1": POLAR_CAJA[3]},
             "hielo": {"x0": HIELO_CAJA[0], "y0": HIELO_CAJA[1], "x1": HIELO_CAJA[2], "y1": HIELO_CAJA[3]}, "umbral_nube_c": T_CLARO, "umbral_color_c": T_COLOR, "fuente": PAGINA, "imagen": URL}
     (DATA / "satelite.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
