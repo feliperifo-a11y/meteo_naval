@@ -10,11 +10,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Descarga IR
+      - name: Descargar imágenes
         run: |
-          mkdir -p diag/ir
-          curl -sS -m 60 -D diag/ir/headers.txt -o diag/ir/color.png "https://web.directemar.cl/met/jturno/pub/GFS/color.png" || echo FALLO > diag/ir/error.txt
+          mkdir -p diag/out
+          curl -sS -D diag/out/visual_hdr.txt -o diag/out/visual.png https://web.directemar.cl/met/jturno/pub/GFS/visual.png
+          curl -sS -o diag/out/color.png https://web.directemar.cl/met/jturno/pub/GFS/color.png
       - name: Publicar resultados en la rama
         run: |
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/ir && git commit -m "diag: IR" && git push || true
+          git add diag/out && git commit -m "diag: visual" && git push || true
