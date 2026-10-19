@@ -195,7 +195,7 @@ map.fitBounds([[-56.5, -82], [-17.5, -66]]);
 
 // ============================ Etiquetas de pronóstico en el mapa ============================
 let capaIA = L.layerGroup().addTo(map);
-const marcadores = new Map();
+const marcadores = new Map(), puntos = new Map();
 function tip(b, d) {
   return `<div style="width:230px;white-space:normal;line-height:1.35"><b style="font-size:13px">${escH(b.nombre)}</b> <span style="opacity:.7;font-size:11px">WRF ${escH(b.resolucion || '3 km')} + IA</span>` +
     `<div style="opacity:.75;font-size:11px;text-transform:capitalize">${fDia(d.fecha, true)}</div>` +
@@ -234,14 +234,14 @@ map.on('popupopen', e => {
   requestAnimationFrame(() => requestAnimationFrame(ajustar));
 });
 function pintarMapa() {
-  capaIA.clearLayers(); marcadores.clear();
+  capaIA.clearLayers(); marcadores.clear(); puntos.clear();
   for (const b of DATOS.bahias) {
     const pos = IA_POS[b.codigo], d = diaDe(b); if (!pos) continue;
     const chip = `<div class="iaChip${d ? '' : ' sd'}">${svgNub(d ? d.nubosidad : '', 20)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">${d ? `<b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b>` : 'sin datos'}</span></div></div>`;
     const html = `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${ZONA && b.zona !== ZONA ? ' otra' : ''}">${chip}</div>`;
     // El punto de la bahía va en una capa inferior: nunca tapa un recuadro.
-    L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: ZONA && b.zona !== ZONA ? 0.6 : 1 })
-      .on('click', () => { const m = marcadores.get(b.codigo); if (m) m.openPopup(); seleccionar(b.codigo, false, true); }).addTo(capaIA);
+    puntos.set(b.codigo, L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: ZONA && b.zona !== ZONA ? 0.6 : 1 })
+      .on('click', () => { const m = marcadores.get(b.codigo); if (m) m.openPopup(); seleccionar(b.codigo, false, true); }).addTo(capaIA));
     const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: [0, 0], iconAnchor: [0, 0] }) })
       .bindPopup(() => popupBahia(b), opcionesPopup())
       .on('click', () => seleccionar(b.codigo, false, true)).addTo(capaIA);
@@ -252,8 +252,8 @@ function pintarMapa() {
   setTimeout(despejar, 0);
 }
 
-const N1_IA = ['ARICA', 'ANTOFAGASTA', 'VALPARAISO', 'TALCAHUANO', 'PUERTOMONTT', 'PUERTOCHACABUCO', 'PUNTAARENAS', 'PUERTOWILLIAMS', 'ISLAROBINSONCRUSOE', 'A_FILDES'];
-const N2_IA = ['IQUIQUE', 'CALDERA', 'COQUIMBO', 'SANANTONIO', 'CORRAL', 'CASTRO', 'QUELLON', 'PUERTONATALES', 'GOLFOPENAS', 'CABODEHORNOS', 'A_BASEOHIGGINS', 'A_BAHIAPARAISO', 'HUASCO', 'LEBU'];
+const N1_IA = ['ARICA', 'IQUIQUE', 'ANTOFAGASTA', 'VALPARAISO', 'TALCAHUANO', 'PUERTOMONTT', 'PUNTAARENAS', 'PUERTOWILLIAMS', 'A_FILDES'];
+const N2_IA = ['PUERTOCHACABUCO', 'ISLAROBINSONCRUSOE', 'CALDERA', 'COQUIMBO', 'SANANTONIO', 'CORRAL', 'CASTRO', 'QUELLON', 'PUERTONATALES', 'GOLFOPENAS', 'CABODEHORNOS', 'A_BASEOHIGGINS', 'A_BAHIAPARAISO', 'HUASCO', 'LEBU'];
 const baseIA = c => c.replace(/_(norte|centro|sur|1dom|Antartica)_d\d+$/, '');
 const NIVEL = c => N1_IA.includes(baseIA(c)) ? 1 : N2_IA.includes(baseIA(c)) ? 2 : 3;
 // Etiquetas por nivel de zoom: con el mapa alejado solo los lugares principales; al acercarse aparece el resto.
@@ -262,6 +262,8 @@ const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 
 function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.bahias.find(x => x.codigo === c) || {}).zona === ZONA && map.getZoom() >= 5); }
 function despejar() {
   for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
+  // Los puntos de los lugares secundarios también se ocultan con el mapa alejado
+  for (const [c, l] of puntos) { const el = l.getElement && l.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
   const ents = [...marcadores.entries()].filter(([c, m]) => m.getElement() && chipVisible(c));
   const compacto = map.getZoom() < 6;
   const items = ents.map(([c, m]) => {

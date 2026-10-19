@@ -195,7 +195,7 @@ const nombreArea = p => p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : 
 const MET_POR_ID = {};
 L.geoJSON(METAREA, { pane: 'metPane', style: f => { const c = MET_COL[f.properties.tipo]; return { color: c.line, weight: 1.2, opacity: 0.6, dashArray: f.properties.tipo === 'costera' ? null : '6 4', fillColor: c.fill, fillOpacity: 0.08 }; },
   onEachFeature: (f, l) => { MET_POR_ID[f.properties.id] = l; l.bindTooltip(escH(nombreArea(f.properties)), { sticky: true }); } }).addTo(map);
-const VISTA_INICIAL = [[-57, -84], [-17.5, -66]];
+const VISTA_INICIAL = [[-63, -84], [-17.5, -62]];
 map.fitBounds(VISTA_INICIAL);
 
 // Posición de la etiqueta de cada pronóstico: punto propio, centro del sector (Zona X) o rótulo del área de la METAREA.
@@ -207,7 +207,7 @@ function posDe(it) {
 }
 
 let capaIA = L.layerGroup().addTo(map), capaZonas = L.layerGroup().addTo(map);
-const marcadores = new Map();
+const marcadores = new Map(), puntos = new Map();
 function filaPer(p) {
   const nom = p.tipo === 'noche' ? 'Noche' : 'Día';
   return `<tr><td class="per">${nom}<small>${escH(p.horario || '')}</small></td><td class="t">${tieneT(p) ? `<span class="mn">${tG(p.tmin)}</span> / <span class="mx">${tG(p.tmax)}</span>` : '–'}</td>` +
@@ -271,7 +271,7 @@ function pintarZonas() {
   if (s && s.metarea && MET_POR_ID[s.metarea]) MET_POR_ID[s.metarea].setStyle({ weight: 3, opacity: 1, fillOpacity: 0.25 });
 }
 function pintarMapa() {
-  capaIA.clearLayers(); marcadores.clear();
+  capaIA.clearLayers(); marcadores.clear(); puntos.clear();
   for (const it of DATOS.items) {
     const pos = posDe(it), p = principal(it, FECHA); if (!pos) continue;
     const otra = ZONA && it.grupo !== ZONA;
@@ -279,10 +279,9 @@ function pintarMapa() {
     const chip = `<div class="iaChip${p ? '' : ' sd'}"${it.aviso ? ' style="border-color:#c62828"' : ''}>${icono(p, 20)}<div class="iaTx"><span class="iaN">${escH(it.nombre)}</span><span class="iaT">${sub}</span></div></div>`;
     const html = `<div class="iaM${it.codigo === SEL ? ' sel' : ''}${otra ? ' otra' : ''}">${chip}</div>`;
     if (it.pos) {
-      if (it.tipo === 'area') L.marker(pos, { icon: L.divIcon({ className: '', html: `<div class="iaM${it.codigo === SEL ? ' sel' : ''}"><div class="iaDot area"></div></div>`, iconSize: [0, 0] }), opacity: otra ? 0.6 : 1 })
-        .on('click', () => { const m = marcadores.get(it.codigo); if (m) m.openPopup(); seleccionar(it.codigo, false, true); }).addTo(capaIA);
-      else L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: it.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: otra ? 0.6 : 1 })
-        .on('click', () => { const m = marcadores.get(it.codigo); if (m) m.openPopup(); seleccionar(it.codigo, false, true); }).addTo(capaIA);
+      puntos.set(it.codigo, (it.tipo === 'area' ? L.marker(pos, { icon: L.divIcon({ className: '', html: `<div class="iaM${it.codigo === SEL ? ' sel' : ''}"><div class="iaDot area"></div></div>`, iconSize: [0, 0] }), opacity: otra ? 0.6 : 1 })
+        .on('click', () => { const m = marcadores.get(it.codigo); if (m) m.openPopup(); seleccionar(it.codigo, false, true); }) : L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: it.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: otra ? 0.6 : 1 })
+        .on('click', () => { const m = marcadores.get(it.codigo); if (m) m.openPopup(); seleccionar(it.codigo, false, true); })).addTo(capaIA));
     }
     const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: [0, 0], iconAnchor: [0, 0] }) })
       .bindPopup(() => popupIt(it), opcionesPopup())
@@ -295,10 +294,9 @@ function pintarMapa() {
   setTimeout(despejar, 0);
 }
 
-const N1_PRON = new Set(['arica', 'antofagasta', 'valparaiso', 'talcahuano', 'puertomontt', 'chacabuco', 'puntaarenas', 'williams', 'pascua', 'juanfernandez', 'fildes',
+const N1_PRON = new Set(['arica', 'iquique', 'antofagasta', 'valparaiso', 'talcahuano', 'puertomontt', 'puntaarenas', 'williams', 'fildes']);
+const N2_PRON = new Set(['caldera', 'coquimbo', 'sanantonio', 'corral', 'chacabuco', 'natales', 'pascua', 'juanfernandez',
   'zx_no', 'zx_ne', 'zx_co', 'zx_ce', 'zx_so', 'zx_se', 'zix_central', 'zix_weste']);
-const N2_PRON = new Set(['iquique', 'caldera', 'coquimbo', 'sanantonio', 'corral', 'natales', 'eden', 'penas', 'guafo', 'pen_drake', 'pen_weddell', 'pen_bahiachile',
-  'gen_1', 'gen_2', 'gen_3', 'gen_4', 'gen_5', 'gen_6', 'gen_7', 'gen_8_1', 'gen_8_2']);
 const NIVEL = c => N1_PRON.has(c) ? 1 : N2_PRON.has(c) ? 2 : 3;
 // Etiquetas por nivel de zoom: con el mapa alejado solo los lugares principales; al acercarse aparece el resto.
 // Siempre se muestran el lugar seleccionado y los del sector elegido. Los demás quedan como punto (clic para abrir).
@@ -306,6 +304,8 @@ const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 
 function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.items.find(x => x.codigo === c) || {}).grupo === ZONA && map.getZoom() >= 5); }
 function despejar() {
   for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
+  // Los puntos de los lugares secundarios también se ocultan con el mapa alejado
+  for (const [c, l] of puntos) { const el = l.getElement && l.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
   const ents = [...marcadores.entries()].filter(([c, m]) => m.getElement() && chipVisible(c));
   const compacto = map.getZoom() < 6;
   const items = ents.map(([c, m]) => {
