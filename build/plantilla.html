@@ -985,7 +985,7 @@ async function capasPolar() {
   C.costa = L.layerGroup();
   for (const c of LAND) for (const poly of c.p) {
     const anillos = poly.map(decodePolyline6).filter(r => r.some(([la, lo]) => la < 15 && lo < -10 && lo > -190));
-    if (anillos.length) L.polygon(anillos.map(r => r.map(P)), { color: '#7d8a96', weight: 0.8, fillColor: '#efeee6', fillOpacity: 1, interactive: false }).addTo(C.costa);
+    if (anillos.length) L.polygon(anillos.map(r => r.map(P)), { color: '#7d8a96', weight: 0.8, fillColor: '#efeee6', fillOpacity: 1, interactive: false, pane: 'costaPolar' }).addTo(C.costa);
   }
   // Grilla cada 10° con rótulos
   C.grilla = L.layerGroup();
@@ -1063,6 +1063,8 @@ async function abrirPolar() {
   document.getElementById('polarTit').textContent = `Carta de superficie · válida ${fmtCarta(CARTA_INFO.valida)} · proyección estereográfica polar`;
   if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
   mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, attributionControl: false });
+  // La costa va siempre al fondo, bajo todas las demás capas (frentes, isobaras, imágenes satelitales, etc.)
+  mapPolar.createPane('costaPolar').style.zIndex = 350;
   const lim = [[-p.alto, 0], [0, p.ancho]];
   mapPolar.fitBounds(lim); mapPolar.setMaxBounds(L.latLngBounds(lim).pad(0.6));
   const caja = document.getElementById('polarCapas'); caja.innerHTML = '<span style="opacity:.7">Cargando capas…</span>';
