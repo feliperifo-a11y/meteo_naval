@@ -15,3 +15,8 @@ data/satelite_vis.png
 data/satelite_vis_polar.png
 data/pronosticos.json
 pronosticos.html
+hielos.html
+data/hielo.json
+data/hielo_*.png
+data/satelite_hielo.png
+data/satelite_vis_hielo.png

@@ -35,7 +35,7 @@ DATA = ir.DATA
 URL = "https://web.directemar.cl/met/jturno/pub/GFS/visual.png"
 PAGINA = "https://meteoarmada.directemar.cl/meteo/imagenes-fotosatelites/imagen-satelital-blanco-y-negro"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (capa satelite visible)"}
-VERSION = 1
+VERSION = 2
 TAMANO = (930, 764)
 EXCLUIR = [(0, 0, 150, 165), (820, 0, 930, 150), (0, 740, 400, 764), (918, 0, 930, 764)]   # logo, barra, rótulo inferior
 R_CLARO, R_PLENO = 0.08, 0.85     # reflectancia: bajo R_CLARO fondo oscuro; sobre R_PLENO blanco
@@ -111,6 +111,13 @@ def capa_polar(R, sin_dato):
     return remuestrear(R, sin_dato, X, Y, fuera)
 
 
+def capa_hielo(R, sin_dato):
+    lat, lon = ir.coords_hielo()
+    X, Y = (lon - ir.LON0) * ir.KX, -lat * ir.KY
+    fuera = (X < 0) | (X > TAMANO[0] - 1) | (Y < 0) | (Y > TAMANO[1] - 1) | (lat < ir.SUR)
+    return remuestrear(R, sin_dato, X, Y, fuera)
+
+
 def hora_imagen(im):
     if not shutil.which("tesseract"):
         subprocess.run("sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr", shell=True, capture_output=True, timeout=240)
@@ -172,9 +179,11 @@ def main():
     idx, limites = capa(Rf, sin_dato)
     img = guardar(idx, DATA / "satelite_vis.png")
     guardar(capa_polar(Rf, sin_dato), DATA / "satelite_vis_polar.png")
+    guardar(capa_hielo(Rf, sin_dato), DATA / "satelite_vis_hielo.png")
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
             "hora": hora.strftime("%Y-%m-%dT%H:%MZ") if hora else None, "satelite": sat, "canal": "01 · visible azul",
             "limites": limites, "polar": {"x0": ir.POLAR_CAJA[0], "y0": ir.POLAR_CAJA[1], "x1": ir.POLAR_CAJA[2], "y1": ir.POLAR_CAJA[3]},
+            "hielo": {"x0": ir.HIELO_CAJA[0], "y0": ir.HIELO_CAJA[1], "x1": ir.HIELO_CAJA[2], "y1": ir.HIELO_CAJA[3]},
             "reflectancia_min": R_CLARO, "fraccion_de_dia": round(float(1 - noche.mean()), 2), "fuente": PAGINA, "imagen": URL}
     (DATA / "satelite_vis.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     print(f"Visible: capa publicada ({img.size[0]}×{img.size[1]}), imagen {meta['hora']}")

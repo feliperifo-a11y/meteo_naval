@@ -37,7 +37,7 @@ DATA = RAIZ / "data"
 URL = "https://web.directemar.cl/met/jturno/pub/GFS/color.png"
 PAGINA = "https://meteoarmada.directemar.cl/meteo/imagen-satelital-infraroja"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (capa satelite IR)"}
-VERSION = 2
+VERSION = 3
 
 TAMANO = (930, 795)
 # Georreferencia (ajuste con grilla y costa): x = (lon + 130)·KX ; y = −lat·KY
@@ -136,6 +136,32 @@ def capa_polar(T, a, sin_dato):
     return Image.fromarray(pintar(t, rgb, vacio), "RGBA")
 
 
+# Proyección de la página «Monitoreo de hielos» (carta de hielo de la Península Antártica), a 1/4 de su escala
+HIELO = {"px": 1499.02, "py": 3154.59, "L0": -72.01, "S": 8460.0}
+HIELO_CAJA = (-1100, 0, 4100, 2560)       # x0, y0, x1, y1 en píxeles de la carta de hielo
+HIELO_PASO = 4
+
+
+def coords_hielo():
+    x0, y0, x1, y1 = HIELO_CAJA
+    xs, ys = np.meshgrid(np.arange(x0, x1, HIELO_PASO) + HIELO_PASO / 2, np.arange(y0, y1, HIELO_PASO) + HIELO_PASO / 2)
+    dx, dy = (xs - HIELO["px"]) / HIELO["S"], (HIELO["py"] - ys) / HIELO["S"]
+    lat = 2 * np.degrees(np.arctan(np.hypot(dx, dy))) - 90
+    lon = HIELO["L0"] + np.degrees(np.arctan2(dx, dy))
+    return lat, (lon + 180) % 360 - 180
+
+
+def capa_hielo(T, a, sin_dato):
+    from scipy.ndimage import map_coordinates
+    lat, lon = coords_hielo()
+    X, Y = (lon - LON0) * KX, -lat * KY
+    fuera = (X < 0) | (X > TAMANO[0] - 1) | (Y < 0) | (Y > TAMANO[1] - 1) | (lat < SUR)
+    t = map_coordinates(T, [Y, X], order=1, mode="nearest")
+    rgb = np.stack([map_coordinates(a[..., i].astype(float), [Y, X], order=0, mode="nearest") for i in range(3)], -1)
+    vacio = fuera | (map_coordinates(sin_dato.astype(float), [Y, X], order=0, mode="nearest") > 0.5)
+    return Image.fromarray(pintar(t, rgb, vacio), "RGBA")
+
+
 def capa(T, a, sin_dato=None):
     from scipy.ndimage import map_coordinates
     ym0, ym1 = np.log(np.tan(np.pi / 4 + np.radians(SUR) / 2)), np.log(np.tan(np.pi / 4 + np.radians(NORTE) / 2))
@@ -200,11 +226,13 @@ def main():
     img, limites = capa(T, a_limpia, sin_dato)
     capa_polar(T, a_limpia, sin_dato).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_polar.png", optimize=True)
     img.quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_ir.png", optimize=True)
+    capa_hielo(T, a_limpia, sin_dato).quantize(colors=256, method=Image.Quantize.FASTOCTREE).save(DATA / "satelite_hielo.png", optimize=True)
     hora, sat, txt = hora_imagen(im)
     print("OCR:", txt, "→", hora)
     meta = {"version": VERSION, "actualizado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "last_modified": lm,
             "hora": hora.strftime("%Y-%m-%dT%H:%MZ") if hora else None, "satelite": sat, "canal": "13 · IR onda larga",
-            "limites": limites, "polar": {"x0": POLAR_CAJA[0], "y0": POLAR_CAJA[1], "x1": POLAR_CAJA[2], "y1": POLAR_CAJA[3]}, "umbral_nube_c": T_CLARO, "umbral_color_c": T_COLOR, "fuente": PAGINA, "imagen": URL}
+            "limites": limites, "polar": {"x0": POLAR_CAJA[0], "y0": POLAR_CAJA[1], "x1": POLAR_CAJA[2], "y1": POLAR_CAJA[3]},
+            "hielo": {"x0": HIELO_CAJA[0], "y0": HIELO_CAJA[1], "x1": HIELO_CAJA[2], "y1": HIELO_CAJA[3]}, "umbral_nube_c": T_CLARO, "umbral_color_c": T_COLOR, "fuente": PAGINA, "imagen": URL}
     (DATA / "satelite.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     print(f"Satélite: capa publicada ({img.size[0]}×{img.size[1]}), imagen {meta['hora']}")
 

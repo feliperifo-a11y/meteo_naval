@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "app/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "app/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "hielos.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -46,7 +46,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json; do
+          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
 
@@ -96,6 +96,11 @@ jobs:
         timeout-minutes: 5
         run: python scripts/pronosticos.py
 
+      - name: Monitoreo de hielos (cartas de hielo, hielo en cubierta, témpanos)
+        continue-on-error: true
+        timeout-minutes: 8
+        run: python scripts/hielos.py
+
       - name: Restricciones portuarias (SITPORT, respaldo)
         continue-on-error: true
         timeout-minutes: 3
@@ -105,12 +110,13 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data
-          cp index.html ia.html pronosticos.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
+          cp index.html ia.html pronosticos.html hielos.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
           cp -r app _site/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
-          for f in carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
+          cp data/hielo_cubierta_*.png _site/data/ 2>/dev/null || true
+          for f in carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3
         with:
