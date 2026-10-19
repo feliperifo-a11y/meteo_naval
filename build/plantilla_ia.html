@@ -251,8 +251,18 @@ function pintarMapa() {
   }
   setTimeout(despejar, 0);
 }
+
+const N1_IA = ['ARICA', 'ANTOFAGASTA', 'VALPARAISO', 'TALCAHUANO', 'PUERTOMONTT', 'PUERTOCHACABUCO', 'PUNTAARENAS', 'PUERTOWILLIAMS', 'ISLAROBINSONCRUSOE', 'A_FILDES'];
+const N2_IA = ['IQUIQUE', 'CALDERA', 'COQUIMBO', 'SANANTONIO', 'CORRAL', 'CASTRO', 'QUELLON', 'PUERTONATALES', 'GOLFOPENAS', 'CABODEHORNOS', 'A_BASEOHIGGINS', 'A_BAHIAPARAISO', 'HUASCO', 'LEBU'];
+const baseIA = c => c.replace(/_(norte|centro|sur|1dom|Antartica)_d\d+$/, '');
+const NIVEL = c => N1_IA.includes(baseIA(c)) ? 1 : N2_IA.includes(baseIA(c)) ? 2 : 3;
+// Etiquetas por nivel de zoom: con el mapa alejado solo los lugares principales; al acercarse aparece el resto.
+// Siempre se muestran el lugar seleccionado y los del sector elegido. Los demás quedan como punto (clic para abrir).
+const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 ? 2 : 3; };
+function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.bahias.find(x => x.codigo === c) || {}).zona === ZONA && map.getZoom() >= 5); }
 function despejar() {
-  const ents = [...marcadores.entries()].filter(([, m]) => m.getElement());
+  for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
+  const ents = [...marcadores.entries()].filter(([c, m]) => m.getElement() && chipVisible(c));
   const compacto = map.getZoom() < 6;
   const items = ents.map(([c, m]) => {
     const box = m.getElement().querySelector('.iaM'), chip = box.querySelector('.iaChip');
@@ -267,6 +277,8 @@ function despejar() {
       mover = false;
       for (const q of puestos) if (it.x < q.x + q.w + 2 && it.x + it.w + 2 > q.x && y < q.y + q.h + 1 && y + it.h + 1 > q.y) { y = q.y + q.h + 1; mover = true; }
     }
+    // Si la etiqueta tendría que alejarse mucho de su punto, no se muestra (queda el punto; aparece al acercar el mapa)
+    if (y - it.y0 > 30 && it.c !== SEL) { it.dz.style.display = 'none'; continue; }
     it.y = y; puestos.push(it);
     it.chip.style.top = (y - it.p.y) + 'px';
     it.dz.style.zIndex = 1000 + Math.round(it.p.y);

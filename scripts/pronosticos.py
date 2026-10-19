@@ -553,6 +553,26 @@ def main():
     for g in gen:
         g.update({"url": SITIO + "/pronostico-maritimo", "txt": GENERAL})
     items += gen
+    # Continuidad: un pronóstico nuevo suele empezar al día siguiente (p. ej. emitido a las 16 h, válido desde las 08 h
+    # de mañana). Para no dejar «hoy» vacío, se conservan los períodos de hoy del pronóstico anterior.
+    try:
+        previo = json.loads(SALIDA.read_text(encoding="utf-8"))
+        ant = {x["codigo"]: x for x in previo.get("items", [])}
+    except Exception:
+        ant = {}
+    hoy = (datetime.now(timezone.utc) - timedelta(hours=3)).date().isoformat()
+    for it in items:
+        pa = ant.get(it["codigo"])
+        if not pa:
+            continue
+        if not it.get("periodos"):
+            it.update({k: v for k, v in pa.items() if k in ("periodos", "emitido")}); it.pop("error", None)
+            continue
+        primera = min(p["fecha"] for p in it["periodos"] if p.get("fecha"))
+        viejos = [dict(p, anterior=True) for p in pa.get("periodos", []) if p.get("fecha") and hoy <= p["fecha"] < primera]
+        if viejos:
+            it["periodos"] = viejos + it["periodos"]
+            it["emitido_anterior"] = pa.get("emitido_anterior") if all(p.get("anterior") for p in pa.get("periodos", []) if p["fecha"] < primera) and pa.get("emitido_anterior") else pa.get("emitido")
     ok = sum(1 for x in items if x.get("periodos"))
     if ok < 10:
         print(f"Pronósticos: solo {ok} legibles → se mantiene el archivo anterior"); return
