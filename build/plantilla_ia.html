@@ -252,7 +252,7 @@ function pintarMapa() {
   setTimeout(despejar, 0);
 }
 
-const N1_IA = ['ARICA', 'IQUIQUE', 'ANTOFAGASTA', 'CALDERA', 'COQUIMBO', 'QUINTERO', 'VALPARAISO', 'TALCAHUANO', 'CORRAL', 'PUERTOMONTT', 'PUERTOCHACABUCO',
+const N1_IA = ['CHANARAL', 'HUASCO', 'LOSVILOS', 'CASTRO', 'QUELLON', 'CMORALEDA', 'ARICA', 'IQUIQUE', 'ANTOFAGASTA', 'CALDERA', 'COQUIMBO', 'QUINTERO', 'VALPARAISO', 'TALCAHUANO', 'CORRAL', 'PUERTOMONTT', 'PUERTOCHACABUCO',
   'GOLFOPENAS', 'PUERTONATALES', 'FAROEVANGELISTA', 'PASOTAMAR', 'SENOOTWAY', 'PRIMERANGOSTURA', 'PUNTAARENAS', 'PUERTOWILLIAMS', 'A_FILDES'];
 const N2_IA = ['PUERTOCHACABUCO', 'ISLAROBINSONCRUSOE', 'CALDERA', 'COQUIMBO', 'SANANTONIO', 'CORRAL', 'CASTRO', 'QUELLON', 'PUERTONATALES', 'GOLFOPENAS', 'CABODEHORNOS', 'A_BASEOHIGGINS', 'A_BAHIAPARAISO', 'HUASCO', 'LEBU'];
 const baseIA = c => c.replace(/_(norte|centro|sur|1dom|Antartica)_d\d+$/, '');
@@ -261,8 +261,9 @@ const NIVEL = c => N1_IA.includes(baseIA(c)) ? 1 : N2_IA.includes(baseIA(c)) ? 2
 // Siempre se muestran el lugar seleccionado y los del sector elegido. Los demás quedan como punto (clic para abrir).
 const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 ? 2 : 3; };
 function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.bahias.find(x => x.codigo === c) || {}).zona === ZONA && map.getZoom() >= 5); }
-const CIUDADES = ['ARICA','IQUIQUE','ANTOFAGASTA','VALPARAISO','TALCAHUANO','PUERTOMONTT','PUNTAARENAS','PUERTOWILLIAMS','A_FILDES','PUERTONATALES'];
-const PRIORIDAD = c => CIUDADES.includes(baseIA(c)) ? 0 : 1;
+const CIUDADES = ['ARICA','IQUIQUE','ANTOFAGASTA','CHANARAL','CALDERA','HUASCO','COQUIMBO','LOSVILOS','QUINTERO','VALPARAISO','TALCAHUANO','CORRAL','PUERTOMONTT','CASTRO','QUELLON','CMORALEDA','PUERTOCHACABUCO','GOLFOPENAS','PUERTONATALES','PUNTAARENAS','PUERTOWILLIAMS','A_FILDES'];
+const PRINCIPALES = ['ARICA','IQUIQUE','ANTOFAGASTA','VALPARAISO','TALCAHUANO','PUERTOMONTT','PUNTAARENAS','PUERTOWILLIAMS','A_FILDES'];
+const PRIORIDAD = c => PRINCIPALES.includes(baseIA(c)) ? 0 : CIUDADES.includes(baseIA(c)) ? 1 : 2;
 function despejar() {
   for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
   // Los puntos de los lugares secundarios también se ocultan con el mapa alejado
