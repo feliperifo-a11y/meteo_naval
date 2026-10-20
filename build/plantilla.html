@@ -218,6 +218,8 @@ dialog textarea{width:100%;height:180px;font:12px ui-monospace,Consolas,monospac
 dialog .row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
 dialog button{border-color:var(--line)}
 @media (max-width:600px){ main{padding:8px} header{padding:10px 12px} .kpis{grid-template-columns:repeat(2,1fr)} #layerBox{width:240px} }
+#firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
+@media print{#firmaAutor{display:none}}
 </style>
 </head>
 <body>
@@ -1531,5 +1533,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug();
   <div id="mapPolar"></div>
   <div class="polarPie">Proyección estereográfica polar, la misma de la carta de superficie (ajustada a su grilla, error &lt; 1 píxel). Isobaras GFS en azul; active «Carta original» para superponerla y comparar.</div>
 </div></div>
+<div id="firmaAutor">Felipe Rifo Espósito™</div>
 </body>
 </html>
