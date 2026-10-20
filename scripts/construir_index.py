@@ -24,7 +24,7 @@ datos = "\n".join([
 ])
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
-version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js")
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js")
                         + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
 (R / "version.txt").write_text(version + "\n", encoding="utf-8")
 datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
@@ -54,3 +54,9 @@ html_hielo = (leer(B / "plantilla_hielo.html").replace("/*LEAFLET_CSS*/", leer(B
               .replace("/*DATA*/", datos_hielo).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "hielos.html").write_text(html_hielo, encoding="utf-8")
 print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
+
+# Versión de prueba del nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen)
+html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
+           .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
+(R / "nuevo.html").write_text(html_v2, encoding="utf-8")
+print(f"nuevo.html: {len(html_v2) / 1024:.0f} KB")
