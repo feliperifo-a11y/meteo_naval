@@ -10,11 +10,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Descargar pronósticos
-        run: |
-          mkdir -p diag/hielo
-          while read u; do f=$(basename "$u"); curl -sS -m 30 -D "diag/hielo/$f.hdr" -o "diag/hielo/$f" "$u" || echo "ERR $u" >> diag/hielo/errores.txt; done < diag/urls_hielo.txt
-      - name: Publicar resultados en la rama
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -q requests numpy pygrib
+      - name: Viento
+        run: mkdir -p diag/viento data && python scripts/viento.py | tee diag/viento/log.txt && cp data/viento_gfs.json diag/viento/ || true
+      - name: Publicar
         run: |
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/hielo && git commit -m "diag: hielo" && git push || true
+          git add diag/viento && git commit -m "diag: viento" && git push || true
