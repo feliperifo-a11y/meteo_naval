@@ -152,7 +152,7 @@ a{color:var(--acc2)}
     </div>
     <div id="capasPop"></div>
     <div class="aviso" id="avisoMapa"></div>
-    <div class="leyViento" id="leyViento"><b>Viento a 10 m (kt)</b><small id="vientoHora"></small><div class="barra"></div><div class="esc"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40+</span></div></div>
+    <div class="leyViento" id="leyViento" style="display:none"><b>Viento a 10 m (kt)</b><small id="vientoHora"></small><div class="barra"></div><div class="esc"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40+</span></div></div>
   </section>
   <div class="col">
     <section class="card"><h2>Condiciones actuales <select id="selEst" aria-label="Estación"></select></h2><div class="tiles" id="cond"></div><div class="vacioTxt" id="condNota" style="margin-top:8px"></div></section>
@@ -305,7 +305,7 @@ const Flechas = L.Layer.extend({
 capaFlechas = new Flechas();
 async function cargarViento() {
   try { VIENTO = await leerJSON('data/viento_gfs.json'); } catch (e) { VIENTO = null; document.getElementById('leyViento').style.display = 'none'; return; }
-  document.getElementById('leyViento').style.display = '';
+  document.getElementById('leyViento').style.display = map.hasLayer(capaViento) ? '' : 'none';
   pintarCampo(); if (capaFlechas._m) capaFlechas._dib();
 }
 // ---- Avisos (vigentes y próximos)
@@ -362,12 +362,12 @@ async function cargarBoyas() {
   pintarCond(); pintarAlertas();
 }
 // ---- Selector de capas
-const CAPAS = [['Viento GFS (color)', capaViento, true], ['Viento GFS (flechas)', capaFlechas, true], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, false], ['Boyas', capaBoyas, false]];
+const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, false], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
     '<div class="t" style="margin-top:8px">Mapa base</div><label><input type="radio" name="base" value="sat" checked> Imagen satelital</label><label><input type="radio" name="base" value="oc"> Océano (claro)</label><label><input type="radio" name="base" value="cos"> Sin conexión (costa)</label>';
-  pop.querySelectorAll('input[type=checkbox]').forEach(ch => ch.onchange = () => { const l = CAPAS[+ch.dataset.i][1]; ch.checked ? l.addTo(map) : map.removeLayer(l); });
+  pop.querySelectorAll('input[type=checkbox]').forEach(ch => ch.onchange = () => { const l = CAPAS[+ch.dataset.i][1]; ch.checked ? l.addTo(map) : map.removeLayer(l); if (l === capaViento) document.getElementById('leyViento').style.display = ch.checked && VIENTO ? '' : 'none'; });
   pop.querySelectorAll('input[name=base]').forEach(r => r.onchange = () => { map.removeLayer(base); base = r.value === 'sat' ? satelite : r.value === 'oc' ? oceano : costa; base.addTo(map); });
   CAPAS.forEach(([, l, on]) => { if (on) l.addTo(map); });
   document.getElementById('btnCapas').onclick = () => { pop.classList.toggle('on'); document.getElementById('btnCapas').classList.toggle('on'); };
