@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arma index.html (build/plantilla.html) e ia.html (build/plantilla_ia.html) a partir de las plantillas, Leaflet y las capas geográficas de data/geo.
+"""Arma index.html (build/plantilla_v2.html), dashboard.html (build/plantilla.html) e ia.html (build/plantilla_ia.html) a partir de las plantillas, Leaflet y las capas geográficas de data/geo.
 Los datos de estaciones y avisos se leen en el navegador desde data/*.json; aquí solo se incorpora
 una copia de respaldo para cuando la página se abre como archivo local.
 Ejecutar solo cuando cambie la plantilla o las capas:  python scripts/construir_index.py"""
@@ -31,8 +31,8 @@ datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
 html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css"))
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos).replace("/*IA_COMUN*/", leer(B / "ia_comun.js"))
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "index.html").write_text(html, encoding="utf-8")
-print(f"index.html: {len(html) / 1024:.0f} KB")
+(R / "dashboard.html").write_text(html, encoding="utf-8")
+print(f"dashboard.html: {len(html) / 1024:.0f} KB")
 
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
@@ -55,8 +55,10 @@ html_hielo = (leer(B / "plantilla_hielo.html").replace("/*LEAFLET_CSS*/", leer(B
 (R / "hielos.html").write_text(html_hielo, encoding="utf-8")
 print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
 
-# Versión de prueba del nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen)
+# Página principal con el nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen); el dashboard clásico queda en dashboard.html
 html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
            .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "nuevo.html").write_text(html_v2, encoding="utf-8")
-print(f"nuevo.html: {len(html_v2) / 1024:.0f} KB")
+(R / "index.html").write_text(html_v2, encoding="utf-8")
+print(f"index.html: {len(html_v2) / 1024:.0f} KB")
+# La dirección de la versión de prueba redirige a la portada.
+(R / "nuevo.html").write_text('<!doctype html><meta charset="utf-8"><title>MeteoIA</title><meta http-equiv="refresh" content="0; url=./"><a href="./">MeteoIA</a>\n', encoding="utf-8")
