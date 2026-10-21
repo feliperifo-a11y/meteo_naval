@@ -1,0 +1,2 @@
+Fondo carta: 4250×3400 px, 0.8 MB
+Fondo hielo: 3264×3264 px, 0.5 MB
