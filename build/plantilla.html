@@ -63,6 +63,9 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 .btnPolar{display:block;margin-top:6px;width:100%;border:1px solid #1f6fb2;background:#eaf3fb;color:#124a7a;border-radius:6px;padding:5px 6px;font-size:11.5px;font-weight:600;cursor:pointer}
 #dlgPolar{position:fixed;inset:0;z-index:5000;background:#fff;display:flex}
 #dlgPolar[hidden]{display:none}
+/* Entrada directa a la carta (?carta desde la portada): se muestra solo la carta, sin pasar por el dashboard */
+html.soloCarta body{overflow:hidden}html.soloCarta #dlgPolar[hidden]{display:flex}
+html.soloCarta #mapPolar{position:relative}html.soloCarta #mapPolar:empty::after{content:"Cargando carta de superficie…";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5b6673;font:15px system-ui,sans-serif}
 .polarCaja{background:#fff;color:#18212b;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
 .polarCab{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid #d6dee6;font-size:13px}
 .polarCab #polarCapas{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
@@ -221,6 +224,7 @@ dialog button{border-color:var(--line)}
 #firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
 @media print{#firmaAutor{display:none}}
 </style>
+<script>try { if (new URLSearchParams(location.search).has('carta')) document.documentElement.classList.add('soloCarta'); } catch (e) {}</script>
 </head>
 <body>
 <div id="guiaInst" role="dialog" aria-label="Instalar en el celular" hidden><div class="gi" id="giCaja"></div><div class="flecha" id="giFlecha" aria-hidden="true">⬇</div></div>
@@ -1133,6 +1137,7 @@ async function abrirPolar() {
   const p = CARTA_INFO.proyeccion, dlg = document.getElementById('dlgPolar');
   if (dlg.hidden) { try { if (!location.search.includes('carta')) history.pushState({ carta: 1 }, '', '?carta'); } catch (e) {} }
   dlg.hidden = false; document.body.style.overflow = 'hidden';
+  if (SOLO_CARTA) { const b = document.getElementById('btnVolverPolar'); b.textContent = '‹ Volver al inicio'; b.title = 'Volver a la página principal (Esc)'; }
   if (innerWidth <= 820) document.getElementById('polarCapasBox').open = false;
   document.getElementById('polarTit').textContent = `Carta de superficie · válida ${fmtCarta(CARTA_INFO.valida)} · proyección estereográfica polar`;
   if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
@@ -1171,7 +1176,9 @@ function leyendaVisPolar(on) {
   const C = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const el = L.DomUtil.create('div', 'satInfo'); el.innerHTML = textoVis(POLAR_VIS, false); return el; } });
   polarVisCtl = new C().addTo(mapPolar);
 }
+const SOLO_CARTA = document.documentElement.classList.contains('soloCarta');
 function cerrarPolar(desdeHistorial) {
+  if (SOLO_CARTA) { location.href = './'; return; }   // entrada directa: al salir se vuelve a la portada
   if (document.getElementById('dlgPolar').hidden) return;
   document.getElementById('dlgPolar').hidden = true; document.body.style.overflow = ''; if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
   try { if (!desdeHistorial && history.state && history.state.carta) history.back(); else if (location.search.includes('carta')) history.replaceState(null, '', location.pathname); } catch (e) {}
@@ -1179,7 +1186,6 @@ function cerrarPolar(desdeHistorial) {
 }
 window.addEventListener('popstate', () => { if (!document.getElementById('dlgPolar').hidden) cerrarPolar(true); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !document.getElementById('dlgPolar').hidden) cerrarPolar(); });
-try { if (new URLSearchParams(location.search).has('carta')) setTimeout(abrirPolar, 1500); } catch (e) {}
 
 // Recuadro con la validez de la carta, visible solo con la capa activa
 const CartaCtl = L.Control.extend({ options: { position: 'bottomleft' }, onAdd() { const d = L.DomUtil.create('div', 'cartaInfo'); d.id = 'cartaInfo'; L.DomEvent.disableClickPropagation(d); return d; } });
@@ -1495,7 +1501,7 @@ async function contarVisita(nueva) {
   contarVisita(nueva);
   setInterval(() => contarVisita(false), 5 * 60000);
 })();
-cargarDatos();
+cargarDatos().catch(() => {}).finally(() => { if (SOLO_CARTA) abrirPolar(); });
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 cargarBoyasVivo();
 setInterval(cargarBoyasVivo, 20 * 60000);
@@ -1526,7 +1532,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug();
 </script>
 <div id="dlgPolar" hidden><div class="polarCaja">
   <div class="polarCab">
-    <button type="button" class="btnVolver" onclick="cerrarPolar()" title="Volver al dashboard (Esc)">‹ Volver al dashboard</button>
+    <button type="button" class="btnVolver" id="btnVolverPolar" onclick="cerrarPolar()" title="Volver al dashboard (Esc)">‹ Volver al dashboard</button>
     <b id="polarTit">Carta de superficie</b>
     <details id="polarCapasBox" open><summary>Capas</summary><span id="polarCapas"></span></details>
   </div>
