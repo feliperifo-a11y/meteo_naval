@@ -7,15 +7,21 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -q requests numpy pygrib
-      - name: Viento
-        run: mkdir -p diag/viento data && python scripts/viento.py | tee diag/viento/log.txt && cp data/viento_gfs.json diag/viento/ || true
+      - run: pip install -q requests numpy pillow
+      - name: Datos del sitio y fondo polar
+        run: |
+          mkdir -p diag/sitio data
+          for f in carta.json carta_isobaras.json carta_frentes_polar.png carta.jpg satelite.json satelite_polar.png satelite_vis.json satelite_vis_polar.png avisos.json; do curl -sf -o diag/sitio/$f "https://meteoia.cl/data/$f" || echo "falta $f"; done
+          cp diag/sitio/carta.json data/ || true
+          python scripts/fondo_polar.py | tee diag/sitio/fondo_log.txt
+          cp data/fondo_polar.jpg data/fondo_polar.json diag/sitio/ || true
+          ls -la diag/sitio
       - name: Publicar
         run: |
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add diag/viento && git commit -m "diag: viento" && git push || true
+          git add diag/sitio && git commit -m "diag: datos carta y fondo polar" && git push || true
