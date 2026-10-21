@@ -878,6 +878,85 @@ def texto_zona_x() -> str | None:
         return None
 
 
+# ============================================================ Pronóstico antártico, Zona IX
+# Criterio: viento sostenido sobre 34 kt, de cualquier dirección, en el pronóstico = temporal. Las rachas no cuentan.
+URL_ZONA_IX = "https://meteoarmada.directemar.cl/meteo/stat/download/zonaNueve.json"
+PAGINA_ZONA_IX = "https://meteoarmada.directemar.cl/pronostico-antartico"
+UMBRAL_TEMPORAL_KT = 34
+# nombre del pronóstico (sin tildes, mayúsculas) → subárea de la capa METAREA XV o círculo [lat, lon, radio en grados]
+ZONAS_IX = [
+    ("PASO DRAKE", {"area": "IX-PD"}),
+    ("SECTOR POLAR ESTE", {"area": "IX-E"}),
+    ("SECTOR POLAR CENTRAL", {"area": "IX-C"}),
+    ("SECTOR POLAR OESTE", {"area": "IX-O"}),
+    ("SECTOR POLAR WESTE", {"area": "IX-O"}),
+    ("MAR DE WEDDELL", {"area": "IX-W"}),
+    ("ESTRECHO BRANSFIELD", {"circulo": [-63.0, -59.2, 0.6]}),
+    ("BAHIA FILDES", {"circulo": [-62.20, -58.95, 0.12]}),
+    ("BAHIA CHILE", {"circulo": [-62.48, -59.66, 0.12]}),
+    ("BAHIA PARAISO", {"circulo": [-64.85, -62.88, 0.12]}),
+]
+
+
+def viento_max_kt(txt: str) -> int | None:
+    """Mayor intensidad sostenida del texto de viento (p. ej. 'W/NW 35/40 KT RACHAS 60 KT' → 40); ignora las rachas."""
+    t = sin_acentos((txt or "").upper())
+    t = re.sub(r"RACHAS?\s+(?:DE\s+)?(?:HASTA\s+)?\d{1,3}(?:\s*/\s*\d{1,3})?\s*(?:KT|NUDOS)?", " ", t)
+    vals = [int(x) for a, b in re.findall(r"\b(\d{1,3})(?:\s*/\s*(\d{1,3}))?\s*(?:KT|NUDOS)\b", t) for x in (a, b) if x]
+    return max(vals) if vals else None
+
+
+def leer_zona_ix(d: dict, ref: datetime, geo: Geo):
+    """Aviso de temporal derivado del pronóstico antártico: zonas con viento sostenido > 34 kt, o None si no hay."""
+    val = d.get("validez") or {}
+    mi = re.match(r"(\d{2})(\d{2})(\d{2})", val.get("inicio", "")); mf = re.match(r"(\d{2})(\d{2})(\d{2})", val.get("fin", ""))
+    if not mi or not mf:
+        raise ValueError("el pronóstico antártico no trae su validez")
+    desde = _fecha_dhm(*map(int, mi.groups()), ref)
+    hasta = _fecha_dhm(*map(int, mf.groups()), desde + timedelta(hours=12))
+    zonas = []
+    for z in d.get("pronostico") or []:
+        kt = viento_max_kt(z.get("viento"))
+        if kt is None or kt <= UMBRAL_TEMPORAL_KT:
+            continue
+        nombre = re.sub(r"\s+", " ", (z.get("zona") or "").strip())
+        clave = sin_acentos(nombre.upper())
+        geo_z = next((g for k, g in ZONAS_IX if clave.startswith(k)), None)
+        if not geo_z:
+            errores.append(f"pronóstico antártico: zona sin ubicación en el mapa ({nombre})")
+            continue
+        if "area" in geo_z:
+            g = geo.zona("area", area=geo_z["area"])
+        else:
+            la, lo, r = geo_z["circulo"]
+            g = geo.zona("circulo", centro=[la, lo], radio=r)
+        viento = re.sub(r"\s+", " ", z.get("viento", "")).strip()
+        corto = re.sub(r"\s*\(.*\)", "", nombre)
+        zonas.append({"nombre": f"{corto} · viento {kt} kt", "desde": iso(desde), "hasta": iso(hasta),
+                      "detalle": f"Viento: {viento}", **g})
+    zonas = zonas_validas(zonas)
+    if not zonas:
+        return None
+    return {"tipo": "Aviso de temporal · Zona IX", "sector": "Zona IX (Antártica)",
+            "codigo": f"Pronóstico antártico {val.get('inicio', '')}".strip(),
+            "url": PAGINA_ZONA_IX, "pagina": PAGINA_ZONA_IX, "publicado": iso(desde),
+            "resumen": f"Viento sostenido sobre {UMBRAL_TEMPORAL_KT} kt en el pronóstico antártico vigente.",
+            "nota": f"Calculado por MeteoIA a partir del pronóstico antártico (viento sostenido > {UMBRAL_TEMPORAL_KT} kt de cualquier dirección; "
+                    "no considera rachas). No es un aviso emitido por la fuente.",
+            "zonas": zonas, "_auto": True, "zona_ix": True}
+
+
+def texto_zona_ix() -> dict | None:
+    try:
+        d = get(URL_ZONA_IX, timeout=30).json()
+        if not isinstance(d, dict) or "pronostico" not in d:
+            raise ValueError("respuesta sin la estructura esperada")
+        return d
+    except Exception as e:
+        errores.append(f"pronóstico antártico: {e}")
+        return None
+
+
 def recolectar_avisos(geo: Geo) -> bool:
     ref = ahora_utc()
     previo = {a["url"]: a for a in leer_json(DATA / "avisos.json", {}).get("avisos", [])}
@@ -939,9 +1018,21 @@ def recolectar_avisos(geo: Geo) -> bool:
             print(f"Zona X: {zx['tipo'] + ', ' + str(len(zx['zonas'])) + ' sector(es)' if zx else 'sin aviso'}")
         except Exception as e:
             errores.append(f"boletín Zona X: {e}")
+    # Pronóstico antártico Zona IX: temporal cuando el viento sostenido supera 34 kt
+    zix_leido = False
+    dix = texto_zona_ix()
+    if dix:
+        try:
+            zix = leer_zona_ix(dix, ref, geo)
+            zix_leido = True
+            if zix:
+                avisos[zix["url"]] = zix
+            print(f"Zona IX: {'temporal en ' + str(len(zix['zonas'])) + ' zona(s)' if zix else 'sin temporal'}")
+        except Exception as e:
+            errores.append(f"pronóstico antártico: {e}")
     # Avisos que salieron de la portada pero siguen vigentes
     for u, v in previo.items():
-        if v.get("zona_x") and zx_leido:
+        if (v.get("zona_x") and zx_leido) or (v.get("zona_ix") and zix_leido):
             continue                                   # el boletín vigente reemplaza al anterior
         if u not in avisos and u not in ignorar and v.get("zonas"):
             avisos[u] = v
@@ -971,7 +1062,7 @@ def recolectar_avisos(geo: Geo) -> bool:
     unicos = {}
     for a in final:
         k = firma(a)
-        if a.get("zona_x") or not a.get("codigo") or not a.get("zonas"):
+        if a.get("zona_x") or a.get("zona_ix") or not a.get("codigo") or not a.get("zonas"):
             unicos[id(a)] = a; continue
         if k not in unicos or carpeta(a) > carpeta(unicos[k]):
             if k in unicos: print(f"  Duplicado omitido: {unicos[k]['codigo']} ({unicos[k]['url']})")

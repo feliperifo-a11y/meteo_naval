@@ -4,6 +4,7 @@ Página pública que muestra, en un solo mapa:
 
 - **Avisos meteorológicos vigentes y próximos** (marejadas, mal tiempo, temporal, trombas), dibujados dentro de las subáreas METAREA XV que afectan.
 - **Avisos de temporal o mal tiempo en alta mar (Zona X)**: se leen de la Parte I del boletín de tiempo y mar de la Zona X y cada sector se dibuja como el rectángulo de latitudes y longitudes que indica el boletín.
+- **Temporal en la Zona IX (Antártica)**: se lee el pronóstico antártico (`zonaNueve.json`, página *Pronóstico Antártico*) y se marca temporal en cada zona cuyo viento sostenido supere 34 kt, de cualquier dirección; las rachas no cuentan. Es un aviso calculado por MeteoIA, no emitido por la fuente.
 - **Operatividad de la red de estaciones meteorológicas costeras**: estado de cada estación según la antigüedad de su último dato.
 - Capas de referencia: METAREA XV, ZEE (200 M), zona contigua (24 M) y mar territorial (12 M).
 
@@ -19,6 +20,7 @@ GitHub Actions (cada 20 min)
         ├─ descarga las observaciones de las estaciones      → data/estaciones.json
         ├─ lee la portada del sitio de avisos y cada PDF      → data/avisos.json
         ├─ lee el boletín de alta mar Zona X (Parte I)        → data/avisos.json
+        ├─ lee el pronóstico antártico (viento > 34 kt)      → data/avisos.json
         └─ deja un resumen de la ejecución y sus errores      → data/estado.json
    └─ scripts/oleaje.py (máx. cada 3 h)                  → data/oleaje.json
    └─ scripts/construir_index.py  → index.html
