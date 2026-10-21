@@ -855,7 +855,7 @@ function refreshBoyas() {
 
 // ============================ Alertas en tiempo real ============================
 // Boyas (altura significativa reciente): ≥ 3 m amarilla, ≥ 4 m roja. Estaciones de Corral al norte (viento medio
-// reciente): > 20 kt amarilla, > 34 kt roja. Todo en un solo recuadro; al cerrarlo no vuelve a aparecer mientras
+// reciente): > 20 kt amarilla (al sur de Corral, > 25 kt), > 34 kt roja. Todo en un solo recuadro; al cerrarlo no vuelve a aparecer mientras
 // las alertas sigan siendo las mismas (reaparece si cambian o suben de nivel).
 const LAT_CORRAL = -39.95;
 const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
@@ -868,15 +868,16 @@ function calcularAlertas() {
     else if (u.hsig >= 3) out.push({ n: 'am', id: 'b' + b.nombre + '3', txt: `Atención: oleaje sobre 3 metros en boya ${b.nombre}`, det: `Altura significativa ${nf(u.hsig, 2)} m${u.hmax != null ? ` · máxima ${nf(u.hmax, 2)} m` : ''} · ${fmtLocal(t)} (hora Chile)` });
   }
   for (const st of ESTACIONES || []) {
-    if (st.lat == null || st.lat < LAT_CORRAL) continue;
+    if (st.lat == null) continue;
+    const umbral = st.lat < LAT_CORRAL ? 25 : 20;   // Corral al norte (incluido): > 20 kt; al sur de Corral: > 25 kt
     const ev = evaluar(st, ahora);
     if (!(ev.k === 'ok' || ev.k === 'ret') || ev.fl.some(f => /viento/.test(f))) continue;
     const kt = aKt(st.vel, st.uVel), r = aKt(st.racha, st.uVel);
-    if (kt == null || kt <= 20) continue;
+    if (kt == null || kt <= umbral) continue;
     const nom = nombreEst(st), dir = st.dirG != null ? `${cardinal(st.dirG)} ` : '';
     const det = `Viento ${dir}${nf(kt, 0)} kt${r != null ? ` (racha ${nf(r, 0)} kt)` : ''} · ${ev.t ? fmtLocal(ev.t) + ' (hora Chile)' : ''}`;
     if (kt > 34) out.push({ n: 'rj', id: 'e' + st.codigo + '34', txt: `Aviso por viento > 34 kt en ${nom}`, det });
-    else out.push({ n: 'am', id: 'e' + st.codigo + '20', txt: `Aviso por viento > 20 kt en ${nom}`, det });
+    else out.push({ n: 'am', id: 'e' + st.codigo + umbral, txt: `Aviso por viento > ${umbral} kt en ${nom}`, det });
   }
   return out.sort((a, b) => (a.n === b.n ? 0 : a.n === 'rj' ? -1 : 1));
 }
