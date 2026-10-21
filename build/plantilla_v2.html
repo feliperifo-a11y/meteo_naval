@@ -83,7 +83,14 @@ a{color:var(--acc2)}
 .alerta.rj{border-left-color:var(--rj)}.alerta.az{border-left-color:#2f8cff}
 .alerta svg{width:28px;height:28px;flex:none}
 .alerta b{display:block;font-size:13.5px}.alerta .tx{font-size:12px;color:#c9d9ea;line-height:1.4}
-.alerta .bd{margin-left:auto;align-self:flex-start;font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;white-space:nowrap;text-transform:uppercase}
+.alerta{cursor:pointer}.alerta:hover{background:#10294a}
+.alerta .der{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.ojo{display:flex;align-items:center;gap:4px;background:#0f2a45;border:1px solid var(--line);border-radius:7px;padding:3px 7px;color:#d6e6f6;font:600 10.5px system-ui,sans-serif;cursor:pointer}
+.ojo svg{width:15px!important;height:15px!important}.ojo.off{opacity:.55}.ojo:hover{border-color:var(--acc)}
+.alerta.oculta{opacity:.6}
+.lnkBtn{background:none;border:0;color:var(--acc);font:600 12px system-ui,sans-serif;cursor:pointer;padding:0;text-transform:none;letter-spacing:0}
+.visitas{display:inline-flex;align-items:center;gap:4px;margin-left:6px;opacity:.75}.visitas[hidden]{display:none}
+.alerta .bd{align-self:flex-start;font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px;white-space:nowrap;text-transform:uppercase}
 .bd.am{background:var(--am);color:#2b2100}.bd.rj{background:var(--rj);color:#fff}.bd.az{background:#2f8cff;color:#fff}
 .vacioTxt{font-size:12.5px;color:var(--muted)}
 .est{max-height:250px;overflow:auto;margin:0 -6px}
@@ -119,7 +126,7 @@ a{color:var(--acc2)}
 <body>
 <div class="top">
   <a class="logo" href="./" title="MeteoIA"><span class="mk"><img src="app/logo-meteoia.png" alt=""></span><span><b>Meteo<i>IA</i></b><span>Inteligencia artificial para decisiones marítimas más seguras</span></span></a>
-  <div class="reloj"><div class="h"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="hora">–</span></div><div class="s" id="estadoDatos">Cargando datos…</div></div>
+  <div class="reloj"><div class="h"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="hora">–</span></div><div class="s"><span id="estadoDatos">Cargando datos…</span><span class="visitas" id="visitas" title="Visitas a la página (una por sesión del navegador). Estadísticas anónimas: no se usan cookies ni datos personales." hidden><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span></span></span></div></div>
 </div>
 <nav class="nav"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <linearGradient id="gOla" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e88ff"/><stop offset="1" stop-color="#22c3ee"/></linearGradient>
@@ -156,6 +163,8 @@ a{color:var(--acc2)}
     <div class="leyViento" id="leyViento" style="display:none"><b>Viento a 10 m (kt)</b><small id="vientoHora"></small><div class="barra"></div><div class="esc"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40+</span></div></div>
   </section>
   <div class="col">
+    <section class="card" id="alertas"><h2>Alertas y avisos <button type="button" class="lnkBtn" id="btnTodasAl">Ocultar todas del mapa</button></h2><div id="listaAlertas"><div class="vacioTxt">Cargando…</div></div></section>
+    <section class="card" id="estaciones"><h2><span id="tEst">Estaciones</span> <a href="dashboard.html">Dashboard →</a></h2><div class="est" id="listaEst"></div></section>
     <section class="card"><h2>Condiciones actuales <select id="selEst" aria-label="Estación"></select></h2><div class="tiles" id="cond"></div><div class="vacioTxt" id="condNota" style="margin-top:8px"></div></section>
     <section class="card" id="pronostico"><h2>Pronóstico marítimo <a href="pronosticos.html">Ver todos →</a></h2>
       <div class="tabs" id="tabsPron"><button type="button" data-t="bahia" class="on">Bahías</button><button type="button" data-t="zona">Zonas costeras</button><button type="button" data-t="alta">Alta mar</button></div>
@@ -163,8 +172,6 @@ a{color:var(--acc2)}
       <div class="dias" id="diasPron"></div>
       <a class="btnAzul" id="lnkPron" href="pronosticos.html">Ver pronóstico completo →</a>
     </section>
-    <section class="card" id="alertas"><h2>Alertas y avisos <a href="dashboard.html">Ver en el dashboard →</a></h2><div id="listaAlertas"><div class="vacioTxt">Cargando…</div></div></section>
-    <section class="card" id="estaciones"><h2><span id="tEst">Estaciones</span> <a href="dashboard.html">Ver todas →</a></h2><div class="est" id="listaEst"></div></section>
   </div>
 </div>
 <div class="bajo">
@@ -320,14 +327,10 @@ async function cargarViento() {
 // ---- Avisos (vigentes y próximos)
 let AVISOS = [], capaAv = L.layerGroup().addTo(map);
 function estadoAviso(z, ahora) { const ini = new Date(z.desde), fin = new Date(z.hasta); return ahora < ini ? 'P' : ahora <= fin ? 'V' : 'X'; }
-function pintarAvisos() {
-  capaAv.clearLayers(); const ahora = new Date();
-  for (const a of AVISOS) for (const z of a.zonas || []) {
-    const e = estadoAviso(z, ahora); if (e === 'X' || !z.geom) continue;
-    L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
-      .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(capaAv);
-  }
-}
+function pintarAvisos() { pintarAlertas(); }
+let OCULTAS = new Set(), CAPA_AL = {};
+try { OCULTAS = new Set(JSON.parse(sessionStorage.getItem('v2_ocultas') || '[]')); } catch (e) {}
+const guardarOcultas = () => { try { sessionStorage.setItem('v2_ocultas', JSON.stringify([...OCULTAS])); } catch (e) {} };
 // ---- Estaciones y boyas
 const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 }, UMBRAL_BOYA = { ok: 3 * 3600e3, ret: 24 * 3600e3 };
 const COL = { ok: '#34c26b', ret: '#f0a030', no: '#e5534b', sd: '#8a939e' };
@@ -436,19 +439,46 @@ document.querySelectorAll('#tabsPron button').forEach(b => b.onclick = () => { T
 document.getElementById('selLugar').onchange = e => { LUGAR[TAB] = e.target.value; try { localStorage.setItem('v2_lugar', JSON.stringify(LUGAR)); } catch (x) {} pintarPron(); };
 
 // ============================ Alertas ============================
+const OJO = on => on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg>En mapa'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c7 0 11 7 11 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.4 8.5 1 12 1 12s4 7 11 7a10 10 0 0 0 4.4-1"/></svg>Oculta';
+const COLOR_AL = { rj: '#ff4d4d', am: '#f2c230', az: '#5fb0ff' };
+function puntoAlerta(lat, lon, n, tip) {
+  return L.featureGroup([L.circleMarker([lat, lon], { pane: 'avPane', radius: 11, color: COLOR_AL[n], weight: 3, fillColor: COLOR_AL[n], fillOpacity: 0.25 }).bindTooltip(tip)]);
+}
 function pintarAlertas() {
   const out = [], ahora = new Date();
   for (const b of BOYAS) { const u = b.ultimo; if (!u || u.hsig == null || ahora - u.fecha > UMBRAL_BOYA.ret) continue;
-    if (u.hsig >= 3) out.push({ n: u.hsig >= 4 ? 'rj' : 'am', ico: ICO.ola2(u.hsig >= 4 ? '#ff6b6b' : '#f2c230'), t: `Oleaje sobre ${u.hsig >= 4 ? 4 : 3} m en boya ${b.nombre}`, d: `Altura significativa ${nf(u.hsig, 2)} m · ${fmtDM(u.fecha)}`, bd: u.hsig >= 4 ? 'Roja' : 'Amarilla' }); }
+    if (u.hsig >= 3) { const n = u.hsig >= 4 ? 'rj' : 'am', t = `Oleaje sobre ${u.hsig >= 4 ? 4 : 3} m en boya ${b.nombre}`;
+      out.push({ k: 'b:' + b.nombre, n, ico: ICO.ola2(n === 'rj' ? '#ff6b6b' : '#f2c230'), t, d: `Altura significativa ${nf(u.hsig, 2)} m · ${fmtDM(u.fecha)}`, bd: n === 'rj' ? 'Roja' : 'Amarilla', capa: () => puntoAlerta(b.lat, b.lon, n, escH(t)) }); } }
   for (const s of EST) { if (s.lat < -39.95) continue; const e = estadoEst(s, ahora); if (e.k === 'no') continue; const kt = aKt(s.vel, s.uVel); if (kt == null || kt <= 20) continue;
-    out.push({ n: kt > 34 ? 'rj' : 'am', ico: ICO.alerta(kt > 34 ? '#ff6b6b' : '#f2c230'), t: `Viento > ${kt > 34 ? 34 : 20} kt en ${nombreEst(s)}`, d: `${s.dirG != null ? cardinal(s.dirG) + ' ' : ''}${nf(kt, 0)} kt · ${e.t ? fmtDM(e.t) : ''}`, bd: kt > 34 ? 'Roja' : 'Amarilla' }); }
-  for (const a of AVISOS) { const zs = (a.zonas || []).map(z => [z, estadoAviso(z, ahora)]).filter(([, e]) => e !== 'X'); if (!zs.length) continue;
+    const n = kt > 34 ? 'rj' : 'am', t = `Viento > ${kt > 34 ? 34 : 20} kt en ${nombreEst(s)}`;
+    out.push({ k: 's:' + s.codigo, n, ico: ICO.alerta(n === 'rj' ? '#ff6b6b' : '#f2c230'), t, d: `${s.dirG != null ? cardinal(s.dirG) + ' ' : ''}${nf(kt, 0)} kt · ${e.t ? fmtDM(e.t) : ''}`, bd: n === 'rj' ? 'Roja' : 'Amarilla', capa: () => puntoAlerta(s.lat, s.lon, n, escH(t)) }); }
+  AVISOS.forEach((a, ia) => { const zs = (a.zonas || []).map(z => [z, estadoAviso(z, ahora)]).filter(([, e]) => e !== 'X'); if (!zs.length) return;
     const vig = zs.some(([, e]) => e === 'V'), ini = new Date(Math.min(...zs.map(([z]) => +new Date(z.desde)))), fin = new Date(Math.max(...zs.map(([z]) => +new Date(z.hasta))));
-    out.push({ n: vig ? 'rj' : 'az', ico: ICO.alerta(vig ? '#ff6b6b' : '#5fb0ff'), t: a.tipo, d: `${zs.map(([z]) => z.nombre).join(' · ')}<br>${fmtDM(ini)} a ${fmtDM(fin)}`, bd: vig ? 'Vigente' : 'Próximo', html: true }); }
+    out.push({ k: 'a:' + a.tipo + '|' + zs.map(([z]) => z.nombre).join('|'), n: vig ? 'rj' : 'az', ico: ICO.alerta(vig ? '#ff6b6b' : '#5fb0ff'), t: a.tipo, d: `${zs.map(([z]) => z.nombre).join(' · ')}<br>${fmtDM(ini)} a ${fmtDM(fin)}`, bd: vig ? 'Vigente' : 'Próximo', html: true,
+      capa: () => { const g = L.featureGroup(); for (const [z, e] of zs) if (z.geom) L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
+        .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(g); return g; } }); });
+  capaAv.clearLayers(); CAPA_AL = {};
+  for (const a of out) { const g = a.capa(); CAPA_AL[a.k] = g; if (!OCULTAS.has(a.k)) g.addTo(capaAv); }
   const el = document.getElementById('listaAlertas');
-  el.innerHTML = out.length ? out.map(a => `<div class="alerta ${a.n}">${a.ico}<div><b>${escH(a.t)}</b><div class="tx">${a.html ? a.d.split('<br>').map(escH).join('<br>') : escH(a.d)}</div></div><span class="bd ${a.n}">${escH(a.bd)}</span></div>`).join('')
+  el.innerHTML = out.length ? out.map(a => { const on = !OCULTAS.has(a.k);
+    return `<div class="alerta ${a.n}${on ? '' : ' oculta'}" data-k="${escH(a.k)}" title="Clic para ubicarla en el mapa">${a.ico}<div><b>${escH(a.t)}</b><div class="tx">${a.html ? a.d.split('<br>').map(escH).join('<br>') : escH(a.d)}</div></div><div class="der"><span class="bd ${a.n}">${escH(a.bd)}</span><button type="button" class="ojo${on ? '' : ' off'}" title="Mostrar u ocultar en el mapa">${OJO(on)}</button></div></div>`; }).join('')
     : '<div class="vacioTxt">Sin avisos vigentes ni alertas por viento (> 20 kt) u oleaje (≥ 3 m) en este momento.</div>';
+  const btn = document.getElementById('btnTodasAl'); btn.style.display = out.length ? '' : 'none';
+  const ninguna = out.every(a => OCULTAS.has(a.k)); btn.textContent = ninguna ? 'Mostrar todas en el mapa' : 'Ocultar todas del mapa';
+  btn.onclick = () => { if (ninguna) out.forEach(a => OCULTAS.delete(a.k)); else out.forEach(a => OCULTAS.add(a.k)); guardarOcultas(); pintarAlertas(); };
+  el.querySelectorAll('.alerta').forEach(d => {
+    const k = d.dataset.k;
+    d.querySelector('.ojo').onclick = ev => { ev.stopPropagation(); OCULTAS.has(k) ? OCULTAS.delete(k) : OCULTAS.add(k); guardarOcultas(); pintarAlertas(); };
+    d.onclick = () => { const g = CAPA_AL[k]; if (!g) return;
+      if (OCULTAS.has(k)) { OCULTAS.delete(k); guardarOcultas(); pintarAlertas(); }
+      if (!map.hasLayer(capaAv)) { capaAv.addTo(map); const ch = document.querySelector(`#capasPop input[data-i="${CAPAS.findIndex(c => c[1] === capaAv)}"]`); if (ch) ch.checked = true; }
+      const bb = g.getBounds(); if (!bb.isValid()) return;
+      if (bb.getNorthEast().equals(bb.getSouthWest())) map.flyTo(bb.getCenter(), 8, { duration: 0.8 }); else map.flyToBounds(bb, { padding: [40, 40], maxZoom: 8, duration: 0.8 });
+      verMapa(); };
+  });
 }
+function verMapa() { const r = document.getElementById('mapa').getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) document.getElementById('mapa').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
 // ============================ Estaciones (lista) ============================
 function pintarListaEst() {
@@ -456,7 +486,23 @@ function pintarListaEst() {
   document.getElementById('tEst').textContent = `Estaciones (${ops} de ${EST.length} operativas)`;
   document.getElementById('listaEst').innerHTML = [...EST].sort((a, b) => b.lat - a.lat).map(s => { const e = estadoEst(s, ahora), kt = aKt(s.vel, s.uVel);
     return `<div class="f" data-c="${escH(s.codigo)}"><span class="dot" style="background:${COL[e.k]}"></span><span>${escH(nombreEst(s))}</span><span class="vv">${ICO.viento}${kt != null && e.k !== 'no' ? nf(kt, 0) + ' kt' : '–'}</span><span class="vv">${ICO.term}${s.temp != null && e.k !== 'no' ? nf(s.temp, 1) + '°' : '–'}</span></div>`; }).join('');
-  document.querySelectorAll('#listaEst .f').forEach(f => f.onclick = () => { elegirEst(f.dataset.c); const s = EST.find(x => x.codigo === f.dataset.c); if (s) map.flyTo([s.lat, s.lon], 8, { duration: 0.8 }); document.getElementById('mapa').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  document.querySelectorAll('#listaEst .f').forEach(f => f.onclick = () => irEst(f.dataset.c));
+}
+
+let marcaEst = null;
+function irEst(cod) {
+  const s = EST.find(x => x.codigo === cod); if (!s) return;
+  elegirEst(cod);
+  if (!map.hasLayer(capaEst)) { capaEst.addTo(map); const ch = document.querySelector(`#capasPop input[data-i="${CAPAS.findIndex(c => c[1] === capaEst)}"]`); if (ch) ch.checked = true; }
+  if (marcaEst) map.removeLayer(marcaEst);
+  const e = estadoEst(s, new Date()), kt = aKt(s.vel, s.uVel), ok = e.k !== 'no';
+  marcaEst = L.circleMarker([s.lat, s.lon], { pane: 'avPane', radius: 15, color: '#5fb0ff', weight: 3, fill: false, interactive: false }).addTo(map);
+  const html = `<b style="font-size:13.5px">${escH(nombreEst(s))}</b><br><span style="color:${COL[e.k]}">● ${e.k === 'ok' ? 'operativa' : e.k === 'ret' ? 'con retraso' : 'no operativa'}</span>`
+    + (ok && kt != null ? `<br>Viento: ${s.dirG != null ? cardinal(s.dirG) + ' ' : ''}${nf(kt, 0)} kt` : '') + (ok && s.temp != null ? `<br>Temperatura: ${nf(s.temp, 1)} °C` : '')
+    + (ok && s.pres != null ? `<br>Presión: ${nf(s.pres, 1)} hPa` : '') + (e.t ? `<br><span style="color:var(--muted)">Dato de ${fmtDM(e.t)}</span>` : '');
+  map.flyTo([s.lat, s.lon], 9, { duration: 0.8 });
+  map.once('moveend', () => L.popup({ offset: [0, -6] }).setLatLng([s.lat, s.lon]).setContent(html).openOn(map));
+  verMapa();
 }
 
 // ============================ Buscador ============================
@@ -520,6 +566,19 @@ cargar(); cargarViento(); cargarBoyas(); miniCarta(); miniHielo(); miniWrf();
 setInterval(cargar, 5 * 60000); setInterval(cargarViento, 30 * 60000); setInterval(cargarBoyas, 20 * 60000);
 setInterval(async () => { try { const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim(); if (v && v !== VERSION_PAGINA) location.reload(); } catch (e) {} }, 5 * 60000);
 window.addEventListener('load', () => { try { window.mnEvento && mnEvento('inicio-v2'); } catch (e) {} });
+</script>
+<script>
+// Contador de visitas (mismo contador del dashboard; una visita por sesión del navegador). Si falla, no se muestra.
+async function contarVisita(nueva) {
+  try {
+    const c = new AbortController(); setTimeout(() => c.abort(), 8000);
+    const r = await fetch(`https://abacus.jasoncameron.dev/${nueva ? 'hit' : 'get'}/feliperifo-meteo-naval/visitas`, { cache: 'no-store', signal: c.signal });
+    const v = (await r.json()).value;
+    if (typeof v === 'number') { const el = document.getElementById('visitas'); el.querySelector('span').textContent = `· ${v.toLocaleString('es-CL')} visita${v === 1 ? '' : 's'}`; el.hidden = false; }
+  } catch (e) {}
+}
+(function () { let nueva = true; try { nueva = !sessionStorage.getItem('mn_visita'); sessionStorage.setItem('mn_visita', '1'); } catch (e) {}
+  contarVisita(nueva); setInterval(() => contarVisita(false), 5 * 60000); })();
 </script>
 <script>/*INSTALAR*/</script>
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
