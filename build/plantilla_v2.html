@@ -55,6 +55,7 @@ a{color:var(--acc2)}
 .leyViento .esc{display:flex;justify-content:space-between;font-size:10.5px;color:#c9d9ea}
 .mLbl span{display:inline-block;color:#fff;font:800 15px system-ui,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7);transform:translate(-50%,-50%);white-space:nowrap;letter-spacing:.5px}
 .mLbl.oc span{font-size:16px}
+.mLbl.an span{font-size:14px}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .card{background:linear-gradient(180deg,#0f243b,#0b1c30);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .card h2{margin:0 0 12px;font-size:14px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -225,8 +226,16 @@ map.createPane('flechasPane').style.zIndex = 340; map.getPane('flechasPane').sty
 map.createPane('metPane').style.zIndex = 360;
 map.createPane('avPane').style.zIndex = 380;
 map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
-const VISTA = [[-57, -100], [-17, -66]];
-map.fitBounds(VISTA);
+const VISTA = [[-70.5, -120.5], [-17.5, -52]];
+// Alto del mapa: que quepa completo en la pantalla bajo el encabezado (escritorio)
+function altoMapa() {
+  const c = document.querySelector('.mapCard');
+  if (innerWidth <= 1100) { c.style.height = ''; return; }
+  const top = c.getBoundingClientRect().top + scrollY;
+  c.style.height = Math.max(480, Math.min(900, innerHeight - top - 14)) + 'px';
+}
+altoMapa(); addEventListener('resize', altoMapa);
+map.invalidateSize(); map.fitBounds(VISTA, { paddingTopLeft: [10, 58], paddingBottomRight: [10, 10] });
 try { new ResizeObserver(() => map.invalidateSize()).observe(document.querySelector('.mapCard')); } catch (e) {}
 const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Imagen © Esri', maxZoom: 17, maxNativeZoom: 13 });
 const oceano = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 });
@@ -243,8 +252,8 @@ let base = satelite;
 const MET = L.layerGroup().addTo(map);
 L.geoJSON(METAREA, { pane: 'metPane', style: f => ({ color: f.properties.tipo === 'costera' ? '#ffffff' : '#e7eef6', weight: f.properties.tipo === 'costera' ? 1.4 : 1.6, opacity: 0.85, dashArray: f.properties.tipo === 'costera' ? null : '7 6', fill: false }),
   onEachFeature: (f, l) => l.bindTooltip(escH(f.properties.tipo === 'costera' ? `Área ${f.properties.id} · ${f.properties.nombre}` : f.properties.nombre), { sticky: true }) }).addTo(MET);
-for (const f of METAREA.features) { const p = f.properties; if (p.tipo === 'antartica') continue;
-  L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'oceanica' ? ' oc' : ''), html: `<span>${escH(p.id.replace('X-', 'X·'))}</span>`, iconSize: [0, 0] }) }).addTo(MET); }
+for (const f of METAREA.features) { const p = f.properties;
+  L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'costera' ? '' : ' oc') + (p.tipo === 'antartica' ? ' an' : ''), html: `<span>${escH(p.id.replace('-', '·'))}</span>`, iconSize: [0, 0] }) }).addTo(MET); }
 
 // ---- Campo de viento GFS: color según intensidad + flechas
 const ESCALA = [[0, [59, 31, 158]], [5, [34, 83, 214]], [10, [31, 162, 224]], [15, [33, 199, 154]], [20, [155, 226, 60]], [25, [245, 226, 58]], [30, [245, 154, 35]], [35, [229, 57, 53]], [40, [178, 31, 208]]];
@@ -371,7 +380,7 @@ const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)
   pop.querySelectorAll('input[name=base]').forEach(r => r.onchange = () => { map.removeLayer(base); base = r.value === 'sat' ? satelite : r.value === 'oc' ? oceano : costa; base.addTo(map); });
   CAPAS.forEach(([, l, on]) => { if (on) l.addTo(map); });
   document.getElementById('btnCapas').onclick = () => { pop.classList.toggle('on'); document.getElementById('btnCapas').classList.toggle('on'); };
-  document.getElementById('btnInicio').onclick = () => map.flyToBounds(VISTA, { duration: 0.8 });
+  document.getElementById('btnInicio').onclick = () => map.flyToBounds(VISTA, { duration: 0.8, paddingTopLeft: [10, 58], paddingBottomRight: [10, 10] });
   document.getElementById('btnFull').onclick = () => { const c = document.querySelector('.mapCard'); c.classList.toggle('full'); document.getElementById('btnFull').classList.toggle('on'); setTimeout(() => map.invalidateSize(), 60); };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.mapCard.full')) document.getElementById('btnFull').click(); });
 })();
