@@ -1,0 +1,34 @@
+{
+ "version": 2,
+ "actualizado": "2026-10-21T21:34:37Z",
+ "last_modified": "Wed, 21 Oct 2026 21:16:13 GMT",
+ "hora": "2926-10-21T21:00Z",
+ "satelite": "GOES-19",
+ "canal": "01 · visible azul",
+ "limites": [
+  [
+   -70.0,
+   -130.0
+  ],
+  [
+   0.0,
+   -40.0
+  ]
+ ],
+ "polar": {
+  "x0": -500,
+  "y0": -400,
+  "x1": 1600,
+  "y1": 1200
+ },
+ "hielo": {
+  "x0": -1100,
+  "y0": 0,
+  "x1": 4100,
+  "y1": 2560
+ },
+ "reflectancia_min": 0.08,
+ "fraccion_de_dia": 0.92,
+ "fuente": "https://meteoarmada.directemar.cl/meteo/imagenes-fotosatelites/imagen-satelital-blanco-y-negro",
+ "imagen": "https://web.directemar.cl/met/jturno/pub/GFS/visual.png"
+}
