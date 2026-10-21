@@ -46,7 +46,7 @@ jobs:
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json; do
+          for f in avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
 
@@ -116,6 +116,11 @@ jobs:
         timeout-minutes: 4
         run: python scripts/viento.py
 
+      - name: Fondo de relieve para la carta polar (solo si falta o cambia la proyección)
+        continue-on-error: true
+        timeout-minutes: 8
+        run: python scripts/fondo_polar.py
+
       - name: Construir la página
         run: |
           python scripts/construir_index.py
@@ -126,7 +131,7 @@ jobs:
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
           cp data/hielo_cubierta_*.png _site/data/ 2>/dev/null || true
-          for f in carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
+          for f in carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3
         with:

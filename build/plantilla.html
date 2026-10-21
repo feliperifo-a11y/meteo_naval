@@ -66,10 +66,71 @@ header{background:var(--head);color:var(--headInk);padding:12px 18px;display:fle
 /* Entrada directa a la carta (?carta desde la portada): se muestra solo la carta, sin pasar por el dashboard */
 html.soloCarta body{overflow:hidden}html.soloCarta #dlgPolar[hidden]{display:flex}
 html.soloCarta #mapPolar{position:relative}html.soloCarta #mapPolar:empty::after{content:"Cargando carta de superficie…";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#5b6673;font:15px system-ui,sans-serif}
-.polarCaja{background:#fff;color:#18212b;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
-.polarCab{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid #d6dee6;font-size:13px}
-.polarCab #polarCapas{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
-.polarCab label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}
+/* ---- Carta de superficie (vista polar): tema oscuro con panel de capas ---- */
+.polarCaja{--pvBg:#0a1a2c;--pvPanel:#0d2136;--pvLine:#1e3a58;--pvInk:#e8f1fb;--pvMut:#93a9c0;--pvAcc:#2f8cff;background:var(--pvBg);color:var(--pvInk);width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pvCab{display:flex;align-items:center;gap:16px;padding:10px 16px;background:linear-gradient(180deg,#0e2540,#0a1d33);border-bottom:1px solid var(--pvLine)}
+.pvLogo{display:flex;align-items:center;background:#fff;border-radius:9px;padding:4px 8px;flex:none}.pvLogo img{height:34px;display:block}
+.pvTit{min-width:0;border-left:1px solid var(--pvLine);padding-left:16px}
+.pvTit h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px;color:#fff}
+.pvTit #polarTit{font-size:12.5px;color:var(--pvMut);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pvDer{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pvValida{display:flex;align-items:center;gap:8px;border:1px solid var(--pvLine);background:#0f2a45;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.pvValida svg{width:17px;height:17px;flex:none}.pvValida small{color:var(--pvMut);font-weight:500}
+.pvBtnCapas{display:none;border:1px solid var(--pvLine);background:#0f2a45;color:var(--pvInk);border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer}
+.polarCaja .btnVolver{background:var(--pvAcc)}.polarCaja .btnVolver:hover{background:#1c6fe0}
+.pvCuerpo{flex:1;display:flex;min-height:0}
+.pvPanel{width:272px;flex:none;background:var(--pvPanel);border-right:1px solid var(--pvLine);overflow-y:auto;padding:6px 0 14px}
+.pvSec{padding:10px 16px 6px;border-bottom:1px solid var(--pvLine)}.pvSec:last-child{border-bottom:0}
+.pvH{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin:2px 0 8px}
+.pvH button{background:none;border:0;color:var(--pvMut);font:600 11.5px system-ui,sans-serif;cursor:pointer;text-transform:none;letter-spacing:0}.pvH button:hover{color:#fff}
+.pvGrupo{border-top:1px solid var(--pvLine);margin-top:6px;padding-top:6px}.pvGrupo:first-child{border-top:0;margin-top:0;padding-top:0}
+.pvSw{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;font-size:13.5px}
+.pvSw .ic{width:24px;height:20px;display:flex;align-items:center;justify-content:center;flex:none}.pvSw .ic svg{width:22px;height:20px}
+.pvSw .n{flex:1}
+.pvSw input{position:absolute;opacity:0;pointer-events:none}
+.pvSw i{width:38px;height:21px;border-radius:11px;background:#3a4b5e;position:relative;flex:none;transition:.15s}
+.pvSw i::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#cfd9e4;transition:.15s}
+.pvSw input:checked+i{background:var(--pvAcc)}.pvSw input:checked+i::after{left:20px;background:#fff}
+.pvSw input:focus-visible+i{outline:2px solid #9cc8ff;outline-offset:2px}
+.pvFondo{display:flex;align-items:center;gap:12px;padding:6px 0;cursor:pointer;font-size:13.5px}
+.pvFondo .pv{width:76px;height:32px;border-radius:6px;border:1px solid var(--pvLine);flex:none;background-size:cover;background-position:62% 40%}
+.pvFondo .n{flex:1}
+.pvFondo input{width:18px;height:18px;accent-color:var(--pvAcc);margin:0}
+.pvFondo:has(input:checked) .pv{border:2px solid var(--pvAcc)}
+.pvOpac{display:flex;align-items:center;gap:12px;font-size:13px}.pvOpac input{flex:1;accent-color:var(--pvAcc)}
+.pvNota{font-size:11.5px;color:var(--pvMut);line-height:1.4;margin-top:6px}
+.pvMapaCol{flex:1;display:flex;flex-direction:column;min-width:0}
+#mapPolar{flex:1;background:#0b2236}
+#mapPolar.tCla{background:#dbe8f1}#mapPolar.tOsc{background:#0d2a45}#mapPolar.tRel{background:#081828}
+.pvPie{display:flex;gap:12px;padding:10px 12px;background:var(--pvBg);border-top:1px solid var(--pvLine)}
+.pvCaja{border:1px solid var(--pvLine);border-radius:10px;background:var(--pvPanel);padding:9px 14px}
+.pvCaja h4{margin:0 0 7px;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase}
+.pvSimb{flex:1;min-width:0}.pvSimb .l{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:12px}
+.pvSimb .l span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pvSimb b.A{color:#4a9bff;font-size:19px}.pvSimb b.B{color:#ff5a5a;font-size:19px}
+.pvProd{flex:none;display:flex;gap:16px;align-items:center;font-size:12px;line-height:1.45}
+.pvProd .v{border-left:1px solid var(--pvLine);padding-left:16px}.pvProd .v b{font-size:13px}.pvProd small{color:var(--pvMut)}
+/* capas del mapa según el fondo */
+#mapPolar .pvIso{stroke:#0b4f8a}#mapPolar.tOsc .pvIso,#mapPolar.tRel .pvIso{stroke:#e6eff8;stroke-opacity:.85}
+#mapPolar .pvCosta{stroke:#7d8a96;fill:#efeee6;fill-opacity:1}
+#mapPolar.tOsc .pvCosta{stroke:#8aa4bc;fill:#1d3a52;fill-opacity:1}
+#mapPolar.tRel .pvCosta{stroke:#d9e6f2;stroke-opacity:.55;fill-opacity:0}
+#mapPolar .pvGrid{stroke:#5b6673}#mapPolar.tOsc .pvGrid,#mapPolar.tRel .pvGrid{stroke:#c7d6e6;stroke-opacity:.45}
+#mapPolar .pvMet{stroke:#2f6b2f;fill:#7fbf7f}#mapPolar.tOsc .pvMet,#mapPolar.tRel .pvMet{stroke:#a8e6a0;fill:#5fbf6a;fill-opacity:.13}
+#mapPolar.tOsc .gridLbl span,#mapPolar.tRel .gridLbl span{background:none;color:#e8f1fb;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8)}
+#mapPolar.tOsc .isoLbl span,#mapPolar.tRel .isoLbl span{background:#e8f1fb;color:#0c2440;font-weight:700;border-radius:4px;padding:1px 4px}
+#mapPolar.tOsc .mLbl span,#mapPolar.tRel .mLbl span{background:rgba(9,24,40,.82);color:#fff;border:1px solid rgba(232,241,251,.55)}
+#mapPolar.tOsc .pvFrentes,#mapPolar.tRel .pvFrentes{filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) saturate(1.3)}
+#mapPolar.tOsc .satInfo,#mapPolar.tRel .satInfo{background:rgba(10,26,44,.92);color:#e8f1fb;border-color:#1e3a58}
+#mapPolar.tOsc .satEsc,#mapPolar.tRel .satEsc{color:#c9d9ea}
+#mapPolar .leaflet-control-zoom a,#mapPolar .pvCtl{background:#fff;color:#18212b}
+.pvCen{background:none;border:0}
+.pvCen div{position:absolute;transform:translate(-50%,10px);white-space:nowrap;pointer-events:none}
+.pvCen span{display:inline-block;background:rgba(9,24,40,.88);color:#fff;border-radius:5px;padding:2px 6px;font:700 12px/1.1 system-ui,sans-serif;border:1px solid rgba(255,255,255,.35)}
+.pvCen i{font-style:normal;font-weight:900}.pvCen.A i{color:#5aa6ff}.pvCen.B i{color:#ff6b6b}
+#mapPolar.tCla .pvCen span{background:#fff;color:#18212b;border-color:#9aa8b6}#mapPolar.tCla .pvCen.A i{color:#1f6bff}#mapPolar.tCla .pvCen.B i{color:#d42020}
+.pvCtl{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;border:2px solid rgba(0,0,0,.2);cursor:pointer}
+.pvCtl svg{width:18px;height:18px}
 .btnSug{background:transparent;color:#cfe0f1;border:1px solid rgba(207,224,241,.5);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
 .btnSug:hover{background:rgba(255,255,255,.12);color:#fff}
 #dlgSug{position:fixed;inset:0;z-index:6000;background:rgba(10,20,32,.45);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -97,19 +158,15 @@ html.soloCarta #mapPolar{position:relative}html.soloCarta #mapPolar:empty::after
 .alPie{padding:0 12px 8px;font-size:11px;opacity:.75}
 .btnVolver{border:0;background:#0f2a44;color:#fff;border-radius:7px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btnVolver:hover{background:#1b3f63}
-#polarCapasBox{margin-left:auto}
-#polarCapasBox summary{display:none}
+@media (max-width:980px){.pvProd{display:none}}
 @media (max-width:820px){
-  .polarCab{gap:8px;padding:8px 10px}
-  .polarCab #polarTit{font-size:12px;flex:1 1 100%;order:2}
-  #polarCapasBox{order:1;margin-left:auto}
-  #polarCapasBox summary{display:inline-block;cursor:pointer;border:1px solid #c9d3dc;border-radius:7px;padding:7px 12px;font-weight:700;list-style:none}
-  #polarCapasBox summary::-webkit-details-marker{display:none}
-  #polarCapasBox[open] #polarCapas{position:absolute;right:10px;top:48px;z-index:1000;background:#fff;border:1px solid #c9d3dc;border-radius:8px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.18);flex-direction:column;gap:8px;max-width:calc(100vw - 20px)}
-  .polarPie{display:none}
+  .pvCab{gap:10px;padding:8px 10px;flex-wrap:wrap}.pvLogo img{height:26px}.pvTit{border:0;padding:0;flex:1}.pvTit h1{font-size:16px}
+  .pvDer{width:100%;margin:0;gap:8px}.pvValida{flex:1;font-size:12px;padding:6px 9px;min-width:0}.pvValida svg{display:none}.pvBtnCapas{display:block}
+  .polarCaja .btnVolver{padding:7px 11px}.polarCaja .btnVolver .lg{display:none}
+  .pvPanel{position:absolute;z-index:1200;top:0;bottom:0;left:0;width:min(300px,86vw);transform:translateX(-102%);transition:transform .2s;box-shadow:8px 0 24px rgba(0,0,0,.4)}
+  .pvPanel.on{transform:none}.pvCuerpo{position:relative}
+  .pvPie{display:none}
 }
-#mapPolar{flex:1;background:#dbe8f1}
-.polarPie{padding:6px 12px;font-size:11.5px;color:#4a5868;border-top:1px solid #d6dee6}
 .satSw{display:inline-block;width:26px;height:10px;border-radius:2px;background:linear-gradient(90deg,#e8eef3,#00cce3,#001a81,#00ea0a,#ff9900,#e60000,#e566bc,#fff)}
 .visSw{display:inline-block;width:26px;height:10px;border-radius:2px;background:linear-gradient(90deg,#16283c,#8c98a5,#fff);border:1px solid #c9d3dc}
 .visBar{height:10px;margin:5px 0 1px;border-radius:2px;background:linear-gradient(90deg,rgba(22,40,60,.45),#8c98a5 45%,#fff);border:1px solid #c9d3dc}
@@ -1064,18 +1121,18 @@ async function capasPolar() {
   C.costa = L.layerGroup();
   for (const c of LAND) for (const poly of c.p) {
     const anillos = poly.map(decodePolyline6).filter(r => r.some(([la, lo]) => la < 15 && lo < -10 && lo > -190));
-    if (anillos.length) L.polygon(anillos.map(r => r.map(P)), { color: '#7d8a96', weight: 0.8, fillColor: '#efeee6', fillOpacity: 1, interactive: false, pane: 'costaPolar' }).addTo(C.costa);
+    if (anillos.length) L.polygon(anillos.map(r => r.map(P)), { className: 'pvCosta', weight: 0.8, interactive: false, pane: 'costaPolar' }).addTo(C.costa);
   }
   // Grilla cada 10° con rótulos
   C.grilla = L.layerGroup();
   for (let lon = -180; lon <= 0; lon += 10) {
     const pts = []; for (let la = 5; la >= -85; la -= 1) pts.push(aPolar(la, lon));
-    L.polyline(pts, { color: '#5b6673', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+    L.polyline(pts, { className: 'pvGrid', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
     L.marker(aPolar(-2, lon), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°O</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
   }
   for (let la = 0; la >= -80; la -= 10) {
     const pts = []; for (let lon = -180; lon <= 0; lon += 1) pts.push(aPolar(la, lon));
-    L.polyline(pts, { color: '#5b6673', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+    L.polyline(pts, { className: 'pvGrid', weight: 0.7, opacity: 0.6, dashArray: '3 4', interactive: false }).addTo(C.grilla);
     if (la) L.marker(aPolar(la, -125), { interactive: false, icon: L.divIcon({ className: 'gridLbl izq', html: `<span>${-la}°S</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
   }
   // Límites marítimos
@@ -1083,18 +1140,30 @@ async function capasPolar() {
   for (const l of LIMITES) { const st = LIM_STYLE[l.abrev]; if (!st) continue;
     for (const sg of l.segs) L.polyline(decodePolyline6(sg).map(P), { color: st.color, weight: st.weight, dashArray: st.dashArray, opacity: 0.9, interactive: false }).addTo(C.lim); }
   // Isobaras GFS (vectoriales) y frentes
-  C.iso = L.layerGroup(); C.frentes = L.layerGroup();
+  C.iso = L.layerGroup(); C.frentes = L.layerGroup(); C.centros = L.layerGroup();
   try {
     const iso = await leerJSON('data/carta_isobaras.json'), lbl = [];
     for (const l of iso.lineas) {
-      L.polyline(l.c.map(P), { color: '#0b4f8a', weight: l.p === 1012 ? 1.7 : 1.15, opacity: 0.95, interactive: false }).addTo(C.iso);
+      L.polyline(l.c.map(P), { className: 'pvIso', weight: l.p === 1012 ? 1.7 : 1.15, opacity: 0.95, interactive: false }).addTo(C.iso);
       if (l.c.length >= 12 && (l.p % 8 === 0 || l.c.length >= 30)) { const m = l.c[Math.floor(l.c.length / 2)];
         if (!lbl.some(e => Math.abs(e[0] - m[0]) < 1.6 && Math.abs(e[1] - m[1]) < 2.2)) { lbl.push(m);
           L.marker(P(m), { interactive: false, icon: L.divIcon({ className: 'isoLbl azul', html: `<span>${l.p}</span>`, iconSize: [0, 0] }) }).addTo(C.iso); } }
     }
+    // Centros de alta y baja presión del GFS (solo dentro del área de la carta)
+    const pr0 = CARTA_INFO.proyeccion;
+    // Se omiten los centros sobre tierra (presión reducida al nivel del mar sobre la cordillera y el continente)
+    const anillosT = []; for (const c of LAND) for (const poly of c.p) { const r = decodePolyline6(poly[0]); if (r.length > 20) anillosT.push(r); }
+    const enTierra = (la, lo) => anillosT.some(r => { let d = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [ai, oi] = r[i], [aj, oj] = r[j];
+      if ((ai > la) !== (aj > la) && lo < (oj - oi) * (la - ai) / (aj - ai) + oi) d = !d; } return d; });
+    for (const c of iso.centros || []) { const q = P(c.c); if (q.lng < 0 || q.lng > pr0.ancho || -q.lat < 0 || -q.lat > pr0.alto || enTierra(c.c[0], c.c[1])) continue;
+      L.marker(q, { interactive: false, icon: L.divIcon({ className: 'pvCen ' + (c.t === 'A' ? 'A' : 'B'), html: `<div><span><i>${c.t === 'A' ? 'A' : 'B'}</i> ${c.p}</span></div>`, iconSize: [0, 0] }) }).addTo(C.centros); }
   } catch (e) {}
   const pr = CARTA_INFO.proyeccion, lim = [[-pr.alto, 0], [0, pr.ancho]];
-  L.imageOverlay('data/carta_frentes_polar.png?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim, { interactive: false }).addTo(C.frentes);
+  L.imageOverlay('data/carta_frentes_polar.png?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim, { interactive: false, className: 'pvFrentes' }).addTo(C.frentes);
+  // Fondo de relieve y batimetría en la misma proyección (se genera una vez en la publicación)
+  C.fondo = null;
+  try { const f = await leerJSON('data/fondo_polar.json');
+    C.fondo = L.imageOverlay('data/fondo_polar.jpg?v=' + encodeURIComponent(f.clave || ''), [[-f.y1, f.x0], [-f.y0, f.x1]], { interactive: false, pane: 'fondoPolar' }); } catch (e) {}
   C.carta = L.imageOverlay('data/carta.jpg?v=' + encodeURIComponent(CARTA_INFO.last_modified || ''), lim, { opacity: 0.85, interactive: false });
   // Imagen satelital IR en la misma proyección
   C.sat = L.layerGroup(); POLAR_SAT = null;
@@ -1113,7 +1182,7 @@ async function capasPolar() {
   } catch (e) {}
   // Capas del dashboard
   C.met = L.layerGroup();
-  geoPolar(METAREA, { style: f => ({ color: '#2f6b2f', weight: 1.4, fillColor: '#7fbf7f', fillOpacity: 0.12 }), onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true }) }).addTo(C.met);
+  geoPolar(METAREA, { className: 'pvMet', style: () => ({ weight: 1.4, fillOpacity: 0.12 }), onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties.id)), { sticky: true }) }).addTo(C.met);
   for (const f of METAREA.features) { const p = f.properties; L.marker(aPolar(p.lp[0], p.lp[1]), { interactive: false, icon: L.divIcon({ className: 'mLbl', html: `<span>${escH(p.tipo === 'costera' ? p.id : corto(p.id))}</span>`, iconSize: [0, 0] }) }).addTo(C.met); }
   C.av = L.layerGroup();
   for (const { a } of AV_ORD) for (const z of a.zonas) {
@@ -1132,32 +1201,97 @@ async function capasPolar() {
       .bindTooltip('Boya ' + escH(b.nombre)).bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320 }).addTo(C.boyas); }
   return C;
 }
+// Capas del panel: [clave, nombre, encendida por defecto, ícono]; los grupos se separan con una línea
+const PV_ICO = {
+  carta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M6 15c3-5 6 1 9-3s3-2 3-2M7 8h4"/></svg>',
+  sat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="16" cy="8.5" r="1.5"/></svg>',
+  vis: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>',
+  iso: '<svg viewBox="0 0 24 24" fill="none" stroke="#9cc8ff" stroke-width="1.6"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"/><path d="M3 12c3-6 6-6 9 0" opacity=".6"/></svg>',
+  fr: '<svg viewBox="0 0 24 24"><path d="M2 16h20" stroke="#2f6bff" stroke-width="2"/><path d="M4 16l3-5 3 5z" fill="#2f6bff"/><path d="M13 16a3 3 0 0 1 6 0z" fill="#e3262b"/></svg>',
+  ab: '<svg viewBox="0 0 24 24"><text x="1" y="17" font-family="system-ui" font-weight="900" font-size="13" fill="#4a9bff">A</text><text x="9" y="17" font-family="system-ui" font-size="12" fill="#93a9c0">/</text><text x="14" y="17" font-family="system-ui" font-weight="900" font-size="13" fill="#ff5a5a">B</text></svg>',
+  est: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#34c26b" stroke="#fff" stroke-width="1.5"/></svg>',
+  boya: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="#f2c230" stroke="#fff" stroke-width="1.5"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>',
+  lim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"><path d="M3 9h18M3 15h18"/></svg>',
+  met: '<svg viewBox="0 0 24 24" fill="none" stroke="#a8e6a0" stroke-width="1.6"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></svg>',
+  av: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  costa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 18c2-3 4-1 6-4s1-6 4-8 5 0 8-2"/></svg>'
+};
+const PV_CAPAS = [
+  [['carta', 'Carta original', false, 'carta'], ['sat', 'Imagen satelital IR', false, 'sat'], ['vis', 'Imagen satelital visible', false, 'vis']],
+  [['iso', 'Isobaras (GFS)', true, 'iso'], ['frentes', 'Frentes', true, 'fr'], ['centros', 'Altas / Bajas (GFS)', true, 'ab']],
+  [['est', 'Estaciones', true, 'est'], ['boyas', 'Boyas', true, 'boya']],
+  [['grilla', 'Grilla', true, 'grid'], ['lim', 'Límites marítimos', false, 'lim'], ['met', 'METAREA XV', true, 'met'], ['av', 'Avisos', true, 'av'], ['costa', 'Costa', true, 'costa']]
+];
+const PV_APILAR = ['carta', 'sat', 'vis', 'grilla', 'lim', 'met', 'av', 'iso', 'frentes', 'centros', 'est', 'boyas'];   // de abajo hacia arriba
+const PV_FONDOS = [['relieve', 'Relieve y batimetría', 'url(data/fondo_polar.jpg)'], ['oscuro', 'Oscuro', 'linear-gradient(135deg,#0d2a45 55%,#1d3a52 55%)'], ['claro', 'Claro (como la carta)', 'linear-gradient(135deg,#dbe8f1 55%,#efeee6 55%)']];
+let PV_EST = null;
+const pvLeer = () => { try { return JSON.parse(localStorage.getItem('pv_estado') || 'null'); } catch (e) { return null; } };
+const pvGuardar = () => { try { localStorage.setItem('pv_estado', JSON.stringify(PV_EST)); } catch (e) {} };
+function pvDefecto() { const c = {}; PV_CAPAS.flat().forEach(([k, , on]) => c[k] = on); return { capas: c, fondo: POLAR_CAPAS.fondo ? 'relieve' : 'oscuro', opac: 90 }; }
+function pvAplicarCapas() {
+  for (const [k, , , ] of PV_CAPAS.flat()) { const l = POLAR_CAPAS[k]; if (!l) continue; if (PV_EST.capas[k]) { if (!mapPolar.hasLayer(l)) l.addTo(mapPolar); } else if (mapPolar.hasLayer(l)) mapPolar.removeLayer(l); }
+  PV_APILAR.forEach(k => { const l = POLAR_CAPAS[k]; if (l && mapPolar.hasLayer(l)) { mapPolar.removeLayer(l); l.addTo(mapPolar); } });
+  leyendaSatPolar(!!PV_EST.capas.sat); leyendaVisPolar(!!PV_EST.capas.vis); pvOpacidad();
+}
+function pvFondo() {
+  let f = PV_EST.fondo; if (f === 'relieve' && !POLAR_CAPAS.fondo) f = PV_EST.fondo = 'oscuro';
+  const el = document.getElementById('mapPolar'); el.classList.remove('tRel', 'tOsc', 'tCla'); el.classList.add(f === 'relieve' ? 'tRel' : f === 'oscuro' ? 'tOsc' : 'tCla');
+  if (POLAR_CAPAS.fondo) { if (f === 'relieve') POLAR_CAPAS.fondo.addTo(mapPolar); else mapPolar.removeLayer(POLAR_CAPAS.fondo); }
+}
+function pvOpacidad() {
+  const o = PV_EST.opac / 100; document.getElementById('pvOpac').value = PV_EST.opac; document.getElementById('pvOpacV').textContent = PV_EST.opac + ' %';
+  const set = l => l && (l.setOpacity ? l.setOpacity(o) : l.eachLayer && l.eachLayer(x => x.setOpacity && x.setOpacity(o)));
+  set(POLAR_CAPAS.carta); set(POLAR_CAPAS.sat); set(POLAR_CAPAS.vis);
+}
+function pvPanel() {
+  const caja = document.getElementById('polarCapas');
+  caja.innerHTML = PV_CAPAS.map(g => `<div class="pvGrupo">${g.map(([k, n, , ic]) => POLAR_CAPAS[k] ? `<label class="pvSw"><span class="ic">${PV_ICO[ic]}</span><span class="n">${n}</span><input type="checkbox" data-k="${k}"${PV_EST.capas[k] ? ' checked' : ''}><i></i></label>` : '').join('')}</div>`).join('');
+  caja.querySelectorAll('input').forEach(ch => ch.onchange = () => { PV_EST.capas[ch.dataset.k] = ch.checked; pvGuardar(); pvAplicarCapas(); });
+  document.getElementById('pvFondos').innerHTML = PV_FONDOS.filter(([k]) => k !== 'relieve' || POLAR_CAPAS.fondo).map(([k, n, bg]) =>
+    `<label class="pvFondo"><span class="pv" style="background-image:${bg}"></span><span class="n">${n}</span><input type="radio" name="pvFondo" value="${k}"${PV_EST.fondo === k ? ' checked' : ''}></label>`).join('');
+  document.querySelectorAll('input[name=pvFondo]').forEach(r => r.onchange = () => { PV_EST.fondo = r.value; pvGuardar(); pvFondo(); });
+  document.getElementById('pvOpac').oninput = e => { PV_EST.opac = +e.target.value; pvGuardar(); pvOpacidad(); };
+  document.getElementById('pvRest').onclick = () => { PV_EST = pvDefecto(); pvGuardar(); pvPanel(); pvFondo(); pvAplicarCapas(); };
+  const bc = document.getElementById('pvBtnCapas'), pn = document.getElementById('pvPanel');
+  bc.onclick = () => pn.classList.toggle('on');
+}
+function pvTextos() {
+  const v = new Date(CARTA_INFO.valida), ok = !isNaN(v);
+  const fecha = ok ? v.toLocaleDateString('es-CL', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '') : '';
+  const hora = ok ? String(v.getUTCHours()).padStart(2, '0') + ' UTC' : '';
+  document.querySelector('#pvValida span').innerHTML = ok ? `Válida ${escH(fecha)} · <b>${hora}</b>` : 'Validez no disponible';
+  document.getElementById('polarTit').textContent = `Proyección estereográfica polar${ok ? ' • Válida ' + v.toLocaleDateString('es-CL', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '') + ' ' + hora : ''}`;
+  const iso = CARTA_INFO.isobaras || {}, act = CARTA_INFO.actualizado ? new Date(CARTA_INFO.actualizado) : null;
+  const corr = iso.corrida ? `${iso.corrida.slice(8, 10)}/${iso.corrida.slice(5, 7)} ${iso.corrida.slice(11, 13)} UTC${iso.fhr != null ? ' + ' + iso.fhr + ' h' : ''}` : '';
+  document.getElementById('pvProd').innerHTML = `<div><h4>Producto</h4>Proyección estereográfica polar<br>Isobaras GFS cada 4 hPa${corr ? ` <small>(corrida ${escH(corr)})</small>` : ''}<br>Frentes y centros A/B del análisis de superficie</div>`
+    + `<div class="v">Válida:<br><b>${ok ? escH(v.toLocaleDateString('es-CL', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '')) + ' · ' + hora : '–'}</b>${act && !isNaN(act) ? `<br><small>Actualización: ${escH(fmtLocal(act))} (hora Chile)</small>` : ''}</div>`;
+}
 async function abrirPolar() {
   try { CARTA_INFO = await leerJSON('data/carta.json'); } catch (e) { if (!CARTA_INFO) return; }   // siempre la carta más reciente
   if (!CARTA_INFO.proyeccion) return;
   const p = CARTA_INFO.proyeccion, dlg = document.getElementById('dlgPolar');
   if (dlg.hidden) { try { if (!location.search.includes('carta')) history.pushState({ carta: 1 }, '', '?carta'); } catch (e) {} }
   dlg.hidden = false; document.body.style.overflow = 'hidden';
-  if (SOLO_CARTA) { const b = document.getElementById('btnVolverPolar'); b.textContent = '‹ Volver al inicio'; b.title = 'Volver a la página principal (Esc)'; }
-  if (innerWidth <= 820) document.getElementById('polarCapasBox').open = false;
-  document.getElementById('polarTit').textContent = `Carta de superficie · válida ${fmtCarta(CARTA_INFO.valida)} · proyección estereográfica polar`;
+  if (SOLO_CARTA) { const b = document.getElementById('btnVolverPolar'); b.innerHTML = '‹ Volver<span class="lg"> al inicio</span>'; b.title = 'Volver a la página principal (Esc)'; }
+  pvTextos();
   if (mapPolar) { mapPolar.remove(); mapPolar = null; } polarSatCtl = null; polarVisCtl = null;
-  mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, attributionControl: false });
-  // La costa va siempre al fondo, bajo todas las demás capas (frentes, isobaras, imágenes satelitales, etc.)
+  mapPolar = L.map('mapPolar', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, attributionControl: false, zoomControl: false });
+  mapPolar.createPane('fondoPolar').style.zIndex = 150;
+  // La costa va siempre bajo las demás capas (frentes, isobaras, imágenes satelitales, etc.)
   mapPolar.createPane('costaPolar').style.zIndex = 350;
+  L.control.zoom({ position: 'topright' }).addTo(mapPolar);
   const lim = [[-p.alto, 0], [0, p.ancho]];
+  const Pant = L.Control.extend({ options: { position: 'topright' }, onAdd() { const b = L.DomUtil.create('a', 'pvCtl'); b.href = '#'; b.title = 'Ajustar a la carta completa';
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+    L.DomEvent.on(b, 'click', e => { L.DomEvent.preventDefault(e); mapPolar.fitBounds(lim); }); L.DomEvent.disableClickPropagation(b); return b; } });
+  new Pant().addTo(mapPolar);
   mapPolar.fitBounds(lim); mapPolar.setMaxBounds(L.latLngBounds(lim).pad(0.6));
-  const caja = document.getElementById('polarCapas'); caja.innerHTML = '<span style="opacity:.7">Cargando capas…</span>';
+  document.getElementById('polarCapas').innerHTML = '<span style="opacity:.7">Cargando capas…</span>';
   POLAR_CAPAS = await capasPolar();
-  caja.innerHTML = '';
-  const orden = [['carta', 'Carta original', false], ['costa', 'Costa', true], ['sat', 'Imagen satelital IR', false], ['vis', 'Imagen satelital visible', false], ['grilla', 'Grilla', true], ['lim', 'Límites marítimos', false], ['met', 'METAREA XV', true],
-    ['av', 'Avisos', true], ['iso', 'Isobaras GFS', true], ['frentes', 'Frentes', true], ['est', 'Estaciones', true], ['boyas', 'Boyas', true]];
-  const reordenar = () => orden.forEach(([k]) => { const l = POLAR_CAPAS[k]; if (mapPolar.hasLayer(l)) { mapPolar.removeLayer(l); l.addTo(mapPolar); } });
-  orden.forEach(([k, n, on]) => {
-    const l = document.createElement('label'); l.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}> ${n}`;
-    l.querySelector('input').onchange = e => { if (e.target.checked) { POLAR_CAPAS[k].addTo(mapPolar); reordenar(); } else mapPolar.removeLayer(POLAR_CAPAS[k]); if (k === 'sat') leyendaSatPolar(e.target.checked); if (k === 'vis') leyendaVisPolar(e.target.checked); };
-    caja.appendChild(l); if (on) POLAR_CAPAS[k].addTo(mapPolar);
-  });
+  PV_EST = pvLeer() || pvDefecto();
+  const d = pvDefecto(); for (const k in d.capas) if (!(k in PV_EST.capas)) PV_EST.capas[k] = d.capas[k];
+  pvPanel(); pvFondo(); pvAplicarCapas();
   setTimeout(() => { mapPolar.invalidateSize(); mapPolar.fitBounds(lim); }, 60);
   try { window.mnEvento && mnEvento('vista-polar'); } catch (e) {}
 }
@@ -1532,13 +1666,37 @@ function cerrarSug() { document.getElementById('dlgSug').hidden = true; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug(); });
 </script>
 <div id="dlgPolar" hidden><div class="polarCaja">
-  <div class="polarCab">
-    <button type="button" class="btnVolver" id="btnVolverPolar" onclick="cerrarPolar()" title="Volver al dashboard (Esc)">‹ Volver al dashboard</button>
-    <b id="polarTit">Carta de superficie</b>
-    <details id="polarCapasBox" open><summary>Capas</summary><span id="polarCapas"></span></details>
+  <header class="pvCab">
+    <a class="pvLogo" href="./" title="MeteoIA · página principal"><img src="app/logo-meteoia.png" alt="MeteoIA"></a>
+    <div class="pvTit"><h1>Carta de superficie</h1><div id="polarTit">Proyección estereográfica polar</div></div>
+    <div class="pvDer">
+      <div class="pvValida" id="pvValida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>–</span></div>
+      <button type="button" class="pvBtnCapas" id="pvBtnCapas" aria-controls="pvPanel">Capas</button>
+      <button type="button" class="btnVolver" id="btnVolverPolar" onclick="cerrarPolar()" title="Volver al dashboard (Esc)">‹ Volver<span class="lg"> al dashboard</span></button>
+    </div>
+  </header>
+  <div class="pvCuerpo">
+    <aside class="pvPanel" id="pvPanel">
+      <div class="pvSec"><div class="pvH">Capas <button type="button" id="pvRest" title="Volver a las capas, el fondo y la opacidad iniciales">Restablecer</button></div><div id="polarCapas"></div></div>
+      <div class="pvSec"><div class="pvH">Fondo del mapa</div><div id="pvFondos"></div></div>
+      <div class="pvSec"><div class="pvH">Opacidad de imágenes</div><div class="pvOpac"><input type="range" id="pvOpac" min="20" max="100" step="5" value="90" aria-label="Opacidad de las imágenes"><span id="pvOpacV">90 %</span></div>
+        <div class="pvNota">Se aplica a la carta original y a las imágenes satelitales IR y visible.</div></div>
+    </aside>
+    <div class="pvMapaCol">
+      <div id="mapPolar"></div>
+      <div class="pvPie">
+        <div class="pvCaja pvSimb"><h4>Simbología</h4><div class="l">
+          <span><svg width="44" height="14" viewBox="0 0 44 14"><path d="M1 11h42" stroke="#2f6bff" stroke-width="2.4"/><path d="M6 11l4-7 4 7zM20 11l4-7 4 7zM34 11l4-7 4 7z" fill="#2f6bff"/></svg>Frente frío</span>
+          <span><svg width="44" height="14" viewBox="0 0 44 14"><path d="M1 11h42" stroke="#e3262b" stroke-width="2.4"/><path d="M6 11a4 4 0 0 1 8 0zM20 11a4 4 0 0 1 8 0zM34 11a4 4 0 0 1 8 0z" fill="#e3262b"/></svg>Frente cálido</span>
+          <span><svg width="44" height="14" viewBox="0 0 44 14"><path d="M1 11h42" stroke="#9b3fb5" stroke-width="2.4"/><path d="M5 11l4-7 4 7zM16 11a4 4 0 0 1 8 0zM27 11l4-7 4 7zM38 11a3.5 3.5 0 0 1 5 0z" fill="#9b3fb5"/></svg>Frente ocluido</span>
+          <span><svg width="44" height="18" viewBox="0 0 44 18"><path d="M1 9h21" stroke="#e3262b" stroke-width="2.4"/><path d="M22 9h21" stroke="#2f6bff" stroke-width="2.4"/><path d="M7 9a4 4 0 0 1 8 0z" fill="#e3262b"/><path d="M29 9l4 7 4-7z" fill="#2f6bff"/></svg>Frente estacionario</span>
+          <span><b class="A">A</b>Alta presión</span><span><b class="B">B</b>Baja presión</span>
+          <span><svg width="34" height="12" viewBox="0 0 34 12"><path d="M1 8c8-8 24-8 32 0" fill="none" stroke="#b9c9da" stroke-width="1.6"/></svg>Isobara (hPa)</span>
+        </div></div>
+        <div class="pvCaja pvProd" id="pvProd"></div>
+      </div>
+    </div>
   </div>
-  <div id="mapPolar"></div>
-  <div class="polarPie">Proyección estereográfica polar, la misma de la carta de superficie (ajustada a su grilla, error &lt; 1 píxel). Isobaras GFS en azul; active «Carta original» para superponerla y comparar.</div>
 </div></div>
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
 </body>
