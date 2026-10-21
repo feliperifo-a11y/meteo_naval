@@ -133,7 +133,7 @@ Si abres `index.html` con doble clic, el navegador no deja leer `data/*.json` y 
 - **Horario:** GitHub no garantiza la hora exacta de las tareas programadas; con alta demanda pueden atrasarse algunos minutos.
 - **Pausa por inactividad:** GitHub pausa las tareas programadas de repositorios sin actividad por 60 días. El workflow hace un "latido" semanal (`.github/latido.txt`) para evitarlo. Si aun así se pausa, basta con volver a habilitarlo en **Actions**.
 - **Consultas moderadas:** cada 20 minutos y con pausa entre descargas, para no cargar los servidores de origen. No conviene bajar de 15 minutos.
-- **Límites aproximados de METAREA XV:** los límites oceánicos (76°W, 78°W, ~80°W y ~98,5°W) se digitalizaron de la carta publicada (OMM N° 9, Vol. D, 2018) y son aproximados.
+- **Límites de METAREA XV:** las áreas I a X siguen el Cuadro "F" (Zonas Meteorológicas, subdivisión nacional de la METAREA XV): límite oeste de 76°W (I), 78°W (II a V) y 81°W (VI a VIII); Área X desde 18°21'S hasta 60°S y hasta 120°W; Área IX desde 60°S, con extensión hasta 53°W para los pronósticos marítimos. El Área IX se dibuja solo hasta 70°S. La división del Área X y del Área IX en sectores (corte en 95°W) no la define el Cuadro "F" y es aproximada.
 - **Velocidad del viento:** la fuente de estaciones no informa su unidad.
 
 ## Red complementaria (faros IFOP, Weather Underground y WeatherLink)
