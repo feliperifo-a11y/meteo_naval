@@ -17,78 +17,133 @@
 .leaflet-popup-scrolled{border:0;overflow-y:auto}
 </style>
 <style>
-:root{--bg:#eef1f4;--panel:#fff;--ink:#18212b;--muted:#5b6673;--line:#d6dce3;--head:#0f2a44;--headInk:#f2f6fa;--chip:#f3f5f8;--acc:#1f5fa8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--panel:#18212b;--ink:#e4e9ef;--muted:#9aa6b2;--line:#2b3644;--head:#0b1b2c;--headInk:#e9f0f7;--chip:#222d39;--acc:#7fb2ff}}
+:root{--bg:#0a1a2c;--panel:#0d2136;--line:#1e3a58;--ink:#e8f1fb;--mut:#93a9c0;--acc:#2f8cff;--chip:#0f2a45}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column}
-header{background:var(--head);color:var(--headInk);padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
-header h1{margin:0;font-size:17px;font-weight:650}
-header .sub{font-size:12px;opacity:.8}
-header a.btn{color:inherit;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:5px 10px;font-size:12.5px;white-space:nowrap}
-main{flex:1;display:flex;min-height:0}
-#panel{width:340px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow:auto;font-size:13px}
-#panel h2{margin:0;padding:9px 12px;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);background:var(--chip);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-#panel h2:first-child{border-top:0}
-.sec{padding:8px 12px}
-.sec label{display:flex;gap:7px;align-items:center;padding:3px 0;cursor:pointer}
-.sec select,.sec input[type=range]{font:inherit;font-size:12.5px}
-.leyenda{display:grid;grid-template-columns:16px 1fr;gap:3px 7px;align-items:center;font-size:11.5px;margin:6px 0 2px}
-.leyenda i{width:16px;height:11px;border-radius:2px;border:1px solid rgba(0,0,0,.2)}
-.barraB{height:10px;border-radius:2px;background:linear-gradient(90deg,#1e1e8c,#2a6ee0,#21c4e0,#7cf07c,#f5e43a,#f08a1e,#c81e14,#7a0f0f);border:1px solid var(--line);margin-top:6px}
-.escB{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)}
-.nota{font-size:11.5px;color:var(--muted);line-height:1.45}
-.sec a{color:var(--acc)}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+a{color:#7fb8ff}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;background:linear-gradient(180deg,#0e2540,#0a1d33);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.marca{margin:0}.tit{border-left:1px solid var(--line);padding-left:16px;min-width:0}
+.tit h1{margin:0;font-size:20px;font-weight:700;color:#fff;line-height:1.15}.tit .sub2{font-size:13.5px;font-weight:600;color:#dbe7f3}
+.tabs{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:auto}
+.tabs button{background:#0f2a45;color:var(--ink);border:0;border-left:1px solid var(--line);padding:9px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.tabs button:first-child{border-left:0}.tabs button.on{background:var(--acc);color:#fff}.tabs button:hover:not(.on){background:#163a5e}
+.fechaH{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--chip);border-radius:9px;padding:6px 12px;font-size:13px;line-height:1.2}
+.fechaH svg{width:20px;height:20px;flex:none}.fechaH b{font-size:14px}.fechaH small{color:var(--mut)}
+.hBtns{display:flex;gap:8px}
+.hBtns a,.hBtns button{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:8px 12px;font:600 12.5px system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.hBtns a.prim{background:var(--acc);border-color:var(--acc);color:#fff}
+#btnPanel{display:none}
+main{flex:1;display:flex;min-height:0;position:relative}
+#panel{width:330px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;font-size:13px}
+.pSec{padding:12px 16px 8px;border-bottom:1px solid var(--line)}
+.pSec h2{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;font-size:12.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--ink)}
+.pSec h2 button{background:none;border:0;color:var(--mut);font:600 11.5px system-ui,sans-serif;cursor:pointer;text-transform:none;letter-spacing:0}
+.opc{display:flex;align-items:center;gap:10px;padding:7px 10px;margin:2px -10px;border-radius:8px;cursor:pointer;font-size:13.5px}
+.opc input{width:17px;height:17px;accent-color:var(--acc);margin:0}.opc:has(input:checked){background:#14406b}
+.fila{display:flex;align-items:center;gap:12px;margin:8px 0 4px;font-size:13px}.fila input[type=range]{flex:1;accent-color:var(--acc)}
+.leyenda{display:grid;grid-template-columns:26px 1fr;gap:5px 10px;align-items:center;font-size:13px;margin:4px 0}
+.leyenda i{width:26px;height:15px;border-radius:3px;border:1px solid rgba(255,255,255,.25)}
+.barraB{height:12px;border-radius:3px;background:linear-gradient(90deg,#1e1e8c,#2a6ee0,#21c4e0,#7cf07c,#f5e43a,#f08a1e,#c81e14,#7a0f0f);border:1px solid var(--line);margin-top:6px}
+.escB{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.nota{font-size:11.5px;color:var(--mut);line-height:1.45;margin-top:6px}
+.sw{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;font-size:13.5px}
+.sw .ic{width:22px;height:20px;display:flex;align-items:center;justify-content:center;flex:none;color:#c9d9ea}.sw .ic svg{width:20px;height:20px}
+.sw .n{flex:1}.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw i{width:38px;height:21px;border-radius:11px;background:#3a4b5e;position:relative;flex:none;transition:.15s}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#cfd9e4;transition:.15s}
+.sw input:checked+i{background:var(--acc)}.sw input:checked+i::after{left:20px;background:#fff}
+.sw input:focus-visible+i{outline:2px solid #9cc8ff;outline-offset:2px}
+.fondo{display:flex;align-items:center;gap:12px;padding:5px 0;cursor:pointer;font-size:13.5px}
+.fondo .pv{width:70px;height:30px;border-radius:6px;border:1px solid var(--line);background-size:cover;background-position:50% 30%;flex:none}
+.fondo .n{flex:1}.fondo input{width:17px;height:17px;accent-color:var(--acc);margin:0}.fondo:has(input:checked) .pv{border:2px solid var(--acc)}
+select{font:inherit;font-size:13px;background:#0f2a45;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 8px;flex:1}
+.play{display:flex;align-items:center;gap:10px;margin-top:8px}
+.play button{width:36px;height:32px;border:0;border-radius:7px;background:var(--acc);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.play button svg{width:16px;height:16px}.play input{flex:1;accent-color:var(--acc)}.play span{font-size:12.5px;white-space:nowrap;min-width:46px;text-align:right}
+table.tt{width:100%;border-collapse:collapse;font-size:12px}table.tt th{text-align:left;font-size:10.5px;color:var(--mut);text-transform:uppercase;font-weight:600;padding:3px}table.tt td{padding:4px 3px;border-top:1px solid var(--line)}
+table.tt tr[data-i]:hover td{background:#14365a}
 ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
-table.tt{width:100%;border-collapse:collapse;font-size:12px}table.tt th{text-align:left;font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:600;padding:3px}table.tt td{padding:3px;border-top:1px solid var(--line)}
-#mapWrap{flex:1;position:relative;min-width:0}
-#map{position:absolute;inset:0;background:#dbe8f1}
-.gridLbl span{position:absolute;transform:translate(-50%,-50%);font:700 10.5px/1 system-ui,sans-serif;color:#1f2a36;background:rgba(255,255,255,.85);padding:2px 4px;border-radius:3px;white-space:nowrap}
-.mLbl span{display:inline-block;background:rgba(255,255,255,.85);color:#4a2f57;border:1px solid #6b4a7a;border-radius:4px;padding:0 5px;font:700 11.5px system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%)}
+#mapCol{flex:1;display:flex;flex-direction:column;min-width:0}
+#mapWrap{flex:1;position:relative;min-height:0}
+#map{position:absolute;inset:0;background:#081828}
+#map.tOsc{background:#0d2a45}#map.tCla{background:#dbe8f1}
+.pie{display:flex;gap:12px;padding:10px 12px;border-top:1px solid var(--line);background:var(--bg)}
+.caja{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:10px 14px}
+.caja h4{margin:0 0 8px;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase}
+.info{flex:1;display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;font-size:12.5px;line-height:1.3}
+.info>div{display:flex;align-items:center;gap:9px}.info svg{width:24px;height:24px;flex:none;color:#c9d9ea}.info small{display:block;color:var(--mut);font-size:11px}
+/* capas del mapa según el fondo */
+#map .hCosta{stroke:#7d8a96;fill:#efeee6;fill-opacity:1}#map.tOsc .hCosta{stroke:#8aa4bc;fill:#1d3a52;fill-opacity:1}#map.tRel .hCosta{stroke-opacity:0;fill-opacity:0}
+#map .hCostaL{stroke:#3d4853}#map.tOsc .hCostaL,#map.tRel .hCostaL{stroke:#e8f1fb;stroke-opacity:.6}
+#map .hGrid{stroke:#5b6673}#map.tOsc .hGrid,#map.tRel .hGrid{stroke:#c7d6e6;stroke-opacity:.42}
+#map .hIso{stroke:#0b4f8a}#map.tOsc .hIso,#map.tRel .hIso{stroke:#e6eff8;stroke-opacity:.85}
+.gridLbl span{position:absolute;transform:translate(-50%,-50%);font:700 11px/1 system-ui,sans-serif;color:#1f2a36;background:rgba(255,255,255,.85);padding:2px 4px;border-radius:3px;white-space:nowrap}
+#map.tOsc .gridLbl span,#map.tRel .gridLbl span{background:none;color:#e8f1fb;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8)}
+.mLbl span{display:inline-block;background:rgba(255,255,255,.88);color:#4a2f57;border:1px solid #6b4a7a;border-radius:5px;padding:1px 6px;font:700 12px system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%)}
 .mLbl.co span{color:#1d3b1d;border-color:#2f6b2f}.mLbl.oc span{color:#5a4700;border-color:#8a6d00}
+#map.tOsc .mLbl span,#map.tRel .mLbl span{background:rgba(9,24,40,.82);color:#fff;border-color:rgba(232,241,251,.55)}
+#map.tOsc .mLbl.oc span,#map.tRel .mLbl.oc span{color:#ffe08a}#map.tOsc .mLbl.co span,#map.tRel .mLbl.co span{color:#b9f0b0}
 .isoLbl span{position:absolute;transform:translate(-50%,-50%);font:600 10.5px/1 system-ui,sans-serif;color:#0b4f8a;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap}
+#map.tOsc .isoLbl span,#map.tRel .isoLbl span{background:#e8f1fb;color:#0c2440;font-weight:700}
+.topo span{position:absolute;transform:translate(-50%,-50%);font:600 12px/1.15 system-ui,sans-serif;color:#fff;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.9);white-space:nowrap;text-align:center}
+.topo.mar span{font:italic 600 13.5px/1.15 system-ui,sans-serif;color:#cfe6ff;letter-spacing:.6px}
+#map.tCla .topo span{color:#1f2a36;text-shadow:0 0 3px #fff,0 0 6px #fff}#map.tCla .topo.mar span{color:#1f5fa8}
+#map.z2 .topo.n3{display:none}#map.z1 .topo.n2{display:none}#map.z0 .topo.n1{display:none}
+@media (max-width:900px){.tit .sub2{display:none}}
 .tmp{background:none;border:0}
+.leaflet-control-zoom a,.hCtl{background:#fff;color:#18212b}
+.hCtl{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:4px;border:2px solid rgba(0,0,0,.2);cursor:pointer}.hCtl svg{width:18px;height:18px}
 .pop{font-size:12.5px;color:#18212b}.pop b.t{font-size:14px}.pop table{border-collapse:collapse;width:100%;font-size:12px;margin-top:4px}.pop td{padding:2px 4px;border-top:1px solid #e1e6ec;vertical-align:top}.pop .s{font-weight:600;padding-top:6px}
-@media (max-width:820px){main{flex-direction:column}#mapWrap{flex:none;height:62vh;order:-1}#panel{width:auto;border-right:0;border-top:1px solid var(--line);overflow:visible}body{display:block}}
+@media (max-width:1180px){.tabs button{padding:8px 10px;font-size:12px}.fechaH{display:none}}
+@media (max-width:900px){
+  header{gap:8px 10px;padding:8px 10px}.marca img{height:26px}.tit{border:0;padding:0;flex:1}.tit h1{font-size:16px}.tit .sub2{font-size:12px}
+  .tabs{order:5;width:100%;margin:0}.tabs button{flex:1;padding:7px 4px;font-size:11.5px;white-space:normal}
+  .hBtns a:not(.prim){display:none}#btnPanel{display:block}
+  #panel{position:absolute;z-index:1200;top:0;bottom:0;left:0;width:min(320px,88vw);transform:translateX(-102%);transition:transform .2s;box-shadow:8px 0 24px rgba(0,0,0,.45)}
+  #panel.on{transform:none}.pie{display:none}
+}
 #firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
 @media print{#firmaAutor{display:none}}
 </style>
 </head>
 <body>
 <header>
-  <div class="hIzq"><a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a><div><h1>Monitoreo de hielos · Península Antártica y Paso Drake</h1><div class="sub" id="sub">Cargando…</div></div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="pronosticos.html?lugar=pen_drake">Pronóstico Antártica</a><a class="btn" href="./">← Volver al inicio</a></div>
+  <a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a>
+  <div class="tit"><h1>Monitoreo de hielos</h1><div class="sub2">Península Antártica y Paso Drake</div></div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Carta de hielo"><button type="button" data-k="conc" class="on">Concentración</button><button type="button" data-k="bremen">% concentración (AMSR2)</button><button type="button" data-k="etapa">Etapa de desarrollo</button></div>
+  <div class="fechaH" id="fechaH"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><div><b id="fechaHT">–</b><small id="sub">Cargando…</small></div></div>
+  <div class="hBtns"><button type="button" id="btnPanel">Capas</button><a href="pronosticos.html?lugar=pen_drake">Pronóstico Antártica</a><a class="prim" href="./">‹ Volver</a></div>
 </header>
 <main>
   <aside id="panel">
-    <h2>Carta de hielo marino</h2>
-    <div class="sec">
-      <label><input type="radio" name="carta" value="conc" checked> Concentración (décimos)</label>
-      <label><input type="radio" name="carta" value="bremen"> % de concentración (satélite AMSR2)</label>
-      <label><input type="radio" name="carta" value="etapa"> Etapa de desarrollo</label>
-      <label><input type="radio" name="carta" value=""> Ninguna</label>
-      <label style="gap:10px">Opacidad <input type="range" id="opac" min="20" max="100" value="80"></label>
-      <div id="leyCarta"></div>
-      <div class="nota" id="fechaCarta"></div>
+    <div class="pSec"><h2>Carta de hielo marino</h2>
+      <label class="opc"><input type="radio" name="carta" value="conc" checked> Concentración (décimos)</label>
+      <label class="opc"><input type="radio" name="carta" value="bremen"> % de concentración (AMSR2)</label>
+      <label class="opc"><input type="radio" name="carta" value="etapa"> Etapa de desarrollo</label>
+      <label class="opc"><input type="radio" name="carta" value=""> Ninguna</label>
+      <div class="fila">Opacidad <input type="range" id="opac" min="20" max="100" value="85" aria-label="Opacidad de la carta"><span id="opacV">85 %</span></div>
+      <label class="sw" style="font-size:13px"><span class="n">Mostrar en azul el mar sin hielo</span><input type="checkbox" id="chkMar"><i></i></label>
     </div>
-    <h2>Otras capas</h2>
-    <div class="sec" id="capas"></div>
-    <h2>Hielo en cubierta (pronóstico)</h2>
-    <div class="sec">
-      <label><input type="checkbox" id="chkCub"> Posible acumulación de hielo en cubierta</label>
-      <label style="gap:10px">Plazo <select id="selHora"></select></label>
-      <div id="leyCub" class="leyenda"></div>
+    <div class="pSec"><h2 id="leyTit">Leyenda</h2><div id="leyCarta"></div><div class="nota" id="fechaCarta"></div></div>
+    <div class="pSec"><h2>Capas adicionales <button type="button" id="btnRest">Restablecer</button></h2><div id="capas"></div></div>
+    <div class="pSec"><h2>Fondo del mapa</h2><div id="fondos"></div></div>
+    <div class="pSec"><h2>Hielo en cubierta (pronóstico)</h2>
+      <label class="sw"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v20M4 6l16 12M20 6 4 18"/></svg></span><span class="n">Posible acumulación en cubierta</span><input type="checkbox" id="chkCub"><i></i></label>
+      <div class="fila">Plazo <select id="selHora"></select></div>
+      <div class="play"><button type="button" id="btnPlay" title="Animar los plazos"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button><input type="range" id="rngHora" min="0" max="0" value="0" aria-label="Plazo del pronóstico"><span id="txtHora">–</span></div>
+      <div id="leyCub" class="leyenda" style="margin-top:8px"></div>
       <div class="nota">Tasa de acumulación (cm/h) según el modelo GFS, de 45° a 75° S y de 90° a 50° W.</div>
     </div>
-    <h2>Témpanos informados</h2>
-    <div class="sec" id="tempanos"><div class="nota">Cargando…</div></div>
-    <h2>Informe glaciológico de las bases</h2>
-    <div class="sec" id="informe"><div class="nota">Cargando…</div></div>
-    <h2>Cartas regionales y otros productos</h2>
-    <div class="sec" id="enlaces"></div>
-    <div class="sec nota">Cartas de hielo y productos publicados en la sección «Monitoreo de hielos» del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de meteorología marítima</a>. Se usa solo el área del mapa de cada carta, georreferenciada en su proyección estereográfica polar (ajuste con sus meridianos y paralelos, error menor a 1 píxel); la tierra queda transparente. Referencial: no reemplaza la carta náutica ni los avisos oficiales.</div>
+    <div class="pSec"><h2>Témpanos informados</h2><div id="tempanos"><div class="nota">Cargando…</div></div></div>
+    <div class="pSec"><h2>Informe glaciológico de las bases</h2><div id="informe"><div class="nota">Cargando…</div></div></div>
+    <div class="pSec"><h2>Cartas regionales y otros productos</h2><div id="enlaces"></div>
+      <div class="nota">Cartas de hielo y productos publicados en la sección «Monitoreo de hielos» del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de meteorología marítima</a>. Se usa solo el área del mapa de cada carta, georreferenciada en la misma proyección.</div></div>
   </aside>
-  <section id="mapWrap"><div id="map" role="application" aria-label="Mapa de hielos"></div></section>
+  <div id="mapCol">
+    <section id="mapWrap"><div id="map" role="application" aria-label="Mapa de hielos"></div></section>
+    <div class="pie"><div class="caja info" id="info"></div></div>
+  </div>
 </main>
 <script>/*LEAFLET_JS*/</script>
 <script>
@@ -113,13 +168,21 @@ function aH(lat, lon) {
   return L.latLng(-(PR.py - PR.S * t * Math.cos(d)), PR.px + PR.S * t * Math.sin(d));
 }
 const R50 = PR.S * Math.tan(Math.PI / 4 - 25 * Math.PI / 180);   // radio de los 50° S
-const map = L.map('map', { crs: L.CRS.Simple, minZoom: -4, maxZoom: 2, zoomSnap: 0.25, attributionControl: false });
+const map = L.map('map', { crs: L.CRS.Simple, minZoom: -4, maxZoom: 2, zoomSnap: 0.25, attributionControl: false, zoomControl: false });
+L.control.zoom({ position: 'topleft' }).addTo(map);
+map.createPane('fondo').style.zIndex = 150;
 map.createPane('costa').style.zIndex = 300;
 map.createPane('sat').style.zIndex = 330;
 map.createPane('hielo').style.zIndex = 360;
 map.createPane('lineas').style.zIndex = 420;
 const cajaVista = L.latLngBounds([aH(-52, -100), aH(-52, -40), aH(-75, -100), aH(-73, -45), aH(-58, -72)]);
 map.fitBounds(cajaVista);
+const Ajustar = L.Control.extend({ options: { position: 'topleft' }, onAdd() { const b = L.DomUtil.create('a', 'hCtl'); b.href = '#'; b.title = 'Volver a la vista inicial';
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+  L.DomEvent.on(b, 'click', e => { L.DomEvent.preventDefault(e); map.flyToBounds(cajaVista, { duration: 0.6 }); }); L.DomEvent.disableClickPropagation(b); return b; } });
+new Ajustar().addTo(map);
+const nivelZoom = () => { const z = map.getZoom(), el = document.getElementById('map'); el.classList.toggle('z2', z < -0.6); el.classList.toggle('z1', z < -1.6); el.classList.toggle('z0', z < -2.9); };
+map.on('zoomend', nivelZoom);
 map.setMaxBounds(L.latLngBounds([[-(PR.py + R50), PR.px - R50], [-(PR.py - R50), PR.px + R50]]).pad(0.05));
 
 // ---------- capas fijas
@@ -127,20 +190,20 @@ const C = {};
 C.costa = L.layerGroup();
 for (const c of LAND) for (const poly of c.p) {
   const an = poly.map(decodePolyline6).filter(r => r.some(([la]) => la < -45));
-  if (an.length) L.polygon(an.map(r => r.map(([la, lo]) => aH(Math.max(la, -89.9), lo))), { pane: 'costa', color: '#7d8a96', weight: 0.8, fillColor: '#efeee6', fillOpacity: 1, interactive: false }).addTo(C.costa);
+  if (an.length) L.polygon(an.map(r => r.map(([la, lo]) => aH(Math.max(la, -89.9), lo))), { pane: 'costa', className: 'hCosta', weight: 0.8, interactive: false }).addTo(C.costa);
 }
 C.costaLinea = L.layerGroup();
 for (const c of LAND) for (const poly of c.p) for (const r of poly.map(decodePolyline6)) if (r.some(([la]) => la < -45))
-  L.polyline(r.map(([la, lo]) => aH(Math.max(la, -89.9), lo)), { pane: 'lineas', color: '#3d4853', weight: 0.7, opacity: 0.8, interactive: false }).addTo(C.costaLinea);
+  L.polyline(r.map(([la, lo]) => aH(Math.max(la, -89.9), lo)), { pane: 'lineas', className: 'hCostaL', weight: 0.7, opacity: 0.8, interactive: false }).addTo(C.costaLinea);
 C.grilla = L.layerGroup();
 for (let lon = -180; lon < 180; lon += 10) {
   const pts = []; for (let la = -50; la >= -88; la -= 1) pts.push(aH(la, lon));
-  L.polyline(pts, { pane: 'lineas', color: '#5b6673', weight: 0.7, opacity: 0.55, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+  L.polyline(pts, { pane: 'lineas', className: 'hGrid', weight: 0.7, opacity: 0.55, dashArray: '3 4', interactive: false }).addTo(C.grilla);
   L.marker(aH(-50.6, lon), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°${lon < 0 ? 'O' : lon > 0 ? 'E' : ''}</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
 }
 for (let la = -50; la >= -85; la -= 5) {
   const pts = []; for (let lon = -180; lon <= 180; lon += 1) pts.push(aH(la, lon));
-  L.polyline(pts, { pane: 'lineas', color: '#5b6673', weight: la % 10 ? 0.5 : 0.8, opacity: 0.55, dashArray: '3 4', interactive: false }).addTo(C.grilla);
+  L.polyline(pts, { pane: 'lineas', className: 'hGrid', weight: la % 10 ? 0.5 : 0.8, opacity: 0.55, dashArray: '3 4', interactive: false }).addTo(C.grilla);
   L.marker(aH(la, -100), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${-la}°S</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
 }
 const dens = (r, paso = 0.5) => { const o = []; for (let i = 0; i < r.length; i++) { const a = r[i], b = r[i + 1]; o.push(a); if (!b) continue; const n = Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / paso); for (let k = 1; k < n; k++) o.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); } return o; };
@@ -148,7 +211,7 @@ C.met = L.layerGroup();
 for (const f of METAREA.features) {
   const p = f.properties; if (!/^(IX|VIII|VII|X-S)/.test(p.id)) continue;
   const g = f.geometry, polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
-  const col = p.tipo === 'antartica' ? '#6b4a7a' : p.tipo === 'oceanica' ? '#8a6d00' : '#2f6b2f';
+  const col = p.tipo === 'antartica' ? '#e6e9ff' : p.tipo === 'oceanica' ? '#ffd76a' : '#9be08f';
   for (const pg of polys) L.polygon(pg.map(r => dens(r).map(([lo, la]) => aH(la, lo))), { pane: 'lineas', color: col, weight: 1.3, fill: false, dashArray: p.tipo === 'costera' ? null : '6 4' }).bindTooltip(escH(p.nombre ? (p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre) : p.id), { sticky: true }).addTo(C.met);
   L.marker(aH(p.lp[0], p.lp[1]), { interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'costera' ? ' co' : p.tipo === 'oceanica' ? ' oc' : ''), html: `<span>${escH(p.id.replace('IX-', 'IX·').replace('X-', 'X·'))}</span>`, iconSize: [0, 0] }) }).addTo(C.met);
 }
@@ -157,6 +220,18 @@ const LIMC = { 'ZEE y PC': ['#7b3294', null, 2], 'MT': ['#c51b7d', '8 3 2 3', 1.
 for (const l of LIMITES) { const st = LIMC[l.abrev]; if (!st) continue;
   for (const sg of l.segs) { const pts = decodePolyline6(sg); if (pts.some(([la]) => la < -48)) L.polyline(pts.map(([la, lo]) => aH(la, lo)), { pane: 'lineas', color: st[0], dashArray: st[1], weight: st[2], opacity: 0.9, interactive: false }).addTo(C.lim); } }
 
+// Mar sin hielo transparente: deja ver el fondo en vez del azul plano de la carta
+const CACHE_MAR = {};
+function marAbierto(url, capa) {
+  const aplicar = d => { if (capa === capaCarta) capa.setUrl(d); };
+  if (CACHE_MAR[url]) return aplicar(CACHE_MAR[url]);
+  const img = new Image(); img.onload = () => { try {
+    const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+    const d = cx.getImageData(0, 0, cv.width, cv.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) if (a[i] < 30 && a[i + 1] > 80 && a[i + 1] < 125 && a[i + 2] > 225) a[i + 3] = 0;   // azul «sin hielo» (#0064ff)
+    cx.putImageData(d, 0, 0); CACHE_MAR[url] = cv.toDataURL('image/png'); aplicar(CACHE_MAR[url]); } catch (e) {} };
+  img.src = url;
+}
 // ---------- datos dinámicos
 let H = null, capaCarta = null, capaCub = null;
 const marco = () => { const m = H.marco; return [[-m.y1, m.x0], [-m.y0, m.x1]]; };
@@ -164,41 +239,136 @@ function ponerCarta() {
   if (capaCarta) { map.removeLayer(capaCarta); capaCarta = null; }
   const k = document.querySelector('input[name=carta]:checked').value, c = H && H.capas[k];
   document.getElementById('leyCarta').innerHTML = ''; document.getElementById('fechaCarta').textContent = '';
-  if (!k || !c) return;
-  capaCarta = L.imageOverlay(`data/hielo_${k}.png?v=${encodeURIComponent(c.last_modified || '')}`, marco(), { pane: 'hielo', opacity: document.getElementById('opac').value / 100, interactive: false }).addTo(map);
-  document.getElementById('leyCarta').innerHTML = c.leyenda ? `<div class="leyenda">${c.leyenda.map(([n, col]) => `<i style="background:${col}"></i><span>${escH(n)}</span>`).join('')}</div>`
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  document.getElementById('leyTit').textContent = k === 'etapa' ? 'Leyenda · etapa de desarrollo' : k === 'bremen' ? 'Leyenda · % de concentración' : k ? 'Leyenda · concentración' : 'Leyenda';
+  pintarInfo();
+  if (!k || !c) { document.getElementById('leyCarta').innerHTML = '<div class="nota">Sin carta de hielo seleccionada.</div>'; return; }
+  const url = `data/hielo_${k}.png?v=${encodeURIComponent(c.last_modified || '')}`;
+  capaCarta = L.imageOverlay(url, marco(), { pane: 'hielo', opacity: document.getElementById('opac').value / 100, interactive: false }).addTo(map);
+  if (k !== 'bremen' && !document.getElementById('chkMar').checked) marAbierto(url, capaCarta);
+  const transp = !document.getElementById('chkMar').checked;
+  document.getElementById('leyCarta').innerHTML = c.leyenda ? `<div class="leyenda">${c.leyenda.map(([n, col], i) => i === 0 && transp ? `<i style="background:repeating-linear-gradient(45deg,#2a4766 0 3px,#0d2136 3px 6px)"></i><span>${escH(n)} (sin color)</span>` : `<i style="background:${col}"></i><span>${escH(n)}</span>`).join('')}</div>`
     : '<div class="barraB"></div><div class="escB"><span>0 %</span><span>50 %</span><span>100 %</span></div>';
   document.getElementById('fechaCarta').innerHTML = `Carta actualizada el ${fmtLM(c.last_modified)} · <a href="${escH(c.original)}" target="_blank" rel="noopener">carta original ↗</a>`;
 }
 document.querySelectorAll('input[name=carta]').forEach(r => r.onchange = ponerCarta);
-document.getElementById('opac').oninput = e => { if (capaCarta) capaCarta.setOpacity(e.target.value / 100); };
+document.getElementById('opac').oninput = e => { document.getElementById('opacV').textContent = e.target.value + ' %'; if (capaCarta) capaCarta.setOpacity(e.target.value / 100); };
+document.getElementById('chkMar').onchange = ponerCarta;
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { const r = document.querySelector(`input[name=carta][value="${b.dataset.k}"]`); r.checked = true; ponerCarta(); });
 function ponerCub() {
   if (capaCub) { map.removeLayer(capaCub); capaCub = null; }
   if (!document.getElementById('chkCub').checked || !H || !H.cubierta) return;
   const h = document.getElementById('selHora').value, it = H.cubierta.horas.find(x => String(x.h) === h);
   capaCub = L.imageOverlay(`data/hielo_cubierta_${String(h).padStart(2, '0')}.png?v=${encodeURIComponent(it ? it.last_modified : '')}`, marco(), { pane: 'hielo', opacity: 0.9, interactive: false }).addTo(map);
 }
-document.getElementById('chkCub').onchange = ponerCub; document.getElementById('selHora').onchange = ponerCub;
+function syncHora(desdeRango) {
+  const sel = document.getElementById('selHora'), rng = document.getElementById('rngHora');
+  if (desdeRango) sel.selectedIndex = +rng.value; else rng.value = sel.selectedIndex;
+  document.getElementById('txtHora').textContent = sel.value ? '+' + sel.value + ' h' : '–';
+}
+let animar = null;
+function pararAnim() { if (animar) { clearInterval(animar); animar = null; document.getElementById('btnPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>'; } }
+document.getElementById('chkCub').onchange = () => { if (!document.getElementById('chkCub').checked) pararAnim(); ponerCub(); pintarInfo(); };
+document.getElementById('selHora').onchange = () => { syncHora(false); ponerCub(); };
+document.getElementById('rngHora').oninput = () => { syncHora(true); ponerCub(); };
+document.getElementById('btnPlay').onclick = () => {
+  if (animar) return pararAnim();
+  const chk = document.getElementById('chkCub'); if (!chk.checked) { chk.checked = true; }
+  document.getElementById('btnPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+  const rng = document.getElementById('rngHora');
+  const paso = () => { rng.value = (+rng.value + 1) % (+rng.max + 1); syncHora(true); ponerCub(); };
+  ponerCub(); animar = setInterval(paso, 1300);
+};
 C.tempanos = L.layerGroup(); C.bases = L.layerGroup(); C.iso = L.layerGroup(); C.ir = L.layerGroup(); C.vis = L.layerGroup();
 const icoTempano = L.divIcon({ className: 'tmp', html: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3 21 20H3Z" fill="#e8f4ff" stroke="#0b4f8a" stroke-width="2" stroke-linejoin="round"/></svg>', iconSize: [22, 22], iconAnchor: [11, 13] });
 const icoBase = L.divIcon({ className: 'tmp', html: '<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#0f2a44" stroke="#fff" stroke-width="2.5"/><circle cx="12" cy="12" r="3" fill="#9fd0ff"/></svg>', iconSize: [20, 20], iconAnchor: [10, 10] });
-const CAPAS = [['costa', 'Tierra (costa)', true], ['grilla', 'Grilla (cada 10° y 5°)', true], ['met', 'METAREA XV (áreas VII a IX y X)', true], ['lim', 'Límites marítimos', false],
+const ICO = {
+  costa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 18c2-3 4-1 6-4s1-6 4-8 5 0 8-2"/></svg>',
+  grilla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>',
+  met: '<svg viewBox="0 0 24 24" fill="none" stroke="#a8e6a0" stroke-width="1.6"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></svg>',
+  lim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"><path d="M3 9h18M3 15h18"/></svg>',
+  topo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>',
+  tempanos: '<svg viewBox="0 0 24 24"><path d="M12 4 20 19H4Z" fill="#e8f4ff" stroke="#5aa6ff" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  bases: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="#0f2a44" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="#9fd0ff"/></svg>',
+  iso: '<svg viewBox="0 0 24 24" fill="none" stroke="#9cc8ff" stroke-width="1.6"><path d="M3 17c3-8 6-8 9 0s6 8 9 0"/></svg>',
+  ir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>',
+  vis: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>'
+};
+// Toponimia: [nombre, lat, lon, tipo] — 'mar' (mares y pasos), 1 (siempre visible) o 2 (al acercarse)
+const TOPO = [
+  ['Paso Drake', -58.6, -64.5, 'mar'], ['Mar de Weddell', -71, -45, 'mar'], ['Mar de Bellingshausen', -67.2, -84, 'mar'], ['Mar de Amundsen', -71.5, -110, 'mar'], ['Mar de la Flota', -60.8, -42, 'mar'],
+  ['Estrecho Bransfield', -63.3, -58.4, 'mar n3'], ['Península Antártica', -65.4, -63.2, 1], ['Tierra del Fuego', -54.15, -68.6, 1], ['Cabo de Hornos', -55.98, -67.27, 2],
+  ['Islas Shetland del Sur', -61.55, -59.6, 1], ['Isla Rey Jorge', -61.95, -57.6, 3], ['Isla Livingston', -62.45, -61.4, 3], ['Isla Decepción', -63.05, -61.1, 3], ['Isla Elefante', -60.9, -55.1, 3],
+  ['Estrecho Gerlache', -64.55, -62.6, 2], ['Isla Adelaida', -67.2, -69.6, 2], ['Bahía Margarita', -68.3, -68.2, 2], ['Isla Alejandro I', -71.2, -71.5, 1], ['Isla Pedro I', -68.85, -90.6, 2],
+  ['Isla Thurston', -72.2, -99.5, 2], ['Barrera de hielo Larsen', -67.6, -61.5, 2], ['Barrera de hielo Ronne', -78.3, -62, 1], ['Islas Orcadas del Sur', -60.65, -45.6, 1],
+  ['Islas Georgias del Sur', -54.4, -36.7, 1], ['Islas Sandwich del Sur', -57.8, -26.4, 1], ['Islas Malvinas', -51.75, -59.4, 1], ['Islas Diego Ramírez', -56.5, -68.7, 2]
+];
+C.topo = L.layerGroup();
+for (const [n, la, lo, t] of TOPO) L.marker(aH(la, lo), { interactive: false, pane: 'markerPane', icon: L.divIcon({ className: 'topo ' + (String(t).startsWith('mar') ? t : 'n' + t), html: `<span>${n}</span>`, iconSize: [0, 0] }) }).addTo(C.topo);
+const CAPAS = [['costa', 'Tierra (costa)', true], ['grilla', 'Grilla (cada 10° y 5°)', true], ['met', 'METAREA XV (áreas VII a X)', true], ['lim', 'Límites marítimos', false], ['topo', 'Toponimia', true],
   ['tempanos', 'Témpanos informados', true], ['bases', 'Informe glaciológico (bases)', true], ['iso', 'Isobaras GFS', false], ['ir', 'Imagen satelital IR', false], ['vis', 'Imagen satelital visible', false]];
-const caja = document.getElementById('capas');
-for (const [k, n, on] of CAPAS) {
-  const l = document.createElement('label'); l.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}> ${escH(n)}`;
-  l.querySelector('input').onchange = e => { e.target.checked ? C[k].addTo(map) : map.removeLayer(C[k]); if (k === 'costa') e.target.checked ? C.costaLinea.addTo(map) : map.removeLayer(C.costaLinea); };
-  caja.appendChild(l); if (on) { C[k].addTo(map); if (k === 'costa') C.costaLinea.addTo(map); }
+const FONDOS = [['relieve', 'Relieve y batimetría', 'url(data/fondo_hielo.jpg)'], ['oscuro', 'Oscuro', 'linear-gradient(135deg,#0d2a45 55%,#1d3a52 55%)'], ['claro', 'Claro (como la carta)', 'linear-gradient(135deg,#dbe8f1 55%,#efeee6 55%)']];
+let EST = null, capaFondo = null;
+const leerEst = () => { try { return JSON.parse(localStorage.getItem('hielo_estado') || 'null'); } catch (e) { return null; } };
+const guardarEst = () => { try { localStorage.setItem('hielo_estado', JSON.stringify(EST)); } catch (e) {} };
+const estDefecto = () => ({ capas: Object.fromEntries(CAPAS.map(([k, , on]) => [k, on])), fondo: capaFondo ? 'relieve' : 'oscuro' });
+function aplicarCapas() {
+  for (const [k] of CAPAS) { const on = !!EST.capas[k]; if (on) { if (!map.hasLayer(C[k])) C[k].addTo(map); } else if (map.hasLayer(C[k])) map.removeLayer(C[k]);
+    if (k === 'costa') { if (on) C.costaLinea.addTo(map); else map.removeLayer(C.costaLinea); } }
+}
+function aplicarFondo() {
+  if (EST.fondo === 'relieve' && !capaFondo) EST.fondo = 'oscuro';
+  const el = document.getElementById('map'); el.classList.remove('tRel', 'tOsc', 'tCla'); el.classList.add(EST.fondo === 'relieve' ? 'tRel' : EST.fondo === 'oscuro' ? 'tOsc' : 'tCla');
+  if (capaFondo) { if (EST.fondo === 'relieve') capaFondo.addTo(map); else map.removeLayer(capaFondo); }
+}
+function pintarPanel() {
+  const caja = document.getElementById('capas');
+  caja.innerHTML = CAPAS.map(([k, n]) => `<label class="sw"><span class="ic">${ICO[k] || ''}</span><span class="n">${escH(n)}</span><input type="checkbox" data-k="${k}"${EST.capas[k] ? ' checked' : ''}><i></i></label>`).join('');
+  caja.querySelectorAll('input').forEach(ch => ch.onchange = () => { EST.capas[ch.dataset.k] = ch.checked; guardarEst(); aplicarCapas(); });
+  document.getElementById('fondos').innerHTML = FONDOS.filter(([k]) => k !== 'relieve' || capaFondo).map(([k, n, bg]) =>
+    `<label class="fondo"><span class="pv" style="background-image:${bg}"></span><span class="n">${n}</span><input type="radio" name="fondo" value="${k}"${EST.fondo === k ? ' checked' : ''}></label>`).join('');
+  document.querySelectorAll('input[name=fondo]').forEach(r => r.onchange = () => { EST.fondo = r.value; guardarEst(); aplicarFondo(); });
+}
+document.getElementById('btnRest').onclick = () => { EST = estDefecto(); guardarEst(); pintarPanel(); aplicarCapas(); aplicarFondo(); };
+document.getElementById('btnPanel').onclick = () => document.getElementById('panel').classList.toggle('on');
+async function iniciarCapas() {
+  try { const f = await leerJSON('data/fondo_hielo.json'); capaFondo = L.imageOverlay('data/fondo_hielo.jpg?v=' + encodeURIComponent(f.clave || ''), [[-f.y1, f.x0], [-f.y0, f.x1]], { pane: 'fondo', interactive: false }); } catch (e) {}
+  EST = leerEst() || estDefecto(); const d = estDefecto(); for (const k in d.capas) if (!(k in EST.capas)) EST.capas[k] = d.capas[k];
+  pintarPanel(); aplicarCapas(); aplicarFondo(); nivelZoom();
+}
+// Recuadro inferior con la información del mapa
+const ICI = {
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  src: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h16M7 20l3-8 4 3 3-9"/><circle cx="17" cy="6" r="2"/></svg>',
+  proj: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v18M3 12h18"/></svg>',
+  tmp: '<svg viewBox="0 0 24 24"><path d="M12 4 20 19H4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  cub: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v20M4 6l16 12M20 6 4 18"/></svg>'
+};
+function pintarInfo() {
+  const el = document.getElementById('info'); if (!el) return;
+  const k = (document.querySelector('input[name=carta]:checked') || {}).value, c = H && H.capas && H.capas[k];
+  const fd = c ? fmtLM(c.last_modified) : '–';
+  const fuente = k === 'bremen' ? 'Satélite AMSR2 (Universidad de Bremen)' : k ? 'Carta de hielo publicada' : '–';
+  const nT = H && H.tempanos ? H.tempanos.length : 0, cub = document.getElementById('chkCub').checked;
+  el.innerHTML = `<h4 style="width:100%;margin:0">Información del mapa</h4>
+    <div>${ICI.cal}<div>${escH(fd)}<small>Fecha de la carta</small></div></div>
+    <div>${ICI.src}<div>${escH(fuente)}<small>Fuente</small></div></div>
+    <div>${ICI.proj}<div>Estereográfica polar<small>Proyección de la carta</small></div></div>
+    <div>${ICI.tmp}<div>${nT} informado${nT === 1 ? '' : 's'}<small>Témpanos</small></div></div>
+    <div>${ICI.cub}<div>${cub ? '+' + escH(document.getElementById('selHora').value) + ' h (GFS)' : 'Capa apagada'}<small>Hielo en cubierta</small></div></div>`;
 }
 async function cargar() {
   try { H = await leerJSON('data/hielo.json'); } catch (e) { document.getElementById('sub').textContent = 'Sin datos de hielo por ahora'; return; }
   if (H.proyeccion) PR = H.proyeccion;
   document.getElementById('lnkFuente').href = H.fuente || '#';
   const fc = Object.values(H.capas || {}).map(c => new Date(c.last_modified)).filter(d => !isNaN(d)).sort((a, b) => b - a)[0];
-  document.getElementById('sub').textContent = `Cartas de hielo actualizadas al ${fc ? fmtLM(fc) : '–'} · revisado ${new Date(H.actualizado).toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (hora Chile)`;
+  document.getElementById('fechaHT').textContent = fc ? fmtLM(fc) : '–';
+  document.getElementById('sub').textContent = `Revisado ${new Date(H.actualizado).toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (hora Chile)`;
   ponerCarta();
   if (H.cubierta) {
-    document.getElementById('selHora').innerHTML = H.cubierta.horas.map(x => `<option value="${x.h}">+${x.h} h${x.pixeles ? '' : ' (sin acumulación)'}</option>`).join('');
+    const selH = document.getElementById('selHora'), prev = selH.value;
+    selH.innerHTML = H.cubierta.horas.map(x => `<option value="${x.h}">+${x.h} h${x.pixeles ? '' : ' (sin acumulación)'}</option>`).join('');
+    if (prev) selH.value = prev; document.getElementById('rngHora').max = H.cubierta.horas.length - 1; syncHora(false);
     document.getElementById('leyCub').innerHTML = H.cubierta.leyenda.map(([c, t]) => `<i style="background:${c}"></i><span>${escH(t)} cm/h</span>`).join('');
   }
   // témpanos
@@ -224,7 +394,7 @@ async function cargar() {
   C.iso.clearLayers();
   try { const iso = await leerJSON('data/carta_isobaras.json'), lbl = [];
     for (const l of iso.lineas) { if (!l.c.some(p => p[0] < -48)) continue;
-      L.polyline(l.c.map(p => aH(p[0], p[1])), { pane: 'lineas', color: '#0b4f8a', weight: l.p === 1000 ? 1.6 : 1.1, opacity: 0.9, interactive: false }).addTo(C.iso);
+      L.polyline(l.c.map(p => aH(p[0], p[1])), { pane: 'lineas', className: 'hIso', weight: l.p === 1000 ? 1.6 : 1.1, opacity: 0.9, interactive: false }).addTo(C.iso);
       const m = l.c.filter(p => p[0] < -50)[Math.floor(l.c.filter(p => p[0] < -50).length / 2)];
       if (m && !lbl.some(e => Math.abs(e[0] - m[0]) < 2 && Math.abs(e[1] - m[1]) < 6)) { lbl.push(m); L.marker(aH(m[0], m[1]), { interactive: false, icon: L.divIcon({ className: 'isoLbl', html: `<span>${l.p}</span>`, iconSize: [0, 0] }) }).addTo(C.iso); } } } catch (e) {}
   for (const [k, js, png] of [['ir', 'data/satelite.json', 'data/satelite_hielo.png'], ['vis', 'data/satelite_vis.json', 'data/satelite_vis_hielo.png']]) {
@@ -232,8 +402,8 @@ async function cargar() {
     try { const s = await leerJSON(js); if (s.hielo) { const q = s.hielo; L.imageOverlay(png + '?v=' + encodeURIComponent(s.last_modified || ''), [[-q.y1, q.x0], [-q.y0, q.x1]], { pane: 'sat', opacity: 0.9, interactive: false }).addTo(C[k]); } } catch (e) {}
   }
 }
-cargar();
-setInterval(cargar, 20 * 60000);
+iniciarCapas().then(cargar).then(pintarInfo);
+setInterval(() => cargar().then(pintarInfo), 20 * 60000);
 setInterval(async () => { try { const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim(); if (v && v !== VERSION_PAGINA) location.reload(); } catch (e) {} }, 5 * 60000);
 window.addEventListener('load', () => { try { window.mnEvento && mnEvento('hielos'); } catch (e) {} });
 </script>
