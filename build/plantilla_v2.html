@@ -34,8 +34,9 @@ a{color:var(--acc2)}
 .rail a{display:flex;flex-direction:column;align-items:center;gap:4px;color:#c9d9ea;text-decoration:none;font-size:11px;padding:9px 2px;border-radius:10px}
 .rail a:hover,.rail a.on{background:#123358;color:#fff}
 .rail svg{width:22px;height:22px}
-.wrap{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,1fr);gap:14px;padding:0 22px 14px 92px}
-.mapCard{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);min-height:760px;background:#081626}
+.wrap{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,1fr);gap:14px;padding:0 22px 14px 92px;align-items:start}
+.mapCard{position:sticky;top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line);height:clamp(560px,calc(100vh - 24px),880px);background:#081626}
+#listaAlertas{max-height:430px;overflow-y:auto;padding-right:4px}
 #map{position:absolute;inset:0;background:#0b2033}
 .mapCard.full{position:fixed;inset:0;z-index:3000;border-radius:0}
 .buscar{position:absolute;left:14px;top:14px;z-index:800;width:min(320px,calc(100% - 90px))}
@@ -110,7 +111,7 @@ a{color:var(--acc2)}
 .aviso{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:820;background:rgba(10,26,44,.95);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;display:none}
 .prueba{margin:0 22px 10px 92px;background:#3a2c05;border:1px solid #8a6a10;color:#ffe6a3;border-radius:10px;padding:7px 12px;font-size:12.5px}
 #firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
-@media (max-width:1100px){.wrap{grid-template-columns:1fr}.mapCard{min-height:62vh}.bajo{grid-template-columns:1fr}}
+@media (max-width:1100px){.wrap{grid-template-columns:1fr}.mapCard{position:relative;top:auto;height:68vh;min-height:440px}.bajo{grid-template-columns:1fr}}
 @media (max-width:760px){.rail{display:none}.nav,.wrap,.bajo{padding-left:12px;padding-right:12px}.prueba{margin-left:12px;margin-right:12px}.nav{grid-template-columns:repeat(3,1fr)}.nav a{font-size:12px;padding:9px 4px}.nav svg{width:24px;height:24px}.top{padding:12px}.logo b{font-size:21px}.reloj .h{font-size:15px}.tiles{grid-template-columns:1fr 1fr}.tile .v{font-size:20px}}
 </style>
 </head>
@@ -210,7 +211,7 @@ function reloj() { document.getElementById('hora').textContent = new Date().toLo
 reloj(); setInterval(reloj, 20000);
 
 // ============================ Mapa ============================
-const map = L.map('map', { minZoom: 3, maxZoom: 12, zoomSnap: 0.25, zoomControl: false, worldCopyJump: false });
+const map = L.map('map', { minZoom: 3, maxBounds: [[-82, -210], [30, 20]], maxBoundsViscosity: 0.8, maxZoom: 12, zoomSnap: 0.25, zoomControl: false, worldCopyJump: false });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 map.createPane('vientoPane').style.zIndex = 330;
@@ -220,6 +221,7 @@ map.createPane('avPane').style.zIndex = 380;
 map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 const VISTA = [[-57, -100], [-17, -66]];
 map.fitBounds(VISTA);
+try { new ResizeObserver(() => map.invalidateSize()).observe(document.querySelector('.mapCard')); } catch (e) {}
 const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Imagen © Esri', maxZoom: 17, maxNativeZoom: 13 });
 const oceano = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 });
 const costa = L.layerGroup();
