@@ -460,7 +460,7 @@ class Geo:
         self.costera = unary_union(costeras)
         self.franja = self.tierra.buffer(0.22).difference(self.tierra)
 
-    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None, area=None):
+    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None, area=None, puntos=None):
         if forma == "area" and area in self.areas:      # subárea completa de la capa METAREA XV
             g = self.areas[area]
         elif forma in ("rectangulo", "area"):   # sector de alta mar delimitado por latitudes y longitudes
@@ -469,6 +469,8 @@ class Geo:
             g = box(w, s, e, n)
         elif forma == "circulo":
             g = Point(centro[1], centro[0]).buffer(radio or 1.0, resolution=32)
+        elif forma == "poligono":                    # polígono fijo [[lat, lon], ...]
+            g = Polygon([(lo, la) for la, lo in puntos])
         else:
             n, s = -abs(lat_n), -abs(lat_s)
             n, s = max(n, s), min(n, s)
@@ -891,7 +893,8 @@ ZONAS_IX = [
     ("SECTOR POLAR OESTE", {"area": "IX-O"}),
     ("SECTOR POLAR WESTE", {"area": "IX-O"}),
     ("MAR DE WEDDELL", {"area": "IX-W"}),
-    ("ESTRECHO BRANSFIELD", {"circulo": [-63.0, -59.2, 0.6]}),
+    # franja del estrecho entre las Shetland del Sur y la Península Antártica (vértices lat, lon; se recorta la tierra)
+    ("ESTRECHO BRANSFIELD", {"poligono": [[-61.73, -56.66], [-62.58, -55.80], [-63.88, -61.20], [-63.02, -62.06]]}),
     ("BAHIA FILDES", {"circulo": [-62.20, -58.95, 0.12]}),
     ("BAHIA CHILE", {"circulo": [-62.48, -59.66, 0.12]}),
     ("BAHIA PARAISO", {"circulo": [-64.85, -62.88, 0.12]}),
@@ -927,6 +930,8 @@ def leer_zona_ix(d: dict, ref: datetime, geo: Geo):
             continue
         if "area" in geo_z:
             g = geo.zona("area", area=geo_z["area"])
+        elif "poligono" in geo_z:
+            g = geo.zona("poligono", puntos=geo_z["poligono"])
         else:
             la, lo, r = geo_z["circulo"]
             g = geo.zona("circulo", centro=[la, lo], radio=r)
