@@ -407,7 +407,8 @@ function popupPuerto(nombre, lista, d) {
     <div style="margin-top:6px;font-size:11px;color:var(--muted)">Fuente: SITPORT${d.vivo ? ', consultado en vivo' : ', copia del ' + escH(fmtDM(new Date(d.actualizado)))}. Posición de la bahía aproximada.</div>
     <div style="margin-top:4px"><a href="${SITPORT_WEB}" target="_blank" rel="noopener">Ver en SITPORT ↗</a></div></div>`;
 }
-function buildPuertos() { PUERTO_GRUPO = L.layerGroup(); cargarPuertos(); return PUERTO_GRUPO; }
+// Solo se consulta SITPORT cuando el usuario enciende la capa
+function buildPuertos() { PUERTO_GRUPO = L.layerGroup(); PUERTO_GRUPO.on('add', () => cargarPuertos()); return PUERTO_GRUPO; }
 async function cargarPuertos() {
   if (!PUERTO_GRUPO) return;
   const d = await leerRestricciones(); if (!d) return;
@@ -429,7 +430,7 @@ async function cargarPuertos() {
 setInterval(() => { if (PUERTO_GRUPO && map.hasLayer(PUERTO_GRUPO)) cargarPuertos(); }, 10 * 60000);
 
 const capaPuertos = buildPuertos();
-const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
+const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, false], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
