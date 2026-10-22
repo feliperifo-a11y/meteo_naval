@@ -244,7 +244,7 @@ function vientoRango(txt) {
   const v = []; String(txt || '').replace(/(\d{1,3})(?:\s*\/\s*(\d{1,3}))?\s*(?:kt|nudos)/gi, (m, a, b) => { v.push(+a); if (b) v.push(+b); });
   return v.length ? [Math.min(...v), Math.max(...v)] : null;
 }
-const vientoCorto = t => { const s = String(t || '–').split(/,| y |;/)[0].trim(); return s.length > 24 ? s.slice(0, 23) + '…' : s; };
+const vientoCorto = t => { const s = String(t || '–').split(/,| y |;| en la | durante /)[0].trim(); return s.length > 24 ? s.slice(0, 23) + '…' : s; };
 
 // ============================ Mapa ============================
 const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25, zoomControl: false, maxBounds: [[-75, -150], [5, -30]], maxBoundsViscosity: 0.8 });
