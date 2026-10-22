@@ -11,264 +11,386 @@
 <meta name="theme-color" content="#0f2a44">
 <meta name="apple-mobile-web-app-title" content="MeteoIA">
 <meta name="application-name" content="MeteoIA">
-<style>/*LEAFLET_CSS*/.marca{display:inline-flex;align-items:center;background:#fff;border-radius:8px;padding:4px 8px;margin-right:12px;flex:none}.marca img{height:30px;width:auto;display:block}
-.hIzq{display:flex;align-items:center}
-@media (max-width:600px){.marca img{height:24px}.marca{margin-right:8px}}
-.leaflet-popup-scrolled{border:0;overflow-y:auto}
-</style>
+<style>/*LEAFLET_CSS*/</style>
 <style>
-:root{--bg:#eef1f4;--panel:#fff;--ink:#18212b;--muted:#5b6673;--line:#d6dce3;--head:#0f2a44;--headInk:#f2f6fa;--chip:#f3f5f8;--acc:#1f5fa8;--mx:#c0392b;--mn:#1f5fa8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--panel:#18212b;--ink:#e4e9ef;--muted:#9aa6b2;--line:#2b3644;--head:#0b1b2c;--headInk:#e9f0f7;--chip:#222d39;--acc:#7fb2ff;--mx:#ff8a7a;--mn:#7fb2ff}}
-:root[data-theme="dark"]{--bg:#10161d;--panel:#18212b;--ink:#e4e9ef;--muted:#9aa6b2;--line:#2b3644;--head:#0b1b2c;--headInk:#e9f0f7;--chip:#222d39;--acc:#7fb2ff;--mx:#ff8a7a;--mn:#7fb2ff}
+:root{--bg:#0a1a2c;--panel:#0d2136;--panel2:#10284200;--line:#1e3a58;--ink:#e8f1fb;--mut:#93a9c0;--acc:#2f8cff;--chip:#0f2a45;--mn:#6fb2ff;--mx:#ff7a6b}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-header{background:var(--head);color:var(--headInk);padding:12px 18px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between}
-header h1{margin:0;font-size:18px;font-weight:650;letter-spacing:.2px}
-header .sub{font-size:12.5px;opacity:.8}
-header a.btn{color:inherit;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:5px 10px;font-size:12.5px;white-space:nowrap}
-header a.btn:hover{background:rgba(255,255,255,.1)}
-main{display:flex;gap:14px;padding:14px;align-items:flex-start}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-#grpIA{position:sticky;top:14px;height:calc(100vh - 28px);min-height:520px;display:flex;flex-direction:column;width:min(470px,36vw);flex:0 0 auto}
-.grpH{display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;background:var(--head);color:var(--headInk);font-size:14.5px;font-weight:650;letter-spacing:.2px}
-.grpH .n{margin-left:auto;font-size:12px;font-weight:500;opacity:.8}
-.intro{font-size:12px;color:var(--muted);padding:8px 14px 8px;border-bottom:1px solid var(--line)}
-.tools{display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap}
-.tools select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);flex:1;min-width:150px}
-.dias{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.dias button{font:inherit;font-size:12.5px;border:0;background:var(--panel);color:var(--ink);padding:5px 9px;cursor:pointer;text-transform:capitalize}
-.dias button+button{border-left:1px solid var(--line)}
-.dias button.on{background:var(--head);color:var(--headInk)}
-#lista{flex:1;overflow:auto;min-height:0}
-.zH{position:sticky;top:0;z-index:2;background:var(--chip);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 14px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.bi{border-top:1px solid var(--line);padding:9px 14px;cursor:pointer;border-left:4px solid transparent}
-.zH+.bi{border-top:0}
-.bi:hover{background:var(--chip)}
-.bi.sel{border-left-color:#ff8a00;background:var(--chip)}
-.biT{display:flex;align-items:center;gap:8px}
-.biT b.nm{font-size:13.5px}
-.res{font-size:10.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
-.biS{margin-left:auto;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12.5px}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+a{color:#7fb8ff}
+button{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;background:linear-gradient(180deg,#0e2540,#0a1d33);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.marca{display:flex;align-items:center;background:#fff;border-radius:9px;padding:4px 8px;flex:none}.marca img{height:34px;display:block}
+.tit{border-left:1px solid var(--line);padding-left:16px;min-width:0}
+.tit h1{margin:0;font-size:20px;font-weight:700;color:#fff;line-height:1.2}.tit .sub{font-size:12.5px;color:var(--mut)}
+.hDer{margin-left:auto;display:flex;align-items:center;gap:10px}
+.diaNav{display:flex;align-items:center;border:1px solid var(--line);background:var(--chip);border-radius:9px;overflow:hidden}
+.diaNav span{display:flex;align-items:center;gap:9px;padding:7px 14px;font-weight:600;font-size:13.5px;text-transform:capitalize;min-width:170px}
+.diaNav svg{width:18px;height:18px}
+.diaNav button{background:none;border:0;border-left:1px solid var(--line);width:38px;height:36px;cursor:pointer;font-size:18px}.diaNav button:disabled{opacity:.35;cursor:default}
+.diaNav button:hover:not(:disabled){background:#163a5e}
+.btnV{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--chip);border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;white-space:nowrap}
+.btnV:hover{background:#163a5e}
+main{flex:1;display:grid;grid-template-columns:72px 340px minmax(0,1fr) 410px;min-height:0}
+/* barra lateral */
+.rail{background:#0b1d31;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0}
+.rail button{width:60px;border:0;background:none;color:#c9d9ea;border-radius:12px;padding:9px 0 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px}
+.rail button svg{width:24px;height:24px}.rail button.on{background:var(--acc);color:#fff}.rail button:hover:not(.on){background:#13304f}
+/* lista */
+.lista{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.lCab{padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.lCab h2{display:flex;align-items:center;gap:9px;margin:0 0 10px;font-size:16px}
+.buscar{position:relative}.buscar input{width:100%;font:inherit;font-size:13.5px;padding:9px 12px 9px 36px;border-radius:9px;border:1px solid var(--line);background:#0a1a2c;color:var(--ink)}
+.buscar svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--mut)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips button{border:1px solid var(--line);background:#0a1a2c;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;white-space:nowrap}
+.chips button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#lista{flex:1;overflow-y:auto;min-height:0}
+.zH{position:sticky;top:0;z-index:2;background:#0b1d31;border-bottom:1px solid var(--line);padding:7px 14px;font-size:11.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#c9d9ea}
+.bi{display:grid;grid-template-columns:34px 1fr auto;gap:2px 10px;align-items:center;padding:9px 12px 9px 14px;border-bottom:1px solid rgba(30,58,88,.7);cursor:pointer;border-left:3px solid transparent}
+.bi:hover{background:#10294a}.bi.sel{background:#123557;border-left-color:#ff9f1a}
+.bi .ic{grid-row:1/3}
+.bi .nm{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px;min-width:0}.bi .nm span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res{font-size:10.5px;font-weight:600;color:#c9d9ea;background:#183a5c;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.bi .ln{display:flex;gap:12px;font-size:12px;color:#c9d9ea;min-width:0;white-space:nowrap;overflow:hidden}
+.bi .ln span{display:inline-flex;align-items:center;gap:4px}.bi .ln svg{width:14px;height:14px;flex:none}
+.bi .tp{font-size:12.5px;white-space:nowrap;text-align:right}
+.fav{background:none;border:0;cursor:pointer;color:#8aa0b6;padding:2px;line-height:0}.fav svg{width:19px;height:19px}.fav.on{color:#ffc53d}
 .mn{color:var(--mn);font-weight:700}.mx{color:var(--mx);font-weight:700}
-.biV{font-size:12px;color:var(--muted);margin-top:2px}
-.biD{display:none;margin-top:8px;cursor:default}
-.bi.sel .biD{display:block}
-.sin{font-size:12.5px;margin-bottom:6px}
-.sin span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
-.biD table{width:100%;border-collapse:collapse;font-size:12px}
-.biD th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;font-weight:600;padding:4px 4px}
-.biD td{padding:5px 4px;border-top:1px solid var(--line);vertical-align:top}
-.biD td.f{white-space:nowrap;font-weight:600;text-transform:capitalize}
-.biD td.t{white-space:nowrap}
-.biD .nb{display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap}
-.biD small{display:block;color:var(--muted)}
-.biD .pp{display:block;color:var(--acc)}
-.biD td.ola b,.pop td.ola b{white-space:nowrap}
-.olaL{color:var(--acc)}
-.biD .pie{font-size:11px;color:var(--muted);margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.biD a{color:var(--acc)}
-.err{color:#b3261e}
-.nota{font-size:11.5px;color:var(--muted);padding:8px 14px 12px;border-top:1px solid var(--line);line-height:1.45}
-#mapWrap{position:sticky;top:14px;height:calc(100vh - 28px);min-height:520px;flex:1;min-width:0}
-#map{position:absolute;inset:0;background:#c9dbe6}
-#baseStatus{position:absolute;left:50%;transform:translateX(-50%);top:10px;z-index:900;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;display:none}
+.vacio{padding:14px;color:var(--mut);font-size:13px}
+/* mapa */
+.mapa{position:relative;min-width:0}
+#map{position:absolute;inset:0;background:#0b2033}
+#capasMapa{position:absolute;left:12px;top:92px;z-index:800;background:rgba(10,26,44,.94);border:1px solid var(--line);border-radius:12px;padding:6px;width:190px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+#capasMapa .t{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--mut);padding:5px 8px 3px}
+.cm{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px}
+.cm svg{width:19px;height:19px;flex:none}.cm input{display:none}
+.cm:has(input:checked){background:var(--acc);color:#fff}.cm:hover:not(:has(input:checked)){background:#163a5e}
+#capasMapa select{width:calc(100% - 12px);margin:2px 6px 6px;background:#0f2a45;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:5px;font:inherit;font-size:12.5px}
+#btnCapasM{display:none}
+.leyV{position:absolute;left:12px;bottom:14px;z-index:800;background:rgba(8,20,36,.88);border:1px solid var(--line);border-radius:10px;padding:8px 12px 6px;width:min(300px,calc(100% - 24px))}
+.leyV b{font-size:12.5px}.leyV small{color:var(--mut);font-size:11px;margin-left:6px}
+.leyV .barra{height:10px;border-radius:6px;margin:6px 0 3px;background:linear-gradient(90deg,#3b1f9e 0%,#2253d6 12.5%,#1fa2e0 25%,#21c79a 37.5%,#9be23c 50%,#f5e23a 62.5%,#f59a23 75%,#e53935 87.5%,#b21fd0 100%)}
+.leyV .esc{display:flex;justify-content:space-between;font-size:10.5px;color:#c9d9ea}
+#baseStatus{position:absolute;left:50%;transform:translateX(-50%);top:10px;z-index:900;background:rgba(10,26,44,.94);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-size:12px;display:none}
 #baseStatus.on{display:block}
 .mLbl{background:none;border:0}
-.mLbl span{display:inline-block;background:rgba(255,255,255,.85);color:#1d3b1d;border:1px solid #2f6b2f;border-radius:4px;padding:0 5px;font:700 12px system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%)}
-.mLbl.oc span{color:#5a4700;border-color:#8a6d00}.mLbl.an span{color:#4a2f57;border-color:#6b4a7a}
+.mLbl span{display:inline-block;color:#fff;font:800 13px system-ui,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.7);transform:translate(-50%,-50%);white-space:nowrap;letter-spacing:.5px;border:1px solid rgba(255,255,255,.55);border-radius:5px;padding:1px 6px;background:rgba(9,24,40,.55)}
 .iaIco{background:none;border:0;cursor:pointer}
-.iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}
-.iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}
+.iaChip{display:inline-flex;align-items:center;gap:5px;background:rgba(9,24,40,.9);border:1px solid rgba(232,241,251,.35);border-radius:8px;padding:3px 8px 3px 4px;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#fff}
+.iaChip:hover{border-color:#5fb0ff}
 .iaM{position:relative;width:0;height:0}
-.iaDot{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#0f2a44;border:2px solid #fff;box-shadow:0 0 0 1px rgba(15,42,68,.5)}
-.iaM .iaChip{position:absolute;left:9px;top:-16px}
-.iaM.compacto .iaChip{top:-10px;padding:1px 5px 1px 2px;gap:3px;border-radius:4px}
-.iaM.compacto .iaTx{flex-direction:row;align-items:center;gap:4px}
-.iaM.compacto .iaN{font-size:10px}.iaM.compacto .iaT b{font-size:10.5px}.iaM.compacto .iaT .mn{margin-right:3px}
-.iaM.otra{opacity:.6}.iaM.otra:hover{opacity:1}
-.iaM.sel .iaChip{border:2px solid #ff8a00;box-shadow:0 0 0 3px rgba(255,138,0,.3)}
-.iaM.sel .iaDot{background:#ff8a00}
-.iaChip.sd .iaT{font-size:10px;color:#5b6673}
-.pop{font-size:12.5px;color:#18212b}
-.popH{display:flex;align-items:center;gap:6px;margin-bottom:5px}.popH b{font-size:14px}.popZ{margin-left:auto;font-size:11px;color:#5b6673}
-.pop .sin{font-size:12px;margin-bottom:6px}.pop .sin span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#5b6673}
-.pop table{width:100%;border-collapse:collapse;font-size:11.5px}
-.pop th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#5b6673;text-align:left;font-weight:600;padding:3px}
-.pop td{padding:4px 3px;border-top:1px solid #d6dce3;vertical-align:top}
-.pop td.f{white-space:nowrap;font-weight:600;text-transform:capitalize}.pop td.t{white-space:nowrap}
-.pop .nb{display:inline-flex;align-items:center;gap:3px;font-weight:600;white-space:nowrap}
-.pop small{display:block;color:#5b6673}.pop .pp{display:block;color:#1f5fa8}
-.pop .mn{color:#1f5fa8;font-weight:700}.pop .mx{color:#c0392b;font-weight:700}
-.pop .pie{font-size:10.5px;color:#5b6673;margin-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.pop .res{font-size:10.5px;font-weight:600;color:#5b6673;border:1px solid #d6dce3;border-radius:4px;padding:0 4px}
-.leaflet-popup-content{margin:10px 12px}
-.iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}
-.iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}
-@media (max-width:1050px){main{flex-direction:column;align-items:stretch}#mapWrap{order:-1;position:relative;top:auto;height:60vh;flex:none}#grpIA{position:static;height:auto;min-height:0;width:auto}#lista{overflow:visible}}
-@media (max-width:600px){main{padding:8px}header{padding:10px 12px}}
+.iaM .iaChip{position:absolute;left:10px;top:-17px}
+.iaM.compacto .iaChip{top:-11px;padding:2px 6px 2px 3px;gap:4px}
+.iaM.compacto .iaTx{flex-direction:row;align-items:center;gap:5px}
+.iaM.compacto .iaN{font-size:10.5px}.iaM.compacto .iaT b{font-size:10.5px}
+.iaM.otra{opacity:.55}.iaM.otra:hover{opacity:1}
+.iaM.sel .iaChip{border:2px solid #ff9f1a;box-shadow:0 0 0 3px rgba(255,159,26,.3)}
+.iaTx{display:flex;flex-direction:column}.iaN{font-weight:700;font-size:11px;color:#fff}
+.iaT b{font-size:12px;font-weight:800}.iaT .mn{margin-right:5px}
+.iaChip.sd .iaT{font-size:10px;color:#9fb3c8}
+.leaflet-tooltip.tipIA{background:rgba(10,26,44,.97);color:var(--ink);border:1px solid var(--line);border-radius:9px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.leaflet-tooltip.tipIA::before{display:none}
+.leaflet-control-zoom a{background:#fff;color:#18212b}
+/* detalle */
+.det{background:var(--bg);border-left:1px solid var(--line);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14.5px}
+.card h3 .der{margin-left:auto}
+.banner{position:relative;border-radius:12px;overflow:hidden;min-height:118px;padding:16px;background:linear-gradient(135deg,rgba(13,42,72,.2),rgba(8,24,40,.85)),radial-gradient(120% 90% at 85% 10%,#2f6fb0 0,#123a63 45%,#0a1d33 100%);border:1px solid var(--line)}
+.banner svg.olas{position:absolute;left:0;right:0;bottom:0;width:100%;height:46px;opacity:.55}
+.banner h2{margin:0;font-size:26px;color:#fff;line-height:1.1;position:relative}
+.banner .z{position:relative;font-size:14px;color:#dbe7f3;margin-top:2px}
+.banner .tags{position:relative;display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.banner .tags span{background:rgba(9,24,40,.75);border:1px solid rgba(232,241,251,.25);border-radius:7px;padding:2px 8px;font-size:11.5px}
+.banner .fav{position:absolute;right:12px;top:12px}.banner .fav svg{width:24px;height:24px}
+.cond{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:center}
+.cond>div{display:flex;align-items:center;gap:7px;min-width:0}
+.cond .v{font-size:19px;font-weight:700;line-height:1.1}.cond .v small{font-size:11.5px;font-weight:600}
+.cond .l{font-size:11px;color:var(--mut);line-height:1.2}
+.cond svg{flex:none}
+.notaC{font-size:11.5px;color:var(--mut);margin-top:8px}
+.tabsG{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.tabsG button{border:1px solid var(--line);background:#0a1a2c;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+.tabsG button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.badge{font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:#c9d9ea}
+#graf svg{width:100%;height:auto;display:block}
+.leyG{display:flex;gap:14px;justify-content:center;font-size:11.5px;color:#c9d9ea;margin-top:4px}
+.leyG span{display:inline-flex;align-items:center;gap:6px}
+.ia p{margin:0;font-size:13.5px;line-height:1.55;color:#dbe7f3}
+.ia .gen{font-size:11.5px;color:var(--mut);margin-top:-6px;margin-bottom:8px}
+.dias3{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:0}
+.d3{text-align:center;padding:4px 6px;border-left:1px solid var(--line)}.d3:first-child{border-left:0}
+.d3 .n{font-weight:700;text-transform:capitalize;font-size:13.5px}.d3 .t{margin:4px 0;font-size:15px}
+.d3 .r{display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:#dbe7f3;margin-top:3px;line-height:1.25}
+.d3 .r svg{width:14px;height:14px;flex:none}.d3 .pp{color:#7fc4ff;font-size:11.5px;margin-top:3px}
+.btnS{border:1px solid var(--line);background:#0a1a2c;border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;text-decoration:none;color:var(--ink);white-space:nowrap}
+.btnS:hover{border-color:var(--acc)}
+.pieN{font-size:11px;color:var(--mut);line-height:1.5}
+.err{color:#ff8a7a}
+@media (max-width:1500px){main{grid-template-columns:64px 310px minmax(0,1fr) 380px}.rail button{width:54px}}
+@media (max-width:1280px){main{grid-template-columns:290px minmax(0,1fr) 360px}.rail{display:none}.diaNav span{min-width:0}}
+@media (max-width:1000px){
+  body{overflow:auto;display:block}header{gap:8px 10px;padding:8px 10px}.marca img{height:26px}.tit{border:0;padding:0;flex:1}.tit h1{font-size:16px}.tit .sub{font-size:11.5px}
+  .hDer{width:100%;margin:0}.diaNav{flex:1}.diaNav span{flex:1;min-width:0;font-size:12.5px;padding:6px 10px}
+  main{display:flex;flex-direction:column}.mapa{order:1;height:58vh;flex:none}.det{order:2;border:0;overflow:visible}.lista{order:3;border:0}#lista{overflow:visible}
+  #capasMapa{display:none;top:56px;left:auto;right:12px}#capasMapa.on{display:block}
+  #btnCapasM{display:flex;position:absolute;right:12px;top:12px;z-index:801;width:38px;height:38px;border-radius:9px;border:0;background:#fff;color:#18212b;align-items:center;justify-content:center;cursor:pointer}
+  #btnCapasM svg{width:20px;height:20px}
+  .cond{grid-template-columns:repeat(2,1fr)}
+  .leyV{width:210px;padding:5px 9px 4px;bottom:8px;left:8px}.leyV small{display:none}.leyV b{font-size:11.5px}
+  .btnV{padding:7px 10px}
+}
 #firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
 @media print{#firmaAutor{display:none}}
 </style>
 </head>
 <body>
 <header>
-  <div class="hIzq"><a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a><div><h1>Pronósticos WRF + IA · Bahías</h1><div class="sub" id="sub">Cargando…</div></div></div>
-  <a class="btn" href="./">← Volver al inicio</a>
+  <a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a>
+  <div class="tit"><h1>Pronósticos WRF + IA · Bahías</h1><div class="sub" id="sub">Cargando…</div></div>
+  <div class="hDer">
+    <div class="diaNav"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><b id="diaTxt">Hoy</b></span><button type="button" id="diaAnt" aria-label="Día anterior">‹</button><button type="button" id="diaSig" aria-label="Día siguiente">›</button></div>
+    <a class="btnV" href="./">← Volver al inicio</a>
+  </div>
 </header>
 <main>
-  <section class="card" id="grpIA">
-    <h2 class="grpH"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4.5" fill="#f2b705"/><path d="M8 20h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 8 20Z" fill="#dfe5ea"/></svg>Pronósticos por bahía<span class="n" id="cuenta"></span></h2>
-    <div class="intro">De norte a sur. Elija el área y el día; clic en una bahía (en la lista o en el mapa) para ver su pronóstico completo.
-      <div class="tools"><select id="selZona" aria-label="Área"></select><div class="dias" id="dias"></div></div>
+  <nav class="rail" aria-label="Vista">
+    <button type="button" data-v="todas" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Bahías</button>
+    <button type="button" data-v="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9Z"/></svg>Favoritos</button>
+  </nav>
+  <section class="lista">
+    <div class="lCab">
+      <h2><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4.5" fill="#f2b705"/><path d="M8 20h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 8 20Z" fill="#dfe5ea"/></svg><span id="tLista">Pronósticos por bahía</span></h2>
+      <div class="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="busca" type="search" placeholder="Buscar bahía, puerto o localidad…" aria-label="Buscar bahía"></div>
+      <div class="chips" id="chips"></div>
     </div>
-    <div id="lista"><div class="nota">Cargando pronósticos…</div></div>
-    <div class="nota">Generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández). Oleaje: altura significativa máxima del día del modelo marino de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, en rangos de 1 m con su estado del mar (rizada &lt;0,5 · marejadilla 0,5–1,25 · marejada 1,25–2,5 · gruesa 2,5–4 · muy gruesa 4–6 · arbolada &gt;6 m), con dirección de procedencia y período; no resuelve fiordos ni canales angostos. Producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales. Estadísticas de uso anónimas y agregadas: no se usan cookies ni se recopilan datos personales.</div>
+    <div id="lista"><div class="vacio">Cargando pronósticos…</div></div>
   </section>
-  <section class="card" id="mapWrap">
+  <section class="mapa">
     <div id="map" role="application" aria-label="Mapa de pronósticos"></div>
+    <button type="button" id="btnCapasM" title="Capas del mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg></button>
+    <div id="capasMapa">
+      <label class="cm"><input type="checkbox" data-c="viento" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg>Viento (color)</label>
+      <label class="cm"><input type="checkbox" data-c="flechas" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19 19 5M19 5h-7M19 5v7"/></svg>Flechas de viento</label>
+      <label class="cm"><input type="checkbox" data-c="met" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></svg>METAREA XV</label>
+      <label class="cm"><input type="checkbox" data-c="chips" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="10" rx="3"/><circle cx="8" cy="12" r="2"/></svg>Etiquetas</label>
+      <div class="t">Mapa base</div>
+      <select id="selBase" aria-label="Mapa base"><option value="sat">Imagen satelital</option><option value="oc">Océano (claro)</option><option value="cos">Sin conexión (costa)</option></select>
+    </div>
+    <div class="leyV" id="leyV" style="display:none"><b>Viento a 10 m (kt)</b><small id="vientoHora"></small><div class="barra"></div><div class="esc"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40+</span></div></div>
     <div id="baseStatus"><span class="txt"></span></div>
   </section>
+  <aside class="det" id="det"><div class="card vacio">Elige una bahía en la lista o en el mapa.</div></aside>
 </main>
 <script>/*LEAFLET_JS*/</script>
 <script>
 /*DATA*/
 /*IA_COMUN*/
 const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+const P16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const cardinal = g => P16[Math.floor(((g % 360) + 371.25) / 22.5) % 16];
+const num = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
 const fmtHora = iso => { const d = new Date(iso); return isNaN(d) ? '–' : d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+const fmtDM = d => d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
 const fmtInit = s => { const m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})T?(\d{2})/); return m ? `${m[3]}/${m[2]} ${m[4]}Z` : escH(s || '–'); };
 const hoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
 const sumarDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const fDia = (f, larga) => { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', larga ? { weekday: 'long', day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''); };
 const tG = v => v != null ? Math.round(v) + '°' : '–';
-
-let DATOS = null, ZONA = '', DIA = 0, SEL = null, PRIMERA = true, OLA = null;
-// Oleaje (data/oleaje.json, modelo marino Open-Meteo): Hs máxima del día en rangos de 1 m con su estado del mar.
-const olaDe = (b, fecha) => { const o = OLA && OLA.bahias && OLA.bahias[b.codigo]; return o && !o.sin_cobertura ? (o.dias || []).find(x => x.fecha === fecha) || null : null; };
-const sinOla = b => !!(OLA && OLA.bahias && OLA.bahias[b.codigo] && OLA.bahias[b.codigo].sin_cobertura);
-const fmtOla = o => `${escH(o.dir_txt || '–')}${o.periodo != null ? ' · ' + String(o.periodo).replace('.', ',') + ' s' : ''}`;
-function celdaOla(b, fecha) {
-  const o = olaDe(b, fecha);
-  if (!o) return `<td><small>${sinOla(b) ? 'Sin cobertura del modelo' : '–'}</small></td>`;
-  return `<td class="ola"><b>${escH(o.rango)}</b><small>${escH(o.estado)}</small><small>${fmtOla(o)}</small></td>`;
+async function leerJSON(ruta) { const r = await fetch(`${ruta}?t=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); return r.json(); }
+function parseLocalCL(s) {
+  if (!s || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return null;
+  const [d, t] = s.split('T'); const [Y, M, D] = d.split('-').map(Number); const [h, mi, se] = t.split(':').map(Number);
+  let utc = Date.UTC(Y, M - 1, D, h, mi, se || 0) + 4 * 3600e3;
+  for (let i = 0; i < 2; i++) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utc));
+    const g = k => +parts.find(p => p.type === k).value;
+    utc += Date.UTC(Y, M - 1, D, h, mi, se || 0) - Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second'));
+  }
+  return new Date(utc);
 }
-try { ZONA = localStorage.getItem('ia_zona') || ''; } catch (e) {}
-const diaDe = b => { const ds = (b.pronostico && b.pronostico.dias) || []; return ds.find(d => d.fecha === sumarDias(hoyChile(), DIA)) || null; };
-const visibles = () => DATOS.bahias.filter(b => !ZONA || b.zona === ZONA);
-
-// ============================ Mapa: solo METAREA XV ============================
-const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25 });
-map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
-map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
-map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
-map.options.maxBoundsViscosity = 0.3;
-map.createPane('iaPane'); map.getPane('iaPane').style.zIndex = 620;
 function decodePolyline6(str) {
   const out = []; let i = 0, lat = 0, lon = 0;
-  while (i < str.length) {
-    for (let k = 0; k < 2; k++) { let b, sh = 0, r = 0; do { b = str.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20); const d = (r & 1) ? ~(r >> 1) : (r >> 1); if (k === 0) lat += d; else lon += d; }
-    out.push([lat / 1e6, lon / 1e6]);
-  }
+  while (i < str.length) { for (let k = 0; k < 2; k++) { let b, sh = 0, r = 0; do { b = str.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20); const d = (r & 1) ? ~(r >> 1) : (r >> 1); if (k === 0) lat += d; else lon += d; } out.push([lat / 1e6, lon / 1e6]); }
   return out;
 }
-(function baseMaps() {
-  const ocean = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 });
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 18 });
-  const offline = L.layerGroup();
-  for (const c of LAND) for (const poly of c.p) L.polygon(poly.map(decodePolyline6), { pane: 'landPane', color: '#9aa6b2', weight: 0.8, fillColor: '#eceee6', fillOpacity: 1, interactive: false }).addTo(offline);
-  const bs = document.getElementById('baseStatus'), aviso = t => { bs.classList.add('on'); bs.querySelector('.txt').textContent = t; };
-  let ok = 0, err = 0;
-  ocean.on('tileload', () => { ok++; if (ok === 1) bs.classList.remove('on'); });
-  ocean.on('tileerror', () => { err++; if (!ok && err >= 6 && map.hasLayer(ocean)) { map.removeLayer(ocean); offline.addTo(map); aviso('Sin acceso a mapas en línea: se usa la costa incorporada.'); } });
-  setTimeout(() => { if (!ok && map.hasLayer(ocean)) { map.removeLayer(ocean); offline.addTo(map); aviso('Sin acceso a mapas en línea: se usa la costa incorporada.'); } }, 9000);
-  L.control.layers({ 'Esri Océano': ocean, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, {}, { position: 'topright' }).addTo(map);
-  (navigator.onLine === false ? offline : ocean).addTo(map);
-  L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
-})();
-// Capa METAREA XV (mismos colores que la carta publicada)
-const MET_COL = { costera: { line: '#2f6b2f', fill: '#7fbf7f' }, oceanica: { line: '#8a6d00', fill: '#f2df6b' }, antartica: { line: '#6b4a7a', fill: '#c9b3d6' } };
-const nombreArea = p => p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre;
-L.geoJSON(METAREA, { pane: 'metPane', style: f => { const c = MET_COL[f.properties.tipo]; return { color: c.line, weight: 1.5, opacity: 0.9, dashArray: f.properties.tipo === 'costera' ? null : '6 4', fillColor: c.fill, fillOpacity: 0.18 }; },
-  onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties)), { sticky: true }) }).addTo(map);
-for (const f of METAREA.features) {
-  const p = f.properties, txt = p.tipo === 'costera' ? p.id : p.id.replace('X-', 'X·').replace('IX-', 'IX·');
-  L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'oceanica' ? ' oc' : p.tipo === 'antartica' ? ' an' : ''), html: `<span>${escH(txt)}</span>`, iconSize: [0, 0] }) }).addTo(map);
-}
-map.fitBounds([[-56.5, -82], [-17.5, -66]]);
+const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
+const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
+  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+const ICO = {
+  viento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg>',
+  ola: '<svg viewBox="0 0 24 24" fill="none" stroke="#5fb0ff" stroke-width="1.8" stroke-linecap="round"><path d="M2 12c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2M2 17c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2"/></svg>',
+  estrella: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9Z"/></svg>',
+  estrellaOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9Z"/></svg>',
+  term: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff7a6b" stroke-width="1.8"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z"/></svg>',
+  gota: '<svg viewBox="0 0 24 24" fill="#5fb0ff"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg>',
+  ia: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7fb8ff" stroke-width="1.6"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4Z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></svg>'
+};
+const flechaDir = (g, px = 26) => g == null ? '' : `<svg width="${px}" height="${px}" viewBox="0 0 24 24" style="transform:rotate(${(g + 180) % 360}deg)"><path d="M12 3 18 19 12 15.5 6 19Z" fill="#cfe3f7"/></svg>`;
 
-// ============================ Etiquetas de pronóstico en el mapa ============================
-let capaIA = L.layerGroup().addTo(map);
+let DATOS = null, OLA = null, EST = [], ZONA = '', VISTA = 'todas', BUSCA = '', DIA = 0, SEL = null, PRIMERA = true, TAB = 'viento';
+let FAV = new Set(); try { FAV = new Set(JSON.parse(localStorage.getItem('ia_fav') || '[]')); ZONA = localStorage.getItem('ia_zona') || ''; } catch (e) {}
+const guardarFav = () => { try { localStorage.setItem('ia_fav', JSON.stringify([...FAV])); } catch (e) {} };
+const olaDe = (b, fecha) => { const o = OLA && OLA.bahias && OLA.bahias[b.codigo]; return o && !o.sin_cobertura ? (o.dias || []).find(x => x.fecha === fecha) || null : null; };
+const sinOla = b => !!(OLA && OLA.bahias && OLA.bahias[b.codigo] && OLA.bahias[b.codigo].sin_cobertura);
+const fechaDia = () => sumarDias(hoyChile(), DIA);
+const diaDe = (b, f = fechaDia()) => { const ds = (b.pronostico && b.pronostico.dias) || []; return ds.find(d => d.fecha === f) || null; };
+const coincide = b => (!ZONA || b.zona === ZONA) && (VISTA !== 'fav' || FAV.has(b.codigo)) && (!BUSCA || b.nombre.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').includes(BUSCA));
+const visibles = () => DATOS.bahias.filter(coincide);
+// Viento del texto del pronóstico (p. ej. «N 10/12 kt en la madrugada, rolando a S/SW 15/17 kt»): mínimo y máximo del día
+function vientoRango(txt) {
+  const v = []; String(txt || '').replace(/(\d{1,3})(?:\s*\/\s*(\d{1,3}))?\s*(?:kt|nudos)/gi, (m, a, b) => { v.push(+a); if (b) v.push(+b); });
+  return v.length ? [Math.min(...v), Math.max(...v)] : null;
+}
+const vientoCorto = t => { const s = String(t || '–').split(/,| y |;/)[0].trim(); return s.length > 24 ? s.slice(0, 23) + '…' : s; };
+
+// ============================ Mapa ============================
+const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25, zoomControl: false, maxBounds: [[-75, -150], [5, -30]], maxBoundsViscosity: 0.8 });
+L.control.zoom({ position: 'topleft' }).addTo(map);
+L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
+map.createPane('landPane').style.zIndex = 250;
+map.createPane('vientoPane').style.zIndex = 330;
+map.createPane('flechasPane').style.zIndex = 340; map.getPane('flechasPane').style.pointerEvents = 'none';
+map.createPane('metPane').style.zIndex = 360;
+map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
+map.createPane('iaPane').style.zIndex = 620;
+const BASES = {
+  sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Imagen © Esri', maxZoom: 17, maxNativeZoom: 13 }),
+  oc: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 }),
+  cos: L.layerGroup()
+};
+for (const c of LAND) for (const poly of c.p) L.polygon(poly.map(decodePolyline6), { pane: 'landPane', color: '#8aa4bc', weight: 0.8, fillColor: '#1d3a52', fillOpacity: 1, interactive: false }).addTo(BASES.cos);
+let base = null;
+function ponerBase(k) { if (base) map.removeLayer(base); base = BASES[k]; base.addTo(map); document.getElementById('selBase').value = k; }
+(function () {
+  let ok = 0; const bs = document.getElementById('baseStatus');
+  BASES.sat.on('tileload', () => { ok++; });
+  setTimeout(() => { if (!ok && base === BASES.sat) { ponerBase('cos'); bs.classList.add('on'); bs.querySelector('.txt').textContent = 'Sin acceso a mapas en línea: se usa la costa incorporada.'; } }, 9000);
+  ponerBase(navigator.onLine === false ? 'cos' : 'sat');
+})();
+document.getElementById('selBase').onchange = e => ponerBase(e.target.value);
+// METAREA XV: contornos blancos con rótulos
+const capaMet = L.layerGroup().addTo(map);
+const nombreArea = p => p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre;
+L.geoJSON(METAREA, { pane: 'metPane', style: f => ({ color: '#ffffff', weight: f.properties.tipo === 'costera' ? 1.3 : 1.5, opacity: 0.8, dashArray: f.properties.tipo === 'costera' ? null : '7 6', fill: false }),
+  onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties)), { sticky: true }) }).addTo(capaMet);
+for (const f of METAREA.features) { const p = f.properties;
+  L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl', html: `<span>${escH(p.id.replace('-', '·'))}</span>`, iconSize: [0, 0] }) }).addTo(capaMet); }
+
+// ---- Campo de viento GFS a 10 m: color según intensidad + flechas
+const ESCALA = [[0, [59, 31, 158]], [5, [34, 83, 214]], [10, [31, 162, 224]], [15, [33, 199, 154]], [20, [155, 226, 60]], [25, [245, 226, 58]], [30, [245, 154, 35]], [35, [229, 57, 53]], [40, [178, 31, 208]]];
+function colorKt(v) {
+  if (v >= 40) return ESCALA[ESCALA.length - 1][1];
+  for (let i = 1; i < ESCALA.length; i++) if (v <= ESCALA[i][0]) { const [a, ca] = ESCALA[i - 1], [b, cb] = ESCALA[i], t = (v - a) / (b - a); return ca.map((c, k) => Math.round(c + (cb[k] - c) * t)); }
+  return ESCALA[0][1];
+}
+let VIENTO = null; const capaViento = L.layerGroup();
+function interp(lat, lon) {
+  const V = VIENTO; if (!V) return null;
+  const fi = (V.lat0 - lat) / -V.dlat, fj = (lon - V.lon0) / V.dlon;
+  if (fi < 0 || fj < 0 || fi > V.nlat - 1 || fj > V.nlon - 1) return null;
+  const i = Math.floor(fi), j = Math.floor(fj), di = fi - i, dj = fj - j, i1 = Math.min(i + 1, V.nlat - 1), j1 = Math.min(j + 1, V.nlon - 1);
+  const g = arr => { const a = arr[i * V.nlon + j], b = arr[i * V.nlon + j1], c = arr[i1 * V.nlon + j], d = arr[i1 * V.nlon + j1]; return a * (1 - di) * (1 - dj) + b * (1 - di) * dj + c * di * (1 - dj) + d * di * dj; };
+  return [g(V.u), g(V.v)];
+}
+function pintarCampo() {
+  capaViento.clearLayers(); if (!VIENTO) return;
+  const V = VIENTO, n = V.lat0, s = V.lat0 + V.dlat * (V.nlat - 1), w = V.lon0, e = V.lon0 + V.dlon * (V.nlon - 1);
+  const W = 640, my = la => Math.log(Math.tan(Math.PI / 4 + la * Math.PI / 360)), y0 = my(n), y1 = my(s);
+  const H = Math.round(W * (y0 - y1) / ((e - w) * Math.PI / 180));
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d'); const img = ctx.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    const la = (2 * Math.atan(Math.exp(y0 - (y0 - y1) * (y + 0.5) / H)) - Math.PI / 2) * 180 / Math.PI;
+    for (let x = 0; x < W; x++) {
+      const lo = w + (e - w) * (x + 0.5) / W, uv = interp(la, lo), k = (y * W + x) * 4; if (!uv) continue;
+      const c = colorKt(Math.hypot(uv[0], uv[1])); img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  L.imageOverlay(cv.toDataURL(), [[s, w], [n, e]], { pane: 'vientoPane', opacity: 0.55, interactive: false }).addTo(capaViento);
+  const d = new Date(V.valido);
+  document.getElementById('vientoHora').textContent = isNaN(d) ? '' : `GFS · válido ${fmtDM(d)} (hora Chile)`;
+}
+const Flechas = L.Layer.extend({
+  onAdd(m) { this._m = m; this._c = L.DomUtil.create('canvas', ''); this._c.style.position = 'absolute'; m.getPane('flechasPane').appendChild(this._c); m.on('moveend zoomend resize', this._dib, this); this._dib(); },
+  onRemove(m) { m.off('moveend zoomend resize', this._dib, this); this._c.remove(); },
+  _dib() {
+    const m = this._m, sz = m.getSize(), c = this._c, r = window.devicePixelRatio || 1;
+    c.width = sz.x * r; c.height = sz.y * r; c.style.width = sz.x + 'px'; c.style.height = sz.y + 'px';
+    L.DomUtil.setPosition(c, m.containerPointToLayerPoint([0, 0]));
+    const ctx = c.getContext('2d'); ctx.scale(r, r); ctx.clearRect(0, 0, sz.x, sz.y);
+    if (!VIENTO) return;
+    const paso = 42; ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.fillStyle = 'rgba(255,255,255,.8)';
+    for (let y = paso / 2; y < sz.y; y += paso) for (let x = paso / 2; x < sz.x; x += paso) {
+      const ll = m.containerPointToLatLng([x, y]), uv = interp(ll.lat, ll.lng); if (!uv) continue;
+      const sp = Math.hypot(uv[0], uv[1]); if (sp < 1) continue;
+      const L2 = 8 + Math.min(sp, 40) * 0.35, ux = uv[0] / sp, uy = -uv[1] / sp;
+      const x0 = x - ux * L2 / 2, y0 = y - uy * L2 / 2, x1 = x + ux * L2 / 2, y1 = y + uy * L2 / 2;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * 5 - uy * 3, y1 - uy * 5 + ux * 3); ctx.lineTo(x1 - ux * 5 + uy * 3, y1 - uy * 5 - ux * 3); ctx.closePath(); ctx.fill();
+    }
+  }
+});
+const capaFlechas = new Flechas();
+async function cargarViento() {
+  try { VIENTO = await leerJSON('data/viento_gfs.json'); } catch (e) { VIENTO = null; }
+  pintarCampo(); if (capaFlechas._m) capaFlechas._dib(); leyendaViento();
+}
+const leyendaViento = () => { document.getElementById('leyV').style.display = VIENTO && map.hasLayer(capaViento) ? '' : 'none'; };
+
+// ---- Capas del mapa (menú flotante)
+let capaIA = L.layerGroup();
+const CAPAS_M = { viento: capaViento, flechas: capaFlechas, met: capaMet, chips: capaIA };
+let ESTC = {}; try { ESTC = JSON.parse(localStorage.getItem('ia_capas') || '{}'); } catch (e) {}
+document.querySelectorAll('#capasMapa input').forEach(ch => {
+  const k = ch.dataset.c; if (k in ESTC) ch.checked = !!ESTC[k];
+  const aplicar = () => { const l = CAPAS_M[k]; if (ch.checked) { if (!map.hasLayer(l)) l.addTo(map); } else if (map.hasLayer(l)) map.removeLayer(l); if (k === 'viento') leyendaViento(); if (k === 'chips' && ch.checked) setTimeout(despejar, 0); };
+  ch.onchange = () => { ESTC[k] = ch.checked; try { localStorage.setItem('ia_capas', JSON.stringify(ESTC)); } catch (e) {} aplicar(); };
+  aplicar();
+});
+document.getElementById('btnCapasM').onclick = () => document.getElementById('capasMapa').classList.toggle('on');
+
+// ---- Etiquetas de pronóstico sobre el mapa
 const marcadores = new Map(), puntos = new Map();
 function tip(b, d) {
-  return `<div style="width:230px;white-space:normal;line-height:1.35"><b style="font-size:13px">${escH(b.nombre)}</b> <span style="opacity:.7;font-size:11px">WRF ${escH(b.resolucion || '3 km')} + IA</span>` +
+  const o = olaDe(b, d.fecha);
+  return `<div style="width:230px;white-space:normal;line-height:1.4"><b style="font-size:13px">${escH(b.nombre)}</b> <span style="opacity:.7;font-size:11px">WRF ${escH(b.resolucion || '3 km')} + IA</span>` +
     `<div style="opacity:.75;font-size:11px;text-transform:capitalize">${fDia(d.fecha, true)}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
-    (d.nubosidad_detalle ? `<div style="font-size:11.5px;opacity:.85">${escH(d.nubosidad_detalle)}</div>` : '') +
-    `<div><b style="color:#1f5fa8">${tG(d.temp_min)}</b> / <b style="color:#c0392b">${tG(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` +
-    `<div><b>Viento:</b> ${escH(d.viento || '–')}</div>` +
-    (olaDe(b, d.fecha) ? (o => `<div><b>Oleaje:</b> ${escH(o.rango)} · ${escH(o.estado.toLowerCase())} <span style="opacity:.75">(${fmtOla(o)})</span></div>`)(olaDe(b, d.fecha)) : '') + (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') + '</div>';
+    `<div><b class="mn">${tG(d.temp_min)}</b> / <b class="mx">${tG(d.temp_max)}</b> <span style="opacity:.75">mín / máx</span></div>` +
+    `<div><b>Viento:</b> ${escH(d.viento || '–')}</div>` + (o ? `<div><b>Oleaje:</b> ${escH(o.rango)} · ${escH(o.estado.toLowerCase())}</div>` : '') +
+    (d.precipitacion ? `<div style="color:#7fc4ff">${escH(d.precipitacion)}</div>` : '') + '</div>';
 }
-// Pronóstico completo en una ventana sobre el mapa (situación sinóptica + tabla de todos los días)
-function popupBahia(b) {
-  const p = b.pronostico;
-  if (!p) return `<div class="pop"><b>${escH(b.nombre)}</b><div class="err">${escH(b.error || 'Pronóstico aún no generado')}</div><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Ver meteograma ↗</a></div>`;
-  return `<div class="pop"><div class="popH"><b>${escH(b.nombre)}</b><span class="res">${escH(b.resolucion || '3 km')}</span><span class="popZ">${escH(b.zona)}</span></div>
-    <div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
-    <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th><th>Oleaje</th></tr></thead><tbody>${(p.dias || []).map(d => filaDia(d, b)).join('')}</tbody></table>
-    <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`;
-}
-// Todas las bahías tienen siempre su recuadro (ícono, nombre, mín/máx) a la derecha de su punto, sin líneas.
-// Si dos recuadros chocan, se corren verticalmente lo justo; con poco zoom se usa un recuadro compacto de una línea.
-// Ventana de pronóstico: se ajusta al tamaño del mapa (con barra de desplazamiento si no cabe) y nunca queda cortada.
-function opcionesPopup() {
-  const t = map.getSize(), angosto = t.x < 520;
-  return { maxWidth: Math.min(460, t.x - 52), minWidth: Math.min(300, t.x - 52), maxHeight: Math.max(200, t.y - 80),
-           autoPan: false, offset: angosto ? [0, 0] : [40, 0], className: 'popIA' };
-}
-map.on('popupopen', e => {
-  const ajustar = () => {
-    const el = e.popup.getElement(); if (!el) return;
-    const a = el.getBoundingClientRect(), m = map.getContainer().getBoundingClientRect(), pad = 14;
-    let dx = 0, dy = 0;
-    if (a.top < m.top + pad) dy = a.top - (m.top + pad); else if (a.bottom > m.bottom - pad) dy = Math.min(a.bottom - (m.bottom - pad), a.top - (m.top + pad));
-    if (a.left < m.left + pad) dx = a.left - (m.left + pad); else if (a.right > m.right - pad) dx = Math.min(a.right - (m.right - pad), a.left - (m.left + pad));
-    if (dx || dy) map.panBy([dx, dy], { animate: true, duration: 0.3 });
-  };
-  requestAnimationFrame(() => requestAnimationFrame(ajustar));
-});
 function pintarMapa() {
   capaIA.clearLayers(); marcadores.clear(); puntos.clear();
   for (const b of DATOS.bahias) {
     const pos = IA_POS[b.codigo], d = diaDe(b); if (!pos) continue;
+    const otra = !coincide(b);
     const chip = `<div class="iaChip${d ? '' : ' sd'}">${svgNub(d ? d.nubosidad : '', 20)}<div class="iaTx"><span class="iaN">${escH(b.nombre)}</span><span class="iaT">${d ? `<b class="mn">${tG(d.temp_min)}</b><b class="mx">${tG(d.temp_max)}</b>` : 'sin datos'}</span></div></div>`;
-    const html = `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${ZONA && b.zona !== ZONA ? ' otra' : ''}">${chip}</div>`;
-    // El punto de la bahía va en una capa inferior: nunca tapa un recuadro.
-    puntos.set(b.codigo, L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff8a00' : '#0f2a44', fillOpacity: 1, opacity: ZONA && b.zona !== ZONA ? 0.6 : 1 })
-      .on('click', () => { const m = marcadores.get(b.codigo); if (m) m.openPopup(); seleccionar(b.codigo, false, true); }).addTo(capaIA));
-    const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html, iconSize: [0, 0], iconAnchor: [0, 0] }) })
-      .bindPopup(() => popupBahia(b), opcionesPopup())
-      .on('click', () => seleccionar(b.codigo, false, true)).addTo(capaIA);
-    if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [40, -18], opacity: 0.97 });
-    m.on('popupopen', () => m.closeTooltip());
+    puntos.set(b.codigo, L.circleMarker(pos, { radius: 4.5, color: '#fff', weight: 2, fillColor: b.codigo === SEL ? '#ff9f1a' : '#21c79a', fillOpacity: 1, opacity: otra ? 0.5 : 1 })
+      .on('click', () => seleccionar(b.codigo, false)).addTo(capaIA));
+    const m = L.marker(pos, { pane: 'iaPane', icon: L.divIcon({ className: 'iaIco', html: `<div class="iaM${b.codigo === SEL ? ' sel' : ''}${otra ? ' otra' : ''}">${chip}</div>`, iconSize: [0, 0], iconAnchor: [0, 0] }) })
+      .on('click', () => seleccionar(b.codigo, false)).addTo(capaIA);
+    if (d) m.bindTooltip(tip(b, d), { direction: 'top', offset: [40, -18], opacity: 1, className: 'tipIA' });
     marcadores.set(b.codigo, m);
   }
   setTimeout(despejar, 0);
 }
-
 const N1_IA = ['CHANARAL', 'HUASCO', 'LOSVILOS', 'CASTRO', 'QUELLON', 'CMORALEDA', 'ARICA', 'IQUIQUE', 'ANTOFAGASTA', 'CALDERA', 'COQUIMBO', 'QUINTERO', 'VALPARAISO', 'TALCAHUANO', 'CORRAL', 'PUERTOMONTT', 'PUERTOCHACABUCO',
   'GOLFOPENAS', 'PUERTONATALES', 'FAROEVANGELISTA', 'PASOTAMAR', 'SENOOTWAY', 'PRIMERANGOSTURA', 'PUNTAARENAS', 'PUERTOWILLIAMS', 'A_FILDES'];
 const N2_IA = ['PUERTOCHACABUCO', 'ISLAROBINSONCRUSOE', 'CALDERA', 'COQUIMBO', 'SANANTONIO', 'CORRAL', 'CASTRO', 'QUELLON', 'PUERTONATALES', 'GOLFOPENAS', 'CABODEHORNOS', 'A_BASEOHIGGINS', 'A_BAHIAPARAISO', 'HUASCO', 'LEBU'];
 const baseIA = c => c.replace(/_(norte|centro|sur|1dom|Antartica)_d\d+$/, '');
 const NIVEL = c => N1_IA.includes(baseIA(c)) ? 1 : N2_IA.includes(baseIA(c)) ? 2 : 3;
-// Etiquetas por nivel de zoom: con el mapa alejado solo los lugares principales; al acercarse aparece el resto.
-// Siempre se muestran el lugar seleccionado y los del sector elegido. Los demás quedan como punto (clic para abrir).
 const nivelZoom = () => { const z = map.getZoom(); return z < 5.5 ? 1 : z < 6.5 ? 2 : 3; };
-function chipVisible(c) { return c === SEL || NIVEL(c) <= nivelZoom() || (ZONA && (DATOS.bahias.find(x => x.codigo === c) || {}).zona === ZONA && map.getZoom() >= 5); }
+function chipVisible(c) { const b = DATOS.bahias.find(x => x.codigo === c) || {}; return c === SEL || NIVEL(c) <= nivelZoom() || ((ZONA || VISTA === 'fav' || BUSCA) && coincide(b) && map.getZoom() >= 5); }
 const CIUDADES = ['ARICA','IQUIQUE','ANTOFAGASTA','CHANARAL','CALDERA','HUASCO','COQUIMBO','LOSVILOS','QUINTERO','VALPARAISO','TALCAHUANO','CORRAL','PUERTOMONTT','CASTRO','QUELLON','CMORALEDA','PUERTOCHACABUCO','GOLFOPENAS','PUERTONATALES','PUNTAARENAS','PUERTOWILLIAMS','A_FILDES'];
 const PRINCIPALES = ['ARICA','IQUIQUE','ANTOFAGASTA','VALPARAISO','TALCAHUANO','PUERTOMONTT','PUNTAARENAS','PUERTOWILLIAMS','A_FILDES'];
-const PRIORIDAD = c => PRINCIPALES.includes(baseIA(c)) ? 0 : CIUDADES.includes(baseIA(c)) ? 1 : 2;
+const PRIORIDAD = c => c === SEL ? -1 : PRINCIPALES.includes(baseIA(c)) ? 0 : CIUDADES.includes(baseIA(c)) ? 1 : 2;
 function despejar() {
+  if (!DATOS) return;
   for (const [c, m] of marcadores) { const el = m.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
-  // Los puntos de los lugares secundarios también se ocultan con el mapa alejado
   for (const [c, l] of puntos) { const el = l.getElement && l.getElement(); if (el) el.style.display = chipVisible(c) ? '' : 'none'; }
   const ents = [...marcadores.entries()].filter(([c, m]) => m.getElement() && chipVisible(c));
   const compacto = map.getZoom() < 6;
@@ -276,102 +398,175 @@ function despejar() {
     const box = m.getElement().querySelector('.iaM'), chip = box.querySelector('.iaChip');
     box.classList.toggle('compacto', compacto); chip.style.top = '';
     const p = map.latLngToContainerPoint(m.getLatLng()), r = chip.getBoundingClientRect();
-    return { c, chip, p, w: r.width, h: r.height, x: p.x + 9, y0: p.y - r.height / 2, dz: m.getElement() };
-  }).sort((a, b) => (PRIORIDAD(a.c) - PRIORIDAD(b.c)) || (a.p.y - b.p.y));   // las ciudades principales se ubican primero
+    return { c, chip, p, w: r.width, h: r.height, x: p.x + 10, y0: p.y - r.height / 2, dz: m.getElement() };
+  }).sort((a, b) => (PRIORIDAD(a.c) - PRIORIDAD(b.c)) || (a.p.y - b.p.y));
   const puestos = [];
   for (const it of items) {
     let y = it.y0, mover = true, vueltas = 0;
-    while (mover && vueltas++ < 80) {
-      mover = false;
-      for (const q of puestos) if (it.x < q.x + q.w + 2 && it.x + it.w + 2 > q.x && y < q.y + q.h + 1 && y + it.h + 1 > q.y) { y = q.y + q.h + 1; mover = true; }
-    }
-    // Si la etiqueta tendría que alejarse mucho de su punto, no se muestra (queda el punto; aparece al acercar el mapa)
+    while (mover && vueltas++ < 80) { mover = false; for (const q of puestos) if (it.x < q.x + q.w + 2 && it.x + it.w + 2 > q.x && y < q.y + q.h + 1 && y + it.h + 1 > q.y) { y = q.y + q.h + 1; mover = true; } }
     if (y - it.y0 > 30 && it.c !== SEL) { it.dz.style.display = 'none'; continue; }
-    it.y = y; puestos.push(it);
-    it.chip.style.top = (y - it.p.y) + 'px';
-    it.dz.style.zIndex = 1000 + Math.round(it.p.y);
+    it.y = y; puestos.push(it); it.chip.style.top = (y - it.p.y) + 'px'; it.dz.style.zIndex = 1000 + Math.round(it.p.y);
   }
 }
 map.on('zoomend', () => setTimeout(despejar, 0));
+const VISTA_INI = [[-56.5, -82], [-17.5, -66]];
 function encuadrar() {
   const pts = visibles().map(b => IA_POS[b.codigo]).filter(Boolean);
-  if (!pts.length) return;
-  if (!ZONA) { map.fitBounds([[-56.5, -82], [-17.5, -66]]); return; }
-  map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 8, paddingTopLeft: [20, 20], paddingBottomRight: [150, 20] });   // espacio a la derecha para las etiquetas
+  if (!pts.length || (!ZONA && VISTA !== 'fav' && !BUSCA)) { map.fitBounds(VISTA_INI); return; }
+  map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 8, paddingTopLeft: [20, 20], paddingBottomRight: [150, 20] });
 }
 
-// ============================ Panel de pronósticos ============================
-function filaDia(d, b) {
-  return `<tr><td class="f">${fDia(d.fecha)}</td><td class="t"><span class="mn">${tG(d.temp_min)}</span> / <span class="mx">${tG(d.temp_max)}</span></td>` +
-    `<td><span class="nb">${svgNub(d.nubosidad, 16)}${escH(d.nubosidad)}</span>${d.nubosidad_detalle ? `<small>${escH(d.nubosidad_detalle)}</small>` : ''}</td>` +
-    `<td>${escH(d.viento)}${d.precipitacion ? `<span class="pp">${escH(d.precipitacion)}</span>` : ''}</td>` + (b ? celdaOla(b, d.fecha) : '') + '</tr>';
-}
+// ============================ Lista ============================
 function item(b) {
-  const p = b.pronostico, d = diaDe(b);
-  const res = `<span class="res">${escH(b.resolucion || '3 km')}</span>`;
-  const resumen = d ? `<span class="biS">${svgNub(d.nubosidad, 20)}<span class="mn">${tG(d.temp_min)}</span><span class="mx">${tG(d.temp_max)}</span></span>` : '<span class="biS" style="color:var(--muted)">sin datos</span>';
-  const oD = d && olaDe(b, d.fecha);
-  const linea = d ? `<div class="biV">${escH(d.nubosidad)} · ${escH(d.viento)}${oD ? ` · <span class="olaL">Mar ${escH(oD.rango)} (${escH(oD.estado.toLowerCase())})</span>` : ''}</div>` : (!p ? `<div class="biV err">${escH(b.error || 'Pronóstico aún no generado')}</div>` : '');
-  const det = p ? `<div class="biD"><div class="sin"><span>Situación sinóptica</span>${escH(p.situacion_sinoptica)}</div>
-      <table><thead><tr><th>Día</th><th>Mín/Máx</th><th>Nubosidad</th><th>Viento</th><th>Oleaje</th></tr></thead><tbody>${(p.dias || []).map(d => filaDia(d, b)).join('')}</tbody></table>
-      <div class="pie"><span>Corrida WRF ${escH(b.resolucion || '3 km')} ${fmtInit(p.inicializacion_utc)} · generado ${fmtHora(b.generado)}${b.error ? ` · <span class="err">${escH(b.error)}</span>` : ''}</span><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div></div>`
-    : `<div class="biD"><a href="${escH(b.imagen)}" target="_blank" rel="noopener">Ver meteograma ↗</a></div>`;
-  return `<div class="bi${b.codigo === SEL ? ' sel' : ''}" data-c="${escH(b.codigo)}"><div class="biT"><b class="nm">${escH(b.nombre)}</b>${res}${resumen}</div>${linea}${det}</div>`;
+  const d = diaDe(b), o = d && olaDe(b, d.fecha), fav = FAV.has(b.codigo);
+  return `<div class="bi${b.codigo === SEL ? ' sel' : ''}" data-c="${escH(b.codigo)}">
+    <span class="ic">${svgNub(d ? d.nubosidad : '', 30)}</span>
+    <span class="nm"><span class="t">${escH(b.nombre)}</span><span class="res">${escH(b.resolucion || '3 km')}</span></span>
+    <span class="tp">${d ? `<span class="mn">${tG(d.temp_min)}</span> / <span class="mx">${tG(d.temp_max)}</span>` : '<span style="color:var(--mut)">sin datos</span>'}</span>
+    <span class="ln">${d ? `<span>${ICO.viento}${escH(vientoCorto(d.viento))}</span>${o ? `<span>${ICO.ola}${escH(o.rango)}</span>` : ''}` : `<span class="err">${escH(b.error || 'Pronóstico aún no generado')}</span>`}</span>
+    <button type="button" class="fav${fav ? ' on' : ''}" data-f="${escH(b.codigo)}" title="${fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}" aria-label="Favorito">${fav ? ICO.estrellaOn : ICO.estrella}</button></div>`;
 }
 function pintarLista() {
-  const zonas = [...new Set(DATOS.bahias.map(b => b.zona))];
-  document.getElementById('lista').innerHTML = zonas.filter(z => !ZONA || z === ZONA)
-    .map(z => `<div class="zH">${escH(z)}</div>` + DATOS.bahias.filter(b => b.zona === z).map(item).join('')).join('');
-  document.querySelectorAll('.bi').forEach(el => el.addEventListener('click', e => { if (e.target.closest('.biD')) return; seleccionar(el.dataset.c, true); }));
-  const n = visibles().filter(b => b.pronostico).length;
-  document.getElementById('cuenta').textContent = `${n} con pronóstico`;
+  const zonas = [...new Set(DATOS.bahias.map(b => b.zona))], vs = visibles();
+  document.getElementById('tLista').textContent = VISTA === 'fav' ? 'Bahías favoritas' : 'Pronósticos por bahía';
+  const html = zonas.map(z => { const bs = vs.filter(b => b.zona === z); return bs.length ? `<div class="zH">${escH(z)}</div>` + bs.map(item).join('') : ''; }).join('');
+  document.getElementById('lista').innerHTML = html || `<div class="vacio">${VISTA === 'fav' ? 'Aún no tienes favoritos: marca la estrella de una bahía para agregarla.' : 'No hay bahías que coincidan con la búsqueda.'}</div>`;
+  document.querySelectorAll('#lista .bi').forEach(el => el.onclick = e => { if (e.target.closest('.fav')) return; seleccionar(el.dataset.c, true); });
+  document.querySelectorAll('#lista .fav').forEach(bt => bt.onclick = () => alternarFav(bt.dataset.f));
 }
-function pintarControles() {
+function alternarFav(c) { FAV.has(c) ? FAV.delete(c) : FAV.add(c); guardarFav(); pintarLista(); pintarDetalle(); if (VISTA === 'fav') pintarMapa(); }
+function pintarChips() {
   const zonas = [...new Set(DATOS.bahias.map(b => b.zona))];
-  const sel = document.getElementById('selZona');
-  sel.innerHTML = ['', ...zonas].map(z => `<option value="${escH(z)}"${z === ZONA ? ' selected' : ''}>${z ? escH(z) : 'Todas las áreas'}</option>`).join('');
-  sel.onchange = () => { ZONA = sel.value; try { localStorage.setItem('ia_zona', ZONA); } catch (e) {} if (SEL && !visibles().some(b => b.codigo === SEL)) SEL = null; todo(); encuadrar(); };
-  const hoy = hoyChile();
-  document.getElementById('dias').innerHTML = [0, 1, 2].map(n => `<button type="button" data-n="${n}" class="${n === DIA ? 'on' : ''}">${n === 0 ? 'Hoy' : fDia(sumarDias(hoy, n)).replace(/ \S+$/, '')}</button>`).join('');
-  document.querySelectorAll('#dias button').forEach(bt => bt.onclick = () => { DIA = +bt.dataset.n; pintarControles(); todo(); });
+  const corto = z => z.replace(/^Zona\s+/i, 'Zona ');
+  document.getElementById('chips').innerHTML = ['', ...zonas].map(z => `<button type="button" data-z="${escH(z)}" class="${z === ZONA ? 'on' : ''}">${z ? escH(corto(z)) : 'Todas'}</button>`).join('');
+  document.querySelectorAll('#chips button').forEach(bt => bt.onclick = () => { ZONA = bt.dataset.z; try { localStorage.setItem('ia_zona', ZONA); } catch (e) {} pintarChips(); todo(); encuadrar(); });
 }
-function todo() { pintarLista(); pintarMapa(); }
-function seleccionar(cod, volar, desdeMapa) {
-  SEL = SEL === cod && volar ? null : cod;
-  pintarLista();
+document.getElementById('busca').oninput = e => { BUSCA = e.target.value.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, ''); todo(); };
+document.querySelectorAll('.rail button').forEach(bt => bt.onclick = () => { VISTA = bt.dataset.v; document.querySelectorAll('.rail button').forEach(x => x.classList.toggle('on', x === bt)); todo(); encuadrar(); });
+function pintarDia() {
+  const f = fechaDia(); document.getElementById('diaTxt').textContent = (DIA === 0 ? 'Hoy, ' : DIA === 1 ? 'Mañana, ' : '') + fDia(f);
+  document.getElementById('diaAnt').disabled = DIA <= 0; document.getElementById('diaSig').disabled = DIA >= 2;
+}
+document.getElementById('diaAnt').onclick = () => { if (DIA > 0) { DIA--; pintarDia(); todo(); } };
+document.getElementById('diaSig').onclick = () => { if (DIA < 2) { DIA++; pintarDia(); todo(); } };
+function todo() { pintarLista(); pintarMapa(); pintarDetalle(); }
+
+// ============================ Detalle de la bahía ============================
+function estacionCercana(pos) {
+  let mejor = null;
+  for (const s of EST) { const t = parseLocalCL(s.fecha) || s.cambio; if (!t || Date.now() - t > 3 * 3600e3) continue;
+    const dd = Math.hypot(s.lat - pos[0], (s.lon - pos[1]) * Math.cos(pos[0] * Math.PI / 180)); if (dd < 0.45 && (!mejor || dd < mejor.dd)) mejor = { s, dd, t }; }
+  return mejor;
+}
+function grafico(b) {
+  const ds = ((b.pronostico && b.pronostico.dias) || []).slice(0, 4);
+  if (!ds.length) return '<div class="notaC">Sin pronóstico para graficar.</div>';
+  const W = 380, H = 190, ml = 34, mr = 8, mt = 24, mb = 26, iw = W - ml - mr, ih = H - mt - mb, cw = iw / ds.length;
+  let serie, ymax, ymin = 0, bandas = [], unidad, col;
+  if (TAB === 'viento') { serie = ds.map(d => vientoRango(d.viento)); ymax = Math.max(30, ...serie.filter(Boolean).map(r => r[1] + 5)); unidad = 'kt'; col = '#3d9bff';
+    bandas = [[0, 10, '#1b3f8f'], [10, 20, '#1f6e5a'], [20, 30, '#7a6a1a'], [30, 99, '#7a2626']]; }
+  else if (TAB === 'oleaje') { serie = ds.map(d => { const o = olaDe(b, d.fecha); return o ? [0, o.hs] : null; }); ymax = Math.max(3, ...serie.filter(Boolean).map(r => Math.ceil(r[1] + 0.5))); unidad = 'm'; col = '#21c4e0';
+    bandas = [[0, 1.25, '#1b3f8f'], [1.25, 2.5, '#1f6e5a'], [2.5, 4, '#7a6a1a'], [4, 99, '#7a2626']]; }
+  else { serie = ds.map(d => d.temp_min != null && d.temp_max != null ? [d.temp_min, d.temp_max] : null); const vs = serie.filter(Boolean).flat();
+    ymin = vs.length ? Math.floor(Math.min(...vs) / 5) * 5 - 5 : 0; ymax = vs.length ? Math.ceil(Math.max(...vs) / 5) * 5 + 5 : 20; unidad = '°C'; col = '#ff9a6b'; }
+  const Y = v => mt + ih - (Math.min(Math.max(v, ymin), ymax) - ymin) / (ymax - ymin) * ih;
+  let g = '';
+  for (const [a, z, c] of bandas) if (a < ymax) g += `<rect x="${ml}" y="${Y(Math.min(z, ymax))}" width="${iw}" height="${Y(a) - Y(Math.min(z, ymax))}" fill="${c}" opacity=".45"/>`;
+  const paso = (ymax - ymin) <= 6 ? 1 : (ymax - ymin) <= 20 ? 5 : 10;
+  for (let v = ymin; v <= ymax + 1e-6; v += paso) g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff" stroke-opacity=".12"/><text x="${ml - 5}" y="${Y(v) + 3.5}" text-anchor="end" font-size="10" fill="#9fb3c8">${v}</text>`;
+  g += `<text x="4" y="${mt - 8}" font-size="10" fill="#9fb3c8">${unidad}</text>`;
+  ds.forEach((d, i) => {
+    const cx = ml + cw * (i + 0.5), r = serie[i], hoy = d.fecha === fechaDia();
+    if (hoy) g += `<rect x="${ml + cw * i + 2}" y="${mt}" width="${cw - 4}" height="${ih}" fill="#ffffff" opacity=".06" rx="4"/>`;
+    g += `<text x="${cx}" y="${mt - 8}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#e8f1fb" style="text-transform:capitalize">${escH(fDia(d.fecha).replace(/ \S+$/, ''))}</text>`;
+    if (r) { const bw = Math.min(26, cw * 0.32);
+      g += `<rect x="${cx - bw / 2}" y="${Y(r[1])}" width="${bw}" height="${Math.max(3, Y(r[0]) - Y(r[1]))}" rx="5" fill="${col}"/>`;
+      const fmt = v => TAB === 'oleaje' ? nf(v, 1) : Math.round(v);
+      g += `<text x="${cx}" y="${Y(r[1]) - 5}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">${fmt(r[1])}</text>`;
+      if (TAB !== 'oleaje') g += `<text x="${cx}" y="${Y(r[0]) + 13}" text-anchor="middle" font-size="11" fill="#cfe3f7">${fmt(r[0])}</text>`; }
+    else g += `<text x="${cx}" y="${mt + ih / 2}" text-anchor="middle" font-size="11" fill="#9fb3c8">sin dato</text>`;
+    g += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="#9fb3c8">${escH(d.fecha.slice(8, 10) + '/' + d.fecha.slice(5, 7))}</text>`;
+  });
+  const ley = TAB === 'viento' ? 'Rango de viento sostenido del día (kt)' : TAB === 'oleaje' ? 'Altura significativa máxima del día (m)' : 'Temperatura mínima y máxima (°C)';
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${ley}">${g}</svg><div class="leyG"><span><i style="display:inline-block;width:14px;height:8px;border-radius:3px;background:${col}"></i>${ley}</span></div>`;
+}
+function pintarDetalle() {
+  const el = document.getElementById('det');
+  const b = DATOS && DATOS.bahias.find(x => x.codigo === SEL);
+  if (!b) { el.innerHTML = '<div class="card vacio">Elige una bahía en la lista o en el mapa para ver su pronóstico.</div>'; return; }
+  const p = b.pronostico, pos = IA_POS[b.codigo], fav = FAV.has(b.codigo);
+  const ban = `<div class="banner"><svg class="olas" viewBox="0 0 400 46" preserveAspectRatio="none"><path d="M0 22c40-14 80 14 120 0s80-14 120 0 80 14 160-4v28H0Z" fill="#1f6fb0" opacity=".7"/><path d="M0 32c50-12 90 10 140-2s90-10 130 2 90 8 130-6v20H0Z" fill="#0b3a66"/></svg>
+    <button type="button" class="fav${fav ? ' on' : ''}" data-f="${escH(b.codigo)}" title="${fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}">${fav ? ICO.estrellaOn : ICO.estrella}</button>
+    <h2>${escH(b.nombre)}</h2><div class="z">${escH(b.zona)}</div>
+    <div class="tags"><span>WRF ${escH(b.resolucion || '3 km')}</span>${pos ? `<span>${Math.abs(pos[0]).toFixed(2)}° S · ${Math.abs(pos[1]).toFixed(2)}° O</span>` : ''}</div></div>`;
+  // condiciones actuales: estación costera más cercana con dato reciente
+  const ec = pos && estacionCercana(pos), hoyF = hoyChile(), dHoy = diaDe(b, hoyF), oHoy = olaDe(b, hoyF);
+  let cond;
+  if (ec) { const s = ec.s, kt = aKt(s.vel, s.uVel), ra = aKt(s.racha, s.uVel);
+    cond = `<div class="cond">
+      <div>${ICO.term}<div><div class="v">${s.temp != null ? nf(s.temp, 1) : '–'} <small>°C</small></div><div class="l">Temperatura</div></div></div>
+      <div>${flechaDir(s.dirG)}<div><div class="v">${kt != null ? nf(kt, 0) : '–'} <small>kt</small></div><div class="l">${s.dirG != null ? cardinal(s.dirG) + ' · ' : ''}viento</div></div></div>
+      <div><div><div class="v">${ra != null ? nf(ra, 0) : '–'} <small>kt</small></div><div class="l">Rachas</div></div></div>
+      <div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5fb0ff" stroke-width="1.8" stroke-linecap="round"><path d="M2 12c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2M2 17c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2"/></svg><div><div class="v" style="font-size:16px">${oHoy ? escH(oHoy.rango) : '–'}</div><div class="l">Oleaje hoy (pronóstico)</div></div></div></div>
+      <div class="notaC">Estación ${escH(nombreEst(s))} · dato de las ${escH(fmtDM(ec.t).split(' ')[1] || '')} (${Math.round((Date.now() - ec.t) / 60000)} min).</div>`; }
+  else cond = `<div class="cond"><div style="grid-column:1/-1;color:var(--mut);font-size:12.5px">No hay una estación costera cercana con datos recientes.${dHoy ? ` Pronóstico de hoy: <b class="mn">${tG(dHoy.temp_min)}</b> / <b class="mx">${tG(dHoy.temp_max)}</b>, viento ${escH(dHoy.viento)}${oHoy ? `, oleaje ${escH(oHoy.rango)}` : ''}.` : ''}</div></div>`;
+  const tabs = [['viento', 'Viento'], ['oleaje', 'Oleaje'], ['temp', 'Temperatura']].map(([k, n]) => `<button type="button" data-t="${k}" class="${TAB === k ? 'on' : ''}">${n}</button>`).join('');
+  const ia = p ? `<div class="card ia"><h3>${ICO.ia}Análisis IA</h3><div class="gen">Generado ${escH(fmtHora(b.generado))} (hora Chile) · corrida WRF ${fmtInit(p.inicializacion_utc)}</div><p>${escH(p.situacion_sinoptica || '')}</p></div>`
+    : `<div class="card ia"><h3>${ICO.ia}Análisis IA</h3><p class="err">${escH(b.error || 'Pronóstico aún no generado')}</p></div>`;
+  const dias = p ? (p.dias || []).map(d => { const o = olaDe(b, d.fecha), vr = vientoRango(d.viento);
+    return `<div class="d3"><div class="n">${escH(fDia(d.fecha).replace(/ \S+$/, ''))}</div>${svgNub(d.nubosidad, 34)}<div class="t"><b class="mn">${tG(d.temp_min)}</b> / <b class="mx">${tG(d.temp_max)}</b></div>
+      <div class="r" title="${escH(d.viento)}">${ICO.viento}${vr ? `${vr[0]}–${vr[1]} kt` : escH(vientoCorto(d.viento))}</div>${o ? `<div class="r">${ICO.ola}${escH(o.rango)}</div>` : ''}${d.precipitacion ? `<div class="pp">${escH(d.precipitacion)}</div>` : ''}</div>`; }).join('') : '';
+  const tabla = p ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;color:#7fb8ff">Detalle por día</summary><div style="font-size:12.5px;margin-top:6px">${(p.dias || []).map(d => { const o = olaDe(b, d.fecha);
+    return `<div style="border-top:1px solid var(--line);padding:6px 0"><b style="text-transform:capitalize">${escH(fDia(d.fecha, true))}</b><div>${escH(d.nubosidad)}${d.nubosidad_detalle ? ' · ' + escH(d.nubosidad_detalle) : ''}</div><div>Viento: ${escH(d.viento)}</div>${o ? `<div>Oleaje: ${escH(o.rango)} · ${escH(o.estado.toLowerCase())} (${escH(o.dir_txt || '–')}${o.periodo != null ? ', ' + String(o.periodo).replace('.', ',') + ' s' : ''})</div>` : sinOla(b) ? '<div>Oleaje: sin cobertura del modelo</div>' : ''}${d.precipitacion ? `<div style="color:#7fc4ff">${escH(d.precipitacion)}</div>` : ''}</div>`; }).join('')}</div></details>` : '';
+  el.innerHTML = ban +
+    `<div class="card"><h3>Condiciones actuales</h3>${cond}</div>` +
+    `<div class="card"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="#2f8cff"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5" fill="#0d2136"/></svg>Pronóstico WRF + IA <span class="badge der">Experimental</span></h3><div class="tabsG" id="tabsG">${tabs}<a class="btnS" style="margin-left:auto" href="${escH(b.imagen)}" target="_blank" rel="noopener">Meteograma ↗</a></div><div id="graf">${grafico(b)}</div></div>` +
+    ia +
+    (dias ? `<div class="card"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Resumen próximos días<a class="btnS der" href="pronosticos.html" title="Pronósticos marítimos publicados">Ver más →</a></h3><div class="dias3">${dias}</div>${tabla}</div>` : '') +
+    `<div class="pieN">Generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández). Oleaje: altura significativa máxima del día del modelo marino de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, en rangos de 1 m; no resuelve fiordos ni canales angostos. Producto <b>referencial y experimental</b>: no reemplaza los pronósticos y avisos oficiales.</div>`;
+  el.querySelectorAll('.fav').forEach(bt => bt.onclick = () => alternarFav(bt.dataset.f));
+  el.querySelectorAll('#tabsG button').forEach(bt => bt.onclick = () => { TAB = bt.dataset.t; el.querySelectorAll('#tabsG button').forEach(x => x.classList.toggle('on', x === bt)); document.getElementById('graf').innerHTML = grafico(b); });
+}
+function seleccionar(cod, volar) {
+  SEL = cod; try { localStorage.setItem('ia_sel', cod); } catch (e) {}
+  document.querySelectorAll('#lista .bi').forEach(x => x.classList.toggle('sel', x.dataset.c === SEL));
   marcadores.forEach((m, c) => { const el = m.getElement(); if (el) el.querySelector('.iaM').classList.toggle('sel', c === SEL); });
-  const el = SEL && document.querySelector(`.bi[data-c="${CSS.escape(SEL)}"]`);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  if (SEL && volar && IA_POS[SEL]) { map.flyTo(IA_POS[SEL], Math.max(map.getZoom(), 7), { duration: 0.8 }); setTimeout(() => { const m = marcadores.get(SEL); if (m) m.openPopup(); }, 900); }
-  if (!SEL) map.closePopup();
+  puntos.forEach((l, c) => l.setStyle({ fillColor: c === SEL ? '#ff9f1a' : '#21c79a' }));
+  const li = document.querySelector(`#lista .bi[data-c="${CSS.escape(SEL)}"]`); if (li && innerWidth > 1000) li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (volar && IA_POS[SEL]) map.flyTo(IA_POS[SEL], Math.max(map.getZoom(), 7), { duration: 0.8 });
+  pintarDetalle(); document.getElementById('det').scrollTop = 0;
+  if (innerWidth <= 1000 && !volar) document.getElementById('det').scrollIntoView({ behavior: 'smooth', block: 'start' });
   despejar();
 }
+
+// ============================ Carga ============================
 async function cargar() {
   try {
-    const r = await fetch('data/wrf_ia.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status);
-    DATOS = await r.json();
-    try { const ro = await fetch('data/oleaje.json?t=' + Date.now(), { cache: 'no-store' }); if (ro.ok) OLA = await ro.json(); } catch (e) {}
+    DATOS = await leerJSON('data/wrf_ia.json');
+    const [o, e] = await Promise.all([leerJSON('data/oleaje.json').catch(() => null), leerJSON('data/estaciones.json').catch(() => null)]);
+    if (o) OLA = o;
+    if (e) EST = (e.datos || []).map(x => ({ nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), vel: num(x.velocidadDelViento), temp: num(x.temperatura), racha: num(x._racha), uVel: x._unidad_viento || '', cambio: x._cambio ? new Date(x._cambio) : null, sinDatos: !!x._sin_datos }))
+      .filter(s => isFinite(s.lat) && isFinite(s.lon) && !s.sinDatos);
     if (PRIMERA) {
-      // Desde el mapa del dashboard (?bahia=CÓDIGO) se abre el área de esa bahía con su pronóstico desplegado.
-      let q = null; try { q = new URLSearchParams(location.search).get('bahia'); } catch (e) {}
-      const b = q && DATOS.bahias.find(x => x.codigo === q);
-      if (b) { ZONA = b.zona; SEL = b.codigo; }
+      // Desde otras páginas (?bahia=CÓDIGO) se abre esa bahía; si no, la última consultada o Valparaíso.
+      let q = null; try { q = new URLSearchParams(location.search).get('bahia') || localStorage.getItem('ia_sel'); } catch (x) {}
+      const b = (q && DATOS.bahias.find(x => x.codigo === q)) || DATOS.bahias.find(x => /^VALPARAISO/.test(x.codigo)) || DATOS.bahias[0];
+      SEL = b ? b.codigo : null;
       if (ZONA && !DATOS.bahias.some(x => x.zona === ZONA)) ZONA = '';
     }
     const n = DATOS.bahias.filter(b => b.pronostico).length;
     document.getElementById('sub').textContent = `${n} de ${DATOS.bahias.length} lugares con pronóstico · revisado ${fmtHora(DATOS.actualizado)} (hora Chile)`;
-    pintarControles(); todo();
-    if (PRIMERA) { encuadrar(); if (SEL) { if (IA_POS[SEL]) { map.setView(IA_POS[SEL], 7); setTimeout(() => { const m = marcadores.get(SEL); if (m) m.openPopup(); }, 300); } const el = document.querySelector('.bi.sel'); if (el) el.scrollIntoView({ block: 'center' }); } }
+    pintarDia(); pintarChips(); todo();
+    if (PRIMERA) { encuadrar(); const li = document.querySelector('#lista .bi.sel'); if (li && innerWidth > 1000) li.scrollIntoView({ block: 'center' }); }
     PRIMERA = false;
   } catch (e) {
     document.getElementById('sub').textContent = 'Sin datos';
-    document.getElementById('lista').innerHTML = '<div class="nota">Los pronósticos aún no están disponibles. Se generan con la próxima corrida del modelo.</div>';
+    document.getElementById('lista').innerHTML = '<div class="vacio">Los pronósticos aún no están disponibles. Se generan con la próxima corrida del modelo.</div>';
   }
 }
-cargar();
-setInterval(cargar, 10 * 60000);
-// Si se publica una versión nueva de la página, se recarga sola.
+map.fitBounds(VISTA_INI);
+cargar(); cargarViento();
+setInterval(cargar, 10 * 60000); setInterval(cargarViento, 30 * 60000);
 setInterval(async () => {
   try { const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim(); if (v && v !== VERSION_PAGINA) location.reload(); } catch (e) {}
 }, 5 * 60000);
