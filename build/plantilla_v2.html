@@ -114,6 +114,8 @@ a{color:var(--acc2)}
 .leaflet-container{font:inherit}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0f243b;color:var(--ink);border:1px solid var(--line)}
 .leaflet-popup-content{margin:10px 12px;font-size:12.5px}
+.pp{font-size:12.5px;min-width:240px}.ppT{font-weight:800;font-size:13.5px;color:#ff7a6b;margin-bottom:4px}
+.prL{max-height:260px;overflow:auto}.prR{border-top:1px solid var(--line);padding:5px 0;font-size:12px;line-height:1.35}.prR:first-child{border-top:0}.prM{font-weight:700;color:#ff7a6b}.prM span{font-weight:400;color:var(--muted)}.prO{color:#c9d9ea;margin-top:2px}.prF{color:var(--muted);font-size:11px;margin-top:2px}
 .leaflet-tooltip{background:#0f243b;color:var(--ink);border:1px solid var(--line)}
 .leaflet-control-attribution{background:rgba(6,18,31,.6)!important;color:#9fb6cc!important}.leaflet-control-attribution a{color:#cfe2f5!important}
 .aviso{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:820;background:rgba(10,26,44,.95);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;display:none}
@@ -232,6 +234,7 @@ map.createPane('vientoPane').style.zIndex = 330;
 map.createPane('flechasPane').style.zIndex = 340; map.getPane('flechasPane').style.pointerEvents = 'none';
 map.createPane('metPane').style.zIndex = 360;
 map.createPane('avPane').style.zIndex = 380;
+map.createPane('puertoPane').style.zIndex = 655;
 map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 const VISTA = [[-70.5, -120.5], [-17.5, -52]];
 // Alto del mapa: que quepa completo en la pantalla bajo el encabezado (escritorio)
@@ -374,7 +377,59 @@ async function cargarBoyas() {
   pintarCond(); pintarAlertas();
 }
 // ---- Selector de capas
-const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, false], ['Boyas', capaBoyas, false]];
+// ============================ Puertos con restricción (SITPORT) ============================
+// Restricciones temporales publicadas por las capitanías de puerto en SITPORT; se consultan en vivo desde el navegador
+// (respaldo: data/restricciones.json). SITPORT no publica coordenadas: la posición de cada bahía es aproximada (tabla propia).
+const BAHIA_POS = {71:[-18.475,-70.325],72:[-20.205,-70.155],73:[-20.81,-70.2],74:[-22.09,-70.215],75:[-23.095,-70.44],76:[-22.715,-70.28],77:[-23.64,-70.41],78:[-23.76,-70.465],79:[-25.405,-70.48],80:[-26.345,-70.63],81:[-27.065,-70.83],82:[-27.08,-70.86],83:[-26.99,-70.82],84:[-28.465,-71.225],85:[-29.95,-71.34],86:[-29.975,-71.36],87:[-30.255,-71.5],88:[-31.89,-71.505],89:[-27.15,-109.43],90:[-33.635,-78.83],91:[-32.775,-71.51],92:[-33.03,-71.625],93:[-33.585,-71.62],94:[-33.36,-71.68],95:[-34.385,-72.01],96:[-34.17,-71.48],97:[-36.71,-72.975],98:[-36.715,-73.11],99:[-36.735,-73.145],100:[-37.03,-73.16],101:[-37.605,-73.66],102:[-37.09,-73.16],103:[-35.33,-72.42],104:[-39.815,-73.25],105:[-39.25,-72.1],106:[-39.64,-72.33],107:[-39.87,-73.43],109:[-41.48,-72.94],110:[-41.5,-73.02],111:[-41.15,-72.8],112:[-41.62,-73.6],113:[-41.77,-73.13],114:[-41.79,-73.45],115:[-41.96,-72.48],116:[-42.48,-73.76],117:[-43.12,-73.62],118:[-41.84,-73.7],119:[-42.62,-73.77],120:[-42.14,-73.48],121:[-42.915,-72.72],122:[-42.47,-73.49],123:[-44.73,-72.7],124:[-43.9,-73.75],125:[-45.16,-73.53],126:[-45.465,-72.83],127:[-47.8,-73.53],128:[-46.5,-72.4],129:[-49.13,-74.41],130:[-51.73,-72.51],131:[-52.64,-70.18],132:[-52.9,-70.13],133:[-53.1,-70.88],134:[-53.165,-70.9],135:[-52.95,-70.8],136:[-52.98,-71.35],137:[-53.29,-70.37],138:[-54.93,-67.61],139:[-62.2,-58.95],140:[-64.83,-62.86],141:[-38.71,-73.17],142:[-38.85,-73.35],143:[-38.78,-73.4],144:[-40.22,-72.4],145:[-40.27,-72.05],146:[-40.33,-72.95],147:[-41.7,-73.65],148:[-41.4,-73.82],149:[-41.75,-73.73],150:[-30.2,-71.43],151:[-30.27,-71.58],152:[-41.49,-72.31],153:[-41.62,-72.17],154:[-50.35,-75.35],155:[-42.9,-73.48],156:[-52.52,-69.55],157:[-28.08,-71.15],158:[-29.07,-71.49],159:[-41.12,-72.25],160:[-40.68,-72.45],161:[-40.83,-72.5],162:[-41.45,-72.55],163:[-42.38,-73.65],165:[-52.55,-71.9],170:[-39.94,-73.58],172:[-26.15,-70.66],173:[-32.92,-71.53],174:[-33.19,-71.7],175:[-43.88,-73.73],176:[-43.9,-73.72],180:[-32.14,-71.53],181:[-42.15,-72.45],182:[-42.25,-72.48],183:[-41.97,-72.6],184:[-42.0,-72.7],185:[-41.93,-72.85],186:[-42.3,-72.8],187:[-42.4,-72.7],195:[-20.75,-70.19],196:[-20.7,-70.19],197:[-20.9,-70.18],198:[-36.75,-73.18],199:[-55.98,-67.27],200:[-52.95,-70.82],202:[-29.44,-71.33],203:[-48.85,-72.6],204:[-19.595,-70.215],205:[-42.6,-73.67],206:[-29.55,-71.35],207:[-39.83,-73.24],208:[-39.85,-73.4],209:[-39.27,-71.98],210:[-39.27,-72.22],213:[-41.8,-73.55],214:[-41.86,-73.83],215:[-33.4,-71.7],216:[-41.49,-72.97],218:[-52.8,-70.98],219:[-32.74,-71.5],220:[-45.35,-73.05],221:[-45.75,-73.55],222:[-45.95,-73.7],223:[-45.6,-73.5],224:[-45.5,-73.9],225:[-45.45,-73.95],226:[-45.8,-74.15],227:[-45.4,-74.15],228:[-45.3,-74.0],229:[-34.85,-72.12],231:[-62.48,-59.66],232:[-41.8,-73.15],233:[-41.65,-72.75],234:[-43.75,-72.95],235:[-42.55,-73.38],236:[-22.2,-70.24],238:[-45.0,-73.6],239:[-45.2,-73.65],240:[-45.25,-73.8],241:[-45.05,-73.9],242:[-45.33,-73.55],243:[-45.4,-74.0],244:[-45.15,-73.7],245:[-39.59,-71.97],246:[-39.57,-72.17],247:[-39.53,-72.15],248:[-39.8,-72.4],249:[-39.79,-71.95],250:[-39.98,-71.82],251:[-43.4,-73.4],252:[-44.3,-73.5],253:[-44.4,-73.8],254:[-44.7,-73.9],255:[-44.6,-73.65],256:[-45.0,-73.6],257:[-47.25,-72.57],258:[-40.3,-73.1],259:[-54.85,-68.8],260:[-55.08,-67.08]};
+const SITPORT_API = 'https://orion.directemar.cl/sitport/back/users/', SITPORT_WEB = 'https://sitport.directemar.cl/#/informacion';
+let PUERTO_GRUPO = null, PUERTO_DATOS = null;
+const svgPuerto = (c, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="${c}" stroke="#fff" stroke-width="2"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="6.6" r="1.6"/><path d="M12 8.2v10M8.5 11h7M6.5 14.5c1 2.4 3 3.7 5.5 3.7s4.5-1.3 5.5-3.7"/></g></svg>`;
+async function sitport(nombre) {
+  const c = new AbortController(), to = setTimeout(() => c.abort(), 25000);
+  try { const r = await fetch(SITPORT_API + nombre, { method: 'POST', cache: 'no-store', signal: c.signal }); if (!r.ok) throw new Error('HTTP ' + r.status); return (await r.json()).recordset || []; }
+  finally { clearTimeout(to); }
+}
+async function leerRestricciones() {
+  try { const [bahias, restricciones] = await Promise.all([sitport('consultaBahias'), sitport('consultaRestricciones')]); return { bahias, restricciones, vivo: true, actualizado: new Date().toISOString() }; }
+  catch (e) { try { const d = await leerJSON('data/restricciones.json'); return { ...d, vivo: false }; } catch (e2) { return null; } }
+}
+const fechaSitport = s => { const m = String(s || '').match(/^(\d{1,2}) (\w{3}) (\d{4}) (\d{2}):(\d{2})/); return m ? `${m[1]} ${m[2].toLowerCase()} ${m[3]}, ${m[4]}:${m[5]}` : (s || ''); };
+const txtSitport = s => String(s ?? '').replace(/&GT;/gi, '>').replace(/&LT;/gi, '<').replace(/&AMP;/gi, '&').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim();
+function popupPuerto(nombre, lista, d) {
+  const filas = lista.map(r => {
+    const inst = [txtSitport(r.tipo), txtSitport(r.NombreInstalacion)].filter(x => x && x !== 'TODOS' && x !== 'TODAS').join(' · ') || 'Toda la bahía';
+    const det = txtSitport(r.Detalle), obs = txtSitport(r.Observacion);
+    return `<div class="prR"><div class="prM">${escH(txtSitport(r.MotivoRestriccion) || 'Restricción')}${r.tiporestriccion ? ` <span>· ${escH(txtSitport(r.tiporestriccion))}</span>` : ''}</div>
+      <div>${escH(inst)}</div>${det && det !== '-' ? `<div><b>Condición:</b> ${escH(det)}</div>` : ''}${obs ? `<div class="prO">${escH(obs)}</div>` : ''}
+      <div class="prF">${escH(txtSitport(r.NaveRecibe))}${r.AreaRestriccion ? ' · ' + escH(txtSitport(r.AreaRestriccion)) : ''} · desde ${escH(fechaSitport(r.FCinicio))}${r.FCTermino ? ' hasta ' + escH(fechaSitport(r.FCTermino)) : ''}</div></div>`;
+  }).join('');
+  return `<div class="pp"><div class="ppT" >${escH(nombre)} · ${lista.length} restricci${lista.length === 1 ? 'ón' : 'ones'}</div><div class="prL">${filas}</div>
+    <div style="margin-top:6px;font-size:11px;color:var(--muted)">Fuente: SITPORT${d.vivo ? ', consultado en vivo' : ', copia del ' + escH(fmtDM(new Date(d.actualizado)))}. Posición de la bahía aproximada.</div>
+    <div style="margin-top:4px"><a href="${SITPORT_WEB}" target="_blank" rel="noopener">Ver en SITPORT ↗</a></div></div>`;
+}
+function buildPuertos() { PUERTO_GRUPO = L.layerGroup(); cargarPuertos(); return PUERTO_GRUPO; }
+async function cargarPuertos() {
+  if (!PUERTO_GRUPO) return;
+  const d = await leerRestricciones(); if (!d) return;
+  PUERTO_DATOS = d; PUERTO_GRUPO.clearLayers();
+  const nombres = Object.fromEntries((d.bahias || []).map(b => [b.IDBahia, String(b.NMBahia || '').trim()]));
+  const por = {};
+  for (const r of d.restricciones || []) (por[r.bahia] = por[r.bahia] || []).push(r);
+  let n = 0;
+  for (const [id, lista] of Object.entries(por)) {
+    const pos = BAHIA_POS[id], nombre = nombres[id] || txtSitport(lista[0].GLBahia) || 'Bahía ' + id;
+    if (!pos) { console.warn('SITPORT: bahía sin posición', id, nombre); continue; }
+    n++;
+    L.marker(pos, { pane: 'puertoPane', icon: L.divIcon({ className: '', html: svgPuerto('#d32f2f'), iconSize: [22, 22], iconAnchor: [11, 11] }) })
+      .bindPopup(() => popupPuerto(nombre, lista, d), { maxWidth: 340, autoPanPadding: [30, 40] })
+      .bindTooltip(`${escH(nombre)} · ${lista.length} restricci${lista.length === 1 ? 'ón' : 'ones'} (${escH([...new Set(lista.map(r => txtSitport(r.MotivoRestriccion)).filter(Boolean))].join(', ').toLowerCase())})`, { direction: 'top', offset: [0, -10] })
+      .addTo(PUERTO_GRUPO);
+  }
+}
+setInterval(() => { if (PUERTO_GRUPO && map.hasLayer(PUERTO_GRUPO)) cargarPuertos(); }, 10 * 60000);
+
+const capaPuertos = buildPuertos();
+const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true], ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
