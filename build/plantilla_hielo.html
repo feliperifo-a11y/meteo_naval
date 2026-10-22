@@ -77,13 +77,14 @@ ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
 #map .hCosta{stroke:#7d8a96;fill:#efeee6;fill-opacity:1}#map.tOsc .hCosta{stroke:#8aa4bc;fill:#1d3a52;fill-opacity:1}#map.tRel .hCosta{stroke-opacity:0;fill-opacity:0}
 #map .hCostaL{stroke:#3d4853}#map.tOsc .hCostaL,#map.tRel .hCostaL{stroke:#e8f1fb;stroke-opacity:.6}
 #map .hGrid{stroke:#5b6673}#map.tOsc .hGrid,#map.tRel .hGrid{stroke:#c7d6e6;stroke-opacity:.42}
+#map.tCla .hMet{stroke:#3d4853}
 #map .hIso{stroke:#0b4f8a}#map.tOsc .hIso,#map.tRel .hIso{stroke:#e6eff8;stroke-opacity:.85}
 .gridLbl span{position:absolute;transform:translate(-50%,-50%);font:700 11px/1 system-ui,sans-serif;color:#1f2a36;background:rgba(255,255,255,.85);padding:2px 4px;border-radius:3px;white-space:nowrap}
 #map.tOsc .gridLbl span,#map.tRel .gridLbl span{background:none;color:#e8f1fb;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8)}
 .mLbl span{display:inline-block;background:rgba(255,255,255,.88);color:#4a2f57;border:1px solid #6b4a7a;border-radius:5px;padding:1px 6px;font:700 12px system-ui,sans-serif;white-space:nowrap;transform:translate(-50%,-50%)}
-.mLbl.co span{color:#1d3b1d;border-color:#2f6b2f}.mLbl.oc span{color:#5a4700;border-color:#8a6d00}
+.mLbl.co span,.mLbl.oc span{color:#1f2a36;border-color:#5b6673}
 #map.tOsc .mLbl span,#map.tRel .mLbl span{background:rgba(9,24,40,.82);color:#fff;border-color:rgba(232,241,251,.55)}
-#map.tOsc .mLbl.oc span,#map.tRel .mLbl.oc span{color:#ffe08a}#map.tOsc .mLbl.co span,#map.tRel .mLbl.co span{color:#b9f0b0}
+
 .isoLbl span{position:absolute;transform:translate(-50%,-50%);font:600 10.5px/1 system-ui,sans-serif;color:#0b4f8a;background:rgba(255,255,255,.82);padding:1px 3px;border-radius:3px;white-space:nowrap}
 #map.tOsc .isoLbl span,#map.tRel .isoLbl span{background:#e8f1fb;color:#0c2440;font-weight:700}
 .topo span{position:absolute;transform:translate(-50%,-50%);font:600 12px/1.15 system-ui,sans-serif;color:#fff;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.9);white-space:nowrap;text-align:center}
@@ -211,8 +212,8 @@ C.met = L.layerGroup();
 for (const f of METAREA.features) {
   const p = f.properties; if (!/^(IX|VIII|VII|X-S)/.test(p.id)) continue;
   const g = f.geometry, polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
-  const col = p.tipo === 'antartica' ? '#e6e9ff' : p.tipo === 'oceanica' ? '#ffd76a' : '#9be08f';
-  for (const pg of polys) L.polygon(pg.map(r => dens(r).map(([lo, la]) => aH(la, lo))), { pane: 'lineas', color: col, weight: 1.3, fill: false, dashArray: p.tipo === 'costera' ? null : '6 4' }).bindTooltip(escH(p.nombre ? (p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre) : p.id), { sticky: true }).addTo(C.met);
+  const col = '#ffffff';   // blanco: el verde y el amarillo se confunden con los colores de concentración de hielo
+  for (const pg of polys) L.polygon(pg.map(r => dens(r).map(([lo, la]) => aH(la, lo))), { pane: 'lineas', className: 'hMet', color: col, weight: p.tipo === 'costera' ? 1 : 1.3, opacity: p.tipo === 'costera' ? 0.6 : 0.85, fill: false, dashArray: p.tipo === 'costera' ? null : '6 4' }).bindTooltip(escH(p.nombre ? (p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre) : p.id), { sticky: true }).addTo(C.met);
   L.marker(aH(p.lp[0], p.lp[1]), { interactive: false, icon: L.divIcon({ className: 'mLbl' + (p.tipo === 'costera' ? ' co' : p.tipo === 'oceanica' ? ' oc' : ''), html: `<span>${escH(p.id.replace('IX-', 'IX·').replace('X-', 'X·'))}</span>`, iconSize: [0, 0] }) }).addTo(C.met);
 }
 C.lim = L.layerGroup();
@@ -285,7 +286,7 @@ const icoBase = L.divIcon({ className: 'tmp', html: '<svg width="20" height="20"
 const ICO = {
   costa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 18c2-3 4-1 6-4s1-6 4-8 5 0 8-2"/></svg>',
   grilla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"><path d="M8 3v18M16 3v18M3 8h18M3 16h18"/></svg>',
-  met: '<svg viewBox="0 0 24 24" fill="none" stroke="#a8e6a0" stroke-width="1.6"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></svg>',
+  met: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></svg>',
   lim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"><path d="M3 9h18M3 15h18"/></svg>',
   topo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>',
   tempanos: '<svg viewBox="0 0 24 24"><path d="M12 4 20 19H4Z" fill="#e8f4ff" stroke="#5aa6ff" stroke-width="1.6" stroke-linejoin="round"/></svg>',
