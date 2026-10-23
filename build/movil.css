@@ -1,0 +1,14 @@
+/* Márgenes del sistema en iPhone y Android, incluida la orientación horizontal. */
+html{height:100%}
+body{box-sizing:border-box;min-height:100%;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+@supports(height:100dvh){html{height:100dvh}}
+.app-install-link{display:inline-block;margin-top:8px;padding:7px 12px;border:1px solid #39618b;border-radius:9px;color:#a8d3ff;text-decoration:none;font-size:12px;font-weight:600;min-height:28px;line-height:28px}
+.app-install-link:hover{background:#153452;color:#fff}
+.app-install-link:focus-visible{outline:3px solid #a8d3ff;outline-offset:3px}
+@media(max-width:760px){
+  .top .logo{min-width:0}
+  .top .reloj{margin-left:auto}
+  .mapCard{min-height:340px;height:62vh;height:62svh}
+}
+@media(display-mode:standalone){.app-install-link{display:none}}
+@media print{.app-install-link{display:none}}

@@ -1,0 +1,25 @@
+name: Verificar app gratuita
+on:
+  pull_request:
+    paths: ['app/**', 'build/**', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Construir y verificar rutas e íconos
+        run: |
+          python scripts/construir_index.py
+          python scripts/verificar_app.py
+      - name: Verificar instalación y política de datos sin conexión
+        run: node --test tests/pwa.test.cjs
