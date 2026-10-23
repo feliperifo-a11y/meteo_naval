@@ -1,5 +1,37 @@
 # Dashboard meteorológico costero
 
+## App gratuita para iPhone y Android
+
+MeteoIA se instala desde el navegador como aplicación web (PWA), con el mismo
+nombre, ícono y funciones del sitio. No requiere una cuenta de desarrollador ni
+publicación en tiendas para esta modalidad.
+
+- Abre `app/` desde la dirección publicada del sitio o toca **Instalar app gratis** en la portada.
+- **iPhone / iPad:** abre el enlace en Safari → Compartir → Agregar a pantalla de inicio → Agregar. Si aparece **Abrir como app web**, actívalo.
+- **Android:** abre el enlace en Chrome → Instalar MeteoIA, si aparece el botón; también puedes usar el menú ⋮ → Instalar aplicación / Agregar a pantalla principal.
+- Abre el ícono de MeteoIA desde la pantalla de inicio para entrar a la app.
+
+La instalación no tiene costo. La información meteorológica necesita internet.
+El service worker solo guarda la pantalla de ayuda sin conexión; no guarda
+pronósticos, avisos, observaciones ni mapas. Las funciones y servicios de datos
+existentes conservan su funcionamiento. No se agregan servicios de pago.
+
+`app/app.webmanifest` es el manifiesto principal. `app/manifest.webmanifest`
+mantiene el mismo contenido para enlaces antiguos. `build/movil.css` aporta
+los márgenes seguros de pantalla y se incorpora en todas las páginas al construir.
+Los cambios se publican con el workflow existente al integrarse en `main`.
+
+Validación local (sin paquetes adicionales; Python 3.9+ y Node 22):
+
+```bash
+python scripts/construir_index.py
+python scripts/verificar_app.py
+node --test tests/pwa.test.cjs
+```
+
+El workflow **Verificar app gratuita** ejecuta estas comprobaciones en pull requests.
+Antes de publicar, comprobar la instalación real en Safari de iPhone y Chrome de Android.
+
 Página pública que muestra, en un solo mapa:
 
 - **Avisos meteorológicos vigentes y próximos** (marejadas, mal tiempo, temporal, trombas), dibujados dentro de las subáreas METAREA XV que afectan.
@@ -197,3 +229,4 @@ Ejecuta el recolector en un computador en Chile y sube los JSON al repositorio:
 3. En el workflow, cambia el paso "Recolectar datos" por uno que no descargue nada. El sitio se publicará con los JSON que subió tu equipo.
 
 Con este esquema, los datos se actualizan solo mientras ese computador esté encendido.
+
