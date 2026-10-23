@@ -197,30 +197,3 @@ Ejecuta el recolector en un computador en Chile y sube los JSON al repositorio:
 3. En el workflow, cambia el paso "Recolectar datos" por uno que no descargue nada. El sitio se publicará con los JSON que subió tu equipo.
 
 Con este esquema, los datos se actualizan solo mientras ese computador esté encendido.
-
-## Trivia meteorológica
-
-El juego está en `juegos/trivia-meteo/` y se abre desde «Trivia Meteorológica» en la portada o el dashboard. Se publica con el workflow existente en la ruta `/meteo_naval/juegos/trivia-meteo/`.
-
-- Banco de 24 preguntas; se eligen 8 sin repetición por partida.
-- Opciones en orden aleatorio, 100 puntos por acierto y explicaciones.
-- Mejor marca guardada solo en el navegador, cuando este permite almacenamiento local.
-- Sin anuncios, registro, peticiones a APIs ni dependencias externas.
-- Funciona en celulares, con teclado y dentro de un iframe.
-
-Para editar el contenido, modifica `juegos/trivia-meteo/preguntas.js`. La primera opción de cada pregunta es la correcta; el juego baraja las opciones al mostrarlas.
-
-Para insertarlo en otra página:
-
-```html
-<iframe
-  src="https://feliperifo-a11y.github.io/meteo_naval/juegos/trivia-meteo/"
-  title="Trivia meteorológica de MeteoIA"
-  width="100%"
-  height="1000"
-  style="border:0;border-radius:16px"
-  loading="lazy">
-</iframe>
-```
-
-Prueba local: `python3 -m http.server 8765`, luego abre `http://localhost:8765/juegos/trivia-meteo/`. No necesita compilación.
