@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081726">
+  <meta name="description" content="Pon a prueba tus conocimientos de meteorología: una trivia de MeteoIA sobre nubes, instrumentos, viento y mar.">
+  <title>Trivia meteorológica · MeteoIA</title>
+  <link rel="stylesheet" href="estilos.css">
+  <script src="preguntas.js" defer></script>
+  <script src="juego.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#juego">Saltar al juego</a>
+  <header class="cabecera">
+    <a class="marca" href="../../"><span class="marca-icono" aria-hidden="true">M</span><span>Meteo<span class="azul">IA</span><small>APRENDE JUGANDO</small></span></a>
+    <a class="volver" href="../../">← Volver al mapa</a>
+  </header>
+  <main>
+    <section class="presentacion" aria-labelledby="titulo">
+      <div class="texto-hero">
+        <p class="etiqueta"><span></span> UN DESAFÍO CON LOS PIES EN LA TIERRA</p>
+        <h1 id="titulo">¿Qué tanto sabes<br>del <em>tiempo?</em></h1>
+        <p class="bajada">Del cielo al mar, cada fenómeno tiene una explicación.<br class="solo-escritorio"> Descúbrela, una pregunta a la vez.</p>
+        <div class="temas"><span>Nubes</span><span>Viento</span><span>Instrumentos</span><span>Mar</span></div>
+      </div>
+      <div class="ilustracion" aria-hidden="true">
+        <svg viewBox="0 0 340 290" fill="none">
+          <circle cx="171" cy="135" r="111" stroke="#26445d" stroke-dasharray="3 7"/>
+          <circle cx="171" cy="135" r="83" stroke="#20394e"/>
+          <path d="M171 10v250M46 135h250" stroke="#20394e"/>
+          <circle cx="194" cy="87" r="37" fill="#ffc76b"/>
+          <g stroke="#ffc76b" stroke-width="3" stroke-linecap="round"><path d="M194 36V26M194 148v-10M245 87h10M133 87h10M231 50l7-7M151 130l7-7M231 124l7 7M151 44l7 7"/></g>
+          <path d="M112 161c-39 0-45-52-10-61 6-47 72-55 90-13 35-5 58 32 35 57-5 10-16 17-30 17Z" fill="#cce5f6"/>
+          <path d="M116 161h84c14 0 26-8 31-19H106c-13 0-23-6-29-13 1 19 16 32 39 32Z" fill="#9fc9e6"/>
+          <path d="m125 177-7 15m40-15-7 15m40-15-7 15" stroke="#55bcf6" stroke-width="4" stroke-linecap="round"/>
+          <path d="M52 223c20-16 40 16 60 0s40 16 60 0 40 16 60 0 40 16 60 0M65 239c20-16 40 16 60 0s40 16 60 0 40 16 60 0 30 10 40 0" stroke="#49b7d8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="74" cy="74" r="5" fill="#65d9bf"/><path d="M268 173h33c15 0 15-21 0-21-8 0-11 5-11 9M249 185h35" stroke="#81a5c0" stroke-width="3" stroke-linecap="round"/>
+          <text x="168" y="19" fill="#7e9ab1" font-family="system-ui" font-size="10">N</text><text x="288" y="138" fill="#7e9ab1" font-family="system-ui" font-size="10">E</text>
+        </svg>
+        <span class="nota-cielo">OBSERVAR · APRENDER · DESCUBRIR</span>
+      </div>
+    </section>
+
+    <section id="juego" class="tarjeta" aria-label="Trivia meteorológica">
+      <div id="inicio">
+        <div class="intro-superior"><span class="etiqueta">TRIVIA METEOROLÓGICA</span><span class="insignia">Nivel explorador</span></div>
+        <h2>Un pequeño reto.<br>Un cielo de cosas por aprender.</h2>
+        <p class="muted">Elige una respuesta y descubre el porqué. No hay cronómetro: aquí la curiosidad marca el ritmo.</p>
+        <div class="datos"><div><b>8</b><span>preguntas por partida</span></div><div><b>+100</b><span>puntos por acierto</span></div><div><b>∞</b><span>ganas de aprender</span></div></div>
+        <div class="comenzar"><button id="empezar" class="principal" type="button">Comenzar el desafío <span aria-hidden="true">→</span></button><span id="record-inicio" class="muted">Sin registro · Sin anuncios</span></div>
+      </div>
+
+      <div id="partida" hidden>
+        <div class="estado"><span id="contador"></span><span id="puntos">0 puntos</span></div>
+        <progress id="progreso" max="8" value="0" aria-label="Preguntas respondidas"></progress>
+        <p id="categoria" class="etiqueta"></p>
+        <h2 id="pregunta" tabindex="-1"></h2>
+        <p id="instruccion" class="muted">Selecciona una respuesta.</p>
+        <div id="opciones" class="opciones" role="group" aria-labelledby="pregunta" aria-describedby="instruccion"></div>
+        <div id="respuesta" class="respuesta" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <div class="acciones"><span class="muted">Cada respuesta es una oportunidad de aprender.</span><button id="siguiente" class="principal" type="button" hidden>Siguiente pregunta →</button></div>
+      </div>
+
+      <div id="resultado" hidden>
+        <p class="etiqueta">DESAFÍO COMPLETADO</p>
+        <div class="resumen"><div><h2 id="titulo-resultado" tabindex="-1"></h2><p id="mensaje-resultado" class="muted"></p></div><div class="puntaje-final"><b id="puntaje-final"></b><span>puntos de 800</span></div></div>
+        <p id="record-final" class="mejor"></p>
+        <button id="repetir" class="principal" type="button">Jugar otra vez <span aria-hidden="true">↻</span></button>
+        <details class="repaso"><summary>Repasar mis respuestas</summary><ol id="lista-repaso"></ol></details>
+      </div>
+      <noscript><p>Activa JavaScript en tu navegador para jugar esta trivia.</p></noscript>
+    </section>
+
+    <div class="pie-juego"><span>Un poco más de curiosidad. Un poco más de meteorología.</span><span>HECHO PARA MIRAR AL CIELO ↑</span></div>
+    <footer><p>MeteoIA · Aprende jugando</p><details><summary>Fuentes educativas</summary><p>Preguntas originales basadas en conceptos de <a href="https://weather.metoffice.gov.uk/learn-about/met-office-for-schools/other-content/other-resources/how-to-measure-the-weather" target="_blank" rel="noopener noreferrer">instrumentos meteorológicos</a>, <a href="https://weather.metoffice.gov.uk/learn-about/weather/types-of-weather/clouds" target="_blank" rel="noopener noreferrer">nubes</a> y <a href="https://www.weather.gov/okx/marinedef" target="_blank" rel="noopener noreferrer">meteorología marina</a>.</p></details></footer>
+  </main>
+</body>
+</html>

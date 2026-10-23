@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "app/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "hielos.html", "nuevo.html", "dashboard.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "app/**", "juegos/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "hielos.html", "nuevo.html", "dashboard.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -126,7 +126,7 @@ jobs:
           python scripts/construir_index.py
           mkdir -p _site/data
           cp index.html dashboard.html ia.html pronosticos.html hielos.html nuevo.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
-          cp -r app _site/
+          cp -r app juegos _site/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
