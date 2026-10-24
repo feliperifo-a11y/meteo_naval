@@ -15,15 +15,25 @@
     "alcance": "Esquema de paralelos distritales y límites oceánicos. No es una cartografía jurisdiccional de detalle.",
     "costa": "Los extremos costeros de los paralelos se ajustan a la costa simplificada incorporada en MeteoIA; el límite IV–V en canales es referencial.",
     "insular": "Las áreas insulares de Rapa Nui, Salas y Gómez, San Félix, San Ambrosio y Juan Fernández corresponden al II Distrito según la fuente; no se trazan sus perímetros específicos.",
-    "sur": "El V Distrito continúa al Polo Sur. La proyección del mapa recorta su representación en latitudes polares.",
-    "posiciones_centros": "Ubicaciones urbanas aproximadas, no direcciones de instalaciones."
+    "sur": "La jurisdicción del V Distrito continúa al Polo Sur. Por claridad visual, los trazos oceánicos del mapa se detienen en el mar antes de la costa antártica simplificada.",
+    "posiciones_centros": "Ubicaciones urbanas aproximadas, no direcciones de instalaciones.",
+    "rotulos": "Los rótulos se anclan al límite occidental y se dibujan completamente a su izquierda, fuera de las áreas distritales.",
+    "fuente_costa_antartica": {
+      "titulo": "Natural Earth, tierra 1:110 millones",
+      "url": "https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson",
+      "blob_sha": "04811d72fff2701ec67587e30ad8942675b511e3"
+    }
   },
   "features": [
     {
       "type": "Feature",
       "properties": {
         "tipo": "limite",
-        "nombre": "Límite norte y occidental SAR"
+        "nombre": "Límite norte y occidental SAR",
+        "corte_visual_antartica": {
+          "costa_latitud": -74.46913117834947,
+          "separacion_grados": 0.75
+        }
       },
       "geometry": {
         "type": "LineString",
@@ -46,7 +56,7 @@
           ],
           [
             -131,
-            -90
+            -73.71913117834947
           ]
         ]
       }
@@ -55,7 +65,11 @@
       "type": "Feature",
       "properties": {
         "tipo": "limite",
-        "nombre": "Límite oceánico austral SAR"
+        "nombre": "Límite oceánico austral SAR",
+        "corte_visual_antartica": {
+          "costa_latitud": -80.09508556061506,
+          "separacion_grados": 0.75
+        }
       },
       "geometry": {
         "type": "LineString",
@@ -90,7 +104,7 @@
           ],
           [
             -53,
-            -90
+            -79.34508556061506
           ]
         ]
       }
@@ -187,12 +201,13 @@
         "distrito": "I",
         "mrcc": "Iquique",
         "color": "#e8bd46",
-        "detalle": "18°21′03″ S a 26°03′20″ S; hasta 120° O."
+        "detalle": "18°21′03″ S a 26°03′20″ S; hasta 120° O.",
+        "anclaje": "limite_oeste"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -97,
+          -120,
           -22.3
         ]
       }
@@ -205,12 +220,13 @@
         "distrito": "II",
         "mrcc": "Valparaíso",
         "color": "#ffdc64",
-        "detalle": "26°03′20″ S a 34°41′00″ S; hasta 120° O al norte de 30° S y 131° O al sur."
+        "detalle": "26°03′20″ S a 34°41′00″ S; hasta 120° O al norte de 30° S y 131° O al sur.",
+        "anclaje": "limite_oeste"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -99,
+          -131,
           -30.6
         ]
       }
@@ -223,12 +239,13 @@
         "distrito": "III",
         "mrcc": "Talcahuano",
         "color": "#49d4bf",
-        "detalle": "34°41′00″ S a 40°14′30″ S; hasta 131° O."
+        "detalle": "34°41′00″ S a 40°14′30″ S; hasta 131° O.",
+        "anclaje": "limite_oeste"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -101,
+          -131,
           -37.5
         ]
       }
@@ -241,12 +258,13 @@
         "distrito": "IV",
         "mrcc": "Puerto Montt",
         "color": "#6cd3ad",
-        "detalle": "40°14′30″ S a 48°49′00″ S en el sector oceánico; hasta 131° O."
+        "detalle": "40°14′30″ S a 48°49′00″ S en el sector oceánico; hasta 131° O.",
+        "anclaje": "limite_oeste"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -101,
+          -131,
           -44.5
         ]
       }
@@ -259,12 +277,13 @@
         "distrito": "V",
         "mrcc": "Punta Arenas",
         "color": "#f8b849",
-        "detalle": "Desde 48°49′00″ S hasta el Polo Sur; hasta 131° O y con el límite oriental austral indicado en la referencia."
+        "detalle": "Desde 48°49′00″ S hasta el Polo Sur; hasta 131° O y con el límite oriental austral indicado en la referencia.",
+        "anclaje": "limite_oeste"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -102,
+          -131,
           -58
         ]
       }

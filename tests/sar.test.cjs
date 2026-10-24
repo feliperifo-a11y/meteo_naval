@@ -25,7 +25,23 @@ test('los minutos decimales australes no se interpretan como segundos', () => {
   assert(Math.abs(points[3][1] + 56 + 22.8 / 60) < 1e-9);
   assert(Math.abs(points[5][1] + 58 + 21.1 / 60) < 1e-9);
   assert.equal(points[6][0], -53);
-  assert.equal(points[7][1], -90);
+  assert(points[7][1] < -60 && points[7][1] > -80);
+});
+test('los trazos se detienen en el mar y los rótulos se anclan fuera del borde oeste', () => {
+  for (const f of data.features.filter(f => f.properties.tipo === 'limite')) {
+    const end = f.geometry.coordinates.at(-1);
+    const crop = f.properties.corte_visual_antartica;
+    assert(end[1] > crop.costa_latitud);
+    assert(Math.abs(end[1] - crop.costa_latitud - 0.75) < 1e-9);
+    assert(end[1] > -80 && end[1] < -60);
+  }
+  for (const f of data.features.filter(f => f.properties.tipo === 'rotulo')) {
+    const [lon, lat] = f.geometry.coordinates;
+    assert.equal(lon, lat > -30 ? -120 : -131);
+    assert.equal(f.properties.anclaje, 'limite_oeste');
+  }
+  const template = fs.readFileSync(path.join(root, 'build/plantilla_v2.html'), 'utf8');
+  assert.match(template, /\.sar-label\.sar-outside>span\{transform:translate\(calc\(-100% - 10px\),-50%\)\}/);
 });
 test('la portada conserva la capa SAR apagada y las capas habituales encendidas', () => {
   const html = fs.readFileSync(path.join(root, 'build/plantilla_v2.html'), 'utf8');
