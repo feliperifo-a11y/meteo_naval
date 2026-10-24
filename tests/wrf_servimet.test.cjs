@@ -16,9 +16,9 @@ test('solo acepta las 25 fechas consecutivas de una misma inicialización en UTC
   d.frames[3].fecha=d.frames[2].fecha;assert.throws(()=>ctx.wrfValidar(d));
   d.frames.splice(3,1);assert.throws(()=>ctx.wrfValidar(d));
 });
-test('WRF es opcional solo en dashboard y comparte controles UV con exclusión de escalas',()=>{
+test('WRF queda oculta en el selector y conserva su implementación para reactivarla después',()=>{
   const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8'),principal=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.match(dashboard,/'talc_wrf', 'WRF SERVIMET'.*false,/);assert.doesNotMatch(principal,/crearWRFServimet|wrf_servimet.json/);
+  assert.doesNotMatch(dashboard,/addLayerRow\([^\n]*'talc_wrf'|id=["']chk_talc_wrf["']/);assert.doesNotMatch(principal,/crearWRFServimet|wrf_servimet.json/);
   assert.doesNotMatch(dashboard,/\/\*WRF_SERVIMET_JS\*\//);
   const start=dashboard.indexOf('function vistaPronosticoTalc('),end=dashboard.indexOf('function renderCapas()',start);
   const code=dashboard.slice(start,end),checks={talc_uv:{checked:true},talc_wrf:{checked:true}},calls=[];
