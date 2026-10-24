@@ -1564,6 +1564,7 @@ function vistaPronosticoTalc(clave) {
     LAYERS[otra]?.set(false);
     const check=document.getElementById('chk_'+otra);if(check)check.checked=false;
   }
+  if(window.innerWidth<=600){document.getElementById('layerBox').classList.add('min');document.getElementById('lbBtn').textContent='▴';}
   if(map.hasLayer(ocean)){map.removeLayer(ocean);osm.addTo(map);}
 }
 function renderCapas() {

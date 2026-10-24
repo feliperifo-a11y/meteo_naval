@@ -78,7 +78,7 @@ function crearPronosticoRaster(L, map, escapar, prepararVista, tipo) {
   let datos=null, indice=0, timer=null, consultaTimer=null, cargando=false, overlay=null, canvas=null, frameVisible=-1, token=0, popup=null;
   const activo=()=>map.hasLayer(grupo);
   const detener=()=>{clearInterval(timer);timer=null;play.textContent='Reproducir';play.setAttribute('aria-pressed','false');};
-  const imagen=(base,tipo)=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Imagen UV ilegible'));im.src=`data:image/${tipo};base64,${base}`;});
+  const imagen=(base,tipo)=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Imagen de pronóstico ilegible'));im.src=`data:image/${tipo};base64,${base}`;});
   function informacion() {
     const edad=Date.now()-Date.parse(datos.consultado), vencida=datos.frames.at(-1).fecha.slice(0,10)<new Date().toLocaleDateString('sv-SE');
     estado.textContent=(vencida?'Corrida vencida · ':edad>4*3600000?'Última corrida conservada · ':'')+fecha(datos.frames[indice].fecha);

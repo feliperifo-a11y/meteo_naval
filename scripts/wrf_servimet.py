@@ -39,8 +39,8 @@ ANCLAS = [(611,257),(607,265),(606,273),(600,293),(591,302),
 def fechas(texto):
     if not re.search(r'Viento\s+Color\s+10m', texto, re.I) or 'nudos' not in texto.lower():
         raise ValueError('La carta no declara viento a 10 m en nudos')
-    # OCR confunde la Z de UTC con 7; solo se corrige tras los dos dígitos de hora.
-    m = re.findall(r'(20\d{2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})\s*[-:]\s*([0-9OoIl]{2})\s*[Zz7]', texto)
+    # OCR confunde la Z de UTC con 7 o 2; solo se corrige tras los dos dígitos de hora.
+    m = re.findall(r'(20\d{2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})\s*[-:]\s*([0-9OoIl]{2})\s*[Zz72]', texto)
     if len(m) != 2:
         raise ValueError('Inicialización o validez WRF ilegible: ' + texto)
     tr = str.maketrans({'O':'0','o':'0','I':'1','l':'1'})

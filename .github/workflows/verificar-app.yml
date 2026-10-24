@@ -23,7 +23,7 @@ jobs:
           python scripts/verificar_app.py
       - name: Verificar app y capas opcionales
         run: node --test tests/*.test.cjs
-      - name: Verificar lectura y georreferencia UV
+      - name: Verificar lectura y georreferencia de cartas
         run: |
           pip install numpy pillow pyproj
           sudo apt-get update -qq

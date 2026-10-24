@@ -21,6 +21,7 @@ class WRFServimet(unittest.TestCase):
 
     def test_dates_are_utc_and_bad_titles_rejected(self):
         text='Viento Color 10m (nudos) - Presion NMM (hPa)\nSimulacion: 2026 - 10 - 24 - 127\nValidez: 2026 - 10 - 25 : OOZ'
+        self.assertEqual(wrf.fechas(text.replace('127','122'))[0].hour,12)
         init,valid=wrf.fechas(text);self.assertEqual(init.hour,12);self.assertEqual(valid,datetime(2026,10,25,tzinfo=timezone.utc))
         for bad in [text.replace('10m','2m'),text.replace('nudos','m/s'),text.replace('OOZ','25Z'),text.split('Validez')[0]]:
             with self.assertRaises(ValueError):wrf.fechas(bad)
