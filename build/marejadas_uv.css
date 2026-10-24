@@ -5,3 +5,6 @@
 .uv-tipo-wrf .uv-escala{background:linear-gradient(90deg,#afeeee,#009acd,#00bfff,#98fb98,#c0ff3e,#ffff00,#ffd700,#ee9a00,#ff4500,#cd3700,#ff0000,#8b0000,#a020f0)}
 
 @media(max-width:600px){.uv-tipo-wrf .uv-cab b{font-size:13px;white-space:nowrap}.uv-tipo-wrf .uv-cab a{font-size:10px}}
+
+.uv-ficha-abierta #layerBox{visibility:hidden}
+@media(max-width:600px){.uv-ficha-abierta .leaflet-top{visibility:hidden}}

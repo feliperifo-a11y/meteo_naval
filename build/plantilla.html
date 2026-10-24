@@ -1560,6 +1560,7 @@ function addLayerRow(box, key, name, sw, on, build) {
 }
 // Alternar pronósticos evita mezclar dos escalas y dos paneles en la misma bahía.
 function vistaPronosticoTalc(clave) {
+  map.closePopup();
   for(const otra of ['talc_uv','talc_wrf']) if(otra!==clave) {
     LAYERS[otra]?.set(false);
     const check=document.getElementById('chk_'+otra);if(check)check.checked=false;

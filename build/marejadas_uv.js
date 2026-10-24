@@ -77,6 +77,7 @@ function crearPronosticoRaster(L, map, escapar, prepararVista, tipo) {
   const estado=panel.querySelector('.uv-estado'), selector=panel.querySelector('select'), slider=panel.querySelector('.uv-slider'), play=panel.querySelector('.uv-play');
   let datos=null, indice=0, timer=null, consultaTimer=null, cargando=false, overlay=null, canvas=null, frameVisible=-1, token=0, popup=null;
   const activo=()=>map.hasLayer(grupo);
+  const compactar=()=>{panel.classList.add('uv-consulta');document.getElementById('mapWrap').classList.add('uv-ficha-abierta');}, expandir=()=>{panel.classList.remove('uv-consulta');document.getElementById('mapWrap').classList.remove('uv-ficha-abierta');};
   const detener=()=>{clearInterval(timer);timer=null;play.textContent='Reproducir';play.setAttribute('aria-pressed','false');};
   const imagen=(base,tipo)=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Imagen de pronóstico ilegible'));im.src=`data:image/${tipo};base64,${base}`;});
   function informacion() {
@@ -140,8 +141,8 @@ function crearPronosticoRaster(L, map, escapar, prepararVista, tipo) {
     panel.classList.add('uv-consulta');
     popup=L.popup({autoPanPaddingBottomRight:[15,100],pane:'talcPopupPane',className:'uv-popup',maxWidth:Math.min(310,map.getContainer().clientWidth-70)}).setLatLng(e.latlng).setContent(contenido).on('remove',()=>panel.classList.remove('uv-consulta')).openOn(map);
   }
-  grupo.on('add',()=>{prepararVista();panel.hidden=false;document.getElementById('mapWrap').classList.add('uv-activa');map.on('click',click);if(datos)mostrar(indice);cargar();consultaTimer=setInterval(cargar,7200000);map.fitBounds([[-36.845,-73.284],[-36.559,-72.938]],{padding:[35,35],maxZoom:12});});
-  grupo.on('remove',()=>{detener();clearInterval(consultaTimer);++token;panel.hidden=true;panel.setAttribute('aria-busy','false');document.getElementById('mapWrap').classList.remove('uv-activa');map.off('click',click);if(popup)map.closePopup(popup);});
+  grupo.on('add',()=>{prepararVista();panel.hidden=false;document.getElementById('mapWrap').classList.add('uv-activa');map.on('click',click);map.on('popupopen',compactar);map.on('popupclose',expandir);if(datos)mostrar(indice);cargar();consultaTimer=setInterval(cargar,7200000);map.fitBounds([[-36.845,-73.284],[-36.559,-72.938]],{padding:[35,35],maxZoom:12});});
+  grupo.on('remove',()=>{detener();clearInterval(consultaTimer);++token;panel.hidden=true;panel.setAttribute('aria-busy','false');document.getElementById('mapWrap').classList.remove('uv-activa','uv-ficha-abierta');map.off('click',click);map.off('popupopen',compactar);map.off('popupclose',expandir);panel.classList.remove('uv-consulta');if(popup)map.closePopup(popup);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)detener();else if(activo())cargar();});
   return grupo;
 }
