@@ -15,16 +15,21 @@ class MarejadasUV(unittest.TestCase):
     def test_real_uv_titles_with_server_ocr(self):
         # Recortes originales de CL19TAG.gif, consultado 2026-10-24, UV.
         sheet=Image.open(Path(__file__).parent/'fixtures/uv_titulos_20261024.png')
+        errores=[]
         for i in range(61):
             im=Image.new('RGB',(1200,900),'white')
             im.paste(sheet.crop((0,35*i,230,35*(i+1))),(590,25))
             texto=uv.leer_titulo(im)
-            self.assertEqual(uv.fecha_titulo(texto),datetime(2026,10,24)+timedelta(hours=3*i),texto)
+            try:
+                if uv.fecha_titulo(texto)!=datetime(2026,10,24)+timedelta(hours=3*i):errores.append((i,texto))
+            except ValueError:errores.append((i,texto))
+        self.assertEqual(errores,[])
 
     def test_dates_and_two_hour_cache(self):
         self.assertEqual(uv.fecha_titulo('2026/0ct/24 03hrs'),datetime(2026,10,24,3))
         self.assertEqual(uv.fecha_titulo('5 2026/Oct/24 OOhrs'),datetime(2026,10,24))
         self.assertEqual(uv.fecha_titulo('2026/Oct/3O l5hrs'),datetime(2026,10,30,15))
+        self.assertEqual(uv.fecha_titulo('5 2026/Oct/30 O3Shrs'),datetime(2026,10,30,3))
         for text in ['2026/Oct/32 03hrs','2026/Oct/24 25hrs','sin fecha']:
             with self.assertRaises(ValueError):uv.fecha_titulo(text)
         now=datetime(2026,10,24,tzinfo=timezone.utc)

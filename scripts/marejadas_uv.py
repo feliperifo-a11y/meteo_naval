@@ -38,7 +38,7 @@ def reciente(data, ahora):
 
 def fecha_titulo(texto):
     meses = dict(zip(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], range(1, 13)))
-    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*([0-9OoIl]{1,2})\s+([0-9OoIl]{1,2})\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
+    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*([0-9OoIl]{1,2})\s+([0-9OoIl]{1,2})\s*[Ss]?\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
     if not m or m[2].title() not in meses:
         raise ValueError('Fecha UV ilegible: ' + texto)
     # La fuente no indica zona horaria. No se inventa un desplazamiento a UTC.
