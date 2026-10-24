@@ -49,27 +49,41 @@ function uvValidar(d) {
   return d;
 }
 function crearMarejadasUV(L, map, escapar, prepararVista) {
+  return crearPronosticoRaster(L, map, escapar, prepararVista, 'uv');
+}
+// Los dos pronósticos comparten controles y ciclo de actualización.
+function crearPronosticoRaster(L, map, escapar, prepararVista, tipo) {
+  const wrf=tipo==='wrf', titulo=wrf?'WRF SERVIMET':'Marejadas UV';
+  const fuente=wrf?'http://triton.directemar.cl/web/html/Vto-color-centro9.html':'https://marejadas.uv.cl/pronosticos/cl19ta';
+  const fecha=wrf?wrfFecha:uvFecha, validar=wrf?wrfValidar:uvValidar;
+  const nombreFuente=wrf?'SERVIMET':'UV', archivo=wrf?'wrf_servimet':'marejadas_uv';
   const grupo=L.layerGroup();
-  const panel=document.createElement('section'); panel.className='uv-panel'; panel.hidden=true;
-  panel.setAttribute('aria-label','Control de Marejadas UV');
-  panel.innerHTML='<div class="uv-cab"><b>Marejadas UV</b><a href="https://marejadas.uv.cl/pronosticos/cl19ta" target="_blank" rel="noopener noreferrer">Fuente UV ↗</a></div>'+
-    '<p class="uv-estado" role="status">Cargando corrida…</p><div class="uv-tiempo" hidden><label>Fecha del pronóstico<select aria-label="Fecha del pronóstico Marejadas UV"></select></label>'+
+  const panel=document.createElement('section'); panel.className='uv-panel uv-tipo-'+tipo; panel.hidden=true;
+  panel.setAttribute('aria-label','Control de '+titulo);
+  panel.innerHTML=`<div class="uv-cab"><b>${titulo}</b><a href="${fuente}" target="_blank" rel="noopener noreferrer">Fuente ${nombreFuente} ↗</a></div>`+
+    '<p class="uv-estado" role="status">Cargando corrida…</p><div class="uv-tiempo" hidden><label>Fecha del pronóstico'+
+    `<select aria-label="Fecha del pronóstico ${titulo}"></select></label>`+
     '<div class="uv-botones"><button type="button" class="uv-anterior" aria-label="Fecha anterior">◀</button><button type="button" class="uv-play">Reproducir</button><button type="button" class="uv-siguiente" aria-label="Fecha siguiente">▶</button></div>'+
-    '<input class="uv-slider" type="range" min="0" step="1" value="0" aria-label="Avance de la corrida Marejadas UV">'+
-    '<div class="uv-escala" aria-label="Escala de altura de cero a cuatro metros"></div><div class="uv-marcas"><span>0 m</span><span>1</span><span>2</span><span>3</span><span>4 m</span></div>'+
-    '<p class="uv-ayuda">Pulsa el mar para ver un rango aproximado de altura.</p><details><summary>Actualización y alcance</summary><p class="uv-info"></p><p>Estimación por colores en intervalos de 0,25 m. Puede diferir del dato del modelo. Hora UV: la carta no indica zona horaria. La consulta en MeteoIA se revisa cada dos horas; la UV decide cuándo publica una corrida nueva.</p></details></div>';
+    `<input class="uv-slider" type="range" min="0" step="1" value="0" aria-label="Avance de la corrida ${titulo}">`+
+    `<div class="uv-escala" aria-label="${wrf?'Escala de viento en nudos':'Escala de altura de cero a cuatro metros'}"></div>`+
+    (wrf?'<div class="uv-marcas"><span>0 kt</span><span>15</span><span>30</span><span>45</span><span>60+ kt</span></div>':'<div class="uv-marcas"><span>0 m</span><span>1</span><span>2</span><span>3</span><span>4 m</span></div>')+
+    `<p class="uv-ayuda">${wrf?'Pulsa el mapa para ver un rango aproximado de viento a 10 m.':'Pulsa el mar para ver un rango aproximado de altura.'}</p>`+
+    '<details><summary>Actualización y alcance</summary><p class="uv-info"></p><p>'+
+    (wrf?'Estimación por colores en intervalos de 5 kt. Modelo WRF de 3 km; la imagen no permite detalle de cada muelle. Georreferencia aproximada de la costa sobre la cobertura UV. La capa muestra intensidad y barbas de viento. La presión se consulta en la carta oficial. Horas UTC.':'Estimación por colores en intervalos de 0,25 m. Puede diferir del dato del modelo. Hora UV: la carta no indica zona horaria.')+
+    ` La consulta en MeteoIA se revisa cada dos horas; ${nombreFuente} decide cuándo publica una corrida nueva.</p></details></div>`;
   document.getElementById('mapWrap').appendChild(panel);
   L.DomEvent.disableClickPropagation(panel); L.DomEvent.disableScrollPropagation(panel);
   if (!map.getPane('uvPane')) { map.createPane('uvPane').style.zIndex=410; }
   const estado=panel.querySelector('.uv-estado'), selector=panel.querySelector('select'), slider=panel.querySelector('.uv-slider'), play=panel.querySelector('.uv-play');
   let datos=null, indice=0, timer=null, consultaTimer=null, cargando=false, overlay=null, canvas=null, frameVisible=-1, token=0, popup=null;
   const activo=()=>map.hasLayer(grupo);
+  const compactar=()=>{panel.classList.add('uv-consulta');document.getElementById('mapWrap').classList.add('uv-ficha-abierta');}, expandir=()=>{panel.classList.remove('uv-consulta');document.getElementById('mapWrap').classList.remove('uv-ficha-abierta');};
   const detener=()=>{clearInterval(timer);timer=null;play.textContent='Reproducir';play.setAttribute('aria-pressed','false');};
-  const imagen=(base,tipo)=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Imagen UV ilegible'));im.src=`data:image/${tipo};base64,${base}`;});
+  const imagen=(base,tipo)=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Imagen de pronóstico ilegible'));im.src=`data:image/${tipo};base64,${base}`;});
   function informacion() {
     const edad=Date.now()-Date.parse(datos.consultado), vencida=datos.frames.at(-1).fecha.slice(0,10)<new Date().toLocaleDateString('sv-SE');
-    estado.textContent=(vencida?'Corrida vencida · ':edad>4*3600000?'Última corrida conservada · ':'')+uvFecha(datos.frames[indice].fecha);
-    panel.querySelector('.uv-info').textContent=`Inicio: ${uvFecha(datos.frames[0].fecha)}. Última consulta: ${new Date(datos.consultado).toLocaleString('es-CL')}. ${datos.frames.length} fechas, cada 3 horas. Georreferencia aproximada desde la carta UTM 18S de la UV.`;
+    estado.textContent=(vencida?'Corrida vencida · ':edad>4*3600000?'Última corrida conservada · ':'')+fecha(datos.frames[indice].fecha);
+    panel.querySelector('.uv-info').textContent=`Inicio: ${fecha(datos.frames[0].fecha)}. Última consulta: ${new Date(datos.consultado).toLocaleString('es-CL')}. ${datos.frames.length} fechas, cada 3 horas. ${wrf?'Inicialización WRF: '+fecha(datos.inicializacion)+'. Registro aproximado de la costa sobre el dominio UTM 18S de UV.':'Georreferencia aproximada desde la carta UTM 18S de la UV.'}`;
   }
   async function mostrar(n) {
     if (!datos||!activo()) return;
@@ -79,31 +93,31 @@ function crearMarejadasUV(L, map, escapar, prepararVista) {
     try {
       const [im,q]=await Promise.all([imagen(f.imagen,'webp'),imagen(f.consulta,'png')]);
       if (solicitud!==token||!activo()) return;
-      if (q.width!==733||q.height!==733) throw Error('Cuadrícula UV desconocida');
+      if (q.width!==733||q.height!==733) throw Error('Cuadrícula de pronóstico desconocida');
       canvas=document.createElement('canvas');canvas.width=q.width;canvas.height=q.height;canvas.getContext('2d',{willReadFrequently:true}).drawImage(q,0,0);
       if (overlay) grupo.removeLayer(overlay);
-      overlay=L.imageOverlay(im.src,datos.bounds,{pane:'uvPane',opacity:.80,interactive:true,bubblingMouseEvents:false,attribution:'Oleaje: Universidad de Valparaíso · Marejadas UV'}).on('click',click).addTo(grupo);
+      overlay=L.imageOverlay(im.src,datos.bounds,{pane:'uvPane',opacity:.80,interactive:true,bubblingMouseEvents:false,attribution:wrf?'Viento: SERVIMET · WRF 3 km · Dirección Meteorológica de Chile':'Oleaje: Universidad de Valparaíso · Marejadas UV'}).on('click',click).addTo(grupo);
       frameVisible=indice;
-    } catch(e) { if (solicitud===token) { detener();estado.textContent='No se pudo mostrar esta fecha de la corrida UV.'; } }
+    } catch(e) { if (solicitud===token) { detener();estado.textContent='No se pudo mostrar esta fecha de '+titulo+'.'; } }
     finally { if(solicitud===token)panel.setAttribute('aria-busy','false'); }
   }
   async function cargar() {
     if (cargando||!activo()) return; cargando=true;
     try {
-      const r=await fetch('data/marejadas_uv.json?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(45000)});
+      const r=await fetch('data/'+archivo+'.json?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(45000)});
       if(!r.ok)throw Error('Sin corrida publicada');
-      const nueva=uvValidar(await r.json());
-      const fecha=datos?.frames[indice]?.fecha, cambio=nueva.sha256!==datos?.sha256;
+      const nueva=validar(await r.json());
+      const fechaAnterior=datos?.frames[indice]?.fecha, cambio=nueva.sha256!==datos?.sha256;
       datos=nueva;
       if(cambio||!selector.options.length) {
-        detener();selector.replaceChildren();datos.frames.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=uvFecha(f.fecha);selector.appendChild(o);});
+        detener();selector.replaceChildren();datos.frames.forEach((f,i)=>{const o=document.createElement('option');o.value=i;o.textContent=fecha(f.fecha);selector.appendChild(o);});
         slider.max=datos.frames.length-1;
-        indice=Math.max(0,datos.frames.findIndex(f=>f.fecha===fecha));
+        indice=Math.max(0,datos.frames.findIndex(f=>f.fecha===fechaAnterior));
       }
       panel.querySelector('.uv-tiempo').hidden=false;
       if(cambio||frameVisible<0)await mostrar(indice);else informacion();
     } catch(e) {
-      if (activo()) { if(datos) { informacion();estado.textContent='Sin conexión · '+estado.textContent; } else estado.textContent='No hay corrida UV disponible. Revisa el enlace a la fuente.'; }
+      if (activo()) { if(datos) { informacion();estado.textContent='Sin conexión · '+estado.textContent; } else estado.textContent='No hay corrida '+nombreFuente+' disponible. Revisa el enlace a la fuente.'; }
     } finally { cargando=false; }
   }
   selector.onchange=()=>{detener();if(popup)map.closePopup(popup);mostrar(+selector.value);};
@@ -116,16 +130,19 @@ function crearMarejadasUV(L, map, escapar, prepararVista) {
     const pixel=uvPixel(e.latlng.lat,e.latlng.lng,datos);if(!pixel)return;
     detener();
     if(popup)map.closePopup(popup);
-    const r=uvRango(canvas.getContext('2d').getImageData(0,0,733,733).data,733,733,...pixel);
+    const r=(wrf?wrfRango:uvRango)(canvas.getContext('2d').getImageData(0,0,733,733).data,733,733,...pixel);
     const numero=n=>n.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const contenido=`<section class="uv-ficha"><b>Marejadas UV · altura aproximada</b><p>${escapar(uvFecha(datos.frames[indice].fecha))}</p>`+
-      (r?`<strong>${numero(r.minimo)}–${numero(r.maximo)} m</strong><p>Rango estimado según el color de la imagen UV.${r.distancia?` Lectura de un píxel a ${Math.ceil(r.distancia)} m del punto pulsado.`:''}</p>`:'<p>Sin altura interpretable en este punto de la imagen (tierra, fuera de datos o símbolo).</p>')+
-      `<p>${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</p><a href="https://marejadas.uv.cl/pronosticos/cl19ta" target="_blank" rel="noopener noreferrer">Consultar pronóstico UV ↗</a></section>`;
+    const valor=r?(wrf?(r.maximo===null?'≥ '+r.minimo:r.minimo+'–'+r.maximo)+' kt':numero(r.minimo)+'–'+numero(r.maximo)+' m'):'';
+    const contenido=`<section class="uv-ficha"><b>${titulo} · ${wrf?'viento aproximado a 10 m':'altura aproximada'}</b><p>${escapar(fecha(datos.frames[indice].fecha))}</p>`+
+      (r?`<strong>${valor}</strong><p>Rango estimado según el color de la imagen ${nombreFuente}.${r.distancia?` Lectura cercana a ${Math.ceil(r.distancia)} m del punto pulsado por un símbolo impreso.`:''}</p>`:
+        `<p>${wrf?'Sin viento interpretable en este punto de la imagen.':'Sin altura interpretable en este punto de la imagen (tierra, fuera de datos o símbolo).'}</p>`)+
+      (wrf?'<p>WRF de 3 km · georreferencia aproximada.</p>':'')+
+      `<p>${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</p><a href="${fuente}" target="_blank" rel="noopener noreferrer">Consultar pronóstico ${nombreFuente} ↗</a></section>`;
     panel.classList.add('uv-consulta');
     popup=L.popup({autoPanPaddingBottomRight:[15,100],pane:'talcPopupPane',className:'uv-popup',maxWidth:Math.min(310,map.getContainer().clientWidth-70)}).setLatLng(e.latlng).setContent(contenido).on('remove',()=>panel.classList.remove('uv-consulta')).openOn(map);
   }
-  grupo.on('add',()=>{panel.hidden=false;document.getElementById('mapWrap').classList.add('uv-activa');prepararVista();map.on('click',click);if(datos)mostrar(indice);cargar();consultaTimer=setInterval(cargar,7200000);map.fitBounds([[-36.845,-73.284],[-36.559,-72.938]],{padding:[35,35],maxZoom:12});});
-  grupo.on('remove',()=>{detener();clearInterval(consultaTimer);++token;panel.hidden=true;panel.setAttribute('aria-busy','false');document.getElementById('mapWrap').classList.remove('uv-activa');map.off('click',click);if(popup)map.closePopup(popup);});
+  grupo.on('add',()=>{prepararVista();panel.hidden=false;document.getElementById('mapWrap').classList.add('uv-activa');map.on('click',click);map.on('popupopen',compactar);map.on('popupclose',expandir);if(datos)mostrar(indice);cargar();consultaTimer=setInterval(cargar,7200000);map.fitBounds([[-36.845,-73.284],[-36.559,-72.938]],{padding:[35,35],maxZoom:12});});
+  grupo.on('remove',()=>{detener();clearInterval(consultaTimer);++token;panel.hidden=true;panel.setAttribute('aria-busy','false');document.getElementById('mapWrap').classList.remove('uv-activa','uv-ficha-abierta');map.off('click',click);map.off('popupopen',compactar);map.off('popupclose',expandir);panel.classList.remove('uv-consulta');if(popup)map.closePopup(popup);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)detener();else if(activo())cargar();});
   return grupo;
 }

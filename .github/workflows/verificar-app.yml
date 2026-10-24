@@ -1,7 +1,7 @@
 name: Verificar app gratuita
 on:
   pull_request:
-    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano.*', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'scripts/talcahuano_observaciones.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
+    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano.*', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'scripts/wrf_servimet.py', 'scripts/talcahuano_observaciones.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,7 +23,7 @@ jobs:
           python scripts/verificar_app.py
       - name: Verificar app y capas opcionales
         run: node --test tests/*.test.cjs
-      - name: Verificar lectura y georreferencia UV
+      - name: Verificar lectura y georreferencia de cartas
         run: |
           pip install numpy pillow pyproj
           sudo apt-get update -qq

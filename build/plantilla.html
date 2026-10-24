@@ -730,6 +730,7 @@ function refreshAvLayer() {
 
 /*TALCAHUANO_JS*/
 /*MAREJADAS_UV_JS*/
+/*WRF_SERVIMET_JS*/
 
 // ============================ Estaciones ============================
 let ESTACIONES = [];
@@ -1557,6 +1558,16 @@ function addLayerRow(box, key, name, sw, on, build) {
   row.querySelector('input').addEventListener('change', e => def.set(e.target.checked));
   box.appendChild(row); if (on) def.set(true);
 }
+// Alternar pronósticos evita mezclar dos escalas y dos paneles en la misma bahía.
+function vistaPronosticoTalc(clave) {
+  map.closePopup();
+  for(const otra of ['talc_uv','talc_wrf']) if(otra!==clave) {
+    LAYERS[otra]?.set(false);
+    const check=document.getElementById('chk_'+otra);if(check)check.checked=false;
+  }
+  if(window.innerWidth<=600){document.getElementById('layerBox').classList.add('min');document.getElementById('lbBtn').textContent='▴';}
+  if(map.hasLayer(ocean)){map.removeLayer(ocean);osm.addTo(map);}
+}
 function renderCapas() {
   const box = document.getElementById('layers');
   const grp = t => { const d = document.createElement('div'); d.className = 'grp'; d.textContent = t; box.appendChild(d); };
@@ -1574,7 +1585,8 @@ function renderCapas() {
   grp('Capuerto Talcahuano');
   addLayerRow(box, 'talc_puertos', 'Talcahuano · puertos y referencias', dotSw('#196a94'), false, () => catalogoTalc.puertos);
   addLayerRow(box, 'talc_obs', 'Talcahuano · observación costera', dotSw('#147b88'), false, () => catalogoTalc.observacion);
-  addLayerRow(box, 'talc_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => { if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } }));
+  addLayerRow(box, 'talc_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => vistaPronosticoTalc('talc_uv')));
+  addLayerRow(box, 'talc_wrf', 'WRF SERVIMET', fillSw('#009acd', 'rgba(0,154,205,.35)'), false, () => crearWRFServimet(L, map, escH, () => vistaPronosticoTalc('talc_wrf')));
   catalogoTalc.controles(box);
   grp('Límites marítimos');
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
