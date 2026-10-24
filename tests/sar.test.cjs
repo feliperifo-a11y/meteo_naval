@@ -40,12 +40,20 @@ test('los trazos se detienen en el mar y los rótulos se anclan fuera del borde 
     assert.equal(lon, lat > -30 ? -120 : -131);
     assert.equal(f.properties.anclaje, 'limite_oeste');
   }
-  const template = fs.readFileSync(path.join(root, 'build/plantilla_v2.html'), 'utf8');
+  const template = fs.readFileSync(path.join(root, 'build/plantilla.html'), 'utf8');
   assert.match(template, /\.sar-label\.sar-outside>span\{transform:translate\(calc\(-100% - 10px\),-50%\)\}/);
 });
-test('la portada conserva la capa SAR apagada y las capas habituales encendidas', () => {
+test('SAR solo se ofrece en el dashboard completo, apagada al abrirlo', () => {
   const html = fs.readFileSync(path.join(root, 'build/plantilla_v2.html'), 'utf8');
-  assert.match(html, /\['Distritos SAR', capaSAR, false\]/);
+  assert.doesNotMatch(html, /Distritos SAR|capaSAR|sar-label|\/\*SAR\*\//);
+  const dashboard = fs.readFileSync(path.join(root, 'build/plantilla.html'), 'utf8');
+  assert.match(dashboard, /addLayerRow\(box, 'sar', 'Distritos SAR', .*?, false, \(\) => crearCapaSAR\(L, map, SAR, escH\)\)/);
+  const portadaGenerada = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const dashboardGenerado = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  assert.doesNotMatch(portadaGenerada, /const SAR =|function crearCapaSAR|sar-label|Distritos SAR/);
+  assert.match(dashboardGenerado, /const SAR =/);
+  assert.match(dashboardGenerado, /function crearCapaSAR/);
+  assert.doesNotMatch(dashboardGenerado, /\/\*SAR\*\//);
   assert.match(html, /\['METAREA XV', MET, true\]/);
   assert.match(html, /\['Estaciones', capaEst, true\]/);
   assert.match(html, /\['Avisos vigentes y próximos', capaAv, true\]/);

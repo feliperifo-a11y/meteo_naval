@@ -17,6 +17,16 @@
 <!-- Leaflet 1.9.4 (BSD-2) incorporado: funciona sin conexión salvo los mapas base en línea. -->
 <style>/*LEAFLET_CSS*/.iaIco{background:none;border:0;cursor:pointer}.iaChip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:2px 6px 2px 3px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap;font:11px/1.15 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18212b}.iaChip:hover{border-color:#1f5fa8;box-shadow:0 1px 6px rgba(31,95,168,.5)}.iaTx{display:flex;flex-direction:column}.iaN{font-weight:600;font-size:10.5px;color:#3a4652}.iaT b{font-size:12px;font-weight:700}.iaT .mn{color:#1f5fa8;margin-right:5px}.iaT .mx{color:#c0392b}.iaDias{background:rgba(255,255,255,.95);border:1px solid #b9c3cd;border-radius:6px;padding:3px;display:flex;gap:2px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25);font:12px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}.iaDias span{font-weight:700;font-size:11px;color:#0f2a44;padding:0 6px}.iaDias button{font:inherit;border:0;background:none;padding:4px 8px;border-radius:4px;cursor:pointer;color:#18212b;text-transform:capitalize}.iaDias button.on{background:#0f2a44;color:#fff}
 .leaflet-popup-scrolled{border:0;overflow-y:auto}
+.sar-label>span{display:inline-block;transform:translate(-50%,-50%);background:rgba(8,24,40,.9);border:1px solid #47647d;border-left:3px solid;padding:5px 9px;border-radius:7px;color:#fff5df;white-space:nowrap;text-align:center;box-shadow:0 2px 8px #0005;font:600 12px/1.3 system-ui,sans-serif}
+.sar-label b,.sar-label small{display:block}.sar-label small{font-size:10.5px;font-weight:500;color:#d4e1ef;margin-top:2px}
+.sar-label.sar-outside>span{transform:translate(calc(-100% - 10px),-50%)}
+.sar-label em{display:none;font-style:normal;font-size:10px}.sar-compact .sar-label b,.sar-compact .sar-label small{display:none}.sar-compact .sar-label em{display:block}
+.sar-info{background:rgba(8,24,40,.94);color:#e8f1fb;border:1px solid #47647d;border-radius:9px;padding:8px 10px;width:230px;font:11px/1.45 system-ui,sans-serif;box-shadow:0 2px 8px #0005}
+.sar-info summary{font-size:12px;font-weight:700;cursor:pointer}.sar-info details[open] summary{margin-bottom:3px}.sar-info details>span{display:block}.sar-info small{display:block;color:#aabed2;margin:5px 0}
+.sar-info button{font:inherit;font-weight:600;color:#b5dcff;background:none;border:0;padding:4px 0;cursor:pointer}.sar-info a{color:#b5dcff}.sar-info button:focus-visible{outline:2px solid #b5dcff;outline-offset:2px}
+.sar-line{display:inline-block;width:21px;border-top:2px solid #ffad62;vertical-align:middle;margin-right:4px}.sar-dash{border-top-style:dashed;border-color:#ffe2a6}
+.sar-center-name{background:#0a1d30;color:#ffe9c5;border:1px solid #a7764b;box-shadow:none;font-size:10px}
+@media(max-width:760px){.sar-info{width:190px;font-size:10px}.sar-label>span{font-size:10.5px;padding:4px 6px}.sar-label small{font-size:9px}}
 </style>
 <style>
 :root{
@@ -1465,6 +1475,9 @@ async function cargarPuertos() {
 }
 setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAYERS.puertos.lyr)) cargarPuertos(); }, 10 * 60000);
 
+// ---- Distritos SAR: capa opcional del dashboard completo
+/*SAR*/
+
 // ============================ Panel de capas ============================
 const LAYERS = {};
 function addLayerRow(box, key, name, sw, on, build) {
@@ -1488,6 +1501,7 @@ function renderCapas() {
   addLayerRow(box, 'vis', 'Imagen satelital visible (nubosidad diurna)', '<span class="visSw"></span>', false, buildVis);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
+  addLayerRow(box, 'sar', 'Distritos SAR', lineSw('#ffad62', null, 2.5), false, () => crearCapaSAR(L, map, SAR, escH));
   grp('Límites marítimos');
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
   const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);
@@ -1701,3 +1715,4 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug();
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
 </body>
 </html>
+
