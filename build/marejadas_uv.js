@@ -115,6 +115,7 @@ function crearMarejadasUV(L, map, escapar, prepararVista) {
     if(!datos||!canvas||frameVisible!==indice)return;
     const pixel=uvPixel(e.latlng.lat,e.latlng.lng,datos);if(!pixel)return;
     detener();
+    if(popup)map.closePopup(popup);
     const r=uvRango(canvas.getContext('2d').getImageData(0,0,733,733).data,733,733,...pixel);
     const numero=n=>n.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
     const contenido=`<section class="uv-ficha"><b>Marejadas UV · altura aproximada</b><p>${escapar(uvFecha(datos.frames[indice].fecha))}</p>`+
