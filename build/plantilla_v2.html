@@ -12,7 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="MeteoIA">
 <meta name="application-name" content="MeteoIA">
 
-<style>/*LEAFLET_CSS*/</style>
+<style>/*LEAFLET_CSS*//*AVISOS_MAPA_CSS*/
+</style>
 <style>
 :root{--bg:#06121f;--bg2:#0a1a2c;--card:#0e2136;--card2:#12294292;--line:#1d3a58;--ink:#e8f1fa;--muted:#8fa7bf;--acc:#2f8cff;--acc2:#5fb0ff;--am:#f2c230;--rj:#e53935;--ok:#34c26b;--ret:#f0a030;--no:#e5534b}
 *{box-sizing:border-box}
@@ -235,6 +236,7 @@ map.createPane('vientoPane').style.zIndex = 330;
 map.createPane('flechasPane').style.zIndex = 340; map.getPane('flechasPane').style.pointerEvents = 'none';
 map.createPane('metPane').style.zIndex = 360;
 map.createPane('avPane').style.zIndex = 380;
+map.createPane('avResumenPane').style.zIndex = 610;
 map.createPane('puertoPane').style.zIndex = 655;
 map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 const VISTA = [[-70.5, -120.5], [-17.5, -52]];
@@ -495,6 +497,8 @@ function pintarPron() {
 document.querySelectorAll('#tabsPron button').forEach(b => b.onclick = () => { TAB = b.dataset.t; pintarPron(); });
 document.getElementById('selLugar').onchange = e => { LUGAR[TAB] = e.target.value; try { localStorage.setItem('v2_lugar', JSON.stringify(LUGAR)); } catch (x) {} pintarPron(); };
 
+/*AVISOS_MAPA_JS*/
+
 // ============================ Alertas ============================
 const OJO = on => on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg>En mapa'
   : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c7 0 11 7 11 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.4 8.5 1 12 1 12s4 7 11 7a10 10 0 0 0 4.4-1"/></svg>Oculta';
@@ -515,7 +519,9 @@ function pintarAlertas() {
     const vig = zs.some(([, e]) => e === 'V'), ini = new Date(Math.min(...zs.map(([z]) => +new Date(z.desde)))), fin = new Date(Math.max(...zs.map(([z]) => +new Date(z.hasta))));
     out.push({ k: 'a:' + a.tipo + '|' + zs.map(([z]) => z.nombre).join('|'), n: vig ? 'rj' : 'az', ico: ICO.alerta(vig ? '#ff6b6b' : '#5fb0ff'), t: a.tipo, d: `${zs.map(([z]) => z.nombre).join(' · ')}<br>${fmtDM(ini)} a ${fmtDM(fin)}`, bd: vig ? 'Vigente' : 'Próximo', html: true,
       capa: () => { const g = L.featureGroup(); for (const [z, e] of zs) if (z.geom) L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
-        .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(g); return g; } }); });
+        .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(g);
+        const resumen = crearResumenAviso(L, a, zs.map(([z]) => z), escH, fmtDM, ahora); if (resumen) resumen.addTo(g);
+        return g; } }); });
   capaAv.clearLayers(); CAPA_AL = {};
   for (const a of out) { const g = a.capa(); CAPA_AL[a.k] = g; if (!OCULTAS.has(a.k)) g.addTo(capaAv); }
   const el = document.getElementById('listaAlertas');
@@ -621,6 +627,7 @@ async function cargar() {
   pintarAlertas(); prepararBuscador();
 }
 cargar(); cargarViento(); cargarBoyas(); miniCarta(); miniHielo(); miniWrf();
+setInterval(pintarAvisos, 60000); // Recalcula vigencia aunque falle la siguiente lectura de datos.
 setInterval(cargar, 5 * 60000); setInterval(cargarViento, 30 * 60000); setInterval(cargarBoyas, 20 * 60000);
 setInterval(async () => { try { const v = (await (await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })).text()).trim(); if (v && v !== VERSION_PAGINA) location.reload(); } catch (e) {} }, 5 * 60000);
 window.addEventListener('load', () => { try { window.mnEvento && mnEvento('inicio-v2'); } catch (e) {} });

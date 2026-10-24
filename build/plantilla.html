@@ -27,6 +27,7 @@
 .sar-line{display:inline-block;width:21px;border-top:2px solid #ffad62;vertical-align:middle;margin-right:4px}.sar-dash{border-top-style:dashed;border-color:#ffe2a6}
 .sar-center-name{background:#0a1d30;color:#ffe9c5;border:1px solid #a7764b;box-shadow:none;font-size:10px}
 @media(max-width:760px){.sar-info{width:190px;font-size:10px}.sar-label>span{font-size:10.5px;padding:4px 6px}.sar-label small{font-size:9px}}
+/*AVISOS_MAPA_CSS*/
 </style>
 <style>
 :root{
@@ -474,6 +475,7 @@ map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('satPane'); map.getPane('satPane').style.zIndex = 300; map.getPane('satPane').style.pointerEvents = 'none';
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
+map.createPane('avResumenPane').style.zIndex = 610;
 map.createPane('limPane'); map.getPane('limPane').style.zIndex = 400;
 map.createPane('cartaPane'); map.getPane('cartaPane').style.zIndex = 390; map.getPane('cartaPane').style.pointerEvents = 'none';
 map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
@@ -555,6 +557,8 @@ function buildLimits(ab) {
   return g;
 }
 
+/*AVISOS_MAPA_JS*/
+
 // ============================ Avisos ============================
 function estadoAviso(a, ahora) {
   const ini = new Date(a.desde), fin = new Date(a.hasta);
@@ -631,18 +635,23 @@ const avOculto = new Set();  // números de aviso ocultos en el mapa
 function buildAvisos() {
   const g = L.layerGroup(), ahora = Date.now(), showExp = document.getElementById('chkExp')?.checked;
   avPolys.clear();
-  for (const { a } of AV_ORD) for (const z of a.zonas) {
-    const e = estadoAviso(z, ahora);
-    if (e.k === 'X' && !showExp) continue;
-    if (avOculto.has(a.num)) continue;
-    const col = AV_COL[e.k], vig = e.k === 'V';
-    const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: col, weight: vig ? 1.8 : 1.5, dashArray: vig ? null : '6 4', fillColor: col, fillOpacity: vig ? 0.30 : 0.12 } })
-      .bindPopup(popupAviso(a, z, e), { maxWidth: 340, autoPanPadding: [30, 40] })
-      .bindTooltip(`${a.num}. ${escH(a.tipo)} · ${escH(z.nombre)} · ${e.txt}`, { sticky: true })
-      .on('click', () => { hlAviso = a; marcarLista(); });
-    lyr.addTo(g);
-    if (!avPolys.has(a.num)) avPolys.set(a.num, []);
-    avPolys.get(a.num).push(lyr);
+  for (const { a } of AV_ORD) {
+    const visibles = [];
+    for (const z of a.zonas) {
+      const e = estadoAviso(z, ahora);
+      if (e.k === 'X' && !showExp) continue;
+      if (avOculto.has(a.num)) continue;
+      const col = AV_COL[e.k], vig = e.k === 'V';
+      const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: col, weight: vig ? 1.8 : 1.5, dashArray: vig ? null : '6 4', fillColor: col, fillOpacity: vig ? 0.30 : 0.12 } })
+        .bindPopup(popupAviso(a, z, e), { maxWidth: 340, autoPanPadding: [30, 40] })
+        .bindTooltip(`${a.num}. ${escH(a.tipo)} · ${escH(z.nombre)} · ${e.txt}`, { sticky: true })
+        .on('click', () => { hlAviso = a; marcarLista(); });
+      lyr.addTo(g);
+      if (!avPolys.has(a.num)) avPolys.set(a.num, []);
+      avPolys.get(a.num).push(lyr);
+      visibles.push(z);
+    }
+    const resumen = crearResumenAviso(L, a, visibles, escH, fmtLocal, ahora); if (resumen) resumen.addTo(g);
   }
   return g;
 }

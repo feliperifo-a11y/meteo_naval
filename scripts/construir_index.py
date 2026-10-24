@@ -15,6 +15,12 @@ def leer(p, defecto="null"):
     return p.read_text(encoding="utf-8") if p.exists() else defecto
 
 
+def preparar_avisos(html):
+    """Resumen de avisos compartido por la portada y el dashboard operativo."""
+    return (html.replace("/*AVISOS_MAPA_CSS*/", leer(B / "avisos_mapa.css", ""))
+            .replace("/*AVISOS_MAPA_JS*/", leer(B / "avisos_mapa.js", "")))
+
+
 def preparar_app(html):
     """Ajustes compartidos de la app; se aplican a todas las páginas generadas."""
     html = html.replace('width=device-width, initial-scale=1.0',
@@ -39,6 +45,7 @@ datos = "\n".join([
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
 version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}")
+                        + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
 (R / "version.txt").write_text(version + "\n", encoding="utf-8")
 datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
@@ -46,7 +53,7 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos).replace("/*IA_COMUN*/", leer(B / "ia_comun.js"))
         .replace("/*SAR*/", leer(B / "sar.js", ""))
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "dashboard.html").write_text(preparar_app(html), encoding="utf-8")
+(R / "dashboard.html").write_text(preparar_app(preparar_avisos(html)), encoding="utf-8")
 print(f"dashboard.html: {len(html) / 1024:.0f} KB")
 
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
@@ -74,7 +81,7 @@ print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
 html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
            .replace("/*DATA*/", datos_ia)
            .replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "index.html").write_text(preparar_app(html_v2), encoding="utf-8")
+(R / "index.html").write_text(preparar_app(preparar_avisos(html_v2)), encoding="utf-8")
 print(f"index.html: {len(html_v2) / 1024:.0f} KB")
 # La dirección de la versión de prueba redirige a la portada.
 (R / "nuevo.html").write_text('<!doctype html><meta charset="utf-8"><title>MeteoIA</title><meta http-equiv="refresh" content="0; url=./"><a href="./">MeteoIA</a>\n', encoding="utf-8")
