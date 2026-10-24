@@ -40,6 +40,9 @@ renueva únicamente la hora de consulta. Los fotogramas y las cuadrículas de
 consulta se publican juntos, sin mezclar versiones entre fechas. Ante descargas
 o formatos inválidos conserva el archivo anterior. La UV controla la frecuencia
 de emisión de sus corridas: consultar cada dos horas no crea una corrida nueva.
+También comprueba las etiquetas numéricas 0–4 m de la leyenda y que esta no
+cambie entre fotogramas; si cambia, conserva la corrida anterior para evitar
+interpretar una escala diferente con los mismos colores.
 
 El navegador carga la capa solo al activarla y revisa el JSON cada dos horas;
 al volver a una pestaña visible también comprueba el dato publicado. Si falla

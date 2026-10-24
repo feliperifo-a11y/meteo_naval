@@ -32,6 +32,10 @@ class MarejadasUV(unittest.TestCase):
         b=io.BytesIO();Image.new('RGB',(1200,900)).save(b,format='PNG')
         with self.assertRaises(ValueError):uv.procesar(b.getvalue())
 
+    def test_height_legend_must_still_be_zero_to_four_metres(self):
+        uv.validar_escala('4\n3.5\n3\n2.5\n2\n1.5\n1\n0.5\n0')
+        with self.assertRaises(ValueError):uv.validar_escala('5\n4.5\n4\n3.5\n3\n2.5\n2\n1.5\n1\n0.5\n0')
+
     def test_changed_coordinate_axes_are_rejected_despite_isolated_ocr_errors(self):
         axes={'x':'653600 656650 659700 662750 665800 668850 671300 674950 678000 681050',
               'y':'5349000 5945500 5942000 5938500 5935000 5931500 5928000 5924500 5921000'}

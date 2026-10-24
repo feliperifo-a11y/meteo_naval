@@ -73,6 +73,12 @@ def validar_ejes(im, textos=None):
         raise ValueError('Cambió la cuadrícula UTM de la carta UV')
 
 
+def validar_escala(texto):
+    etiquetas = [float(v.replace(',','.')) for v in re.findall(r'\d+(?:[.,]\d+)?',texto)]
+    if etiquetas != [4,3.5,3,2.5,2,1.5,1,.5,0]:
+        raise ValueError('Cambió la escala numérica de altura UV')
+
+
 def codificar(im, tipo):
     f = io.BytesIO()
     im.save(f, format=tipo, **({'lossless': True, 'method': 3} if tipo == 'WEBP' else {}))
@@ -121,16 +127,20 @@ def proyeccion(size=768):
     return px, py, inside, [[sw[1],sw[0]],[ne[1],ne[0]]]
 
 
-def procesar(blob, ocr=leer_titulo, ejes=None):
+def procesar(blob, ocr=leer_titulo, ejes=None, escala=None):
     im = Image.open(io.BytesIO(blob))
     if im.format != 'GIF' or im.size != (1200,900) or not 2 <= im.n_frames <= 120:
         raise ValueError('Formato o dominio UV desconocido')
     validar_ejes(im.convert('RGB'),ejes)
+    validar_escala(escala if escala is not None else leer_texto(im.convert('RGB'),(1018,170,1060,745),6))
+    leyenda = im.convert('RGB').crop((975,170,1060,751)).tobytes()
     px, py, inside, bounds = proyeccion()
     frames, fechas = [], []
     for i in range(im.n_frames):
         im.seek(i)
         frame = im.convert('RGB')
+        if frame.crop((975,170,1060,751)).tobytes() != leyenda:
+            raise ValueError('La escala UV cambia entre fotogramas')
         fecha = fecha_titulo(ocr(frame))
         if fechas and (fecha-fechas[-1]).total_seconds() != 3*3600:
             raise ValueError('Secuencia UV no consecutiva de tres horas')
@@ -158,6 +168,7 @@ def main():
     p.add_argument('--archivo', type=Path)
     p.add_argument('--titulos', type=Path, help='Textos OCR de una validación local de los mismos fotogramas')
     p.add_argument('--ejes', type=Path, help='Textos OCR de los ejes de la misma carta local')
+    p.add_argument('--escala', type=Path, help='Texto OCR de la escala de altura de la misma carta local')
     p.add_argument('--forzar', action='store_true')
     args = p.parse_args()
     destino = ROOT/'data/marejadas_uv.json'
@@ -179,7 +190,8 @@ def main():
     else:
         if args.titulos:
             textos = iter(json.loads(args.titulos.read_text()).values())
-            result = procesar(blob, lambda im:next(textos), json.loads(args.ejes.read_text()) if args.ejes else None)
+            result = procesar(blob, lambda im:next(textos), json.loads(args.ejes.read_text()) if args.ejes else None,
+                               args.escala.read_text() if args.escala else None)
         else:
             result = procesar(blob)
     result['consultado'] = now.isoformat(timespec='seconds')
