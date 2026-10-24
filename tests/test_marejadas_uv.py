@@ -2,6 +2,7 @@ import importlib.util
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import unittest
+import shutil
 import numpy as np
 from PIL import Image
 
@@ -10,8 +11,25 @@ uv=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(uv)
 
 class MarejadasUV(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('tesseract'),'OCR real solo donde está instalado Tesseract')
+    def test_real_uv_titles_with_server_ocr(self):
+        # Recortes originales de CL19TAG.gif, consultado 2026-10-24, UV.
+        sheet=Image.open(Path(__file__).parent/'fixtures/uv_titulos_20261024.png')
+        errores=[]
+        for i in range(61):
+            im=Image.new('RGB',(1200,900),'white')
+            im.paste(sheet.crop((0,35*i,230,35*(i+1))),(590,25))
+            texto=uv.leer_titulo(im)
+            try:
+                if uv.fecha_titulo(texto)!=datetime(2026,10,24)+timedelta(hours=3*i):errores.append((i,texto))
+            except ValueError:errores.append((i,texto))
+        self.assertEqual(errores,[])
+
     def test_dates_and_two_hour_cache(self):
         self.assertEqual(uv.fecha_titulo('2026/0ct/24 03hrs'),datetime(2026,10,24,3))
+        self.assertEqual(uv.fecha_titulo('5 2026/Oct/24 OOhrs'),datetime(2026,10,24))
+        self.assertEqual(uv.fecha_titulo('2026/Oct/3O l5hrs'),datetime(2026,10,30,15))
+        self.assertEqual(uv.fecha_titulo('5 2026/Oct/30 O3Shrs'),datetime(2026,10,30,3))
         for text in ['2026/Oct/32 03hrs','2026/Oct/24 25hrs','sin fecha']:
             with self.assertRaises(ValueError):uv.fecha_titulo(text)
         now=datetime(2026,10,24,tzinfo=timezone.utc)
@@ -31,6 +49,10 @@ class MarejadasUV(unittest.TestCase):
         import io
         b=io.BytesIO();Image.new('RGB',(1200,900)).save(b,format='PNG')
         with self.assertRaises(ValueError):uv.procesar(b.getvalue())
+
+    def test_height_legend_must_still_be_zero_to_four_metres(self):
+        uv.validar_escala('4\n3.5\n3\n2.5\n2\n1.5\n1\n0.5\n0')
+        with self.assertRaises(ValueError):uv.validar_escala('5\n4.5\n4\n3.5\n3\n2.5\n2\n1.5\n1\n0.5\n0')
 
     def test_changed_coordinate_axes_are_rejected_despite_isolated_ocr_errors(self):
         axes={'x':'653600 656650 659700 662750 665800 668850 671300 674950 678000 681050',

@@ -38,11 +38,12 @@ def reciente(data, ahora):
 
 def fecha_titulo(texto):
     meses = dict(zip(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], range(1, 13)))
-    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*(\d{1,2})\s+(\d{1,2})\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
+    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*([0-9OoIl]{1,2})\s+([0-9OoIl]{1,2})\s*[Ss]?\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
     if not m or m[2].title() not in meses:
         raise ValueError('Fecha UV ilegible: ' + texto)
     # La fuente no indica zona horaria. No se inventa un desplazamiento a UTC.
-    return datetime(int(m[1]), meses[m[2].title()], int(m[3]), int(m[4]))
+    digitos = str.maketrans({'O':'0','o':'0','I':'1','l':'1'})
+    return datetime(int(m[1]), meses[m[2].title()], int(m[3].translate(digitos)), int(m[4].translate(digitos)))
 
 
 def leer_texto(im, caja, psm=7):
@@ -71,6 +72,12 @@ def validar_ejes(im, textos=None):
             or esperado_x[0] not in x or esperado_x[-1] not in x
             or not (esperado_y[0] in y or esperado_y[-1] in y)):
         raise ValueError('Cambió la cuadrícula UTM de la carta UV')
+
+
+def validar_escala(texto):
+    etiquetas = [float(v.replace(',','.')) for v in re.findall(r'\d+(?:[.,]\d+)?',texto)]
+    if etiquetas != [4,3.5,3,2.5,2,1.5,1,.5,0]:
+        raise ValueError('Cambió la escala numérica de altura UV')
 
 
 def codificar(im, tipo):
@@ -121,16 +128,20 @@ def proyeccion(size=768):
     return px, py, inside, [[sw[1],sw[0]],[ne[1],ne[0]]]
 
 
-def procesar(blob, ocr=leer_titulo, ejes=None):
+def procesar(blob, ocr=leer_titulo, ejes=None, escala=None):
     im = Image.open(io.BytesIO(blob))
     if im.format != 'GIF' or im.size != (1200,900) or not 2 <= im.n_frames <= 120:
         raise ValueError('Formato o dominio UV desconocido')
     validar_ejes(im.convert('RGB'),ejes)
+    validar_escala(escala if escala is not None else leer_texto(im.convert('RGB'),(1018,170,1060,745),6))
+    leyenda = im.convert('RGB').crop((975,170,1060,751)).tobytes()
     px, py, inside, bounds = proyeccion()
     frames, fechas = [], []
     for i in range(im.n_frames):
         im.seek(i)
         frame = im.convert('RGB')
+        if frame.crop((975,170,1060,751)).tobytes() != leyenda:
+            raise ValueError('La escala UV cambia entre fotogramas')
         fecha = fecha_titulo(ocr(frame))
         if fechas and (fecha-fechas[-1]).total_seconds() != 3*3600:
             raise ValueError('Secuencia UV no consecutiva de tres horas')
@@ -158,6 +169,7 @@ def main():
     p.add_argument('--archivo', type=Path)
     p.add_argument('--titulos', type=Path, help='Textos OCR de una validación local de los mismos fotogramas')
     p.add_argument('--ejes', type=Path, help='Textos OCR de los ejes de la misma carta local')
+    p.add_argument('--escala', type=Path, help='Texto OCR de la escala de altura de la misma carta local')
     p.add_argument('--forzar', action='store_true')
     args = p.parse_args()
     destino = ROOT/'data/marejadas_uv.json'
@@ -179,7 +191,8 @@ def main():
     else:
         if args.titulos:
             textos = iter(json.loads(args.titulos.read_text()).values())
-            result = procesar(blob, lambda im:next(textos), json.loads(args.ejes.read_text()) if args.ejes else None)
+            result = procesar(blob, lambda im:next(textos), json.loads(args.ejes.read_text()) if args.ejes else None,
+                               args.escala.read_text() if args.escala else None)
         else:
             result = procesar(blob)
     result['consultado'] = now.isoformat(timespec='seconds')
