@@ -122,18 +122,4 @@ Fuente: https://www.armada.cl/noticias-navales/personal-del-shoa-reemplazo-boya-
 Ubicación: https://repositorio.udec.cl/server/api/core/bitstreams/6adb98ac-3cb8-492e-88ca-02618b301dba/content#page=29
 Entidad: Servicio Hidrográfico y Oceanográfico de la Armada · SHOA
 Variables: Oleaje (altura significativa, período y dirección en el estudio UdeC); instrumentación meteorológica y oceanográfica descrita por Armada. La renovación de 2021 incorporó oxígeno y pH superficial.
-Disponibilidad: Ubicación histórica publicada; fondeo actual y transmisión al 24/10/2026 no confirmados. No se encontró un panel público en vivo específico de esta boya.</description><Point><coordinates>-73.338,-36.567,0</coordinates></Point></Placemark><Placemark><name>33 · Boya POSAR — CR2 / COPAS Coastal, UdeC</name><description>Posición nominal publicada
-Boya científica en Estación 18, frente a Dichato / Coliumo y fuera de bahía de Concepción. Coordenada nominal publicada a minutos enteros (36°30′ S, 73°07′ O). Complementa las condiciones de mar abierto al norte de la bahía.
-Fuente: https://www.cr2.cl/posar/
-Ubicación: https://www.cr2.cl/posar/#ubicacion
-Entidad: CR2 · COPAS Coastal / Universidad de Concepción
-Variables: Viento y variables meteorológicas; temperatura, salinidad y otras variables biogeoquímicas del mar. La página no documenta un sensor de oleaje.
-Disponibilidad: CR2 informa refondeo el 13/07/2025. Meteorología cada 5 min, oceanografía cada hora; acceso de datos por FTP descrito en la fuente. No se verificó el último archivo transmitido.
-Datos: https://www.cr2.cl/posar/</description><Point><coordinates>-73.116667,-36.5,0</coordinates></Point></Placemark><Placemark><name>34 · Mareógrafo Talcahuano — SHOA / red IOC</name><description>Coordenada del catálogo IOC
-Complemento para variaciones observadas del nivel del mar en Talcahuano. Es un mareógrafo costero; no corresponde a la boya Watchkeeper ni mide la altura del oleaje exterior.
-Fuente: https://www.ioc-sealevelmonitoring.org/station.php?code=talc
-Ubicación: https://www.ioc-sealevelmonitoring.org/station.php?code=talc
-Entidad: SHOA · difusión IOC Sea Level Monitoring
-Variables: Nivel del mar; sensores de presión y radar registrados en el catálogo.
-Disponibilidad: Catálogo IOC: «Operational». La etiqueta de catálogo no confirma recepción actual; revisar la hora UTC del último registro en el enlace.
-Datos: https://www.ioc-sealevelmonitoring.org/station.php?code=talc</description><Point><coordinates>-73.105992,-36.700933,0</coordinates></Point></Placemark></Document></kml>
+Disponibilidad: Ubicación histórica publicada; fondeo actual y transmisión al 24/10/2026 no confirmados. No se encontró un panel público en vivo específico de esta boya.</description><Point><coordinates>-73.338,-36.567,0</coordinates></Point></Placemark></Document></kml>

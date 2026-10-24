@@ -9,13 +9,13 @@ const contexto = { URL };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'build/talcahuano.js'), 'utf8'), contexto);
 const escapar = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-test('conserva 34 referencias, sus fuentes, precisión y disponibilidad de consulta', () => {
-  assert.equal(datos.features.length, 34);
-  assert.equal(new Set(datos.features.map(f => f.properties.id)).size, 34);
+test('conserva 32 referencias, sus fuentes, precisión y disponibilidad de consulta', () => {
+  assert.equal(datos.features.length, 32);
+  assert.equal(new Set(datos.features.map(f => f.properties.id)).size, 32);
   assert.equal(datos.features.filter(f => !f.properties.sensor).length, 25);
   assert.equal(datos.features.filter(f => f.properties.clase === 'estacion').length, 6);
-  assert.equal(datos.features.filter(f => f.properties.clase === 'boya').length, 2);
-  assert.equal(datos.features.filter(f => f.properties.clase === 'mareografo').length, 1);
+  assert.equal(datos.features.filter(f => f.properties.clase === 'boya').length, 1);
+  assert.equal(datos.features.filter(f => f.properties.clase === 'mareografo').length, 0);
   for (const f of datos.features) {
     assert.equal(f.geometry.type, 'Point');
     assert(f.geometry.coordinates.every(Number.isFinite));
@@ -24,8 +24,7 @@ test('conserva 34 referencias, sus fuentes, precisión y disponibilidad de consu
   const p = id => datos.features.find(f => f.properties.id === id).properties;
   assert.match(p(28).note, /1,9 km al sur/);
   assert.match(p(32).status, /histórica.*no confirmados/);
-  assert.match(p(33).variables, /no documenta un sensor de oleaje/);
-  assert.match(p(34).note, /no.*Watchkeeper/);
+
   assert.match(datos.metadata.alcance, /No se verificaron umbrales/);
 });
 function entorno() {
@@ -70,8 +69,8 @@ test('las capas son opcionales, se crean al activar y no duplican marcadores al 
   assert.equal(c.puertos.children.size, 0); assert.equal(c.observacion.children.size, 0);
   h.map.addLayer(c.puertos); assert.equal(c.puertos.children.size, 25);
   h.map.removeLayer(c.puertos); h.map.addLayer(c.puertos); assert.equal(c.puertos.children.size, 25);
-  h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 9);
-  h.map.removeLayer(c.observacion); h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 9);
+  h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
+  h.map.removeLayer(c.observacion); h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
 });
 test('reutiliza las identidades y posiciones instrumentales; la red no repite las cuatro estaciones locales', () => {
   const h = entorno(), c = h.catalogo;
@@ -107,11 +106,14 @@ test('Watchkeeper comparte la ficha y posición de la boya nacional, y conserva 
   const metadata=c.fichaBoya({nombre:'Talcahuano'});assert.match(metadata,/<details class="talc-detalle">/);assert.doesNotMatch(metadata,/<details[^>]*\bopen/);
   assert.match(metadata,/Posición publicada en 2025/);assert.equal(c.fichaBoya({nombre:'Iquique'}),'');
   h.actualizarBoyas([{nombre:'Talcahuano',lat:-36.56,lon:-73.34,ultimo:{hsig:1.6,fecha:'2026-10-24T20:00:00Z'}}]);
-  assert.match(m.popup(),/Oleaje SHOA: 1.6 m.*20:00:00Z/);assert.equal(c.observacion.children.size,9);
+  assert.match(m.popup(),/Oleaje SHOA: 1.6 m.*20:00:00Z/);assert.equal(c.observacion.children.size,7);
 });
-test('POSAR muestra variables oceanográficas sin simular oleaje ni mediciones actuales',()=>{
-  const f=datos.features.find(f=>f.properties.id===33),html=contexto.fichaInstrumentoSinDatosTalcahuano(f,escapar);
-  assert.match(html,/class="pp"/);assert.match(html,/Sin lectura disponible/);assert.match(html,/Salinidad|Oxígeno disuelto/);assert.doesNotMatch(html,/Altura significativa|Operational|2026-10-24T/);
+test('POSAR y el mareógrafo retirados no se pueden abrir ni aparecen en las descargas',()=>{
+  const h=entorno();h.catalogo.abrir(33);h.catalogo.abrir(34);
+  assert.equal(h.catalogo.observacion.children.size,0);assert.equal(h.catalogo.observacionActiva(),false);
+  assert(!datos.features.some(f=>[33,34].includes(f.properties.id)));
+  const kml=fs.readFileSync(path.join(root,'data/geo/talcahuano.kml'),'utf8');
+  assert.doesNotMatch(kml,/POSAR|Mareógrafo|Mareografo/);assert.equal((kml.match(/<Placemark>/g)||[]).length,32);
 });
 test('complementa Penco y Carriel sin duplicar ni sustituir las estaciones de la red nacional',()=>{
   const nacional=[{codigo:'WU-ITALCA20',temp:16},{codigo:'DMC-360019',temp:18}],extras=[{codigo:'SCIE',temp:19},{codigo:'RMCL0193',temp:21},{codigo:'OTRA',temp:20}];

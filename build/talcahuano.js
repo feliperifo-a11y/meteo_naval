@@ -16,8 +16,7 @@ function enlaceTalcahuano(valor) {
 }
 function fichaInstrumentoSinDatosTalcahuano(f,escapar) {
   const p=f.properties;
-  const variables=p.id===33?['Viento','Temperatura del aire','Presión','Humedad','Temperatura del agua','Salinidad','Oxígeno disuelto','pH']:
-    p.clase==='boya'?['Altura significativa','Altura máxima','Período significativo','Dirección media','Temperatura del agua']:['Nivel del mar'];
+  const variables=p.clase==='boya'?['Altura significativa','Altura máxima','Período significativo','Dirección media','Temperatura del agua']:[ 'Viento','Temperatura del aire','Presión','Humedad' ];
   const url=enlaceTalcahuano(p.dataurl||p.source);
   return `<div class="pp"><div class="ppT">${escapar(p.label||p.name)}</div><table><tr><th>Estado</th><td>Sin datos</td></tr><tr><th>Último dato</th><td>Sin lectura disponible</td></tr>`+
     variables.map(k=>`<tr><th>${escapar(k)}</th><td>—</td></tr>`).join('')+
@@ -43,7 +42,7 @@ function fichaTalcahuano(feature, escapar, metadatos) {
 function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   const puertos = L.layerGroup(), observacion = L.layerGroup(), marcadores = new Map();
   const colores = { Autoridad: '#5d48aa', 'Alcaldía / caleta': '#ad5a28', 'Puerto / sitio': '#196a94',
-    'Deporte / borde costero': '#487d31', 'Referencia marítima': '#6b6f76', estacion: '#147b88', boya: '#bd6b16', mareografo: '#a13d80' };
+    'Deporte / borde costero': '#487d31', 'Referencia marítima': '#6b6f76', estacion: '#147b88', boya: '#bd6b16' };
   const activa = () => map.hasLayer(observacion);
   const asociada = s => referenciaEstacionTalcahuano(datos, s);
   const esBoya = b => String(b.nombre).trim().toLowerCase() === 'talcahuano';
@@ -71,7 +70,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   }
   function icono(p) {
     const c = colores[p.clase] || colores[p.category] || '#196a94';
-    const signo = p.clase === 'estacion' ? 'M' : p.clase === 'mareografo' ? 'N' : p.clase === 'boya' ? 'B' : p.id;
+    const signo = p.clase === 'estacion' ? 'M' : p.clase === 'boya' ? 'B' : p.id;
     return L.divIcon({ className: 'talc-marcador', iconSize: [24,24], iconAnchor: [12,12],
       html: `<span style="background:${c}">${escapar(signo)}</span>` });
   }
@@ -116,10 +115,10 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     div.innerHTML = '<button type="button" class="talc-ver">Ver bahía de Talcahuano</button>' +
       '<label class="talc-selector">Consultar referencia<select aria-label="Referencia de Capuerto Talcahuano"><option value="">Seleccione una referencia…</option>' +
       datos.features.map(f => `<option value="${f.properties.id}">${f.properties.id}. ${escapar(f.properties.label || f.properties.name)}</option>`).join('') + '</select></label>' +
-      '<details><summary>Fuentes y alcance · 34 referencias</summary>' +
+      `<details><summary>Fuentes y alcance · ${datos.features.length} referencias</summary>` +
       `<p>Consulta: ${escapar(datos.metadata.consultado)}. ${escapar(datos.metadata.alcance)}</p><p>${escapar(datos.metadata.precision)}</p>` +
       datos.metadata.documentos.map(d => `<p><a href="${escapar(enlaceTalcahuano(d.url))}" target="_blank" rel="noopener noreferrer">${escapar(d.titulo)} ↗</a></p>`).join('') +
-      '<p>Las estaciones y la boya SHOA usan los mismos símbolos, estados y fichas de mediciones que la red nacional. Los números identifican referencias portuarias; N identifica nivel del mar. La boya SHOA usa la posición de referencia de su catálogo; su posición histórica queda en los antecedentes. POSAR es una boya científica, sin sensor de oleaje documentado.</p>' +
+      '<p>Las estaciones y la boya SHOA usan los mismos símbolos, estados y fichas de mediciones que la red nacional. Los números identifican referencias portuarias. La boya SHOA usa la posición de referencia de su catálogo; su posición histórica queda en los antecedentes.</p>' +
       `<p>${escapar(datos.metadata.atribucion)}</p>` +
       '<p><a href="data/geo/talcahuano.geojson" download>Descargar GeoJSON</a> · <a href="data/geo/talcahuano.kml" download>Descargar KML</a></p></details>';
     div.querySelector('.talc-ver').onclick = verTodo;
