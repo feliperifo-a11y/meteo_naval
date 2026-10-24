@@ -12,6 +12,8 @@ spec.loader.exec_module(uv)
 class MarejadasUV(unittest.TestCase):
     def test_dates_and_two_hour_cache(self):
         self.assertEqual(uv.fecha_titulo('2026/0ct/24 03hrs'),datetime(2026,10,24,3))
+        self.assertEqual(uv.fecha_titulo('5 2026/Oct/24 OOhrs'),datetime(2026,10,24))
+        self.assertEqual(uv.fecha_titulo('2026/Oct/3O l5hrs'),datetime(2026,10,30,15))
         for text in ['2026/Oct/32 03hrs','2026/Oct/24 25hrs','sin fecha']:
             with self.assertRaises(ValueError):uv.fecha_titulo(text)
         now=datetime(2026,10,24,tzinfo=timezone.utc)
