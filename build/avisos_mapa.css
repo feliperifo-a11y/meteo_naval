@@ -1,9 +1,7 @@
-.av-resumen-tarjeta{box-sizing:border-box;width:220px;transform:translate(-50%,-50%);padding:9px 11px;background:rgba(14,30,47,.96);color:#f4f7fb;border:1px solid #fc7878;border-left:4px solid #ff6161;border-radius:9px;box-shadow:0 3px 12px #0005;font:11px/1.4 system-ui,-apple-system,sans-serif;white-space:normal;cursor:auto}
+.aviso-hover .leaflet-popup-content-wrapper{background:rgba(14,30,47,.97);color:#f4f7fb;border:1px solid #fc7878;border-left:4px solid #ff6161;border-radius:9px;box-shadow:0 3px 12px #0005}
+.aviso-hover .leaflet-popup-tip{background:#0e1e2f}
+.aviso-hover .leaflet-popup-content{margin:9px 11px;font:11px/1.4 system-ui,-apple-system,sans-serif}
 .av-resumen-titulo{display:block;font-size:12px;color:#ffb5ae;line-height:1.3}
-.av-resumen-sector{display:block;color:#d3e1ed;margin-top:2px}
-.av-resumen-texto{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;margin:6px 0;font-size:11px;line-height:1.4}
-.av-resumen-validez,.av-resumen-tarjeta small{display:block;font-size:10px;color:#c6d7e6}
-.av-resumen-tarjeta small{margin-top:4px}
-.av-resumen-tarjeta a{display:inline-block;margin-top:6px;padding:3px 0;color:#9ed4ff;font-size:11px;font-weight:700;text-decoration:underline}
+.av-resumen-validez{display:block;margin-top:5px;font-size:10px;color:#c6d7e6}
+.av-resumen-tarjeta a{display:block;margin-top:4px;padding:7px 0;color:#9ed4ff;font-size:11px;font-weight:700;text-decoration:underline}
 .av-resumen-tarjeta a:focus-visible{outline:2px solid #9ed4ff;outline-offset:3px;border-radius:2px}
-@media(max-width:600px){.av-resumen-tarjeta{width:184px;padding:7px 9px}.av-resumen-texto{-webkit-line-clamp:3}.av-resumen-tarjeta a{padding:6px 0}}

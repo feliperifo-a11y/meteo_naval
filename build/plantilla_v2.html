@@ -236,7 +236,6 @@ map.createPane('vientoPane').style.zIndex = 330;
 map.createPane('flechasPane').style.zIndex = 340; map.getPane('flechasPane').style.pointerEvents = 'none';
 map.createPane('metPane').style.zIndex = 360;
 map.createPane('avPane').style.zIndex = 380;
-map.createPane('avResumenPane').style.zIndex = 610;
 map.createPane('puertoPane').style.zIndex = 655;
 map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 const VISTA = [[-70.5, -120.5], [-17.5, -52]];
@@ -518,10 +517,11 @@ function pintarAlertas() {
   AVISOS.forEach((a, ia) => { const zs = (a.zonas || []).map(z => [z, estadoAviso(z, ahora)]).filter(([, e]) => e !== 'X'); if (!zs.length) return;
     const vig = zs.some(([, e]) => e === 'V'), ini = new Date(Math.min(...zs.map(([z]) => +new Date(z.desde)))), fin = new Date(Math.max(...zs.map(([z]) => +new Date(z.hasta))));
     out.push({ k: 'a:' + a.tipo + '|' + zs.map(([z]) => z.nombre).join('|'), n: vig ? 'rj' : 'az', ico: ICO.alerta(vig ? '#ff6b6b' : '#5fb0ff'), t: a.tipo, d: `${zs.map(([z]) => z.nombre).join(' · ')}<br>${fmtDM(ini)} a ${fmtDM(fin)}`, bd: vig ? 'Vigente' : 'Próximo', html: true,
-      capa: () => { const g = L.featureGroup(); for (const [z, e] of zs) if (z.geom) L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
-        .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(g);
-        const resumen = crearResumenAviso(L, a, zs.map(([z]) => z), escH, fmtDM, ahora); if (resumen) resumen.addTo(g);
-        return g; } }); });
+      capa: () => { const g = L.featureGroup(); for (const [z, e] of zs) if (z.geom) {
+        const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
+          .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}`, { sticky: true }).addTo(g);
+        configurarAvisoInteractivo(lyr, a, z, escH, fmtDM, ahora);
+      } return g; } }); });
   capaAv.clearLayers(); CAPA_AL = {};
   for (const a of out) { const g = a.capa(); CAPA_AL[a.k] = g; if (!OCULTAS.has(a.k)) g.addTo(capaAv); }
   const el = document.getElementById('listaAlertas');
