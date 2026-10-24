@@ -15,6 +15,8 @@ class Observaciones(unittest.TestCase):
         self.assertAlmostEqual(r['velocidadDelViento'],3.89,places=2)
         self.assertEqual(r['_unidad_viento'],'kt');self.assertTrue(r['_fecha_utc'].startswith('2024-07-03'))
         self.assertNotIn('2099',r['fecha'])
+        d[0]['vr'][1]=1
+        self.assertIsNone(t.penco(d)['_racha'])
         d[0]['metadatos']['id_estacion']='OTRA'
         with self.assertRaises(ValueError):t.penco(d)
 

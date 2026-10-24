@@ -40,6 +40,8 @@ def penco(datos):
     kt=lambda v:None if v is None else round(v*1.943844,2)
     r.update(temperatura=get('t'),puntoDeRocio=get('td'),humedad=get('rh'),presion=get('slp'),
              viento=get('vd'),velocidadDelViento=kt(get('vv')),_racha=kt(get('vr')))
+    if r['_racha'] is not None and r['velocidadDelViento'] is not None and r['_racha']<r['velocidadDelViento']:
+        r['_racha']=None  # No publicar como racha máxima un valor inferior al viento de esa observación.
     qc=get('qc')
     if qc is not None and qc>=128:raise ValueError('RedMeteo indica error de lectura')
     return r
