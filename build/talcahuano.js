@@ -107,22 +107,26 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     m.openPopup(); opciones.enfocarMapa?.();
   }
   function verTodo() {
-    opciones.activar('talc_puertos'); opciones.activar('talc_obs'); opciones.prepararVista?.();
+    opciones.activar('talc_puertos'); opciones.activar('talc_obs'); opciones.activarFondeos?.(); opciones.prepararVista?.();
     map.fitBounds(datos.features.map(f => f.geometry.coordinates.slice().reverse()), { padding: [30,30], maxZoom: 12 });
   }
-  function controles(box) {
+  function controles(box, fondeos) {
     const div = document.createElement('div'); div.className = 'talc-herramientas';
     div.innerHTML = '<button type="button" class="talc-ver">Ver bahía de Talcahuano</button>' +
+      (fondeos?'<label class="talc-selector">Filtrar fondeos<select aria-label="Filtrar fondeos de Talcahuano"><option value="">Todos</option><option value="exterior">Fuera de los límites del puerto</option><option value="interior">Dentro de los límites del puerto</option><option value="alije">Faenas de alije</option></select></label>':'') +
       '<label class="talc-selector">Consultar referencia<select aria-label="Referencia de Capuerto Talcahuano"><option value="">Seleccione una referencia…</option>' +
-      datos.features.map(f => `<option value="${f.properties.id}">${f.properties.id}. ${escapar(f.properties.label || f.properties.name)}</option>`).join('') + '</select></label>' +
+      datos.features.map(f => `<option value="${f.properties.id}">${f.properties.id}. ${escapar(f.properties.label || f.properties.name)}</option>`).join('') + (fondeos?.opcionesHTML()||'') + '</select></label>' +
       `<details><summary>Fuentes y alcance · ${datos.features.length} referencias</summary>` +
       `<p>Consulta: ${escapar(datos.metadata.consultado)}. ${escapar(datos.metadata.alcance)}</p><p>${escapar(datos.metadata.precision)}</p>` +
       datos.metadata.documentos.map(d => `<p><a href="${escapar(enlaceTalcahuano(d.url))}" target="_blank" rel="noopener noreferrer">${escapar(d.titulo)} ↗</a></p>`).join('') +
       '<p>Las estaciones y la boya SHOA usan los mismos símbolos, estados y fichas de mediciones que la red nacional. Los números identifican referencias portuarias. La boya SHOA usa la posición de referencia de su catálogo; su posición histórica queda en los antecedentes.</p>' +
       `<p>${escapar(datos.metadata.atribucion)}</p>` +
-      '<p><a href="data/geo/talcahuano.geojson" download>Descargar GeoJSON</a> · <a href="data/geo/talcahuano.kml" download>Descargar KML</a></p></details>';
+      '<p><a href="data/geo/talcahuano.geojson" download>Descargar GeoJSON</a> · <a href="data/geo/talcahuano.kml" download>Descargar KML</a></p></details>' + (fondeos?.fuentesHTML()||'');
     div.querySelector('.talc-ver').onclick = verTodo;
-    div.querySelector('select').onchange = e => abrir(e.target.value);
+    div.querySelector('[aria-label="Referencia de Capuerto Talcahuano"]').onchange = e => {
+      const clave=e.target.value;if(fondeos&&/^(fondeo|arba):/.test(clave))fondeos.abrir(clave);else abrir(clave);
+    };
+    fondeos?.conectarFiltro(div);
     box.appendChild(div);
   }
   return { puertos, observacion, observacionActiva: activa, esEstacionCatalogada: s => !!asociada(s), esBoyaCatalogada: esBoya,

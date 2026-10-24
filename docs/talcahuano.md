@@ -1,11 +1,16 @@
 # Capuertos: Talcahuano
 
 El dashboard completo ofrece el botón **Capuertos → Capuerto Talcahuano**. Es la
-sección de Talcahuano dentro del menú, que también incluye Valparaíso. El acceso activa dos capas opcionales y centra la vista:
-25 referencias portuarias y siete puntos de observación (seis estaciones y una
-boya SHOA Watchkeeper). La portada no incorpora estos datos ni el menú.
+sección de Talcahuano dentro del menú, que también incluye Valparaíso. El acceso
+activa las referencias portuarias, la observación costera, los fondeos y ARBA,
+y centra la vista. Conserva 25 referencias portuarias y siete puntos de
+observación (seis estaciones y una boya SHOA Watchkeeper), y añade 19 fondeos
+y el área reservada ARBA. Las capas están apagadas al entrar al dashboard;
+Marejadas UV conserva su activación independiente. La portada no incorpora
+estos datos ni el menú.
 
-El selector de referencias permite abrir las 32 fichas, incluidas ubicaciones
+El selector de referencias permite abrir las 32 fichas del inventario y las
+20 referencias de fondeos/ARBA, incluidas ubicaciones
 cercanas difíciles de seleccionar en el mapa. Las fichas conservan entidad,
 variables documentadas, precisión, disponibilidad y fecha de consulta, notas y
 fuentes. «Fuentes y alcance» incluye las resoluciones de 2015 y 2022 y las
@@ -71,5 +76,31 @@ seis estaciones y la boya SHOA Watchkeeper.
 - [Ficha DMC Isla Quiriquina](https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/360015).
 
 Las demás fuentes y enlaces de geolocalización figuran individualmente en el
-GeoJSON y en las fichas. El inventario no añade datos de Marejadas UV ni nodos
-operacionales no verificados.
+GeoJSON y en las fichas. El inventario permanece separado de las cartas de
+Marejadas UV y no añade mediciones ni autorizaciones operacionales.
+
+## Fondeos y área reservada ARBA
+
+Se incorporó el documento aportado `Fondeaderos_Talcahuano_ChatGPT.docx`,
+contrastando sus posiciones DMS con las páginas 4–6 de la
+[resolución C.P. Talcahuano 12.600/491, 26/12/2023](https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf).
+
+La capa **Fondeos** ofrece nueve exteriores (A–I, azul), seis interiores
+(J–O, verde azulado) y cuatro para faenas de alije (A1–A4, naranja). El filtro
+usa esas categorías del documento. Elegir una referencia excluida por el filtro
+restablece todos los fondeos y abre su ficha. Las fichas conservan las
+coordenadas DMS y los seis decimales aportados, con enlace a la página de la
+resolución correspondiente. No se añaden radios ni sondas, pues no figuran
+en la tabla aportada.
+
+**Área reservada Armada (ARBA)** es una capa independiente con un polígono
+violeta. Los vértices de la tabla se ordenan 1–3–4–2–1 por el perímetro, sin
+cruzar diagonales, y conservan sus identificadores originales en la ficha y
+en los datos descargables.
+
+`data/geo/talcahuano_fondeos.geojson` y `.kml` contienen las mismas 20
+geometrías, aparte del inventario existente. Se incorporan solo al dashboard
+y sus descargas se copian a la publicación. El constructor, la versión de la
+página y la verificación automática incluyen estos archivos y
+`build/fondeos_talcahuano.js`. La capa usa la resolución aportada como
+antecedente documental; datum y modificaciones posteriores por confirmar.
