@@ -1,7 +1,7 @@
 name: Verificar app gratuita
 on:
   pull_request:
-    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano.*', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
+    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano.*', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'scripts/talcahuano_observaciones.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,4 +28,4 @@ jobs:
           pip install numpy pillow pyproj
           sudo apt-get update -qq
           sudo apt-get install -y -qq tesseract-ocr
-          python -m unittest discover -s tests -p "test_marejadas_uv.py"
+          python -m unittest discover -s tests -p "test_*.py"

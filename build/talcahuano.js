@@ -2,8 +2,27 @@
 function referenciaEstacionTalcahuano(datos, estacion) {
   return datos.features.find(f => (f.properties.meteoia_codigos || []).includes(estacion.codigo));
 }
+function complementarEstacionesTalcahuano(estaciones, complementarias, datos) {
+  const salida=estaciones.slice();
+  for (const s of complementarias) {
+    const f=referenciaEstacionTalcahuano(datos,s); if(!f)continue;
+    const i=salida.findIndex(x=>(f.properties.meteoia_codigos||[]).includes(x.codigo));
+    if(i<0)salida.push(s);else if(salida[i].sinDatos&&!s.sinDatos)salida[i]=s;
+  }
+  return salida;
+}
 function enlaceTalcahuano(valor) {
   try { const u = new URL(valor); return ['https:', 'http:'].includes(u.protocol) ? u.href : null; } catch (e) { return null; }
+}
+function fichaInstrumentoSinDatosTalcahuano(f,escapar) {
+  const p=f.properties;
+  const variables=p.id===33?['Viento','Temperatura del aire','Presión','Humedad','Temperatura del agua','Salinidad','Oxígeno disuelto','pH']:
+    p.clase==='boya'?['Altura significativa','Altura máxima','Período significativo','Dirección media','Temperatura del agua']:['Nivel del mar'];
+  const url=enlaceTalcahuano(p.dataurl||p.source);
+  return `<div class="pp"><div class="ppT">${escapar(p.label||p.name)}</div><table><tr><th>Estado</th><td>Sin datos</td></tr><tr><th>Último dato</th><td>Sin lectura disponible</td></tr>`+
+    variables.map(k=>`<tr><th>${escapar(k)}</th><td>—</td></tr>`).join('')+
+    `<tr><th>Fuente</th><td>${escapar(p.owner||'')}</td></tr></table><p>Las fechas del inventario no corresponden a mediciones recientes.</p>`+
+    (url?`<a href="${escapar(url)}" target="_blank" rel="noopener noreferrer">Consultar datos en la fuente ↗</a>`:'')+'</div>';
 }
 function fichaTalcahuano(feature, escapar, metadatos) {
   const p = feature.properties, [lon, lat] = feature.geometry.coordinates;
@@ -14,7 +33,7 @@ function fichaTalcahuano(feature, escapar, metadatos) {
   };
   const rows = [['Categoría', p.category], ['Entidad', p.owner], ['Variables documentadas', p.variables],
     ['Precisión de la referencia', p.precision], ['Posición del inventario', `${lat.toFixed(p.digits || 6)}, ${lon.toFixed(p.digits || 6)}`],
-    ['Disponibilidad en la consulta', p.status], ['Consulta del inventario', p.consultado || metadatos.consultado]];
+    [p.sensor?'Antecedente del inventario':'Disponibilidad en la consulta', p.status], ['Consulta del inventario', p.consultado || metadatos.consultado]];
   const links = [enlace(p.source, 'Fuente documental', p.page), enlace(p.geosource, 'Fuente de ubicación'),
     enlace(p.dataurl, 'Consultar datos en la fuente'), enlace(p.alternativeurl, 'Fuente alternativa'), enlace(p.metadataurl, 'Metadatos')].filter(Boolean);
   return `<section class="talc-ficha"><h3>${escapar(p.name)}</h3><table>${rows.filter(([,v]) => v).map(([k,v]) => `<tr><th>${escapar(k)}</th><td>${escapar(v)}</td></tr>`).join('')}</table>` +
@@ -28,6 +47,28 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   const activa = () => map.hasLayer(observacion);
   const asociada = s => referenciaEstacionTalcahuano(datos, s);
   const esBoya = b => String(b.nombre).trim().toLowerCase() === 'talcahuano';
+  const documental = f => `<details class="talc-detalle"><summary>Ubicación, antecedentes y fuentes</summary>${fichaTalcahuano(f,escapar,datos.metadata)}</details>`;
+  function instrumento(f) {
+    const p=f.properties;
+    if(p.clase==='estacion')return opciones.estaciones().find(s=>(p.meteoia_codigos||[]).includes(s.codigo))||opciones.estacionSinDatos?.(f);
+    if(p.id===32)return (opciones.boyas?.()||[]).find(esBoya);
+    return null;
+  }
+  function contenido(f) {
+    const p=f.properties,i=instrumento(f);
+    if(p.clase==='estacion'&&i)return opciones.popupEstacion(i);
+    if(p.id===32&&i)return opciones.popupBoya(i);
+    if(p.sensor)return fichaInstrumentoSinDatosTalcahuano(f,escapar)+documental(f);
+    return fichaTalcahuano(f,escapar,datos.metadata);
+  }
+  function presentacion(f) {
+    const p=f.properties,i=instrumento(f);
+    const posicion=i?[i.lat,i.lon]:f.geometry.coordinates.slice().reverse();
+    const icon=i?(p.clase==='estacion'?opciones.iconoEstacion?.(i):opciones.iconoBoya?.(i)):
+      p.clase==='boya'?opciones.iconoBoyaSinDatos?.(f):null;
+    const tooltip=i?(p.clase==='estacion'?opciones.tooltipEstacion?.(i):opciones.tooltipBoya?.(i)):null;
+    return {posicion,icon:icon||icono(p),tooltip:tooltip||`${escapar(p.label||p.name)} · ${escapar(p.precision)}`};
+  }
   function icono(p) {
     const c = colores[p.clase] || colores[p.category] || '#196a94';
     const signo = p.clase === 'estacion' ? 'M' : p.clase === 'mareografo' ? 'N' : p.clase === 'boya' ? 'B' : p.id;
@@ -36,12 +77,10 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   }
   function agregar(f, grupo) {
     const p = f.properties;
-    const estacion = p.clase === 'estacion' ? opciones.estaciones().find(s => (p.meteoia_codigos || []).includes(s.codigo)) : null;
-    // Conserva la posición de la fuente instrumental. La coordenada documental se consulta en la ficha.
-    const posicion = estacion ? [estacion.lat, estacion.lon] : f.geometry.coordinates.slice().reverse();
-    const m = L.marker(posicion, { pane: 'talcPane', icon: icono(p), title: p.name });
-    m.bindTooltip(`${escapar(p.label || p.name)} · ${escapar(estacion ? 'posición de la fuente instrumental' : p.precision)}`, { direction: 'top', offset: [0,-10] });
-    m.bindPopup(() => estacion ? opciones.popupEstacion(estacion) : fichaTalcahuano(f, escapar, datos.metadata), { pane: 'talcPopupPane', className: 'talc-popup', maxWidth: Math.min(370, map.getContainer().clientWidth - 70), autoPanPadding: [25,35] });
+    const v=presentacion(f);
+    const m = L.marker(v.posicion, { pane: 'talcPane', icon: v.icon, title: p.name });
+    m.bindTooltip(v.tooltip, { direction: 'top', offset: [0,-10] });
+    m.bindPopup(() => contenido(f), { pane: 'talcPopupPane', className: 'talc-popup', maxWidth: 320, autoPanPadding: [25,35] });
     m.addTo(grupo); marcadores.set(p.id, m);
   }
   let puertosCreados = false;
@@ -49,8 +88,13 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   puertos.on('remove', () => { if (!activa()) opciones.ajustarZoom?.(false); });
   function actualizarObservacion() {
     if (!activa()) return;
-    observacion.clearLayers();
-    datos.features.filter(f => f.properties.sensor).forEach(f => agregar(f, observacion));
+    for(const f of datos.features.filter(f=>f.properties.sensor)) {
+      const m=marcadores.get(f.properties.id);
+      if(!m){agregar(f,observacion);continue;}
+      const v=presentacion(f);m.setLatLng(v.posicion);m.setIcon(v.icon);m.setTooltipContent(v.tooltip);
+      // Conserva el marcador y la ficha abiertos al llegar una observación nueva.
+      m.setPopupContent(()=>contenido(f));
+    }
   }
   observacion.on('add', () => { opciones.ajustarZoom?.(true); actualizarObservacion(); opciones.refrescarRed(); });
   observacion.on('remove', () => { opciones.refrescarRed(); if (!map.hasLayer(puertos)) opciones.ajustarZoom?.(false); });
@@ -75,7 +119,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
       '<details><summary>Fuentes y alcance · 34 referencias</summary>' +
       `<p>Consulta: ${escapar(datos.metadata.consultado)}. ${escapar(datos.metadata.alcance)}</p><p>${escapar(datos.metadata.precision)}</p>` +
       datos.metadata.documentos.map(d => `<p><a href="${escapar(enlaceTalcahuano(d.url))}" target="_blank" rel="noopener noreferrer">${escapar(d.titulo)} ↗</a></p>`).join('') +
-      '<p>Las letras M, B y N identifican estaciones, boyas y nivel del mar. Los números identifican referencias portuarias. La posición de Watchkeeper es histórica y su transmisión actual no está confirmada. POSAR es una boya científica; el inventario no acredita sensor de oleaje.</p>' +
+      '<p>Las estaciones y la boya SHOA usan los mismos símbolos, estados y fichas de mediciones que la red nacional. Los números identifican referencias portuarias; N identifica nivel del mar. La boya SHOA usa la posición de referencia de su catálogo; su posición histórica queda en los antecedentes. POSAR es una boya científica, sin sensor de oleaje documentado.</p>' +
       `<p>${escapar(datos.metadata.atribucion)}</p>` +
       '<p><a href="data/geo/talcahuano.geojson" download>Descargar GeoJSON</a> · <a href="data/geo/talcahuano.kml" download>Descargar KML</a></p></details>';
     div.querySelector('.talc-ver').onclick = verTodo;
@@ -83,7 +127,8 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     box.appendChild(div);
   }
   return { puertos, observacion, observacionActiva: activa, esEstacionCatalogada: s => !!asociada(s), esBoyaCatalogada: esBoya,
-    fichaEstacion: s => { const f = asociada(s); return f ? fichaTalcahuano(f, escapar, datos.metadata) : ''; },
+    fichaEstacion: s => { const f = asociada(s); return f ? documental(f) : ''; },
+    fichaBoya: b => { const f=datos.features.find(f=>f.properties.id===32);return esBoya(b)&&f?documental(f):''; },
     marcadorEstacion: codigo => { const f = asociada({ codigo }); return activa() && f ? marcadores.get(f.properties.id) : null; },
     actualizarObservacion, controles, abrir, verTodo };
 }
