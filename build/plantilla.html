@@ -1526,7 +1526,7 @@ const LAYERS = {};
 const zoomMaximoHabitual = map.getMaxZoom();
 const catalogoTalc = crearCatalogoTalcahuano(L, map, TALCAHUANO, escH, {
   ajustarZoom: ajustarZoomCapuertos,
-  prepararVista: () => { map.closePopup(); if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
+  prepararVista: () => { map.closePopup(); LAYERS.valpo_uv?.set(false); const check=document.getElementById('chk_valpo_uv');if(check)check.checked=false; if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
   enfocarMapa: () => document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' }),
   estaciones: () => ESTACIONES,
   boyas: () => BOYAS,
@@ -1603,10 +1603,10 @@ function addLayerRow(box, key, name, sw, on, build) {
   row.querySelector('input').addEventListener('change', e => def.set(e.target.checked));
   box.appendChild(row); if (on) def.set(true);
 }
-// Alternar pronósticos evita mezclar dos escalas y dos paneles en la misma bahía.
+// Un solo pronóstico raster visible: escala, fechas y panel de su bahía.
 function vistaPronosticoTalc(clave) {
   map.closePopup();
-  for(const otra of ['talc_uv','talc_wrf']) if(otra!==clave) {
+  for(const otra of ['talc_uv','talc_wrf','valpo_uv']) if(otra!==clave) {
     LAYERS[otra]?.set(false);
     const check=document.getElementById('chk_'+otra);if(check)check.checked=false;
   }
@@ -1642,6 +1642,7 @@ function renderCapas() {
   addLayerRow(valpo,'valpo_zep','Zona de espera de prácticos (ZEP)',fillSw('#844d91','rgba(132,77,145,.13)'),false,()=>catalogoValpo.zep);
   addLayerRow(valpo,'valpo_radios','Radios de borneo',lineSw('#196a94',null,1),false,()=>catalogoValpo.radios);
   addLayerRow(valpo,'valpo_obs','Observación costera',dotSw('#147b88'),false,()=>catalogoValpo.observacion);
+  addLayerRow(valpo, 'valpo_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => vistaPronosticoTalc('valpo_uv'), 'valparaiso'));
   catalogoValpo.controles(valpo);
   grp('Límites marítimos');
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }

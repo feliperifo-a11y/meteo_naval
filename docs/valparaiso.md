@@ -1,6 +1,6 @@
 # Capuertos · Valparaíso
 
-El dashboard ofrece Capuertos → Capuerto Valparaíso y un desplegable Valparaíso junto a Talcahuano. Las capas comienzan apagadas. El acceso directo activa terminales, fondeos, ZEP y observación costera, abre el desplegable y centra los datos del paquete. Los radios de borneo se activan por separado.
+El dashboard ofrece Capuertos → Capuerto Valparaíso y un desplegable Valparaíso junto a Talcahuano. Las capas comienzan apagadas. El acceso directo activa terminales, fondeos, ZEP y observación costera, abre el desplegable y centra los datos del paquete. Los radios de borneo y Marejadas UV se activan por separado.
 
 ## Datos aportados
 
@@ -24,7 +24,7 @@ ZEP se muestra en violeta, con la prohibición documental de fondeo y las refere
 
 Valparaíso (`VALPARAISO`) y Viña del Mar / Montemar (`WL-240087`, contexto regional) reutilizan posiciones, horas, símbolos y fichas de la red nacional. No se crean mediciones ni instrumentos nuevos. Las actualizaciones conservan los marcadores, y la capa nacional omite las estaciones mientras se muestran en Valparaíso. Al apagar la capa regional vuelven a la red general. La tabla nacional puede abrir también el marcador regional.
 
-El máximo de zoom considera ambos catálogos: apagar uno no reduce el zoom si queda otra capa de Capuertos activa. Las cartas UV y WRF de Talcahuano se ocultan al enfocar referencias de Valparaíso. El paquete no aporta una corrida UV para esta bahía; no se desplaza la de Talcahuano a otra ubicación.
+El máximo de zoom considera ambos catálogos: apagar uno no reduce el zoom si queda otra capa de Capuertos activa. Las cartas UV y WRF de Talcahuano se ocultan al enfocar referencias de Valparaíso. Marejadas UV incorpora la corrida propia CL15VA de la UV, con fecha, reproducción/pausa y consulta aproximada por colores (0–5 m, intervalos de 0,25 m). Se consulta cada dos horas y comienza apagada. Solo se muestra un panel de pronóstico raster a la vez; enfocar Talcahuano oculta la carta de Valparaíso. [Detalle de calibración y actualización](marejadas_uv.md).
 
 ## Contraste de fuentes (24/10/2026)
 
