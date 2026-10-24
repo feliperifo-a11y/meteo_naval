@@ -29,6 +29,7 @@ def preparar_app(html):
 
 respaldo = {"estaciones": json.loads(leer(D / "estaciones.json", "{}")), "avisos": json.loads(leer(D / "avisos.json", "{}"))}
 datos = "\n".join([
+    "const SAR = " + leer(D / "geo" / "sar.json") + ";",
     "const LIMITES = " + leer(D / "geo" / "limites.json") + ";",
     "const LAND = " + leer(D / "geo" / "land.json") + ";",
     "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
@@ -43,6 +44,7 @@ version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html
 datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
 html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css"))
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos).replace("/*IA_COMUN*/", leer(B / "ia_comun.js"))
+        .replace("/*SAR*/", leer(B / "sar.js", ""))
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "dashboard.html").write_text(preparar_app(html), encoding="utf-8")
 print(f"dashboard.html: {len(html) / 1024:.0f} KB")
@@ -69,9 +71,8 @@ html_hielo = (leer(B / "plantilla_hielo.html").replace("/*LEAFLET_CSS*/", leer(B
 print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
 
 # Página principal con el nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen); el dashboard clásico queda en dashboard.html
-datos_portada = datos_ia + "\nconst SAR = " + (D / "geo" / "sar.json").read_text(encoding="utf-8") + ";"
 html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
-           .replace("/*DATA*/", datos_portada).replace("/*SAR*/", leer(B / "sar.js", ""))
+           .replace("/*DATA*/", datos_ia)
            .replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "index.html").write_text(preparar_app(html_v2), encoding="utf-8")
 print(f"index.html: {len(html_v2) / 1024:.0f} KB")

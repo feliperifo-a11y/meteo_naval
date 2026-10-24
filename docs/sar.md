@@ -1,6 +1,6 @@
 # Capa opcional Distritos SAR
 
-Se activa en **Capas → Distritos SAR** de la portada. Inicia desactivada y no
+Se activa en **Capas → Distritos SAR** del [dashboard completo](https://meteoia.cl/dashboard.html). Inicia desactivada y no
 guarda su estado; al abrir o recargar la página vuelve a estar apagada. La
 geometría de Leaflet se crea en la primera activación, sin consultas adicionales.
 Mientras está activa se permite alejar el mapa para ver el límite de 131° O;
@@ -13,9 +13,9 @@ a la izquierda del límite oeste, con una separación de 10 píxeles. La vista S
 reserva espacio lateral para que no queden recortados. Los MRSC se muestran al acercarse
 (zoom 5 o superior). La leyenda y los rótulos desaparecen al desactivar la capa.
 
-Los datos están en `data/geo/sar.json`, incorporados solo en la portada por
+Los datos están en `data/geo/sar.json`, incorporados solo en el dashboard completo por
 `scripts/construir_index.py`. El renderizado está en `build/sar.js` y la
-configuración del interruptor y el estilo en `build/plantilla_v2.html`.
+configuración del interruptor y el estilo en `build/plantilla.html`.
 
 El archivo representa el esquema de la imagen de referencia, contrastado con:
 
