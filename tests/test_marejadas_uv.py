@@ -2,6 +2,7 @@ import importlib.util
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import unittest
+import shutil
 import numpy as np
 from PIL import Image
 
@@ -10,6 +11,16 @@ uv=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(uv)
 
 class MarejadasUV(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('tesseract'),'OCR real solo donde está instalado Tesseract')
+    def test_real_uv_titles_with_server_ocr(self):
+        # Recortes originales de CL19TAG.gif, consultado 2026-10-24, UV.
+        sheet=Image.open(Path(__file__).parent/'fixtures/uv_titulos_20261024.png')
+        for i in range(61):
+            im=Image.new('RGB',(1200,900),'white')
+            im.paste(sheet.crop((0,35*i,230,35*(i+1))),(590,25))
+            texto=uv.leer_titulo(im)
+            self.assertEqual(uv.fecha_titulo(texto),datetime(2026,10,24)+timedelta(hours=3*i),texto)
+
     def test_dates_and_two_hour_cache(self):
         self.assertEqual(uv.fecha_titulo('2026/0ct/24 03hrs'),datetime(2026,10,24,3))
         self.assertEqual(uv.fecha_titulo('5 2026/Oct/24 OOhrs'),datetime(2026,10,24))
