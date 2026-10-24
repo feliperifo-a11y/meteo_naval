@@ -1,0 +1,529 @@
+{
+  "type": "FeatureCollection",
+  "name": "Distritos SAR de Chile — esquema referencial",
+  "metadata": {
+    "fuentes": [
+      {
+        "titulo": "Organización y estructura SAR nacional, apéndice 2 (2021)",
+        "url": "https://www.directemar.cl/directemar/site/docs/20210317/20210317091425/directiva_cja_sar_2021__buscable_.pdf"
+      },
+      {
+        "titulo": "Tratado de Paz y Amistad, artículo 7 (puntos A–F)",
+        "url": "https://www.bcn.cl/obtienearchivo?id=recursoslegales/10221.3/35109/1/Tratado_de_Paz_y_Amistad.PDF"
+      }
+    ],
+    "alcance": "Esquema de paralelos distritales y límites oceánicos. No es una cartografía jurisdiccional de detalle.",
+    "costa": "Los extremos costeros de los paralelos se ajustan a la costa simplificada incorporada en MeteoIA; el límite IV–V en canales es referencial.",
+    "insular": "Las áreas insulares de Rapa Nui, Salas y Gómez, San Félix, San Ambrosio y Juan Fernández corresponden al II Distrito según la fuente; no se trazan sus perímetros específicos.",
+    "sur": "El V Distrito continúa al Polo Sur. La proyección del mapa recorta su representación en latitudes polares.",
+    "posiciones_centros": "Ubicaciones urbanas aproximadas, no direcciones de instalaciones."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "limite",
+        "nombre": "Límite norte y occidental SAR"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -70.38165326007326,
+            -18.350833333333334
+          ],
+          [
+            -120,
+            -18.350833333333334
+          ],
+          [
+            -120,
+            -30
+          ],
+          [
+            -131,
+            -30
+          ],
+          [
+            -131,
+            -90
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "limite",
+        "nombre": "Límite oceánico austral SAR"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -66.41666666666667,
+            -55.12166666666667
+          ],
+          [
+            -66.07833333333333,
+            -55.18333333333333
+          ],
+          [
+            -65.72666666666667,
+            -55.38166666666667
+          ],
+          [
+            -65.72666666666667,
+            -56.38
+          ],
+          [
+            -67.26666666666667,
+            -56.38
+          ],
+          [
+            -67.26666666666667,
+            -58.35166666666667
+          ],
+          [
+            -53,
+            -58.35166666666667
+          ],
+          [
+            -53,
+            -90
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "distrital",
+        "nombre": "Separación I / II · 26°03′20″ S",
+        "paralelo": -26.055555555555557
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -120,
+            -26.055555555555557
+          ],
+          [
+            -70.64925555555556,
+            -26.055555555555557
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "distrital",
+        "nombre": "Separación II / III · 34°41′00″ S",
+        "paralelo": -34.68333333333333
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -131,
+            -34.68333333333333
+          ],
+          [
+            -72.06820515834148,
+            -34.68333333333333
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "distrital",
+        "nombre": "Separación III / IV · 40°14′30″ S",
+        "paralelo": -40.24166666666667
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -131,
+            -40.24166666666667
+          ],
+          [
+            -73.74262972972973,
+            -40.24166666666667
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "distrital",
+        "nombre": "Separación IV / V · 48°49′00″ S",
+        "paralelo": -48.81666666666667
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -131,
+            -48.81666666666667
+          ],
+          [
+            -75.30360864864865,
+            -48.81666666666667
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "rotulo",
+        "nombre": "I Distrito SAR",
+        "distrito": "I",
+        "mrcc": "Iquique",
+        "color": "#e8bd46",
+        "detalle": "18°21′03″ S a 26°03′20″ S; hasta 120° O."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -97,
+          -22.3
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "rotulo",
+        "nombre": "II Distrito SAR",
+        "distrito": "II",
+        "mrcc": "Valparaíso",
+        "color": "#ffdc64",
+        "detalle": "26°03′20″ S a 34°41′00″ S; hasta 120° O al norte de 30° S y 131° O al sur."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -99,
+          -30.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "rotulo",
+        "nombre": "III Distrito SAR",
+        "distrito": "III",
+        "mrcc": "Talcahuano",
+        "color": "#49d4bf",
+        "detalle": "34°41′00″ S a 40°14′30″ S; hasta 131° O."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -101,
+          -37.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "rotulo",
+        "nombre": "IV Distrito SAR",
+        "distrito": "IV",
+        "mrcc": "Puerto Montt",
+        "color": "#6cd3ad",
+        "detalle": "40°14′30″ S a 48°49′00″ S en el sector oceánico; hasta 131° O."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -101,
+          -44.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "rotulo",
+        "nombre": "V Distrito SAR",
+        "distrito": "V",
+        "mrcc": "Punta Arenas",
+        "color": "#f8b849",
+        "detalle": "Desde 48°49′00″ S hasta el Polo Sur; hasta 131° O y con el límite oriental austral indicado en la referencia."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -102,
+          -58
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRCC Iquique",
+        "rol": "MRCC",
+        "distrito": "I"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.15,
+          -20.22
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Arica",
+        "rol": "MRSC",
+        "distrito": "I"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.32,
+          -18.48
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Antofagasta",
+        "rol": "MRSC",
+        "distrito": "I"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.4,
+          -23.65
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRCC Valparaíso",
+        "rol": "MRCC",
+        "distrito": "II"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -71.63,
+          -33.04
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Caldera",
+        "rol": "MRSC",
+        "distrito": "II"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.82,
+          -27.07
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Coquimbo",
+        "rol": "MRSC",
+        "distrito": "II"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -71.34,
+          -29.95
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Hanga Roa",
+        "rol": "MRSC",
+        "distrito": "II"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -109.43,
+          -27.15
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC San Antonio",
+        "rol": "MRSC",
+        "distrito": "II"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -71.62,
+          -33.59
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRCC Talcahuano",
+        "rol": "MRCC",
+        "distrito": "III"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.12,
+          -36.72
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Valdivia",
+        "rol": "MRSC",
+        "distrito": "III"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.25,
+          -39.81
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRCC Puerto Montt",
+        "rol": "MRCC",
+        "distrito": "IV"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -72.94,
+          -41.47
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Castro",
+        "rol": "MRSC",
+        "distrito": "IV"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76,
+          -42.48
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Puerto Aysén",
+        "rol": "MRSC",
+        "distrito": "IV"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -72.7,
+          -45.4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRCC Punta Arenas",
+        "rol": "MRCC",
+        "distrito": "V"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.91,
+          -53.16
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Puerto Williams",
+        "rol": "MRSC",
+        "distrito": "V"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.62,
+          -54.93
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "tipo": "centro",
+        "nombre": "MRSC Antártica",
+        "rol": "MRSC",
+        "distrito": "V"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.96,
+          -62.2
+        ]
+      }
+    }
+  ]
+}
