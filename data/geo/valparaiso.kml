@@ -1,0 +1,224 @@
+<?xml version='1.0' encoding='utf-8'?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Bahía de Valparaíso · referencias documentales</name><description>Paquete 24/10/2026. Uso informativo, no navegación. Datum y vigencia por confirmar.</description><Placemark><name>ALFA</name><description>nombre: ALFA
+tipo: fondeo
+latitud_original: 33 02.05 S
+longitud_original: 071 36.39 W
+sonda_referencial_m: 30
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.6065,-33.0341667,0</coordinates></Point></Placemark><Placemark><name>BRAVO</name><description>nombre: BRAVO
+tipo: fondeo
+latitud_original: 33 01.85 S
+longitud_original: 071 36.18 W
+sonda_referencial_m: 23
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.603,-33.0308333,0</coordinates></Point></Placemark><Placemark><name>CHARLIE</name><description>nombre: CHARLIE
+tipo: fondeo
+latitud_original: 33 01.54 S
+longitud_original: 071 35.97 W
+sonda_referencial_m: 35
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5995,-33.0256667,0</coordinates></Point></Placemark><Placemark><name>DELTA</name><description>nombre: DELTA
+tipo: fondeo
+latitud_original: 33 01.12 S
+longitud_original: 071 35.07 W
+sonda_referencial_m: 54
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5845,-33.0186667,0</coordinates></Point></Placemark><Placemark><name>ECO</name><description>nombre: ECO
+tipo: fondeo
+latitud_original: 33 01.13 S
+longitud_original: 071 34.73 W
+sonda_referencial_m: 43
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5788333,-33.0188333,0</coordinates></Point></Placemark><Placemark><name>FOXTROT</name><description>nombre: FOXTROT
+tipo: fondeo
+latitud_original: 33 00.93 S
+longitud_original: 071 34.50 W
+sonda_referencial_m: 41
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.575,-33.0155,0</coordinates></Point></Placemark><Placemark><name>GOLF</name><description>nombre: GOLF
+tipo: fondeo
+latitud_original: 33 00.74 S
+longitud_original: 071 34.22 W
+sonda_referencial_m: 44
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5703333,-33.0123333,0</coordinates></Point></Placemark><Placemark><name>HOTEL</name><description>nombre: HOTEL
+tipo: fondeo
+latitud_original: 33 00.54 S
+longitud_original: 071 34.45 W
+sonda_referencial_m: 55
+clase_nave: eslora &lt;100 m
+radio_borneo_max_m: 200
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5741667,-33.009,0</coordinates></Point></Placemark><Placemark><name>INDIA</name><description>nombre: INDIA
+tipo: fondeo
+latitud_original: 33 00.74 S
+longitud_original: 071 34.91 W
+sonda_referencial_m: 60
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+uso_adicional: Bunkering buque-buque
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5818333,-33.0123333,0</coordinates></Point></Placemark><Placemark><name>JULIET</name><description>nombre: JULIET
+tipo: fondeo
+latitud_original: 33 00.73 S
+longitud_original: 071 35.50 W
+sonda_referencial_m: 70
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+uso_adicional: Bunkering buque-buque
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5916667,-33.0121667,0</coordinates></Point></Placemark><Placemark><name>KILO</name><description>nombre: KILO
+tipo: fondeo
+latitud_original: 33 00.22 S
+longitud_original: 071 35.49 W
+sonda_referencial_m: 76
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5915,-33.0036667,0</coordinates></Point></Placemark><Placemark><name>LIMA</name><description>nombre: LIMA
+tipo: fondeo
+latitud_original: 33 00.22 S
+longitud_original: 071 34.88 W
+sonda_referencial_m: 68
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5813333,-33.0036667,0</coordinates></Point></Placemark><Placemark><name>MIKE</name><description>nombre: MIKE
+tipo: fondeo
+latitud_original: 33 00.02 S
+longitud_original: 071 34.33 W
+sonda_referencial_m: 60
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5721667,-33.0003333,0</coordinates></Point></Placemark><Placemark><name>NOVEMBER</name><description>nombre: NOVEMBER
+tipo: fondeo
+latitud_original: 32 59.70 S
+longitud_original: 071 35.52 W
+sonda_referencial_m: 81
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.592,-32.995,0</coordinates></Point></Placemark><Placemark><name>OSCAR</name><description>nombre: OSCAR
+tipo: fondeo
+latitud_original: 32 59.70 S
+longitud_original: 071 34.91 W
+sonda_referencial_m: 72
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5818333,-32.995,0</coordinates></Point></Placemark><Placemark><name>PAPA</name><description>nombre: PAPA
+tipo: fondeo
+latitud_original: 32 59.50 S
+longitud_original: 071 34.34 W
+sonda_referencial_m: 65
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5723333,-32.9916667,0</coordinates></Point></Placemark><Placemark><name>QUEBEC</name><description>nombre: QUEBEC
+tipo: fondeo
+latitud_original: 32 59.51 S
+longitud_original: 071 33.74 W
+sonda_referencial_m: 53
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5623333,-32.9918333,0</coordinates></Point></Placemark><Placemark><name>ROMEO</name><description>nombre: ROMEO
+tipo: fondeo
+latitud_original: 32 59.01 S
+longitud_original: 071 34.04 W
+sonda_referencial_m: 60
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5673333,-32.9835,0</coordinates></Point></Placemark><Placemark><name>SIERRA</name><description>nombre: SIERRA
+tipo: fondeo
+latitud_original: 32 59.15 S
+longitud_original: 071 34.89 W
+sonda_referencial_m: 74
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5815,-32.9858333,0</coordinates></Point></Placemark><Placemark><name>TANGO</name><description>nombre: TANGO
+tipo: fondeo
+latitud_original: 32 59.15 S
+longitud_original: 071 35.53 W
+sonda_referencial_m: 84
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5921667,-32.9858333,0</coordinates></Point></Placemark><Placemark><name>VICTOR</name><description>nombre: VICTOR
+tipo: fondeo
+latitud_original: 32 58.67 S
+longitud_original: 071 34.48 W
+sonda_referencial_m: 80
+clase_nave: eslora &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5746667,-32.9778333,0</coordinates></Point></Placemark><Placemark><name>A-7</name><description>nombre: A-7
+tipo: fondeo
+latitud_original: 33 01.22 S
+longitud_original: 071 35.73 W
+sonda_referencial_m: 61
+clase_nave: bunkering &gt;100 m
+radio_borneo_max_m: 420
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5955,-33.0203333,0</coordinates></Point></Placemark><Placemark><name>UNIFORM</name><description>nombre: UNIFORM
+tipo: fondeo
+latitud_original: 32 58.67 S
+longitud_original: 071 35.19 W
+sonda_referencial_m: 80
+clase_nave: carga vital
+radio_borneo_max_m: 500
+resolucion: CP(V) 12000/934 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20181017/20181017113445/08__12000_934_041018_publ.pdf</description><Point><coordinates>-71.5865,-32.9778333,0</coordinates></Point></Placemark><Placemark><name>Frente de atraque 1: sitios 1-3 TPS</name><description>nombre: Frente de atraque 1: sitios 1-3 TPS
+tipo: atraque
+resolucion: 12000/728 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20180726/20180726115752/07__12000_728_250718_publ.pdf
+eslora_max_m: 366
+calado_max_m: 14.1
+manga_max_m: 52
+ukc_min_m: 0.6
+viento_maniobra_max_kt: 15
+viento_auteros_max_kt: 10
+visibilidad_min_cables: 5
+extension_m: 740
+nota: Coordenada general del frente, no de cada sitio. Verificar vigencia y calado; TPS web indica actualmente 13,8 m.</description><Point><coordinates>-71.6277778,-33.0297222,0</coordinates></Point></Placemark><Placemark><name>Sitio 4-5 TPS</name><description>nombre: Sitio 4-5 TPS
+tipo: atraque
+resolucion: 12000/729 (2018)
+fuente: https://www.directemar.cl/directemar/site/docs/20180726/20180726120345/06__12000_729_250718_publ.pdf
+eslora_max_m: 185
+calado_max_m: 9.4
+calado_sector_alterno_m: 8.5
+viento_maniobra_max_kt: 15
+viento_roro_max_kt: 10
+visibilidad_min_cables: 3
+extension_total_m: 266
+extension_habilitada_m: 221
+nota: Manga combinada con sitio 6 no superior a 57,5 m; calado 9,4/8,5 según bitas.</description><Point><coordinates>-71.6275,-33.035,0</coordinates></Point></Placemark><Placemark><name>Espigón: sitios 6-8</name><description>nombre: Espigón: sitios 6-8
+tipo: atraque
+resolucion: 12000/196 (2022)
+fuente: https://www.directemar.cl/directemar/site/docs/20220314/20220314092543/23__12000_196_100322_publ.pdf
+sitios: {"6": {"eslora_max_m": 185, "calado_max_m": 8.5, "eslora_babor_max_m": 185, "eslora_estribor_max_m": 140}, "7": {"eslora_max_m": 125, "calado_max_m": 6.9, "ukc_min_m": 0.6}, "8": {"eslora_max_m": 235, "calado_por_sector_m": [9.3, 8.9], "ukc_min_m": 0.6, "estribor_obligatorio_desde_eslora_m": 200}}
+viento_maniobra_max_kt: 15
+viento_auteros_max_kt: 10
+visibilidad_min_cables: 5
+nota: Coordenada de instalación común, no individual de cada sitio; restricciones particulares según bitas.</description><Point><coordinates>-71.6258333,-33.0366667,0</coordinates></Point></Placemark><Placemark><name>Zona de Espera de Prácticos (ZEP)</name><description>nombre: Zona de Espera de Prácticos (ZEP)
+tipo: zona_especial
+fondeo_permitido: False
+observacion: Prohibido fondear en ZEP. Polígono obtenido de coordenadas publicadas, no reemplaza cartografía náutica.
+fuente: https://www.directemar.cl/directemar/site/docs/20220314/20220314092543/23__12000_196_100322_publ.pdf</description><Polygon><outerBoundaryIs><LinearRing><coordinates>-71.6030556,-33.0234444,0 -71.60175,-33.0283333,0 -71.6113889,-33.03,0 -71.6134722,-33.0220833,0 -71.6030556,-33.0234444,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>

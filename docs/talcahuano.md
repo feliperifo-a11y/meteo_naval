@@ -1,7 +1,7 @@
 # Capuertos: Talcahuano
 
 El dashboard completo ofrece el botón **Capuertos → Capuerto Talcahuano**. Es la
-única capitanía incluida. El acceso activa dos capas opcionales y centra la vista:
+sección de Talcahuano dentro del menú, que también incluye Valparaíso. El acceso activa dos capas opcionales y centra la vista:
 25 referencias portuarias y siete puntos de observación (seis estaciones y una
 boya SHOA Watchkeeper). La portada no incorpora estos datos ni el menú.
 
