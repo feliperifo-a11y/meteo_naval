@@ -47,7 +47,7 @@ datos = "\n".join([
 version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
-                        + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
+                        + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
                         + leer(B / "talcahuano.js", "") + leer(B / "talcahuano.css", "") + leer(D / "geo" / "talcahuano.geojson", "{}") + leer(D / "geo" / "talcahuano.kml", "")
                         + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
 (R / "version.txt").write_text(version + "\n", encoding="utf-8")
@@ -55,6 +55,7 @@ datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
 html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css"))
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos).replace("/*IA_COMUN*/", leer(B / "ia_comun.js"))
         .replace("/*SAR*/", leer(B / "sar.js", ""))
+        .replace("/*WRF_SERVIMET_JS*/", leer(B / "wrf_servimet.js", ""))
         .replace("/*MAREJADAS_UV_JS*/", leer(B / "marejadas_uv.js", ""))
         .replace("/*MAREJADAS_UV_CSS*/", leer(B / "marejadas_uv.css", ""))
         .replace("/*TALCAHUANO_JS*/", leer(B / "talcahuano.js", ""))
