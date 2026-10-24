@@ -13,7 +13,10 @@ function crearCapaSAR(L, map, datos, escapar) {
       '<small>Esquema referencial. Excepciones insulares y detalle costero en la referencia.</small>' +
       '<div><button type="button">Ampliar vista SAR</button> · ' +
       `<a href="${escapar(fuente.url)}" target="_blank" rel="noopener noreferrer">Referencia</a></div></details>`;
-    div.querySelector('button').onclick = () => map.fitBounds([[-78, -134], [-16, -50]], { padding: [18, 24] });
+    div.querySelector('button').onclick = () => map.fitBounds([[-76, -131], [-16, -53]], {
+      paddingTopLeft: [map.getContainer().clientWidth < 500 ? 130 : 180, 40],
+      paddingBottomRight: [25, 35]
+    });
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);
     return div;
@@ -38,7 +41,7 @@ function crearCapaSAR(L, map, datos, escapar) {
       } else if (p.tipo === 'rotulo') {
         const pos = feature.geometry.coordinates.slice().reverse();
         L.marker(pos, { pane: 'sarLabelPane', keyboard: true,
-          icon: L.divIcon({ className: 'sar-label', iconSize: [0, 0],
+          icon: L.divIcon({ className: 'sar-label sar-outside', iconSize: [0, 0],
             html: `<span style="border-color:${escapar(p.color)}"><b>${escapar(p.nombre)}</b><small>MRCC ${escapar(p.mrcc)}</small><em>${escapar(p.distrito)} · ${escapar(p.mrcc)}</em></span>` })
         }).bindPopup(`<b>${escapar(p.nombre)} · MRCC ${escapar(p.mrcc)}</b><p>${escapar(p.detalle)}</p>` +
           `<p>${escapar(datos.metadata.insular)}</p><small>${escapar(datos.metadata.alcance)}</small>`, { maxWidth: 310 })
