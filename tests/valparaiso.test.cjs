@@ -60,9 +60,9 @@ test('al alternar catálogos se mantiene el zoom ampliado y la red nacional omit
  const source=fs.readFileSync(path.join(root,'build/plantilla.html'),'utf8'),h=entorno(),activos=new Set();
  const talc={puertos:{},observacion:{},observacionActiva:()=>activos.has('talc'),esEstacionCatalogada:s=>s.codigo==='TALCAHUANO'};
  const c={...h.c,observacionActiva:()=>activos.has('valpo')};let maximo;
- const v={catalogoTalc:talc,catalogoValpo:c,map:{hasLayer:g=>activos.has(g),setMaxZoom:n=>maximo=n},zoomMaximoHabitual:14};
+ const v={catalogoTalc:talc,catalogoFondeosTalc:{fondeos:{},arba:{}},catalogoValpo:c,map:{hasLayer:g=>activos.has(g),setMaxZoom:n=>maximo=n},zoomMaximoHabitual:14};
  vm.runInNewContext(source.match(/function ajustarZoomCapuertos\(\) \{[\s\S]*?\n\}/)[0],v);
- v.ajustarZoomCapuertos();assert.equal(maximo,14);activos.add(c.fondeos);v.ajustarZoomCapuertos();assert.equal(maximo,18);activos.add(talc.puertos);activos.delete(c.fondeos);v.ajustarZoomCapuertos();assert.equal(maximo,18);
+ v.ajustarZoomCapuertos();assert.equal(maximo,14);activos.add(v.catalogoFondeosTalc.fondeos);v.ajustarZoomCapuertos();assert.equal(maximo,18);activos.delete(v.catalogoFondeosTalc.fondeos);activos.add(v.catalogoFondeosTalc.arba);v.ajustarZoomCapuertos();assert.equal(maximo,18);activos.delete(v.catalogoFondeosTalc.arba);activos.add(c.fondeos);v.ajustarZoomCapuertos();assert.equal(maximo,18);activos.add(talc.puertos);activos.delete(c.fondeos);v.ajustarZoomCapuertos();assert.equal(maximo,18);
  const b={L:h.L,ESTACIONES:[{codigo:'VALPARAISO'},{codigo:'WL-240087'},{codigo:'TALCAHUANO'},{codigo:'ARICA'}],catalogoTalc:talc,catalogoValpo:c,evaluar:()=>({k:'ok'}),iconoEstacion:()=>({}),tooltipEstacion:()=>'',popupSt:()=>''};
  vm.runInNewContext('const stMarkers=new Map();'+source.match(/function buildEst\(\) \{[\s\S]*?\n\}/)[0],b);
  assert.equal(b.buildEst().children.size,4);activos.add('valpo');assert.equal(b.buildEst().children.size,2);activos.add('talc');assert.equal(b.buildEst().children.size,1);

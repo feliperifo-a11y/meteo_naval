@@ -1,0 +1,710 @@
+<?xml version='1.0' encoding='utf-8'?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Fondeaderos de la bahía de Concepción · Talcahuano</name>
+    <Placemark>
+      <name>Fondeo A</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>A</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°39′24″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°04′06″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.068333,-36.656667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo B</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>B</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°39′24″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′30″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.058333,-36.656667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo C</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>C</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°39′54″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°04′18″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.071667,-36.665,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo D</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>D</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°39′54″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′36″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.06,-36.665,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo E</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>E</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′24″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°04′12″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.07,-36.673333,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo F</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>F</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′24″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′30″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.058333,-36.673333,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo G</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>G</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′54″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°04′06″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.068333,-36.681667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo H</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>H</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′54″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′24″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.056667,-36.681667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo I</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>I</value>
+        </Data>
+        <Data name="grupo">
+          <value>exterior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′54″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′42″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>4</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.045,-36.681667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo J</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>J</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°41′48″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′36″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.06,-36.696667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo K</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>K</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°41′48″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′54″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.048333,-36.696667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo L</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>L</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°41′48″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′12″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.036667,-36.696667,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo M</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>M</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°42′18″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°03′36″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.06,-36.705,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo N</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>N</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°42′18″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′54″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.048333,-36.705,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo O</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>O</value>
+        </Data>
+        <Data name="grupo">
+          <value>interior</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°42′18″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′12″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.036667,-36.705,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo A1</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>A1</value>
+        </Data>
+        <Data name="grupo">
+          <value>alije</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′15″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°00′57″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.015833,-36.670833,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo A2</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>A2</value>
+        </Data>
+        <Data name="grupo">
+          <value>alije</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°40′15″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°02′12″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.036667,-36.670833,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo A3</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>A3</value>
+        </Data>
+        <Data name="grupo">
+          <value>alije</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°41′06″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°01′30″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.025,-36.685,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Fondeo A4</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>fondeo</value>
+        </Data>
+        <Data name="nombre">
+          <value>A4</value>
+        </Data>
+        <Data name="grupo">
+          <value>alije</value>
+        </Data>
+        <Data name="latitud_original">
+          <value>36°39′15″ S</value>
+        </Data>
+        <Data name="longitud_original">
+          <value>073°00′57″ W</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>5</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Point>
+        <coordinates>-73.015833,-36.654167,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Área de fondeo reservada para buques de la Armada de Chile</name>
+      <ExtendedData>
+        <Data name="tipo">
+          <value>arba</value>
+        </Data>
+        <Data name="nombre">
+          <value>ARBA</value>
+        </Data>
+        <Data name="grupo">
+          <value>reservada</value>
+        </Data>
+        <Data name="descripcion">
+          <value>Área de fondeo reservada para buques de la Armada de Chile</value>
+        </Data>
+        <Data name="vertices_originales">
+          <value>[{"vertice": "ARBA 1", "latitud_original": "36°42′14″ S", "longitud_original": "073°05′00″ W", "coordinates": [-73.083333, -36.703889]}, {"vertice": "ARBA 2", "latitud_original": "36°42′14″ S", "longitud_original": "073°03′59″ W", "coordinates": [-73.066389, -36.703889]}, {"vertice": "ARBA 3", "latitud_original": "36°42′43″ S", "longitud_original": "073°05′00″ W", "coordinates": [-73.083333, -36.711944]}, {"vertice": "ARBA 4", "latitud_original": "36°42′43″ S", "longitud_original": "073°03′59″ W", "coordinates": [-73.066389, -36.711944]}]</value>
+        </Data>
+        <Data name="fuente">
+          <value>https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf</value>
+        </Data>
+        <Data name="pagina_pdf">
+          <value>6</value>
+        </Data>
+        <Data name="resolucion">
+          <value>C.P. Talcahuano Ord. N.º 12.600/491 Vrs.</value>
+        </Data>
+        <Data name="fecha_resolucion">
+          <value>2023-12-26</value>
+        </Data>
+      </ExtendedData>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>-73.083333,-36.703889,0 -73.083333,-36.711944,0 -73.066389,-36.711944,0 -73.066389,-36.703889,0 -73.083333,-36.703889,0</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>
