@@ -1526,7 +1526,7 @@ const LAYERS = {};
 const zoomMaximoHabitual = map.getMaxZoom();
 const catalogoTalc = crearCatalogoTalcahuano(L, map, TALCAHUANO, escH, {
   ajustarZoom: ajustarZoomCapuertos,
-  prepararVista: () => { if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
+  prepararVista: () => { map.closePopup(); if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
   enfocarMapa: () => document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' }),
   estaciones: () => ESTACIONES,
   boyas: () => BOYAS,
