@@ -6,3 +6,4 @@ pillow
 scipy
 matplotlib
 pygrib
+pyproj>=3.6
