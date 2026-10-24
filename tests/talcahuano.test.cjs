@@ -127,12 +127,12 @@ test('las fichas escapan texto y rechazan enlaces ejecutables', () => {
   assert.doesNotMatch(html, /<img|javascript:/); assert.match(html, /&lt;img src=x&gt;/);
   assert.match(html, /noopener noreferrer/);
 });
-test('Capuertos ofrece una sola opción y el catálogo solo se incorpora al dashboard completo', () => {
+test('Capuertos ofrece Talcahuano y Valparaíso y el catálogo solo se incorpora al dashboard completo', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   const principal = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(dashboard, /id="btnCapuertos"/);
   const menu = dashboard.match(/id="menuCapuertos"[^>]*>(.*?)<\/div>/s)[1];
-  assert.equal((menu.match(/<button /g) || []).length, 1); assert.match(menu, /Capuerto Talcahuano/);
+  assert.equal((menu.match(/<button /g) || []).length, 2); assert.match(menu, /Capuerto Talcahuano/); assert.match(menu, /Capuerto Valparaíso/);
   assert.match(dashboard, /const TALCAHUANO =/);
   assert.doesNotMatch(principal, /const TALCAHUANO|btnCapuertos|talc-herramientas/);
   assert.doesNotMatch(dashboard, /\/\*TALCAHUANO_(JS|CSS)\*\//);

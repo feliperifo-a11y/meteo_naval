@@ -35,6 +35,8 @@ def preparar_app(html):
 
 respaldo = {"estaciones": json.loads(leer(D / "estaciones.json", "{}")), "avisos": json.loads(leer(D / "avisos.json", "{}"))}
 datos = "\n".join([
+    "const VALPARAISO = " + leer(D / "geo" / "valparaiso.geojson", "{}") + ";",
+    "const VALPARAISO_LIMITES = " + leer(D / "geo" / "valparaiso_limites.json", "{}") + ";",
     "const TALCAHUANO = " + leer(D / "geo" / "talcahuano.geojson", "{}") + ";",
     "const SAR = " + leer(D / "geo" / "sar.json") + ";",
     "const LIMITES = " + leer(D / "geo" / "limites.json") + ";",
@@ -48,6 +50,7 @@ version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
+                        + leer(B / "valparaiso.js", "") + leer(B / "valparaiso.css", "") + leer(D / "geo" / "valparaiso.geojson", "{}") + leer(D / "geo" / "valparaiso_limites.json", "{}") + leer(D / "geo" / "valparaiso.kml", "")
                         + leer(B / "talcahuano.js", "") + leer(B / "talcahuano.css", "") + leer(D / "geo" / "talcahuano.geojson", "{}") + leer(D / "geo" / "talcahuano.kml", "")
                         + leer(D / "geo" / "metarea.json")).encode()).hexdigest()[:12]
 (R / "version.txt").write_text(version + "\n", encoding="utf-8")
@@ -58,6 +61,8 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*WRF_SERVIMET_JS*/", leer(B / "wrf_servimet.js", ""))
         .replace("/*MAREJADAS_UV_JS*/", leer(B / "marejadas_uv.js", ""))
         .replace("/*MAREJADAS_UV_CSS*/", leer(B / "marejadas_uv.css", ""))
+        .replace("/*VALPARAISO_JS*/", leer(B / "valparaiso.js", ""))
+        .replace("/*VALPARAISO_CSS*/", leer(B / "valparaiso.css", ""))
         .replace("/*TALCAHUANO_JS*/", leer(B / "talcahuano.js", ""))
         .replace("/*TALCAHUANO_CSS*/", leer(B / "talcahuano.css", ""))
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))

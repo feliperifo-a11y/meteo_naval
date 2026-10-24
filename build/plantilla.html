@@ -29,6 +29,7 @@
 @media(max-width:760px){.sar-info{width:190px;font-size:10px}.sar-label>span{font-size:10.5px;padding:4px 6px}.sar-label small{font-size:9px}}
 /*AVISOS_MAPA_CSS*/
 /*TALCAHUANO_CSS*/
+/*VALPARAISO_CSS*/
 /*MAREJADAS_UV_CSS*/
 </style>
 <style>
@@ -313,7 +314,7 @@ dialog button{border-color:var(--line)}
     <button type="button" class="btnCarta" onclick="abrirPolar()" title="Carta de superficie en proyección estereográfica polar: isobaras GFS, frentes, avisos, METAREA XV, estaciones y boyas">CARTA DE SUPERFICIE</button>
     <a class="btnCarta" href="hielos.html" style="text-decoration:none" title="Cartas de hielo marino de la Península Antártica, hielo en cubierta, témpanos e informe glaciológico, en proyección polar">MONITOREO DE HIELOS</a>
     <a class="btnIA" href="ia.html" title="Pronósticos por bahía generados con IA a partir del modelo WRF, con mapa">PRONÓSTICOS WRF + IA</a>
-    <div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
+    <div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
   </div>
@@ -490,6 +491,7 @@ map.createPane('boyaPane'); map.getPane('boyaPane').style.zIndex = 650;
 map.createPane('puertoPane'); map.getPane('puertoPane').style.zIndex = 655;
 map.createPane('stPane'); map.getPane('stPane').style.zIndex = 640;
 map.createPane('talcPane').style.zIndex = 660;
+  map.createPane('valpoAreasPane').style.zIndex = 405;
 map.createPane('talcPopupPane').style.zIndex = 900;
 map.createPane('iaPane'); map.getPane('iaPane').style.zIndex = 620;
 
@@ -734,6 +736,7 @@ function refreshAvLayer() {
 }
 
 /*TALCAHUANO_JS*/
+/*VALPARAISO_JS*/
 /*MAREJADAS_UV_JS*/
 /*WRF_SERVIMET_JS*/
 
@@ -785,7 +788,7 @@ function buildEst() {
   const g = L.layerGroup(), ahora = Date.now();
   stMarkers.clear();
   for (const s of ESTACIONES) {
-    if (catalogoTalc.observacionActiva() && catalogoTalc.esEstacionCatalogada(s)) continue;
+    if ((catalogoTalc.observacionActiva() && catalogoTalc.esEstacionCatalogada(s)) || (catalogoValpo.observacionActiva() && catalogoValpo.esEstacionCatalogada(s))) continue;
     const ev = evaluar(s, ahora);
     const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: iconoEstacion(s), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
       .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320, autoPanPadding: [30, 40] })
@@ -820,7 +823,7 @@ function renderTabla() {
       `<td>${ev.t ? `${ev.inferida ? '≈ ' : ''}${fmtCorto(ev.t)}<div class="obs">hace ${edad(ev.ms)}${ev.inferida ? ' · hora inferida' : ''}</div>` : (ev.k === 'sd' ? '<span style="color:var(--muted)">—</span>' : '<span style="color:var(--no)">Sin fecha</span>')}</td></tr>`;
   }).join('');
   document.querySelectorAll('#tbl tbody tr').forEach(tr => tr.addEventListener('click', () => {
-    const m = catalogoTalc.marcadorEstacion(tr.dataset.c) || stMarkers.get(tr.dataset.c); if (!m) return;
+    const m = catalogoTalc.marcadorEstacion(tr.dataset.c) || catalogoValpo.marcadorEstacion(tr.dataset.c) || stMarkers.get(tr.dataset.c); if (!m) return;
     if (!map.hasLayer(LAYERS.est.lyr)) { document.getElementById('chk_est').checked = true; LAYERS.est.set(true); }
     map.setView(m.getLatLng(), Math.max(map.getZoom(), 7)); m.openPopup();
     if (window.innerWidth <= 1050) document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1522,7 +1525,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 const LAYERS = {};
 const zoomMaximoHabitual = map.getMaxZoom();
 const catalogoTalc = crearCatalogoTalcahuano(L, map, TALCAHUANO, escH, {
-  ajustarZoom: activo => map.setMaxZoom(activo ? 18 : zoomMaximoHabitual),
+  ajustarZoom: ajustarZoomCapuertos,
   prepararVista: () => { if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
   enfocarMapa: () => document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' }),
   estaciones: () => ESTACIONES,
@@ -1545,6 +1548,30 @@ const catalogoTalc = crearCatalogoTalcahuano(L, map, TALCAHUANO, escH, {
     }
   }
 });
+const catalogoValpo = crearCatalogoValparaiso(L, map, VALPARAISO, VALPARAISO_LIMITES, escH, {
+  estaciones: () => ESTACIONES, iconoEstacion, tooltipEstacion,
+  popupEstacion: s => popupSt(s, evaluar(s, Date.now())),
+  ajustarZoom: ajustarZoomCapuertos,
+  prepararVista: () => {
+    map.closePopup();
+    for(const clave of ['talc_uv','talc_wrf']) {
+      LAYERS[clave]?.set(false);
+      const check=document.getElementById('chk_'+clave);if(check)check.checked=false;
+    }
+    if(map.hasLayer(ocean)){map.removeLayer(ocean);osm.addTo(map);}
+  },
+  enfocarMapa: () => document.getElementById('mapWrap').scrollIntoView({behavior:'smooth',block:'start'}),
+  activar: key => {document.getElementById('chk_'+key).checked=true;LAYERS[key].set(true);},
+  refrescarRed: () => {
+    const def=LAYERS.est;if(!def?.lyr)return;
+    const activa=map.hasLayer(def.lyr);if(activa)map.removeLayer(def.lyr);
+    def.lyr=buildEst();if(activa)def.lyr.addTo(map);
+  }
+});
+function ajustarZoomCapuertos() {
+  const grupos=[catalogoTalc.puertos,catalogoTalc.observacion,catalogoValpo.puertos,catalogoValpo.fondeos,catalogoValpo.zep,catalogoValpo.radios,catalogoValpo.observacion];
+  map.setMaxZoom(grupos.some(g=>map.hasLayer(g))?18:zoomMaximoHabitual);
+}
 const menuCapuertos = document.getElementById('menuCapuertos'), btnCapuertos = document.getElementById('btnCapuertos');
 function cerrarCapuertos() { menuCapuertos.hidden = true; btnCapuertos.setAttribute('aria-expanded', 'false'); }
 btnCapuertos.onclick = () => { menuCapuertos.hidden = !menuCapuertos.hidden; btnCapuertos.setAttribute('aria-expanded', String(!menuCapuertos.hidden)); };
@@ -1552,8 +1579,19 @@ document.getElementById('btnCapuertoTalc').onclick = () => {
   cerrarCapuertos(); catalogoTalc.verTodo();
   document.getElementById('capasCapuertos').open = true;
   document.getElementById('capasTalcahuano').open = true;
+  document.getElementById('capasValparaiso').open = false;
   document.getElementById('layerBox').classList.remove('min'); document.getElementById('lbBtn').textContent = '▾';
+  document.getElementById('capasTalcahuano').scrollIntoView({block:'nearest'});
   document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+document.getElementById('btnCapuertoValpo').onclick = () => {
+  cerrarCapuertos();catalogoValpo.verTodo();
+  document.getElementById('capasCapuertos').open=true;
+  document.getElementById('capasTalcahuano').open=false;
+  document.getElementById('capasValparaiso').open=true;
+  document.getElementById('layerBox').classList.remove('min');document.getElementById('lbBtn').textContent='▾';
+  document.getElementById('capasValparaiso').scrollIntoView({block:'nearest'});
+  document.getElementById('mapWrap').scrollIntoView({behavior:'smooth',block:'start'});
 };
 document.addEventListener('click', e => { if (!e.target.closest('.capuertos-acceso')) cerrarCapuertos(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menuCapuertos.hidden) { cerrarCapuertos(); btnCapuertos.focus(); } });
@@ -1591,13 +1629,20 @@ function renderCapas() {
   addLayerRow(box, 'sar', 'Distritos SAR', lineSw('#ffad62', null, 2.5), false, () => crearCapaSAR(L, map, SAR, escH));
   const capuertos = document.createElement('details');
   capuertos.id = 'capasCapuertos'; capuertos.className = 'capas-rama capas-capuertos';
-  capuertos.innerHTML = '<summary>Capuertos</summary><div class="capas-hijas"><details id="capasTalcahuano" class="capas-rama"><summary>Talcahuano</summary><div class="capas-hijas capas-talcahuano"></div></details></div>';
+  capuertos.innerHTML = '<summary>Capuertos</summary><div class="capas-hijas"><details id="capasTalcahuano" class="capas-rama"><summary>Talcahuano</summary><div class="capas-hijas capas-talcahuano"></div></details><details id="capasValparaiso" class="capas-rama"><summary>Valparaíso</summary><div class="capas-hijas capas-valparaiso"></div></details></div>';
   box.appendChild(capuertos);
   const talc = capuertos.querySelector('.capas-talcahuano');
   addLayerRow(talc, 'talc_puertos', 'Puertos y referencias', dotSw('#196a94'), false, () => catalogoTalc.puertos);
   addLayerRow(talc, 'talc_obs', 'Observación costera', dotSw('#147b88'), false, () => catalogoTalc.observacion);
   addLayerRow(talc, 'talc_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => vistaPronosticoTalc('talc_uv')));
   catalogoTalc.controles(talc);
+  const valpo=capuertos.querySelector('.capas-valparaiso');
+  addLayerRow(valpo,'valpo_puertos','Puertos y referencias',dotSw('#5d48aa'),false,()=>catalogoValpo.puertos);
+  addLayerRow(valpo,'valpo_fondeos','Fondeos',dotSw('#196a94'),false,()=>catalogoValpo.fondeos);
+  addLayerRow(valpo,'valpo_zep','Zona de espera de prácticos (ZEP)',fillSw('#844d91','rgba(132,77,145,.13)'),false,()=>catalogoValpo.zep);
+  addLayerRow(valpo,'valpo_radios','Radios de borneo',lineSw('#196a94',null,1),false,()=>catalogoValpo.radios);
+  addLayerRow(valpo,'valpo_obs','Observación costera',dotSw('#147b88'),false,()=>catalogoValpo.observacion);
+  catalogoValpo.controles(valpo);
   grp('Límites marítimos');
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
   const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);
@@ -1669,6 +1714,7 @@ document.getElementById('btnRefresh').addEventListener('click', () => { cargarDa
 function refrescarTodo(rehacerEst) {
   if (rehacerEst && LAYERS.est) { const on = LAYERS.est.lyr && map.hasLayer(LAYERS.est.lyr); if (LAYERS.est.lyr) map.removeLayer(LAYERS.est.lyr); LAYERS.est.lyr = buildEst(); if (on) LAYERS.est.lyr.addTo(map); }
   catalogoTalc.actualizarObservacion();
+  catalogoValpo.actualizarObservacion();
   renderTabla(); renderAvisos(); refreshAvLayer(); refreshBoyas();
   document.getElementById('hdrSub').textContent = `Hora Chile ${fmtLocal(new Date())} · ${ESTACIONES.length} estaciones · datos actualizados ${FUENTE.cuando ? fmtLocal(FUENTE.cuando) : '–'}${ESTADO && ESTADO.respaldo ? ' (copia incorporada: abra la página publicada para datos al día)' : ''}`;
 }
