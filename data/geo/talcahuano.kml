@@ -1,0 +1,139 @@
+<?xml version='1.0' encoding='utf-8'?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>01 · Gobernación Marítima y Capitanía de Puerto de Talcahuano</name><description>Edificio cartografiado
+Ambas reparticiones figuran en Almirante Villarroel 107. Capuerto Radio se vincula aquí; no se ubica una antena.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=5
+Ubicación: https://www.openstreetmap.org/way/562592466</description><Point><coordinates>-73.113505,-36.708045,0</coordinates></Point></Placemark><Placemark><name>02 · Alcaldía de Mar de Caleta Tumbes — referencia de la caleta</name><description>Sector aproximado
+El plan nombra la alcaldía; el marcador ubica la caleta, no su oficina.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/node/1357166920</description><Point><coordinates>-73.094099,-36.640227,0</coordinates></Point></Placemark><Placemark><name>03 · Alcaldía de Mar de Caleta El Morro — referencia territorial</name><description>Sector aproximado
+El plan nombra la alcaldía. Referencia del barrio/caleta; sede no localizada.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/node/3975287816</description><Point><coordinates>-73.10999,-36.724711,0</coordinates></Point></Placemark><Placemark><name>04 · Alcaldía de Mar de Caleta El Soldado — referencia de la caleta</name><description>Sector aproximado
+Alcaldía citada en el plan. Caleta en la costa occidental de la península; no confundir con la calle homónima.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/node/12407117521</description><Point><coordinates>-73.140235,-36.697058,0</coordinates></Point></Placemark><Placemark><name>05 · Alcaldía de Mar de San Pedro / Laguna San Pedro — referencia CENDYR</name><description>Sector aproximado
+Fuera de la bahía. La referencia histórica de la alcaldía es CENDYR Laguna Chica; sede actual no comprobada.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=1
+Ubicación: https://transparencia.armada.cl/transparencia_activa/publicaciones/boa2017/BOA14-2017.pdf</description><Point><coordinates>-73.089977,-36.843053,0</coordinates></Point></Placemark><Placemark><name>06 · TTP — Sitio 1</name><description>Referencia oficial del sitio
+Sitio citado en el anexo D del plan. Coordenada de referencia de su resolución de habilitación de 2019.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=16
+Ubicación: https://www.directemar.cl/directemar/site/docs/20190628/20190628150207/15__cp_talcahuano_12000_98_publ.pdf</description><Point><coordinates>-73.108056,-36.711111,0</coordinates></Point></Placemark><Placemark><name>07 · TTP — Sitio 2</name><description>Sector aproximado
+Sitio citado en ambos documentos. Posición referencial dentro de TTP; no identifica bitas ni extremos.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=1
+Ubicación: https://www.ttpsa.cl/Pages/FrenteAtraque.aspx</description><Point><coordinates>-73.1084,-36.7128,0</coordinates></Point></Placemark><Placemark><name>08 · Rompeolas — referencia pendiente de identificación inequívoca</name><description>Por confirmar
+Nombre sin coordenadas en la resolución. Se señala el entorno portuario de La Poza; estructura y extremo exactos pendientes.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=1
+Ubicación: https://www.directemar.cl/directemar/site/docs/20180612/20180612161038/12__12000_119_110618_publ.pdf</description><Point><coordinates>-73.1101,-36.7104,0</coordinates></Point></Placemark><Placemark><name>09 · Club de Yates / Marina El Manzano</name><description>Lugar cartografiado
+Referencia para clases de vela en la resolución deportiva.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=2
+Ubicación: https://www.waze.com/live-map/directions/cl/bio-bio/talcahuano/marina-el-manzano?to=place.ChIJRS0jY-81aJYRUBCW8slqjlQ</description><Point><coordinates>-73.103686,-36.686045,0</coordinates></Point></Placemark><Placemark><name>10 · CENDYR Náutico Talcahuano</name><description>Edificio cartografiado
+Referencia deportiva junto a La Poza; distinto de CENDYR Laguna Chica.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/way/562605077</description><Point><coordinates>-73.11193,-36.70866,0</coordinates></Point></Placemark><Placemark><name>11 · Muelle 360 — Base Naval Talcahuano</name><description>Sector aproximado
+Asociación del plano público Armada con el muelle cartografiado; posición referencial, sin identificación de bitas.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=2
+Ubicación: https://www.armada.cl/noticias-navales/autoridades-inauguran-primera-fase-de-reconstruccion-de-muelles-en-base</description><Point><coordinates>-73.10613,-36.7008,0</coordinates></Point></Placemark><Placemark><name>12 · Plazoleta Fragata / Reina María Isabel — entorno costero</name><description>Sector aproximado
+Referencia de natación y buceo en 2015. Se marca el entorno de la playa homónima; posición de la plazoleta por validar.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=3
+Ubicación: https://turismo.talcahuano.cl/circuitos/plazoleta-reina-maria-isabel/</description><Point><coordinates>-73.1083,-36.71815,0</coordinates></Point></Placemark><Placemark><name>13 · La Poza — sector portuario</name><description>Sector aproximado
+Sector con restricción deportiva mencionada en la resolución; sin polígono publicado.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=3
+Ubicación: https://www.directemar.cl/directemar/site/docs/20180612/20180612161038/12__12000_119_110618_publ.pdf</description><Point><coordinates>-73.1111,-36.7101,0</coordinates></Point></Placemark><Placemark><name>14 · Isla Quiriquina</name><description>Referencia geográfica
+Isla citada en la resolución deportiva y en el plan de mal tiempo.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/node/663865729</description><Point><coordinates>-73.06,-36.6258,0</coordinates></Point></Placemark><Placemark><name>15 · Sur de Quiriquina — referencia de socaire</name><description>Zona conceptual
+Referencia general del plan: no es punto de fondeo asignado ni polígono de refugio autorizado.
+Fuente: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf#page=9
+Ubicación: https://www.directemar.cl/directemar/site/docs/20220114/20220114153957/19__12000_06_110122_talc_publ.pdf</description><Point><coordinates>-73.06,-36.653,0</coordinates></Point></Placemark><Placemark><name>16 · Laguna San Pedro — referencia Laguna Chica</name><description>Referencia geográfica
+El documento dice Laguna San Pedro sin precisar límites; se muestra Laguna Chica por la referencia histórica de la alcaldía.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=2
+Ubicación: https://www.openstreetmap.org/way/32087675</description><Point><coordinates>-73.0858,-36.8494,0</coordinates></Point></Placemark><Placemark><name>17 · Terminal Pesquero Artesanal — sector La Poza</name><description>Sector aproximado
+Entidad de distribución del documento deportivo; se ubica el sector pesquero, sin fijar oficinas.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=3
+Ubicación: https://www.directemar.cl/directemar/site/docs/20180612/20180612161038/12__12000_119_110618_publ.pdf</description><Point><coordinates>-73.1141,-36.7118,0</coordinates></Point></Placemark><Placemark><name>18 · Capitanía de Puerto de San Vicente</name><description>Lugar cartografiado
+Complemento: el encabezado de 2015 dice San Vicente, pero el cuerpo y firma dicen Talcahuano. Se ubican ambas reparticiones.
+Fuente: https://www.directemar.cl/directemar/site/docs/20170209/20170209141204/02__12400_1_publ.pdf#page=1
+Ubicación: https://www.waze.com/live-map/directions/capitania-de-puerto-de-san-vicente-almirante-latorre-1430-talcahuano?to=place.w.188024217.1880045560.770271</description><Point><coordinates>-73.131787,-36.723674,0</coordinates></Point></Placemark><Placemark><name>19 · Capitanía de Puerto de Lirquén–Tomé</name><description>Lugar cartografiado
+Complemento geográfico para la ribera oriental; no se individualiza en los dos documentos.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.openstreetmap.org/node/4670601678</description><Point><coordinates>-72.977576,-36.711342,0</coordinates></Point></Placemark><Placemark><name>20 · ASMAR Talcahuano</name><description>Sector aproximado
+Complemento para reconocer el área del astillero y distinguirla del Muelle 360 de la Base Naval.
+Fuente: https://www.armada.cl/noticias-navales/autoridades-inauguran-primera-fase-de-reconstruccion-de-muelles-en-base
+Ubicación: https://www.openstreetmap.org/way/797128616</description><Point><coordinates>-73.0992,-36.6931,0</coordinates></Point></Placemark><Placemark><name>21 · Puerto de Lirquén / DP World</name><description>Sector aproximado
+Complemento de orientación. No se desglosan sitios porque no son objeto de los dos documentos.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.openstreetmap.org/way/93495277</description><Point><coordinates>-72.9825,-36.71,0</coordinates></Point></Placemark><Placemark><name>22 · Muelles de Penco</name><description>Referencia oficial del muelle
+Complemento de orientación; coordenada de la resolución de habilitación de Penco de 2024.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.directemar.cl/directemar/site/docs/20240930/20240930110830/12600_146__270924.pdf</description><Point><coordinates>-73.008714,-36.723,0</coordinates></Point></Placemark><Placemark><name>23 · Puerto San Vicente / SVTI</name><description>Sector aproximado
+Complemento fuera de la bahía de Concepción; ubicación del terminal en bahía de San Vicente.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.comlog.cl/oferta-logistica/</description><Point><coordinates>-73.147,-36.7335,0</coordinates></Point></Placemark><Placemark><name>24 · Faro Isla Quiriquina</name><description>Lugar cartografiado
+Complemento de orientación hacia la entrada de la bahía.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.openstreetmap.org/node/7009938319</description><Point><coordinates>-73.051416,-36.610474,0</coordinates></Point></Placemark><Placemark><name>25 · Faro Punta Tumbes</name><description>Lugar cartografiado
+Complemento de orientación de la península de Tumbes.
+Fuente: https://www.directemar.cl/gobernaciones-maritimas/region-de-bio-bio
+Ubicación: https://www.openstreetmap.org/node/4196566278</description><Point><coordinates>-73.117805,-36.615151,0</coordinates></Point></Placemark><Placemark><name>26 · Estación meteorológica Talcahuano — Armada / SERVIMET</name><description>Coordenada oficial DMC
+Referencia del viento en el borde portuario. Ficha DMC del Centro Meteorológico Marítimo, código 360969 / OMM 85680. La estación difundida en RedMeteo se denomina Capitanía de Puerto (RMCL0137); su coordenada difiere unos 50 m de esta ficha.
+Fuente: https://web.directemar.cl/met/jturno/estaciones/davis.htm
+Ubicación: https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/360969
+Entidad: Armada de Chile · SERVIMET
+Variables: Viento y rachas, temperatura, humedad, presión y precipitación. Radiación solar en RedMeteo.
+Disponibilidad: Registro más reciente encontrado: 24/10/2026 18:07 UTC (consulta 24/10/2026). No se actualiza automáticamente en este mapa.
+Datos: https://redmeteo.cl/estacion.html?codigo=RMCL0137</description><Point><coordinates>-73.113333,-36.708055,0</coordinates></Point></Placemark><Placemark><name>27 · Estación meteorológica Lirquén — Armada / SERVIMET</name><description>Coordenada de red aproximada
+Viento de referencia para la ribera oriental. RMCL0136, Davis Vantage Pro2. Se usa la posición publicada en los metadatos de RedMeteo; la página antigua de DIRECTEMAR muestra hemisferios y latitud inconsistentes, por lo que no se emplea para ubicar el sensor.
+Fuente: https://web.directemar.cl/met/jturno/estaciones/davis.htm
+Ubicación: https://redmeteo.cl/jsonemas/RMCL0136.json
+Entidad: Armada de Chile · SERVIMET; difusión RedMeteo
+Variables: Viento y rachas, temperatura, humedad, presión y precipitación. Radiación solar en RedMeteo.
+Disponibilidad: Registro más reciente encontrado: 24/10/2026 18:07 UTC (consulta 24/10/2026). No se actualiza automáticamente en este mapa.
+Datos: https://redmeteo.cl/estacion.html?codigo=RMCL0136</description><Point><coordinates>-72.9777,-36.7117,0</coordinates></Point></Placemark><Placemark><name>28 · Estación meteorológica Faro Isla Quiriquina — Armada / SERVIMET</name><description>Coordenada oficial DMC
+Referencia expuesta en la entrada de la bahía. Código 360015 / OMM 85679. Se cartografía la ficha oficial del faro: RMCL0138 en RedMeteo está geolocalizado unos 1,9 km al sur, hacia el centro de la isla; la posición exacta de ese sensor requiere validación.
+Fuente: https://web.directemar.cl/met/jturno/estaciones/davis.htm
+Ubicación: https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/360015
+Entidad: Armada de Chile · SERVIMET
+Variables: Viento y rachas, temperatura, humedad, presión y precipitación. Visibilidad y observaciones sinópticas en el inventario DMC.
+Disponibilidad: Registro más reciente encontrado: 24/10/2026 18:07 UTC (consulta 24/10/2026). No se actualiza automáticamente en este mapa. Weather Underground mostró «Offline» en la página consultada.
+Datos: https://redmeteo.cl/estacion.html?codigo=RMCL0138</description><Point><coordinates>-73.051388,-36.610555,0</coordinates></Point></Placemark><Placemark><name>29 · Estación meteorológica Faro Punta Hualpén — Armada / SERVIMET</name><description>Coordenada oficial DMC
+Referencia de costa abierta junto a bahía de San Vicente. Código 360020 / OMM 85681; RMCL0139. La ficha conserva una nota histórica de desactivación en 1994, pero contiene registros 2024–2026; RedMeteo también entrega registros recientes.
+Fuente: https://web.directemar.cl/met/jturno/estaciones/davis.htm
+Ubicación: https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/360020
+Entidad: Armada de Chile · SERVIMET
+Variables: Viento y rachas, temperatura, humedad, presión y precipitación. Visibilidad y mar de fondo observados en el inventario DMC.
+Disponibilidad: Registro más reciente encontrado: 24/10/2026 18:00 UTC (consulta 24/10/2026). No se actualiza automáticamente en este mapa.
+Datos: https://redmeteo.cl/estacion.html?codigo=RMCL0139</description><Point><coordinates>-73.190555,-36.748055,0</coordinates></Point></Placemark><Placemark><name>30 · Estación meteorológica Carriel Sur — DMC / DGAC</name><description>Coordenada oficial DMC
+Estación aeroportuaria 360019 / OMM 85682 / SCIE, a unos 8 km al sur del puerto. Sirve como contexto regional y para visibilidad; su viento sobre tierra no representa automáticamente el de un sitio de atraque.
+Fuente: https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/360019
+Ubicación: https://climatologia.meteochile.gob.cl/application/informacion/catastroEstaciones/
+Entidad: Dirección Meteorológica de Chile · DGAC
+Variables: Viento, rachas, temperatura, humedad, presión, lluvia y visibilidad / nubosidad aeronáuticas.
+Disponibilidad: Ficha y catálogo DMC consultados el 24/10/2026; no se verificó aquí la hora del último dato instrumental.
+Datos: https://climatologia.meteochile.gob.cl/application/diariob/graficosRecienteEma/360019</description><Point><coordinates>-73.066388,-36.780554,0</coordinates></Point></Placemark><Placemark><name>31 · Estación meteorológica Penco — red civil RedMeteo</name><description>Coordenada de red aproximada
+Estación particular RMCL0193, PCE FWS-20N, cota publicada 60 m. Complementa la ribera oriental desde un emplazamiento urbano. RedMeteo advierte que sus estaciones particulares son de referencia y no equivalen a observaciones oficiales.
+Fuente: https://redmeteo.cl/estacion.html?codigo=RMCL0193
+Ubicación: https://redmeteo.cl/jsonemas/RMCL0193.json
+Entidad: Estación particular · Red Meteorológica Aficionada de Chile
+Variables: Viento y rachas, temperatura, humedad, presión y precipitación. Radiación solar publicada por la red.
+Disponibilidad: Registro más reciente encontrado: 24/10/2026 18:07 UTC (consulta 24/10/2026). No se actualiza automáticamente en este mapa.
+Datos: https://redmeteo.cl/estacion.html?codigo=RMCL0193</description><Point><coordinates>-72.9967,-36.7418,0</coordinates></Point></Placemark><Placemark><name>32 · Boya SHOA Watchkeeper — frente a Talcahuano</name><description>Posición publicada en 2025
+Boya de oleaje en mar abierto. La memoria UdeC de marzo de 2025 (p. 29 del PDF) publica esta ubicación y utiliza registros SHOA de junio de 2020 a noviembre de 2024. Su oleaje requiere considerar la transformación al entrar a la bahía y la exposición de cada terminal.
+Fuente: https://www.armada.cl/noticias-navales/personal-del-shoa-reemplazo-boya-watchkeeper-en-cercanias-de-la-bahia-de
+Ubicación: https://repositorio.udec.cl/server/api/core/bitstreams/6adb98ac-3cb8-492e-88ca-02618b301dba/content#page=29
+Entidad: Servicio Hidrográfico y Oceanográfico de la Armada · SHOA
+Variables: Oleaje (altura significativa, período y dirección en el estudio UdeC); instrumentación meteorológica y oceanográfica descrita por Armada. La renovación de 2021 incorporó oxígeno y pH superficial.
+Disponibilidad: Ubicación histórica publicada; fondeo actual y transmisión al 24/10/2026 no confirmados. No se encontró un panel público en vivo específico de esta boya.</description><Point><coordinates>-73.338,-36.567,0</coordinates></Point></Placemark><Placemark><name>33 · Boya POSAR — CR2 / COPAS Coastal, UdeC</name><description>Posición nominal publicada
+Boya científica en Estación 18, frente a Dichato / Coliumo y fuera de bahía de Concepción. Coordenada nominal publicada a minutos enteros (36°30′ S, 73°07′ O). Complementa las condiciones de mar abierto al norte de la bahía.
+Fuente: https://www.cr2.cl/posar/
+Ubicación: https://www.cr2.cl/posar/#ubicacion
+Entidad: CR2 · COPAS Coastal / Universidad de Concepción
+Variables: Viento y variables meteorológicas; temperatura, salinidad y otras variables biogeoquímicas del mar. La página no documenta un sensor de oleaje.
+Disponibilidad: CR2 informa refondeo el 13/07/2025. Meteorología cada 5 min, oceanografía cada hora; acceso de datos por FTP descrito en la fuente. No se verificó el último archivo transmitido.
+Datos: https://www.cr2.cl/posar/</description><Point><coordinates>-73.116667,-36.5,0</coordinates></Point></Placemark><Placemark><name>34 · Mareógrafo Talcahuano — SHOA / red IOC</name><description>Coordenada del catálogo IOC
+Complemento para variaciones observadas del nivel del mar en Talcahuano. Es un mareógrafo costero; no corresponde a la boya Watchkeeper ni mide la altura del oleaje exterior.
+Fuente: https://www.ioc-sealevelmonitoring.org/station.php?code=talc
+Ubicación: https://www.ioc-sealevelmonitoring.org/station.php?code=talc
+Entidad: SHOA · difusión IOC Sea Level Monitoring
+Variables: Nivel del mar; sensores de presión y radar registrados en el catálogo.
+Disponibilidad: Catálogo IOC: «Operational». La etiqueta de catálogo no confirma recepción actual; revisar la hora UTC del último registro en el enlace.
+Datos: https://www.ioc-sealevelmonitoring.org/station.php?code=talc</description><Point><coordinates>-73.105992,-36.700933,0</coordinates></Point></Placemark></Document></kml>
