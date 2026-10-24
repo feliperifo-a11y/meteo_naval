@@ -40,6 +40,10 @@ function entorno() {
     on(e, f) { this.events[e] = f; return this; }
     bindTooltip(s) { this.tooltip = s; return this; }
     bindPopup(f) { this.popup = f; return this; }
+    setLatLng(pos) {this.pos=pos;return this;}
+    setIcon(icon) {this.opt.icon=icon;return this;}
+    setTooltipContent(text) {this.tooltip=text;return this;}
+    setPopupContent(f) {this.popup=f;return this;}
     getLatLng() { return this.pos; }
     openPopup() { this.abierta = true; }
   }
@@ -49,12 +53,17 @@ function entorno() {
     { codigo: 'WU-ITALCA20', lat: -36.62582, lon: -73.06066 },
     { codigo: 'WU-IHUALP1', lat: -36.74769, lon: -73.19125 }, { codigo: 'ARICA', lat: -18.4, lon: -70.3 }];
   let redVisible = estaciones;
+  let boyas=[];
   const catalogo = contexto.crearCatalogoTalcahuano(L, map, datos, escapar, {
     estaciones: () => estaciones, popupEstacion: s => 'Dato instrumental: ' + s.fecha,
+    boyas:()=>boyas,popupBoya:b=>'Oleaje SHOA: '+b.ultimo?.hsig+' m · '+b.ultimo?.fecha,
+    iconoEstacion:s=>'icono nacional '+s.codigo,tooltipEstacion:s=>'Ficha nacional '+s.codigo,
+    iconoBoya:b=>'icono boya nacional '+b.nombre,tooltipBoya:b=>'Boya nacional '+b.nombre,
+    estacionSinDatos:f=>({codigo:f.properties.meteoia_codigos[0],lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],sinDatos:true,fecha:'Sin datos'}),
     activar: clave => map.addLayer(clave === 'talc_obs' ? catalogo.observacion : catalogo.puertos),
     refrescarRed: () => { redVisible = estaciones.filter(s => !catalogo.observacionActiva() || !catalogo.esEstacionCatalogada(s)); }
   });
-  return { catalogo, map, get redVisible() { return redVisible; }, actualizar(s) { estaciones = s; catalogo.actualizarObservacion(); } };
+  return { catalogo, map, get redVisible() { return redVisible; }, actualizar(s) { estaciones = s; catalogo.actualizarObservacion(); },actualizarBoyas(b){boyas=b;catalogo.actualizarObservacion();} };
 }
 test('las capas son opcionales, se crean al activar y no duplican marcadores al alternar', () => {
   const h = entorno(), c = h.catalogo;
@@ -70,7 +79,8 @@ test('reutiliza las identidades y posiciones instrumentales; la red no repite la
   assert.deepEqual(h.redVisible.map(s => s.codigo), ['ARICA']);
   const m = c.marcadorEstacion('WU-ITALCA20');
   assert.deepEqual(Array.from(m.pos), [-36.62582, -73.06066]);
-  assert.match(m.tooltip, /posición de la fuente instrumental/);
+  assert.match(m.tooltip, /Ficha nacional WU-ITALCA20/);
+  assert.equal(m.opt.icon,'icono nacional WU-ITALCA20');
   assert.match(c.fichaEstacion({ codigo: 'WU-ITALCA20' }), /1,9 km al sur/);
   assert(c.esBoyaCatalogada({ nombre: 'Talcahuano' }));
   assert(!c.esBoyaCatalogada({ nombre: 'San Antonio' }));
@@ -79,12 +89,34 @@ test('reutiliza las identidades y posiciones instrumentales; la red no repite la
 });
 test('las actualizaciones conservan la hora propia del dato y las referencias sin medición no simulan lecturas', () => {
   const h = entorno(), c = h.catalogo; h.map.addLayer(c.observacion);
-  assert.match(c.marcadorEstacion('TALCAHUANO').popup(), /hora de la fuente/);
+  const original=c.marcadorEstacion('TALCAHUANO');
+  assert.match(original.popup(), /hora de la fuente/);
   h.actualizar([{ codigo: 'TALCAHUANO', lat: -36.7, lon: -73.1, fecha: 'nueva hora instrumental' }]);
   assert.match(c.marcadorEstacion('TALCAHUANO').popup(), /nueva hora instrumental/);
+  assert.equal(c.marcadorEstacion('TALCAHUANO'),original);
   const watch = [...c.observacion.children].find(m => m.opt.title.includes('Watchkeeper'));
   const html = watch.popup(); assert.match(html, /histórica/); assert.match(html, /no confirmados/);
   assert.doesNotMatch(html, /Dato instrumental:/);
+});
+test('Watchkeeper comparte la ficha y posición de la boya nacional, y conserva sus antecedentes históricos cerrados',()=>{
+  const h=entorno(),c=h.catalogo;h.map.addLayer(c.observacion);
+  const m=[...c.observacion.children].find(m=>m.opt.title.includes('Watchkeeper'));
+  h.actualizarBoyas([{nombre:'Talcahuano',lat:-36.56016,lon:-73.34134,ultimo:{hsig:1.2,fecha:'2026-10-24T19:00:00Z'}}]);
+  assert.deepEqual(Array.from(m.pos),[-36.56016,-73.34134]);assert.match(m.popup(),/Oleaje SHOA: 1.2 m.*19:00:00Z/);
+  assert.equal(m.opt.icon,'icono boya nacional Talcahuano');
+  const metadata=c.fichaBoya({nombre:'Talcahuano'});assert.match(metadata,/<details class="talc-detalle">/);assert.doesNotMatch(metadata,/<details[^>]*\bopen/);
+  assert.match(metadata,/Posición publicada en 2025/);assert.equal(c.fichaBoya({nombre:'Iquique'}),'');
+  h.actualizarBoyas([{nombre:'Talcahuano',lat:-36.56,lon:-73.34,ultimo:{hsig:1.6,fecha:'2026-10-24T20:00:00Z'}}]);
+  assert.match(m.popup(),/Oleaje SHOA: 1.6 m.*20:00:00Z/);assert.equal(c.observacion.children.size,9);
+});
+test('POSAR muestra variables oceanográficas sin simular oleaje ni mediciones actuales',()=>{
+  const f=datos.features.find(f=>f.properties.id===33),html=contexto.fichaInstrumentoSinDatosTalcahuano(f,escapar);
+  assert.match(html,/class="pp"/);assert.match(html,/Sin lectura disponible/);assert.match(html,/Salinidad|Oxígeno disuelto/);assert.doesNotMatch(html,/Altura significativa|Operational|2026-10-24T/);
+});
+test('complementa Penco y Carriel sin duplicar ni sustituir las estaciones de la red nacional',()=>{
+  const nacional=[{codigo:'WU-ITALCA20',temp:16},{codigo:'DMC-360019',temp:18}],extras=[{codigo:'SCIE',temp:19},{codigo:'RMCL0193',temp:21},{codigo:'OTRA',temp:20}];
+  const out=contexto.complementarEstacionesTalcahuano(nacional,extras,datos);
+  assert.equal(out.length,3);assert.equal(out[0],nacional[0]);assert.equal(out[1],nacional[1]);assert.equal(out[2],extras[1]);
 });
 test('las fichas escapan texto y rechazan enlaces ejecutables', () => {
   const f = JSON.parse(JSON.stringify(datos.features[0]));

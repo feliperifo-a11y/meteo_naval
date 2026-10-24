@@ -32,20 +32,38 @@ mediciones, con la hora propia del dato. Mientras está activa, el constructor d
 la capa general omite esas estaciones y la boya Talcahuano, para evitar marcadores
 duplicados. Al apagarla se restablecen los marcadores generales. El selector de
 la tabla de estaciones reconoce también los marcadores regionales. Las fichas
-de las cuatro estaciones generales incluyen los metadatos del inventario.
+de mediciones y sus símbolos son los mismos de la red nacional. Los antecedentes
+documentales quedan dentro de «Ubicación, antecedentes y fuentes», cerrado al abrir.
+Las actualizaciones conservan el marcador y la ficha abiertos.
 
 La posición instrumental mantiene la coordenada de la fuente existente; la
 coordenada documental figura por separado. En Quiriquina la ficha DMC del faro
 se sitúa aproximadamente 1,9 km al norte de la posición de RedMeteo/Weather
 Underground. No se traslada una medición a la coordenada del faro sin verificar
-su emplazamiento. Los códigos RedMeteo y DMC se conservan para asociaciones
-futuras, sin añadir consultas ni recolectores nuevos.
+su emplazamiento. Penco se complementa desde el JSON público de RedMeteo (`RMCL0193`), con viento
+convertido de m/s a nudos y la fecha de la observación, no la del archivo. Carriel
+Sur usa el METAR `SCIE` difundido por NOAA/AWC (observación DMC/DGAC): viento en
+nudos y presión QNH en hPa; la humedad no se calcula ni se presenta como medición.
+Se respeta la posición comunicada por el METAR, separada de la del inventario.
+Ambas fuentes se actualizan en el flujo habitual mediante
+`scripts/talcahuano_observaciones.py`; un fallo conserva la observación anterior,
+que envejece con su hora original. El navegador integra los datos sin duplicar
+ni reemplazar una estación que ya tenga observaciones en la red nacional.
 
-Watchkeeper conserva su posición histórica publicada en 2025 y la falta de
-confirmación de fondeo/transmisión actuales en el estudio. La ficha regional no
-asocia esa posición a las lecturas del catálogo general. POSAR no se presenta
-como boya de oleaje y el mareógrafo identifica nivel del mar. Un estado de
-catálogo «Operational» no se traduce en recepción actual.
+Watchkeeper se asocia a la boya Talcahuano del catálogo SHOA ya usado por el
+dashboard, tanto en la posición de referencia como en las lecturas, estado,
+símbolo y gráfico de altura significativa. Su posición histórica publicada en
+2025 permanece separada en los antecedentes: no se trasladan las mediciones a
+esa ubicación. La recepción y los errores de acceso se muestran igual que en
+las demás boyas nacionales. La capa general omite este mismo instrumento
+mientras está activa la regional.
+
+POSAR conserva una ficha con el mismo formato y sus variables meteorológicas
+y biogeoquímicas, sin simular lecturas ni mostrar oleaje como sensor propio.
+El FTP anónimo documentado por CR2 devolvió 530 en la comprobación del
+24/10/2026, por lo que esta integración no dispone de su serie actual. El
+mareógrafo identifica nivel del mar y tampoco presenta el estado de catálogo
+«Operational» como prueba de recepción de mediciones.
 
 ## Fuentes principales
 

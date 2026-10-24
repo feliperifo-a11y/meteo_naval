@@ -432,7 +432,7 @@ const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 };
 function normalizar(arr) {
   return arr.map(x => Array.isArray(x)
     ? { nombre: x[0], codigo: x[1], fecha: x[2], lat: x[3], lon: x[4], dirG: num(x[5]), dirFuente: x[6], vel: num(x[7]), temp: num(x[8]), pres: num(x[9]), hum: num(x[10]), td: num(x[11]), area: x[12] }
-    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null, cambio: x._cambio ? new Date(x._cambio) : null, fijo: x._fijo_desde || null, red: x._red || 'Capitanía de Puerto', sinDatos: !!x._sin_datos, fuente: x._fuente || null, racha: num(x._racha), uVel: x._unidad_viento || '' })
+    : { nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, fechaUTC: x._fecha_utc || null, tipoPresion: x._tipo_presion || null, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), dirFuente: x.direccionViento, vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), td: num(x.puntoDeRocio), area: null, cambio: x._cambio ? new Date(x._cambio) : null, fijo: x._fijo_desde || null, red: x._red || 'Capitanía de Puerto', sinDatos: !!x._sin_datos, fuente: x._fuente || null, racha: num(x._racha), uVel: x._unidad_viento || '' })
     .filter(s => isFinite(s.lat) && isFinite(s.lon));
 }
 // Umbrales de "sensor congelado": horas sin ningún cambio de valor mientras la estación sigue transmitiendo.
@@ -451,7 +451,7 @@ function congelados(s, ahora) {
 }
 function evaluar(s, ahora) {
   if (s.sinDatos) return { k: 'sd', t: null, ms: null, motivo: 'La fuente no publica datos de esta estación.', fl: [], inferida: false };
-  let t = parseLocalCL(s.fecha), inferida = false;
+  let t = s.fechaUTC && Number.isFinite(Date.parse(s.fechaUTC)) ? new Date(s.fechaUTC) : parseLocalCL(s.fecha), inferida = false;
   // Sin hora válida de la fuente: se usa la hora en que sus valores cambiaron por última vez (transmite aunque no informe la hora).
   if (!t && s.cambio) { t = s.cambio; inferida = true; }
   const ms = t ? ahora - t : null;
@@ -733,6 +733,8 @@ function refreshAvLayer() {
 
 // ============================ Estaciones ============================
 let ESTACIONES = [];
+let ESTACIONES_BASE = [];
+let COMPLEMENTARIAS_TALC = [];
 let FUENTE = { cuando: null };
 function asignarArea(s) {
   if (s.area) return s.area;
@@ -745,6 +747,19 @@ function asignarArea(s) {
 }
 const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI');
 function svgSt(c, flag, cuadrado) { return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${cuadrado === 'rombo' ? `<path d="M10 1.8 18.2 10 10 18.2 1.8 10Z" fill="${c}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>` : cuadrado ? `<rect x="3.5" y="3.5" width="13" height="13" rx="2" fill="${c}" stroke="#fff" stroke-width="2"/>` : `<circle cx="10" cy="10" r="7" fill="${c}" stroke="#fff" stroke-width="2"/>`}${flag ? '<circle cx="15.5" cy="4.5" r="3.6" fill="#f2c200" stroke="#fff" stroke-width="1.2"/>' : ''}</svg>`; }
+function iconoEstacion(s) {
+  const ev=evaluar(s,Date.now());
+  return L.divIcon({className:'',html:svgSt(ST[ev.k].hex,ev.fl.length>0,s.red==='Red complementaria'?'rombo':s.red!=='Capitanía de Puerto'),iconSize:[20,20],iconAnchor:[10,10]});
+}
+function tooltipEstacion(s) {
+  const ev=evaluar(s,Date.now());return `${escH(nombreEst(s))} · ${ST[ev.k].txt}${ev.k==='ok'&&s.temp!=null?` · ${nf(s.temp)} °C`:''}`;
+}
+function vientoEstacion(s) {
+  const direccion=s.dirG!=null&&s.dirFuente!=='---'?`${s.dirG}° ${cardinal(s.dirG)}`:s.dirFuente==='VRB'?'Dirección variable':'';
+  if(!direccion&&s.vel==null)return 'Sin dato';
+  return `${direccion}${direccion&&s.vel!=null?' · ':''}${s.vel!=null?nf(s.vel)+(s.uVel?' '+escH(s.uVel):''):''}${s.racha!=null?` (racha ${nf(s.racha)}${s.uVel?' '+escH(s.uVel):''})`:''}`+
+    (s.dirG!=null&&s.dirFuente&&s.dirFuente!=='---'&&s.dirFuente!==cardinal(s.dirG)?` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>`:'');
+}
 function popupSt(s, ev) {
   const st = ST[ev.k];
   const rows = [
@@ -752,8 +767,8 @@ function popupSt(s, ev) {
     ['Último dato', ev.t ? `${ev.inferida ? '≈ ' : ''}${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}${ev.inferida ? '<br><span style="color:#8a5a00">Hora inferida: la fuente no la informa.</span>' : ''}` : 'Sin fecha válida'],
     ['Red', escH(s.red) + (s.fuente ? ` · ${escH(s.fuente)}` : '')],
     ['Subárea', escH(nombreArea(s.area))],
-    ['Viento', s.dirG != null && s.dirFuente !== '---' ? `${s.dirG}° ${cardinal(s.dirG)} · ${nf(s.vel)}${s.uVel ? ' ' + s.uVel : ''}${s.racha != null ? ` (racha ${nf(s.racha)}${s.uVel ? ' ' + s.uVel : ''})` : ''}` + (s.dirFuente && s.dirFuente !== cardinal(s.dirG) ? ` <span style="color:#8a5a00">(fuente indica ${escH(s.dirFuente)})</span>` : '') : 'Sin dato'],
-    ['Temperatura', `${nf(s.temp)} °C`], ['Presión', `${nf(s.pres, 1)} hPa`], ['Humedad', `${nf(s.hum, 0)} %`], ['Punto de rocío', `${nf(s.td)} °C`],
+    ['Viento', vientoEstacion(s)],
+    ['Temperatura', `${nf(s.temp)} °C`], [s.tipoPresion ? `Presión (${escH(s.tipoPresion)})` : 'Presión', `${nf(s.pres, 1)} hPa`], ['Humedad', `${nf(s.hum, 0)} %`], ['Punto de rocío', `${nf(s.td)} °C`],
     ['Posición', fmtPos(s.lat, s.lon)],
   ];
   const fl = ev.fl.length ? `<div style="color:#8a5a00;margin-top:4px">⚠ Sensor dudoso: ${escH(ev.fl.join('; '))}.</div>` : '';
@@ -766,9 +781,9 @@ function buildEst() {
   for (const s of ESTACIONES) {
     if (catalogoTalc.observacionActiva() && catalogoTalc.esEstacionCatalogada(s)) continue;
     const ev = evaluar(s, ahora);
-    const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: L.divIcon({ className: '', html: svgSt(ST[ev.k].hex, ev.fl.length > 0, s.red === 'Red complementaria' ? 'rombo' : s.red !== 'Capitanía de Puerto'), iconSize: [20, 20], iconAnchor: [10, 10] }), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
+    const m = L.marker([s.lat, s.lon], { pane: 'stPane', icon: iconoEstacion(s), zIndexOffset: { ok: 0, ret: 500, no: 400, sd: -500 }[ev.k] })
       .bindPopup(() => popupSt(s, evaluar(s, Date.now())), { maxWidth: 320, autoPanPadding: [30, 40] })
-      .bindTooltip(`${escH(nombreEst(s))} · ${ST[ev.k].txt}${ev.k === 'ok' && s.temp != null ? ` · ${nf(s.temp)} °C` : ''}`, { direction: 'top', offset: [0, -8] });
+      .bindTooltip(tooltipEstacion(s), { direction: 'top', offset: [0, -8] });
     m.addTo(g); stMarkers.set(s.codigo, m);
   }
   return g;
@@ -830,6 +845,8 @@ function evaluarBoya(b, ahora) {
   return { k: 'no', t, ms, motivo: `Sin transmisión desde hace ${edad(ms)}.` };
 }
 const svgBoya = (c, s = 24) => `<svg width="${s}" height="${s}" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11" fill="${c}" stroke="#fff" stroke-width="2"/><path d="M6 14c1.8 0 1.8-2 3.5-2s1.8 2 3.5 2 1.8-2 3.5-2 1.8 2 3.5 2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+function iconoBoya(b) { return L.divIcon({className:'',html:svgBoya(ST[evaluarBoya(b,Date.now()).k].hex),iconSize:[24,24],iconAnchor:[12,12]}); }
+function tooltipBoya(b) {const ev=evaluarBoya(b,Date.now());return `Boya ${escH(b.nombre)} · ${b.error==='pendiente'?'consultando datos':ev.acceso===false?'sin acceso a datos':ST[ev.k].txt}${b.ultimo?.hsig!=null?` · Hs ${nf(b.ultimo.hsig,2)} m`:''}`;}
 function sparkBoya(serie) {
   const pts = (serie || []).filter(p => p[1] != null);
   if (pts.length < 3) return '';
@@ -843,29 +860,29 @@ function popupBoya(b, ev) {
   const u = b.ultimo || {}, st = ST[ev.k];
   const v = (x, d, un) => x == null ? null : `${nf(x, d)}${un}`;
   const rows = [
-    ['Estado', `<b style="color:${st.hex}">${ev.acceso === false ? 'Sin acceso a datos' : st.txt}</b>`],
+    ['Estado', `<b style="color:${st.hex}">${b.error==='pendiente'?'Consultando…':ev.acceso === false ? 'Sin acceso a datos' : st.txt}</b>`],
     ['Último dato', ev.t ? `${fmtLocal(ev.t)} (hora Chile) · ${fmtUTC(ev.t)}` : (ev.acceso === false ? '—' : 'Sin datos en 7 días')],
-    ['Altura significativa', v(u.hsig, 2, ' m')], ['Altura máxima', v(u.hmax, 2, ' m')],
-    ['Período significativo', v(u.tsig, 1, ' s')], ['Período peak', v(u.tp, 1, ' s')],
+    ['Altura significativa', v(u.hsig, 2, ' m') || 'Sin dato'], ['Altura máxima', v(u.hmax, 2, ' m') || 'Sin dato'],
+    ['Período significativo', v(u.tsig, 1, ' s') || 'Sin dato'], ['Período peak', v(u.tp, 1, ' s') || 'Sin dato'],
     ['Dirección peak', u.dp != null ? `${nf(u.dp, 0)}°` : (u.tpdir != null ? `${nf(u.tpdir, 0)}°` : null)],
-    ['Dirección media', v(u.dm, 0, '°')], ['Temp. del agua', v(u.tw, 1, ' °C')],
+    ['Dirección media', v(u.dm, 0, '°') || 'Sin dato'], ['Temp. del agua', v(u.tw, 1, ' °C') || 'Sin dato'],
     ['Presión', v(u.mb, 1, ' hPa')], ['Viento', u.wsd != null ? `${u.wdir != null ? nf(u.wdir, 0) + '° · ' : ''}${nf(u.wsd, 1)}${u.wmax != null ? ' (ráfaga ' + nf(u.wmax, 1) + ')' : ''}` : null],
-    ['Temp. del aire', v(u.taire, 1, ' °C')],
-    ['Modelo', escH(b.modelo)], ['Fondeo', fmtPos(b.lat, b.lon)],
+    ['Temp. del aire', v(u.taire, 1, ' °C')], ['Humedad', v(u.rh,0,' %')],
+    ['Modelo', escH(b.modelo)], ['Posición de referencia', fmtPos(b.lat, b.lon)],
     ['Consultado', b.consultado ? `${fmtLocal(new Date(b.consultado))}, desde este navegador` : null],
   ].filter(r => r[1] != null);
   return `<div class="pp"><div class="ppT">Boya ${escH(b.nombre)}</div><table>${rows.map(([k, x]) => `<tr><th>${k}</th><td>${x}</td></tr>`).join('')}</table>` +
     (ev.motivo ? `<div style="margin-top:4px">${escH(ev.motivo)}</div>` : '') + sparkBoya(b.serie) +
-    `<div style="margin-top:6px;display:flex;gap:12px"><a href="${escH(b.url)}" target="_blank" rel="noopener">Datos ↗</a><a href="${escH(BOYAS_META.visor || 'https://www.shoa.cl/php/boyas?idioma=es')}" target="_blank" rel="noopener">Visor oficial ↗</a></div></div>`;
+    `<div style="margin-top:6px;display:flex;gap:12px"><a href="${escH(b.url)}" target="_blank" rel="noopener">Datos ↗</a><a href="${escH(BOYAS_META.visor || 'https://www.shoa.cl/php/boyas?idioma=es')}" target="_blank" rel="noopener">Visor oficial ↗</a></div>${catalogoTalc.fichaBoya(b)}</div>`;
 }
 function buildBoyas() {
   const g = L.layerGroup(), ahora = Date.now();
   for (const b of BOYAS) {
     if (catalogoTalc.observacionActiva() && catalogoTalc.esBoyaCatalogada(b)) continue;
     const ev = evaluarBoya(b, ahora), u = b.ultimo || {};
-    L.marker([b.lat, b.lon], { pane: 'boyaPane', icon: L.divIcon({ className: '', html: svgBoya(ST[ev.k].hex), iconSize: [24, 24], iconAnchor: [12, 12] }) })
+    L.marker([b.lat, b.lon], { pane: 'boyaPane', icon: iconoBoya(b) })
       .bindPopup(() => popupBoya(b, evaluarBoya(b, Date.now())), { maxWidth: 320, autoPanPadding: [30, 40] })
-      .bindTooltip(`Boya ${escH(b.nombre)} · ${ev.acceso === false ? 'sin acceso a datos' : ST[ev.k].txt}${u.hsig != null ? ` · Hs ${nf(u.hsig, 2)} m` : ''}`, { direction: 'top', offset: [0, -10] })
+      .bindTooltip(tooltipBoya(b), { direction: 'top', offset: [0, -10] })
       .addTo(g);
   }
   return g;
@@ -895,7 +912,7 @@ async function leerBoya(url) {
   } finally { clearTimeout(to); }
 }
 function resumirBoya(filas) {
-  const ok = (filas || []).filter(f => f.idBoya && numB(f.hsig) != null).sort((a, b) => utcB(a.fecha_completa) - utcB(b.fecha_completa));
+  const ok = (filas || []).filter(f => f.idBoya && Number.isFinite(+utcB(f.fecha_completa)) && CAMPOS_BOYA.some(k=>numB(f[k])!=null)).sort((a, b) => utcB(a.fecha_completa) - utcB(b.fecha_completa));
   if (!ok.length) return { ultimo: null, serie: [] };
   const u = ok[ok.length - 1], tu = utcB(u.fecha_completa), lim = +tu - 72 * 3600e3;
   const ultimo = { fecha: tu.toISOString() };
@@ -933,6 +950,7 @@ function refreshBoyas() {
   const on = LAYERS.boyas.lyr && map.hasLayer(LAYERS.boyas.lyr);
   if (LAYERS.boyas.lyr) map.removeLayer(LAYERS.boyas.lyr);
   LAYERS.boyas.lyr = buildBoyas(); if (on) LAYERS.boyas.lyr.addTo(map);
+  catalogoTalc.actualizarObservacion();
 }
 
 
@@ -1502,7 +1520,16 @@ const catalogoTalc = crearCatalogoTalcahuano(L, map, TALCAHUANO, escH, {
   prepararVista: () => { if (map.hasLayer(ocean)) { map.removeLayer(ocean); osm.addTo(map); } },
   enfocarMapa: () => document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' }),
   estaciones: () => ESTACIONES,
+  boyas: () => BOYAS,
+  iconoEstacion, tooltipEstacion, iconoBoya, tooltipBoya,
+  iconoBoyaSinDatos: () => L.divIcon({className:'',html:svgBoya(ST.sd.hex),iconSize:[24,24],iconAnchor:[12,12]}),
+  estacionSinDatos: f => {
+    const p=f.properties,[lon,lat]=f.geometry.coordinates;
+    const s=normalizar([{nombre:p.label||p.name,codigo:p.meteoia_codigos[0],latitud:lat,longitud:lon,
+      _sin_datos:true,_red:'Red complementaria',_fuente:p.owner}])[0];s.area=asignarArea(s);return s;
+  },
   popupEstacion: s => popupSt(s, evaluar(s, Date.now())),
+  popupBoya: b => popupBoya(b, evaluarBoya(b, Date.now())),
   activar: key => { document.getElementById('chk_' + key).checked = true; LAYERS[key].set(true); },
   refrescarRed: () => {
     for (const [key, construir] of [['est', buildEst], ['boyas', buildBoyas]]) {
@@ -1574,13 +1601,16 @@ async function leerJSON(ruta) {
 let ESTADO = null, PRIMERA = true;
 async function cargarDatos() {
   const b = document.getElementById('btnRefresh'); b.disabled = true; b.textContent = 'Actualizando…';
-  let e = null, a = null;
-  try { [e, a, ESTADO] = await Promise.all([leerJSON('data/estaciones.json'), leerJSON('data/avisos.json'), leerJSON('data/estado.json').catch(() => null)]); }
+  let e = null, a = null, t = null;
+  try { [e, a, ESTADO, t] = await Promise.all([leerJSON('data/estaciones.json'), leerJSON('data/avisos.json'), leerJSON('data/estado.json').catch(() => null), leerJSON('data/talcahuano_observaciones.json').catch(() => null)]); }
   catch (err) { if (PRIMERA) { e = RESPALDO.estaciones; a = RESPALDO.avisos; ESTADO = { respaldo: true }; } }
   if (e) {
-    ESTACIONES = normalizar(e.datos || e); ESTACIONES.forEach(s => { s.area = asignarArea(s); });
+    ESTACIONES_BASE = normalizar(e.datos || e);
     FUENTE = { cuando: e.actualizado ? new Date(e.actualizado) : null, fuente: e.fuente };
   }
+  if(t&&Array.isArray(t.estaciones))COMPLEMENTARIAS_TALC=normalizar(t.estaciones);
+  ESTACIONES=complementarEstacionesTalcahuano(ESTACIONES_BASE,COMPLEMENTARIAS_TALC,TALCAHUANO);
+  ESTACIONES.forEach(s=>{s.area=asignarArea(s);});
   if (a) prepararAvisos(a);
   if (PRIMERA) initAreas();
   PRIMERA = false;
