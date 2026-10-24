@@ -7,4 +7,4 @@
 @media(max-width:600px){.uv-tipo-wrf .uv-cab b{font-size:13px;white-space:nowrap}.uv-tipo-wrf .uv-cab a{font-size:10px}}
 
 .uv-ficha-abierta #layerBox{visibility:hidden}
-@media(max-width:600px){.uv-ficha-abierta .leaflet-top{visibility:hidden}}
+.uv-ficha-abierta .leaflet-top{visibility:hidden}
