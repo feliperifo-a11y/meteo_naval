@@ -475,7 +475,6 @@ map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('satPane'); map.getPane('satPane').style.zIndex = 300; map.getPane('satPane').style.pointerEvents = 'none';
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
 map.createPane('avPane'); map.getPane('avPane').style.zIndex = 380;
-map.createPane('avResumenPane').style.zIndex = 610;
 map.createPane('limPane'); map.getPane('limPane').style.zIndex = 400;
 map.createPane('cartaPane'); map.getPane('cartaPane').style.zIndex = 390; map.getPane('cartaPane').style.pointerEvents = 'none';
 map.createPane('lblPane'); map.getPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
@@ -636,7 +635,6 @@ function buildAvisos() {
   const g = L.layerGroup(), ahora = Date.now(), showExp = document.getElementById('chkExp')?.checked;
   avPolys.clear();
   for (const { a } of AV_ORD) {
-    const visibles = [];
     for (const z of a.zonas) {
       const e = estadoAviso(z, ahora);
       if (e.k === 'X' && !showExp) continue;
@@ -649,9 +647,8 @@ function buildAvisos() {
       lyr.addTo(g);
       if (!avPolys.has(a.num)) avPolys.set(a.num, []);
       avPolys.get(a.num).push(lyr);
-      visibles.push(z);
+      configurarAvisoInteractivo(lyr, a, z, escH, fmtLocal, ahora);
     }
-    const resumen = crearResumenAviso(L, a, visibles, escH, fmtLocal, ahora); if (resumen) resumen.addTo(g);
   }
   return g;
 }
@@ -663,7 +660,7 @@ function resaltarAviso(a) {
   const ls = avPolys.get(a.num) || []; if (!ls.length) return;
   const fg = L.featureGroup(ls); map.fitBounds(fg.getBounds(), { maxZoom: 7, padding: [30, 30] });
   ls.forEach(l => { l.setStyle({ weight: 4 }); setTimeout(() => l.setStyle({ weight: estadoAviso(a.zonas[0], Date.now()).k === 'V' ? 1.8 : 1.5 }), 2500); });
-  ls[0].openPopup();
+  if (ls[0].getPopup()?.options.className !== 'aviso-hover') ls[0].openPopup();
 }
 function actualizarBarraAv() {
   const tot = document.querySelectorAll('#avList .avChk input').length, vis = document.querySelectorAll('#avList .avChk input:checked').length;
@@ -1598,6 +1595,7 @@ try { new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(docum
 // Toda ventana del mapa (estación, boya, aviso, subárea) se muestra completa: alto máximo con
 // desplazamiento interno si no cabe, y el mapa se mueve lo necesario para dejarla dentro del recuadro.
 map.on('popupopen', e => {
+  if (e.popup.options.className === 'aviso-hover') return;
   const pop = e.popup, alto = Math.max(200, map.getSize().y - 70);
   if (pop.options.maxHeight !== alto) { pop.options.maxHeight = alto; pop.update(); }
   const ajustar = () => {
@@ -1612,6 +1610,7 @@ map.on('popupopen', e => {
 });
 // Si una ventana del mapa queda bajo el panel de capas, el panel se contrae para no taparla.
 map.on('popupopen', e => setTimeout(() => {
+  if (e.popup.options.className === 'aviso-hover') return;
   const lb = document.getElementById('layerBox'), el = e.popup.getElement();
   if (!el || lb.classList.contains('min')) return;
   const a = el.getBoundingClientRect(), b = lb.getBoundingClientRect();
