@@ -22,6 +22,11 @@
       "titulo": "Natural Earth, tierra 1:110 millones",
       "url": "https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson",
       "blob_sha": "04811d72fff2701ec67587e30ad8942675b511e3"
+    },
+    "fuente_hielo_antartico": {
+      "titulo": "Natural Earth, plataformas de hielo antárticas 1:10 millones",
+      "url": "https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_antarctic_ice_shelves_polys.geojson",
+      "blob_sha": "d24ca717ada52da367ec0cafd000e9b1f17a85ea"
     }
   },
   "features": [
@@ -67,7 +72,7 @@
         "tipo": "limite",
         "nombre": "Límite oceánico austral SAR",
         "corte_visual_antartica": {
-          "costa_latitud": -80.09508556061506,
+          "costa_latitud": -76.76402264899951,
           "separacion_grados": 0.75
         }
       },
@@ -104,7 +109,7 @@
           ],
           [
             -53,
-            -79.34508556061506
+            -76.01402264899951
           ]
         ]
       }

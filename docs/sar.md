@@ -29,7 +29,8 @@ Distrito ni el detalle del límite IV–V en los canales. Las posiciones de los
 centros son aproximaciones urbanas. El V Distrito continúa al Polo Sur, pero
 los trazos oceánicos del mapa se cortan antes de alcanzar la costa antártica.
 El recorte usa la [costa global Natural Earth](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson),
-ya que la costa incorporada en el sitio no llega hasta 131° O, y una separación visual de
+ya que la costa incorporada en el sitio no llega hasta 131° O, además del
+[borde de las plataformas de hielo](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_antarctic_ice_shelves_polys.geojson), y una separación visual de
 0,75 grados de latitud hacia el norte para mantener el trazo separado también
 del borde de hielo visible en el mapa. No modifica la jurisdicción descrita en la fuente.
 
