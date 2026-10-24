@@ -242,6 +242,11 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 .layers .grp{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:10px 0 4px}
 .layers label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
 .layers svg{flex:none}
+.layers .capas-rama{margin:8px 0}
+.layers .capas-rama>summary{cursor:pointer;font-weight:650;line-height:1.5;padding:4px 0}
+.layers .capas-rama>summary:focus-visible{outline:2px solid #196a94;outline-offset:2px;border-radius:3px}
+.layers .capas-capuertos>summary{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.layers .capas-hijas{margin-left:5px;padding-left:9px;border-left:1px solid var(--line)}
 .av{border-top:1px solid var(--line);padding:10px 14px}
 .av:first-of-type{border-top:0}
 .avT{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
@@ -1545,6 +1550,8 @@ function cerrarCapuertos() { menuCapuertos.hidden = true; btnCapuertos.setAttrib
 btnCapuertos.onclick = () => { menuCapuertos.hidden = !menuCapuertos.hidden; btnCapuertos.setAttribute('aria-expanded', String(!menuCapuertos.hidden)); };
 document.getElementById('btnCapuertoTalc').onclick = () => {
   cerrarCapuertos(); catalogoTalc.verTodo();
+  document.getElementById('capasCapuertos').open = true;
+  document.getElementById('capasTalcahuano').open = true;
   document.getElementById('layerBox').classList.remove('min'); document.getElementById('lbBtn').textContent = '▾';
   document.getElementById('mapWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
@@ -1582,12 +1589,15 @@ function renderCapas() {
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);
   addLayerRow(box, 'met', 'METAREA XV (subáreas)', fillSw('#2f6b2f', 'rgba(127,191,127,.45)'), true, buildMet);
   addLayerRow(box, 'sar', 'Distritos SAR', lineSw('#ffad62', null, 2.5), false, () => crearCapaSAR(L, map, SAR, escH));
-  grp('Capuerto Talcahuano');
-  addLayerRow(box, 'talc_puertos', 'Talcahuano · puertos y referencias', dotSw('#196a94'), false, () => catalogoTalc.puertos);
-  addLayerRow(box, 'talc_obs', 'Talcahuano · observación costera', dotSw('#147b88'), false, () => catalogoTalc.observacion);
-  addLayerRow(box, 'talc_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => vistaPronosticoTalc('talc_uv')));
-  addLayerRow(box, 'talc_wrf', 'WRF SERVIMET', fillSw('#009acd', 'rgba(0,154,205,.35)'), false, () => crearWRFServimet(L, map, escH, () => vistaPronosticoTalc('talc_wrf')));
-  catalogoTalc.controles(box);
+  const capuertos = document.createElement('details');
+  capuertos.id = 'capasCapuertos'; capuertos.className = 'capas-rama capas-capuertos';
+  capuertos.innerHTML = '<summary>Capuertos</summary><div class="capas-hijas"><details id="capasTalcahuano" class="capas-rama"><summary>Talcahuano</summary><div class="capas-hijas capas-talcahuano"></div></details></div>';
+  box.appendChild(capuertos);
+  const talc = capuertos.querySelector('.capas-talcahuano');
+  addLayerRow(talc, 'talc_puertos', 'Puertos y referencias', dotSw('#196a94'), false, () => catalogoTalc.puertos);
+  addLayerRow(talc, 'talc_obs', 'Observación costera', dotSw('#147b88'), false, () => catalogoTalc.observacion);
+  addLayerRow(talc, 'talc_uv', 'Marejadas UV', fillSw('#00a8e8', 'rgba(0,168,232,.35)'), false, () => crearMarejadasUV(L, map, escH, () => vistaPronosticoTalc('talc_uv')));
+  catalogoTalc.controles(talc);
   grp('Límites marítimos');
   for (const ab of ['ZEE y PC', 'ZC', 'MT']) { const st = LIM_STYLE[ab]; addLayerRow(box, 'lim_' + ab.replace(/\s/g, ''), st.name, lineSw(st.color, st.dashArray, Math.max(2, st.weight)), st.on, () => buildLimits(ab)); }
   const leg = document.createElement('div'); leg.className = 'grp'; leg.textContent = 'Simbología de estaciones'; box.appendChild(leg);

@@ -1,5 +1,7 @@
 # WRF SERVIMET · Capuerto Talcahuano
 
+La opción WRF está temporalmente oculta del selector de capas por solicitud del usuario. Se conservan la implementación y la actualización para poder reactivarla. El selector visible se organiza como Capuertos → Talcahuano, con Puertos y referencias, Observación costera y Marejadas UV.
+
 Capa opcional únicamente en el dashboard completo, desactivada inicialmente. Comparte el panel temporal de Marejadas UV: 25 fechas cada tres horas, anterior/siguiente, selector, reproducción, pausa y clic para consultar. Al activar una de las dos cartas se oculta la otra y se desmarca su casilla, para evitar dos escalas superpuestas.
 
 ## Fuente y significado
