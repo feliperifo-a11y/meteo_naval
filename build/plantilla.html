@@ -1582,7 +1582,7 @@ const catalogoValpo = crearCatalogoValparaiso(L, map, VALPARAISO, VALPARAISO_LIM
   }
 });
 function ajustarZoomCapuertos() {
-  const grupos=[catalogoTalc.puertos,catalogoTalc.observacion,catalogoFondeosTalc.fondeos,catalogoFondeosTalc.arba,catalogoValpo.puertos,catalogoValpo.fondeos,catalogoValpo.zep,catalogoValpo.radios,catalogoValpo.observacion];
+  const grupos=[catalogoTalc.puertos,catalogoTalc.observacion,catalogoTalc.limite,catalogoFondeosTalc.fondeos,catalogoFondeosTalc.arba,catalogoValpo.puertos,catalogoValpo.fondeos,catalogoValpo.zep,catalogoValpo.radios,catalogoValpo.observacion];
   map.setMaxZoom(grupos.some(g=>map.hasLayer(g))?18:zoomMaximoHabitual);
 }
 const menuCapuertos = document.getElementById('menuCapuertos'), btnCapuertos = document.getElementById('btnCapuertos');
@@ -1646,6 +1646,7 @@ function renderCapas() {
   box.appendChild(capuertos);
   const talc = capuertos.querySelector('.capas-talcahuano');
   addLayerRow(talc, 'talc_puertos', 'Puertos y referencias', dotSw('#196a94'), false, () => catalogoTalc.puertos);
+  addLayerRow(talc, 'talc_limite', 'Límite de puerto', lineSw('#c45508'), false, () => catalogoTalc.limite);
   addLayerRow(talc, 'talc_fondeos', 'Fondeos', dotSw('#196a94'), false, () => catalogoFondeosTalc.fondeos);
   addLayerRow(talc, 'talc_arba', 'Área reservada Armada (ARBA)', fillSw('#844d91', 'rgba(132,77,145,.13)'), false, () => catalogoFondeosTalc.arba);
   addLayerRow(talc, 'talc_obs', 'Observación costera', dotSw('#147b88'), false, () => catalogoTalc.observacion);

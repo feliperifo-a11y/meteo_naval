@@ -30,7 +30,7 @@ test('conserva 32 referencias, sus fuentes, precisión y disponibilidad de consu
 function entorno() {
   const visibles = new Set();
   const map = { getContainer: () => ({ clientWidth: 1000 }), addLayer(l) { if (!visibles.has(l)) { visibles.add(l); l.events.add?.(); } },
-    removeLayer(l) { if (visibles.delete(l)) l.events.remove?.(); }, hasLayer: l => visibles.has(l), setView() {}, fitBounds() {} };
+    removeLayer(l) { if (visibles.delete(l)) l.events.remove?.(); }, hasLayer: l => visibles.has(l), setView() {}, fitBounds(b) {this.bounds=b;} };
   class Layer {
     constructor() { this.children = new Set(); this.events = {}; }
     addTo(g) { g.addLayer(this); return this; }
@@ -44,9 +44,10 @@ function entorno() {
     setTooltipContent(text) {this.tooltip=text;return this;}
     setPopupContent(f) {this.popup=f;return this;}
     getLatLng() { return this.pos; }
-    openPopup() { this.abierta = true; }
+    openPopup(pos) { this.abierta = true; this.popupPos=pos; }
   }
-  const L = { layerGroup: () => new Layer(), divIcon: i => i, marker: (pos, opt) => Object.assign(new Layer(), { pos, opt }) };
+  const forma=(pos,opt)=>Object.assign(new Layer(),{pos,opt});
+  const L = { layerGroup: () => new Layer(), divIcon: i => i, marker: forma, polyline: forma };
   let estaciones = [{ codigo: 'TALCAHUANO', lat: -36.708056, lon: -73.112778, fecha: 'hora de la fuente' },
     { codigo: 'LIRQUEN', lat: -36.71142, lon: -72.97783 },
     { codigo: 'WU-ITALCA20', lat: -36.62582, lon: -73.06066 },
@@ -59,7 +60,7 @@ function entorno() {
     iconoEstacion:s=>'icono nacional '+s.codigo,tooltipEstacion:s=>'Ficha nacional '+s.codigo,
     iconoBoya:b=>'icono boya nacional '+b.nombre,tooltipBoya:b=>'Boya nacional '+b.nombre,
     estacionSinDatos:f=>({codigo:f.properties.meteoia_codigos[0],lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],sinDatos:true,fecha:'Sin datos'}),
-    activar: clave => map.addLayer(clave === 'talc_obs' ? catalogo.observacion : catalogo.puertos),
+    activar: clave => map.addLayer(clave === 'talc_obs' ? catalogo.observacion : clave === 'talc_limite' ? catalogo.limite : catalogo.puertos),
     refrescarRed: () => { redVisible = estaciones.filter(s => !catalogo.observacionActiva() || !catalogo.esEstacionCatalogada(s)); }
   });
   return { catalogo, map, get redVisible() { return redVisible; }, actualizar(s) { estaciones = s; catalogo.actualizarObservacion(); },actualizarBoyas(b){boyas=b;catalogo.actualizarObservacion();} };
@@ -71,6 +72,20 @@ test('las capas son opcionales, se crean al activar y no duplican marcadores al 
   h.map.removeLayer(c.puertos); h.map.addLayer(c.puertos); assert.equal(c.puertos.children.size, 25);
   h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
   h.map.removeLayer(c.observacion); h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
+});
+test('límite de puerto: paralelo de 2015, extremos correctos, ficha del tramo norte y activación sin duplicados',()=>{
+  const h=entorno(),c=h.catalogo;assert.equal(c.limite.children.size,0);assert(!h.map.hasLayer(c.limite));
+  c.abrir('limite:puerto');assert(h.map.hasLayer(c.limite));assert.equal(c.limite.children.size,2);
+  const linea=[...c.limite.children].find(l=>l.opt.interactive!==false);
+  assert(linea.abierta);assert.equal(linea.pos.length,2);
+  for(const p of linea.pos)assert(Math.abs(p[0]+36.68833333333333)<1e-10);
+  assert(Math.abs(linea.pos[0][1]+73.1)<1e-10);assert(Math.abs(linea.pos[1][1]+73.025)<1e-10);
+  assert.equal(linea.popupPos[0],linea.pos[0][0]);assert.equal(h.map.bounds,linea.pos);
+  assert.match(linea.popup(),/solo el tramo norte/);assert.match(linea.popup(),/hacia el sur hasta la costa/);
+  assert.match(linea.popup(),/12600_151_21_abr_2015\.pdf#page=3/);assert.match(linea.popup(),/Mayo_2025\.pdf#page=60/);
+  h.map.removeLayer(c.limite);h.map.addLayer(c.limite);assert.equal(c.limite.children.size,2);
+  const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8'),principal=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  assert.match(dashboard,/addLayerRow\(talc, 'talc_limite'[^\n]*false,/);assert.doesNotMatch(principal,/crearLimitePuertoTalcahuano/);
 });
 test('reutiliza las identidades y posiciones instrumentales; la red no repite las cuatro estaciones locales', () => {
   const h = entorno(), c = h.catalogo;
