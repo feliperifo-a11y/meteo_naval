@@ -1576,6 +1576,18 @@ const catalogoFondeosTalc=crearFondeaderosTalcahuano(L,map,FONDEOS_TALCAHUANO,es
   activar: key=>{document.getElementById('chk_'+key).checked=true;LAYERS[key].set(true);},
   enfocarMapa: ()=>document.getElementById('mapWrap').scrollIntoView({behavior:'smooth',block:'start'})
 });
+// Línea portuaria referencial en Dashboard completo → Bahía de Valparaíso.
+const capaLimitePuertoValpo = L.layerGroup();
+fetch('data/geo/limite_puerto_valparaiso_referencial.geojson')
+  .then(r => { if(!r.ok) throw new Error('GeoJSON no disponible'); return r.json(); })
+  .then(geo => L.geoJSON(geo, {
+    pane: 'valpoAreasPane',
+    style: { color:'#f59e0b', weight:3, dashArray:'9 6', opacity:.95 },
+    onEachFeature: (_,l) => l.bindTooltip('Límite del Puerto de Valparaíso (referencial)',{sticky:true})
+      .bindPopup('<b>Límite portuario referencial</b><p>Roca La Baja – Faro Punta Gruesa. Posiciones obtenidas de cartografía abierta, pendientes de validación SHOA 5111. No apto para navegación.</p><small>DIRECTEMAR C.P. (V.) Ord. N.º 12.000/196 (2022), apartado g.</small>')
+  }).addTo(capaLimitePuertoValpo))
+  .catch(e => console.warn('Límite Puerto Valparaíso:',e));
+
 const catalogoValpo = crearCatalogoValparaiso(L, map, VALPARAISO, VALPARAISO_LIMITES, escH, {
   estaciones: () => ESTACIONES, iconoEstacion, tooltipEstacion,
   popupEstacion: s => popupSt(s, evaluar(s, Date.now())),
@@ -1597,7 +1609,7 @@ const catalogoValpo = crearCatalogoValparaiso(L, map, VALPARAISO, VALPARAISO_LIM
   }
 });
 function ajustarZoomCapuertos() {
-  const grupos=[catalogoTalc.puertos,catalogoTalc.observacion,catalogoTalc.limite,catalogoFondeosTalc.fondeos,catalogoFondeosTalc.arba,catalogoValpo.puertos,catalogoValpo.fondeos,catalogoValpo.zep,catalogoValpo.radios,catalogoValpo.observacion];
+  const grupos=[catalogoTalc.puertos,catalogoTalc.observacion,catalogoTalc.limite,catalogoFondeosTalc.fondeos,catalogoFondeosTalc.arba,catalogoValpo.puertos,catalogoValpo.fondeos,capaLimitePuertoValpo,catalogoValpo.zep,catalogoValpo.radios,catalogoValpo.observacion];
   map.setMaxZoom(grupos.some(g=>map.hasLayer(g))?18:zoomMaximoHabitual);
 }
 const menuCapuertos = document.getElementById('menuCapuertos'), btnCapuertos = document.getElementById('btnCapuertos');
@@ -1670,6 +1682,7 @@ function renderCapas() {
   const valpo=capuertos.querySelector('.capas-valparaiso');
   addLayerRow(valpo,'valpo_puertos','Puertos y referencias',dotSw('#5d48aa'),false,()=>catalogoValpo.puertos);
   addLayerRow(valpo,'valpo_fondeos','Fondeos',dotSw('#196a94'),false,()=>catalogoValpo.fondeos);
+  addLayerRow(valpo,'valpo_limite','Límite del puerto (referencial)',lineSw('#f59e0b','9 6',3),false,()=>capaLimitePuertoValpo);
   addLayerRow(valpo,'valpo_zep','Zona de espera de prácticos (ZEP)',fillSw('#844d91','rgba(132,77,145,.13)'),false,()=>catalogoValpo.zep);
   addLayerRow(valpo,'valpo_radios','Radios de borneo',lineSw('#196a94',null,1),false,()=>catalogoValpo.radios);
   addLayerRow(valpo,'valpo_obs','Observación costera',dotSw('#147b88'),false,()=>catalogoValpo.observacion);
