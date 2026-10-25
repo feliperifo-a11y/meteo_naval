@@ -480,6 +480,21 @@ function evaluar(s, ahora) {
 
 // ============================ Mapa ============================
 const map = L.map('map', { preferCanvas: false, minZoom: 3, maxZoom: 14, zoomSnap: 0.25, worldCopyJump: false, });
+
+// Límite portuario referencial Valparaíso — no apto para navegación.
+const limitePuertoValparaiso = L.layerGroup();
+fetch('data/geo/limite_puerto_valparaiso_referencial.geojson')
+  .then(r => { if (!r.ok) throw new Error('GeoJSON no disponible'); return r.json(); })
+  .then(datos => L.geoJSON(datos, {
+    style: { color: '#f59e0b', weight: 3, dashArray: '9 6', opacity: 0.9 },
+    onEachFeature: (_f, capa) => capa.bindPopup(
+      '<strong>Límite del puerto de Valparaíso (referencial)</strong>' +
+      '<p>Roca La Baja – Punta Gruesa. Coordenadas no validadas por SHOA; no apto para navegación.</p>' +
+      '<small>DIRECTEMAR C.P. (V.) Ord. N.º 12.000/196, apartado g. Carta SHOA 5111.</small>'
+    )
+  }).addTo(limitePuertoValparaiso))
+  .catch(error => console.warn('Límite portuario Valparaíso:', error));
+
 map.createPane('landPane'); map.getPane('landPane').style.zIndex = 250;
 map.createPane('satPane'); map.getPane('satPane').style.zIndex = 300; map.getPane('satPane').style.pointerEvents = 'none';
 map.createPane('metPane'); map.getPane('metPane').style.zIndex = 360;
@@ -542,7 +557,7 @@ offline.getAttribution = () => 'Costa: Natural Earth';
     l.on('tileload', () => { if (l !== cur) return; ok++; if (ok === 1) { clearTimeout(timer); tried.clear(); setBS(`Mapa base: ${NAMES.get(l)}`, 2500); } });
     l.on('tileerror', () => { if (l !== cur) return; err++; if (ok === 0 && err >= 6) { clearTimeout(timer); fallback(); } });
   }
-  L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, {}, { position: 'topright' }).addTo(map);
+  L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, { 'Límite Puerto Valparaíso (referencial)': limitePuertoValparaiso }, { position: 'topright' }).addTo(map);
   if (navigator.onLine === false) goOffline('Equipo sin conexión: se usa la costa incorporada.'); else useBase(ocean);
   const cb = document.getElementById('coordBox');
   map.on('mousemove', e => { cb.style.display = 'block'; cb.textContent = `${fmtPos(e.latlng.lat, e.latlng.lng)}  ·  ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`; });
