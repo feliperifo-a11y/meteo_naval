@@ -62,7 +62,7 @@ function crearLimitePuertoTalcahuano(L, map, escapar, ajustarZoom) {
       '<table><tr><th>Paralelo</th><td>36°41′18″ S</td></tr><tr><th>Inicio · Manzano</th><td>073°06′,0 W (aprox. SHOA)</td></tr><tr><th>Extremo este</th><td>073°01′30″ W</td></tr><tr><th>Resolución</th><td>12.600/151 · 21/04/2015</td></tr></table>'+
       '<p>La resolución continúa por el meridiano del extremo este hacia el sur hasta la costa. Esta capa representa solo el tramo norte.</p>'+
       `<div class="talc-fuentes"><a href="${escapar(d.resolucion)}" target="_blank" rel="noopener noreferrer">Resolución oficial ↗</a> <a href="${escapar(d.faro)}" target="_blank" rel="noopener noreferrer">Posición del faro · SHOA ↗</a></div></section>`,
-      {pane:'talcPopupPane',className:'talc-popup',maxWidth:Math.min(320,map.getContainer().clientWidth-100),autoPanPaddingTopLeft:[25,75],autoPanPaddingBottomRight:[25,35]});
+      {pane:'talcPopupPane',className:'talc-popup talc-limite-popup',maxWidth:Math.min(320,map.getContainer().clientWidth-100),autoPanPaddingTopLeft:[25,75],autoPanPaddingBottomRight:[25,35]});
   }
   capa.on('add',()=>{ajustarZoom?.();construir();});
   capa.on('remove',()=>ajustarZoom?.());
