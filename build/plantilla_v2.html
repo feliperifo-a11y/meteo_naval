@@ -429,7 +429,19 @@ async function cargarPuertos() {
 setInterval(() => { if (PUERTO_GRUPO && map.hasLayer(PUERTO_GRUPO)) cargarPuertos(); }, 10 * 60000);
 
 const capaPuertos = buildPuertos();
-const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, false], ['Boyas', capaBoyas, false]];
+
+const capaLimiteValparaiso = L.layerGroup();
+fetch('data/geo/limite_puerto_valparaiso_referencial.geojson')
+  .then(r => { if (!r.ok) throw new Error('Archivo del límite no disponible'); return r.json(); })
+  .then(geo => {
+    L.geoJSON(geo, {
+      style: { color: '#f59e0b', weight: 3, dashArray: '9 6', opacity: .95 },
+      onEachFeature: (_, l) => l.bindPopup('<b>Límite Puerto Valparaíso (referencial)</b><p>Roca La Baja – Punta Gruesa. Coordenadas no validadas por SHOA. No apto para navegación.</p><small>DIRECTEMAR C.P. (V.) Ord. 12.000/196, letra g.</small>')
+    }).addTo(capaLimiteValparaiso);
+  })
+  .catch(err => console.warn('Límite Valparaíso:', err));
+
+const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, false], ['Boyas', capaBoyas, false], ['Límite Puerto Valparaíso (referencial)', capaLimiteValparaiso, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
