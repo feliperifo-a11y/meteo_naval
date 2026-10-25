@@ -73,15 +73,21 @@ test('las capas son opcionales, se crean al activar y no duplican marcadores al 
   h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
   h.map.removeLayer(c.observacion); h.map.addLayer(c.observacion); assert.equal(c.observacion.children.size, 7);
 });
-test('límite de puerto: paralelo de 2015, extremos correctos, ficha del tramo norte y activación sin duplicados',()=>{
+test('límite de puerto: paralelo y meridiano forman una L hasta el primer cruce con la costa, sin duplicados',()=>{
   const h=entorno(),c=h.catalogo;assert.equal(c.limite.children.size,0);assert(!h.map.hasLayer(c.limite));
   c.abrir('limite:puerto');assert(h.map.hasLayer(c.limite));assert.equal(c.limite.children.size,2);
   const linea=[...c.limite.children].find(l=>l.opt.interactive!==false);
-  assert(linea.abierta);assert.equal(linea.pos.length,2);
-  for(const p of linea.pos)assert(Math.abs(p[0]+36.68833333333333)<1e-10);
+  assert(linea.abierta);assert.equal(linea.pos.length,3);
+  for(const p of linea.pos.slice(0,2))assert(Math.abs(p[0]+36.68833333333333)<1e-10);
   assert(Math.abs(linea.pos[0][1]+73.1)<1e-10);assert(Math.abs(linea.pos[1][1]+73.025)<1e-10);
+  assert.equal(linea.pos[1][1],linea.pos[2][1]);assert(linea.pos[2][0]<linea.pos[1][0]);
+  // Cruce independiente sobre el segmento costero público: evita extender el meridiano sobre tierra.
+  const a={lat:-36.7386649,lon:-73.0250073},b={lat:-36.7386713,lon:-73.0249187};
+  const sur=a.lat+(-73.025-a.lon)/(b.lon-a.lon)*(b.lat-a.lat);
+  assert(Math.abs(linea.pos[2][0]-sur)<1e-10);assert(linea.pos[2][0]>-36.739);
   assert.equal(linea.popupPos[0],linea.pos[0][0]);assert.equal(h.map.bounds,linea.pos);
-  assert.match(linea.popup(),/solo el tramo norte/);assert.match(linea.popup(),/hacia el sur hasta la costa/);
+  assert.match(linea.popup(),/hacia el sur hasta la costa/);assert.match(linea.popup(),/latitud es aproximada/);assert.doesNotMatch(linea.popup(),/solo el tramo norte/);
+  assert.match(linea.popup(),/12600_491_261223_cp_talcahuano\.pdf#page=2/);assert.match(linea.popup(),/openstreetmap.org\/way\/417023797/);
   assert.match(linea.popup(),/12600_151_21_abr_2015\.pdf#page=3/);assert.match(linea.popup(),/Mayo_2025\.pdf#page=60/);
   h.map.removeLayer(c.limite);h.map.addLayer(c.limite);assert.equal(c.limite.children.size,2);
   const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8'),principal=fs.readFileSync(path.join(root,'index.html'),'utf8');

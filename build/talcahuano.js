@@ -39,29 +39,35 @@ function fichaTalcahuano(feature, escapar, metadatos) {
     `<p>${escapar(p.note || '')}</p><div class="talc-fuentes">${links.join(' ')}</div>` +
     (p.sensor ? '<p class="talc-alcance">El inventario documenta fuentes; sus fechas de consulta no son mediciones actuales. Los datos de la red de MeteoIA, si existen, se muestran con su propia hora.</p>' : '') + '</section>';
 }
-// Tramo norte del límite modificado por DGTM 12.600/151 (21/04/2015), p. 3.
+// Límite en L: resolución CP Talcahuano 12.600/491 (26/12/2023), p. 2, foto 2.
 // SHOA, Lista de Faros 3007, corrección mayo 2025, I-24: Manzano 73°06′,0 W.
 // La resolución fija el paralelo 36°41′18″ S y el extremo este 73°01′30″ W.
 const LIMITE_PUERTO_TALCAHUANO = {
   latitud: -(36 + 41 / 60 + 18 / 3600),
   oeste: -(73 + 6 / 60), este: -(73 + 1 / 60 + 30 / 3600),
+  // Primer cruce hacia el sur con la costa OSM (way 417023797, versión 11):
+  // nodos 4857126548 (-36.7386649,-73.0250073) y 4857126549 (-36.7386713,-73.0249187).
+  // Interpolación al meridiano -73.025; posición costera aproximada, no coordenada de la resolución.
+  sur: -36.73866542731377,
+  documento: 'https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf#page=2',
   resolucion: 'https://www.directemar.cl/directemar/site/docs/20170202/20170202122929/12600_151_21_abr_2015.pdf#page=3',
+  costa: 'https://www.openstreetmap.org/way/417023797',
   faro: 'https://shoabucket.s3.amazonaws.com/shoa.cl/documentos/boletines/2025/Mayo_2025.pdf#page=60'
 };
 function crearLimitePuertoTalcahuano(L, map, escapar, ajustarZoom) {
   const capa=L.layerGroup(), d=LIMITE_PUERTO_TALCAHUANO;
-  const extremos=[[d.latitud,d.oeste],[d.latitud,d.este]];
+  const extremos=[[d.latitud,d.oeste],[d.latitud,d.este],[d.sur,d.este]];
   let linea;
   function construir() {
     if(linea)return;
     L.polyline(extremos,{pane:'talcAreasPane',color:'#fff',weight:7,opacity:.95,interactive:false}).addTo(capa);
     linea=L.polyline(extremos,{pane:'talcAreasPane',className:'talc-limite-puerto',color:'#c45508',weight:3,opacity:1}).addTo(capa);
-    linea.bindTooltip('Límite de puerto · tramo norte (2015)',{sticky:true});
+    linea.bindTooltip('Límite de puerto · tramos norte y este',{sticky:true});
     linea.bindPopup(()=>`<section class="talc-ficha"><h3>Límite de puerto · Talcahuano</h3>`+
-      '<p>Tramo norte recto desde el faro Molo Caleta Manzano hacia el este.</p>'+
-      '<table><tr><th>Paralelo</th><td>36°41′18″ S</td></tr><tr><th>Inicio · Manzano</th><td>073°06′,0 W (aprox. SHOA)</td></tr><tr><th>Extremo este</th><td>073°01′30″ W</td></tr><tr><th>Resolución</th><td>12.600/151 · 21/04/2015</td></tr></table>'+
-      '<p>La resolución continúa por el meridiano del extremo este hacia el sur hasta la costa. Esta capa representa solo el tramo norte.</p>'+
-      `<div class="talc-fuentes"><a href="${escapar(d.resolucion)}" target="_blank" rel="noopener noreferrer">Resolución oficial ↗</a> <a href="${escapar(d.faro)}" target="_blank" rel="noopener noreferrer">Posición del faro · SHOA ↗</a></div></section>`,
+      '<p>Desde Molo Caleta Manzano hacia el este y luego hacia el sur hasta la costa, formando una L.</p>'+
+      '<table><tr><th>Tramo norte · paralelo</th><td>36°41′18″ S</td></tr><tr><th>Inicio · Manzano</th><td>073°06′,0 W (aprox. SHOA)</td></tr><tr><th>Tramo este · meridiano</th><td>073°01′30″ W</td></tr><tr><th>Llegada a costa</th><td>≈ 36°44′19″ S (OSM)</td></tr><tr><th>Documento</th><td>12.600/491 · 26/12/2023 · foto 2</td></tr></table>'+
+      '<p>El extremo sur se ajusta al primer cruce del meridiano con la costa cartografiada. Su latitud es aproximada y no está especificada numéricamente en la resolución.</p>'+
+      `<div class="talc-fuentes"><a href="${escapar(d.documento)}" target="_blank" rel="noopener noreferrer">Resolución oficial · 2023 ↗</a> <a href="${escapar(d.resolucion)}" target="_blank" rel="noopener noreferrer">Coordenadas del límite · 2015 ↗</a> <a href="${escapar(d.faro)}" target="_blank" rel="noopener noreferrer">Faro · SHOA ↗</a> <a href="${escapar(d.costa)}" target="_blank" rel="noopener noreferrer">Costa · © OpenStreetMap ↗</a></div></section>`,
       {pane:'talcPopupPane',className:'talc-popup talc-limite-popup',maxWidth:Math.min(320,map.getContainer().clientWidth-100),autoPanPaddingTopLeft:[25,75],autoPanPaddingBottomRight:[25,35]});
   }
   capa.on('add',()=>{ajustarZoom?.();construir();});
@@ -152,7 +158,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     div.innerHTML = '<button type="button" class="talc-ver">Ver bahía de Talcahuano</button>' +
       (fondeos?'<label class="talc-selector">Filtrar fondeos<select aria-label="Filtrar fondeos de Talcahuano"><option value="">Todos</option><option value="exterior">Fuera de los límites del puerto</option><option value="interior">Dentro de los límites del puerto</option><option value="alije">Faenas de alije</option></select></label>':'') +
       '<label class="talc-selector">Consultar referencia<select aria-label="Referencia de Capuerto Talcahuano"><option value="">Seleccione una referencia…</option>' +
-      '<option value="limite:puerto">Límite de puerto · tramo norte</option>' +
+      '<option value="limite:puerto">Límite de puerto · norte y este</option>' +
       datos.features.map(f => `<option value="${f.properties.id}">${f.properties.id}. ${escapar(f.properties.label || f.properties.name)}</option>`).join('') + (fondeos?.opcionesHTML()||'') + '</select></label>' +
       `<details><summary>Fuentes y alcance · ${datos.features.length} referencias</summary>` +
       `<p>Consulta: ${escapar(datos.metadata.consultado)}. ${escapar(datos.metadata.alcance)}</p><p>${escapar(datos.metadata.precision)}</p>` +
