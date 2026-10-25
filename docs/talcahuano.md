@@ -81,18 +81,24 @@ Marejadas UV y no añade mediciones ni autorizaciones operacionales.
 
 ## Fondeos y área reservada ARBA
 
-### Límite de puerto (tramo norte)
+### Límite de puerto (tramos norte y este)
 
-La subcapa opcional **Límite de puerto** dibuja un segmento recto por el paralelo
+La subcapa opcional **Límite de puerto** dibuja una línea en L por el paralelo
 36°41′18″ S, desde Molo Caleta Manzano (073°06′,0 W, posición aproximada SHOA)
-hasta 073°01′30″ W. Se utiliza la modificación DGTM 12.600/151 del 21/04/2015,
-p. 3, confirmada por el usuario frente al trazado anterior de 2012. La longitud
+hasta 073°01′30″ W, siguiendo ese meridiano hacia el sur hasta la costa.
+La foto 2 de la resolución C.P. Talcahuano 12.600/491 del 26/12/2023 (p. 2)
+confirma el trazado en L. Los valores numéricos proceden de la modificación
+DGTM 12.600/151 del 21/04/2015, p. 3. La longitud
 de Manzano procede de la Lista de Faros SHOA 3007, I-24, reproducida en el
-boletín de mayo de 2025, p. 60 del PDF. Ambos enlaces están en la ficha.
+boletín de mayo de 2025, p. 60 del PDF. Los tres documentos están en la ficha.
 
-Se representa únicamente el tramo norte solicitado: la ficha aclara que la
-resolución continúa por el meridiano 073°01′30″ W hacia el sur hasta la costa.
-No se cierra un polígono ni se prolonga la línea hacia tierra. Empieza apagada
+El extremo sur es el primer cruce hacia el sur del meridiano -73.025 con la
+costa OpenStreetMap: latitud aproximada -36.73866542731377 (≈36°44′19″ S).
+Se interpola entre los nodos 4857126548 (-36.7386649,-73.0250073) y 4857126549
+(-36.7386713,-73.0249187) del way 417023797, versión 11, consultado el 24/10/2026.
+La ficha diferencia esta latitud cartográfica aproximada de los valores de la
+resolución y enlaza la fuente OSM (© OpenStreetMap contributors, ODbL).
+La línea termina en ese cruce sin atravesar tierra ni cerrar un polígono. Empieza apagada
 al cargar el dashboard y se activa al abrir Capuerto Talcahuano. También puede
 consultarse desde el selector de referencias. El trazo tiene borde blanco,
 tooltip y ficha accesible al pulsarlo; no se incorpora a la portada.
