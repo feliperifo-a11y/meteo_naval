@@ -101,7 +101,7 @@ function crearCatalogoValparaiso(L,map,datos,limites,escapar,opciones) {
     m.openPopup();opciones.enfocarMapa();
   }
   function verTodo() {
-    ['puertos','fondeos','zep','obs'].forEach(t=>opciones.activar('valpo_'+t));opciones.prepararVista();
+    ['puertos','fondeos','limite','zep','obs'].forEach(t=>opciones.activar('valpo_'+t));opciones.prepararVista();
     const puntos=datos.features.flatMap(f=>f.geometry.type==='Point'?[f.geometry.coordinates.slice().reverse()]:f.geometry.coordinates[0].map(p=>p.slice().reverse()));
     map.fitBounds(puntos,{padding:[35,35],maxZoom:13});
   }
