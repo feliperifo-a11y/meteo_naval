@@ -154,6 +154,7 @@ jobs:
           cp data/geo/talcahuano.geojson data/geo/talcahuano.kml _site/data/geo/
           cp data/geo/talcahuano_fondeos.geojson data/geo/talcahuano_fondeos.kml _site/data/geo/
           cp data/geo/valparaiso.geojson data/geo/valparaiso.kml data/geo/valparaiso_limites.json _site/data/geo/
+          cp data/geo/limite_puerto_valparaiso_referencial.geojson _site/data/geo/
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
