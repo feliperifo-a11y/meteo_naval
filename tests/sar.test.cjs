@@ -55,7 +55,8 @@ test('SAR solo se ofrece en el dashboard completo, apagada al abrirlo', () => {
   assert.match(dashboardGenerado, /function crearCapaSAR/);
   assert.doesNotMatch(dashboardGenerado, /\/\*SAR\*\//);
   assert.match(html, /\['METAREA XV', MET, true\]/);
-  assert.match(html, /\['Estaciones', capaEst, true\]/);
+  assert.match(html, /\['Estaciones', capaEst, false\]/);
+  assert.match(html, /\['Puertos con restricción \(SITPORT\)', capaPuertos, true\]/);
   assert.match(html, /\['Avisos vigentes y próximos', capaAv, true\]/);
   assert.doesNotMatch(html, /capaSAR\.addTo\(map\)/);
 });
