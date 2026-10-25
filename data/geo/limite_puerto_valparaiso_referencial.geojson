@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "name": "Limite portuario referencial Valparaiso",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "nombre": "Límite del puerto de Valparaíso (referencial)",
+        "estado": "No validado hidrográficamente",
+        "origen_geometria": "Coordenadas referenciales de cartografía abierta, sujetas a validación SHOA",
+        "normativa": "DIRECTEMAR C.P. (V.) Ord. 12000/196 (2022), letra g",
+        "descripcion": "Línea recta entre roca La Baja y Faro Punta Gruesa; el extremo oriental corresponde a Punta Gruesa en cartografía abierta, pendiente comprobar coincidencia con el faro.",
+        "apto_navegacion": false
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -71.632,
+            -33.01967
+          ],
+          [
+            -71.58345,
+            -33.02527
+          ]
+        ]
+      }
+    }
+  ]
+}
