@@ -39,8 +39,41 @@ function fichaTalcahuano(feature, escapar, metadatos) {
     `<p>${escapar(p.note || '')}</p><div class="talc-fuentes">${links.join(' ')}</div>` +
     (p.sensor ? '<p class="talc-alcance">El inventario documenta fuentes; sus fechas de consulta no son mediciones actuales. Los datos de la red de MeteoIA, si existen, se muestran con su propia hora.</p>' : '') + '</section>';
 }
+// Tramo norte del límite modificado por DGTM 12.600/151 (21/04/2015), p. 3.
+// SHOA, Lista de Faros 3007, corrección mayo 2025, I-24: Manzano 73°06′,0 W.
+// La resolución fija el paralelo 36°41′18″ S y el extremo este 73°01′30″ W.
+const LIMITE_PUERTO_TALCAHUANO = {
+  latitud: -(36 + 41 / 60 + 18 / 3600),
+  oeste: -(73 + 6 / 60), este: -(73 + 1 / 60 + 30 / 3600),
+  resolucion: 'https://www.directemar.cl/directemar/site/docs/20170202/20170202122929/12600_151_21_abr_2015.pdf#page=3',
+  faro: 'https://shoabucket.s3.amazonaws.com/shoa.cl/documentos/boletines/2025/Mayo_2025.pdf#page=60'
+};
+function crearLimitePuertoTalcahuano(L, map, escapar, ajustarZoom) {
+  const capa=L.layerGroup(), d=LIMITE_PUERTO_TALCAHUANO;
+  const extremos=[[d.latitud,d.oeste],[d.latitud,d.este]];
+  let linea;
+  function construir() {
+    if(linea)return;
+    L.polyline(extremos,{pane:'talcAreasPane',color:'#fff',weight:7,opacity:.95,interactive:false}).addTo(capa);
+    linea=L.polyline(extremos,{pane:'talcAreasPane',className:'talc-limite-puerto',color:'#c45508',weight:3,opacity:1}).addTo(capa);
+    linea.bindTooltip('Límite de puerto · tramo norte (2015)',{sticky:true});
+    linea.bindPopup(()=>`<section class="talc-ficha"><h3>Límite de puerto · Talcahuano</h3>`+
+      '<p>Tramo norte recto desde el faro Molo Caleta Manzano hacia el este.</p>'+
+      '<table><tr><th>Paralelo</th><td>36°41′18″ S</td></tr><tr><th>Inicio · Manzano</th><td>073°06′,0 W (aprox. SHOA)</td></tr><tr><th>Extremo este</th><td>073°01′30″ W</td></tr><tr><th>Resolución</th><td>12.600/151 · 21/04/2015</td></tr></table>'+
+      '<p>La resolución continúa por el meridiano del extremo este hacia el sur hasta la costa. Esta capa representa solo el tramo norte.</p>'+
+      `<div class="talc-fuentes"><a href="${escapar(d.resolucion)}" target="_blank" rel="noopener noreferrer">Resolución oficial ↗</a> <a href="${escapar(d.faro)}" target="_blank" rel="noopener noreferrer">Posición del faro · SHOA ↗</a></div></section>`,
+      {pane:'talcPopupPane',className:'talc-popup talc-limite-popup',maxWidth:Math.min(320,map.getContainer().clientWidth-100),autoPanPaddingTopLeft:[25,75],autoPanPaddingBottomRight:[25,35]});
+  }
+  capa.on('add',()=>{ajustarZoom?.();construir();});
+  capa.on('remove',()=>ajustarZoom?.());
+  return {capa,abrir:()=>{
+    construir();map.fitBounds(extremos,{padding:[35,35],maxZoom:14});
+    linea.openPopup([d.latitud,(d.oeste+d.este)/2]);
+  }};
+}
 function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   const puertos = L.layerGroup(), observacion = L.layerGroup(), marcadores = new Map();
+  const limitePuerto=crearLimitePuertoTalcahuano(L,map,escapar,opciones.ajustarZoom);
   const colores = { Autoridad: '#5d48aa', 'Alcaldía / caleta': '#ad5a28', 'Puerto / sitio': '#196a94',
     'Deporte / borde costero': '#487d31', 'Referencia marítima': '#6b6f76', estacion: '#147b88', boya: '#bd6b16' };
   const activa = () => map.hasLayer(observacion);
@@ -98,6 +131,10 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
   observacion.on('add', () => { opciones.ajustarZoom?.(true); actualizarObservacion(); opciones.refrescarRed(); });
   observacion.on('remove', () => { opciones.refrescarRed(); if (!map.hasLayer(puertos)) opciones.ajustarZoom?.(false); });
   function abrir(id) {
+    if(id==='limite:puerto') {
+      opciones.activar('talc_limite');opciones.prepararVista?.();
+      limitePuerto.abrir();opciones.enfocarMapa?.();return;
+    }
     const f = datos.features.find(f => f.properties.id === +id); if (!f) return;
     opciones.activar(f.properties.sensor ? 'talc_obs' : 'talc_puertos');
     const m = marcadores.get(f.properties.id); if (!m) return;
@@ -107,7 +144,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     m.openPopup(); opciones.enfocarMapa?.();
   }
   function verTodo() {
-    opciones.activar('talc_puertos'); opciones.activar('talc_obs'); opciones.activarFondeos?.(); opciones.prepararVista?.();
+    opciones.activar('talc_puertos'); opciones.activar('talc_obs'); opciones.activar('talc_limite'); opciones.activarFondeos?.(); opciones.prepararVista?.();
     map.fitBounds(datos.features.map(f => f.geometry.coordinates.slice().reverse()), { padding: [30,30], maxZoom: 12 });
   }
   function controles(box, fondeos) {
@@ -115,6 +152,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     div.innerHTML = '<button type="button" class="talc-ver">Ver bahía de Talcahuano</button>' +
       (fondeos?'<label class="talc-selector">Filtrar fondeos<select aria-label="Filtrar fondeos de Talcahuano"><option value="">Todos</option><option value="exterior">Fuera de los límites del puerto</option><option value="interior">Dentro de los límites del puerto</option><option value="alije">Faenas de alije</option></select></label>':'') +
       '<label class="talc-selector">Consultar referencia<select aria-label="Referencia de Capuerto Talcahuano"><option value="">Seleccione una referencia…</option>' +
+      '<option value="limite:puerto">Límite de puerto · tramo norte</option>' +
       datos.features.map(f => `<option value="${f.properties.id}">${f.properties.id}. ${escapar(f.properties.label || f.properties.name)}</option>`).join('') + (fondeos?.opcionesHTML()||'') + '</select></label>' +
       `<details><summary>Fuentes y alcance · ${datos.features.length} referencias</summary>` +
       `<p>Consulta: ${escapar(datos.metadata.consultado)}. ${escapar(datos.metadata.alcance)}</p><p>${escapar(datos.metadata.precision)}</p>` +
@@ -129,7 +167,7 @@ function crearCatalogoTalcahuano(L, map, datos, escapar, opciones) {
     fondeos?.conectarFiltro(div);
     box.appendChild(div);
   }
-  return { puertos, observacion, observacionActiva: activa, esEstacionCatalogada: s => !!asociada(s), esBoyaCatalogada: esBoya,
+  return { puertos, observacion, limite:limitePuerto.capa, observacionActiva: activa, esEstacionCatalogada: s => !!asociada(s), esBoyaCatalogada: esBoya,
     fichaEstacion: s => { const f = asociada(s); return f ? documental(f) : ''; },
     fichaBoya: b => { const f=datos.features.find(f=>f.properties.id===32);return esBoya(b)&&f?documental(f):''; },
     marcadorEstacion: codigo => { const f = asociada({ codigo }); return activa() && f ? marcadores.get(f.properties.id) : null; },

@@ -81,6 +81,22 @@ Marejadas UV y no añade mediciones ni autorizaciones operacionales.
 
 ## Fondeos y área reservada ARBA
 
+### Límite de puerto (tramo norte)
+
+La subcapa opcional **Límite de puerto** dibuja un segmento recto por el paralelo
+36°41′18″ S, desde Molo Caleta Manzano (073°06′,0 W, posición aproximada SHOA)
+hasta 073°01′30″ W. Se utiliza la modificación DGTM 12.600/151 del 21/04/2015,
+p. 3, confirmada por el usuario frente al trazado anterior de 2012. La longitud
+de Manzano procede de la Lista de Faros SHOA 3007, I-24, reproducida en el
+boletín de mayo de 2025, p. 60 del PDF. Ambos enlaces están en la ficha.
+
+Se representa únicamente el tramo norte solicitado: la ficha aclara que la
+resolución continúa por el meridiano 073°01′30″ W hacia el sur hasta la costa.
+No se cierra un polígono ni se prolonga la línea hacia tierra. Empieza apagada
+al cargar el dashboard y se activa al abrir Capuerto Talcahuano. También puede
+consultarse desde el selector de referencias. El trazo tiene borde blanco,
+tooltip y ficha accesible al pulsarlo; no se incorpora a la portada.
+
 Se incorporó el documento aportado `Fondeaderos_Talcahuano_ChatGPT.docx`,
 contrastando sus posiciones DMS con las páginas 4–6 de la
 [resolución C.P. Talcahuano 12.600/491, 26/12/2023](https://www.directemar.cl/directemar/site/docs/20220818/20220818103212/12600_491_261223_cp_talcahuano.pdf).
