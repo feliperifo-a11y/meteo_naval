@@ -112,7 +112,7 @@ function crearCapaWW3(L, map, escapar) {
     L.popup({ className: 'uv-popup', maxWidth: 280 }).setLatLng(e.latlng).setContent(
       `<div class="uv-ficha"><b>Oleaje WW3</b> · ${escapar(ww3Fecha(p.valido))}<p>Altura significativa<br><strong>${m(v('hs'))}</strong></p>` +
       `<p>Período pico: <b>${s(v('tp'))}</b> · Dirección: <b>${dir(v('dp'))}</b></p>` +
-      `<p>Mar de viento: <b>${m(v('hw'))}</b><br>Mar de fondo: <b>${m(v('hsw'))}</b> · ${s(v('tsw'))} · ${dir(v('dsw'))}</p>` +
+      `<p>Mar de viento: <b>${isNaN(v('hw')) ? 'no significativo' : m(v('hw'))}</b><br>Mar de fondo: <b>${isNaN(v('hsw')) ? 'no significativo' : m(v('hsw')) + '</b> · ' + s(v('tsw')) + ' · ' + dir(v('dsw')) + '<b>'}</b></p>` +
       `<small>${Math.abs(lat).toFixed(2)}° ${lat < 0 ? 'S' : 'N'} · ${Math.abs(lng).toFixed(2)}° W · celda de 0,5°. Dirección de procedencia.</small></div>`).openOn(map);
   }
   async function mostrar(n) {
