@@ -48,7 +48,7 @@ datos = "\n".join([
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
 version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
-                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}")
+                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
                         + leer(B / "valparaiso.js", "") + leer(B / "valparaiso.css", "") + leer(D / "geo" / "valparaiso.geojson", "{}") + leer(D / "geo" / "valparaiso_limites.json", "{}") + leer(D / "geo" / "valparaiso.kml", "")
@@ -60,6 +60,7 @@ datos += "\nconst VERSION_PAGINA = " + json.dumps(version) + ";"
 html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css"))
         .replace("/*LEAFLET_JS*/", leer(B / "leaflet.js")).replace("/*DATA*/", datos).replace("/*IA_COMUN*/", leer(B / "ia_comun.js"))
         .replace("/*SAR*/", leer(B / "sar.js", ""))
+        .replace("/*WW3_JS*/", leer(B / "ww3.js", ""))
         .replace("/*WRF_SERVIMET_JS*/", leer(B / "wrf_servimet.js", ""))
         .replace("/*MAREJADAS_UV_JS*/", leer(B / "marejadas_uv.js", ""))
         .replace("/*MAREJADAS_UV_CSS*/", leer(B / "marejadas_uv.css", ""))

@@ -8,3 +8,8 @@
 
 .uv-ficha-abierta #layerBox{visibility:hidden}
 .uv-ficha-abierta .leaflet-top{visibility:hidden}
+
+.ww3Sw{display:inline-block;width:16px;height:10px;border-radius:2px;background:linear-gradient(90deg,#1b2a8f,#1e9be0,#3ccf72,#e8e43a,#ee5a24,#a3157a)}
+.ww3-escala{background:linear-gradient(90deg,#1b2a8f 0%,#1f5fd1 6.25%,#1e9be0 12.5%,#22c3c3 18.75%,#3ccf72 25%,#9be04a 31.25%,#e8e43a 37.5%,#f6a623 50%,#ee5a24 62.5%,#d0202f 75%,#a3157a 87.5%,#6a1b9a 100%)}
+.ww3-op{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
+.ww3-flecha svg{position:absolute;left:-15px;top:-15px;overflow:visible}.ww3-flecha path{fill:none;stroke:#0b1220;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 1.5px #fff)}
