@@ -20,3 +20,32 @@
 .sst-modos button[aria-pressed=true]{background:#1f6fb2;border-color:#1f6fb2;color:#fff}
 .sst-panel .uv-botones{align-items:center}.sst-fecha{flex:1;min-height:32px;box-sizing:border-box;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);padding:3px 6px;font-size:12px}
 .sst-panel .uv-escala{margin-top:8px}
+
+/* Caso SAR */
+.btnSAR{background:#ff6a00!important;border-color:#ff6a00!important;color:#fff!important}
+.sar-card{margin-top:14px}.sar-card[hidden]{display:none}
+.sar-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sar-cab h2{margin:0;font-size:17px}.sar-etq{font-size:11px;background:#fff3e0;color:#8a4b00;border:1px solid #ffcc80;border-radius:10px;padding:2px 8px}
+.sar-cerrar{margin-left:auto;border:1px solid var(--line);background:transparent;border-radius:6px;cursor:pointer;min-width:32px;min-height:30px;color:var(--ink)}
+.sar-form{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:12px 0 4px}.sar-form label{display:flex;flex-direction:column;font-size:12px;gap:3px}
+.sar-form input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--panel);color:var(--ink);min-width:130px}
+.sar-form button{padding:7px 14px;border-radius:6px;border:1px solid #ff6a00;background:#ff6a00;color:#fff;cursor:pointer;font-weight:600}.sar-form .sar-elegir{background:transparent;color:#c45000}
+.sar-ayuda,.sar-nota{font-size:11.5px;color:var(--muted);margin:4px 0}
+.sar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:10px}
+.sar-blq{border:1px solid var(--line);border-radius:8px;padding:10px 12px}.sar-blq h3,.sar-ventanas h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:#c45000}.sar-blq p{margin:6px 0;font-size:13px;line-height:1.45}
+.sar-pos{font-size:15px!important;font-weight:700}
+.sar-pill{font-size:11px;border-radius:9px;padding:1px 7px;color:#fff}.sar-V{background:#d32f2f}.sar-P{background:#1f6fb2}
+.sar-error{color:#b3261e;font-weight:600}.sar-cargando{color:var(--muted)}
+.sar-ventanas{margin-top:14px}.sar-tabla-scroll{overflow-x:auto}
+.sar-tabla{border-collapse:separate;border-spacing:2px;font-size:11px}.sar-tabla th{font-weight:500;color:var(--muted);text-align:center;min-width:22px;vertical-align:bottom;position:relative}
+.sar-tabla thead th .dia{display:block;font-weight:700;color:var(--ink);white-space:nowrap;text-align:left}
+.sar-tabla tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap;padding-right:8px;min-width:0}
+.sar-tabla td{height:22px;min-width:22px;border-radius:3px}
+.c-ok{background:#2e9e5b}.c-lim{background:#f2c230}.c-no{background:#d6342c}.c-sd{background:#c8ced6}
+.sar-tabla td.noche{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.28) 0 3px,transparent 3px 6px)}.sar-tabla th.noche{color:#5b6673}
+.sar-ley{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;margin:6px 0}.sar-ley i{display:inline-block;width:14px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-2px}
+.sar-ley .noche-ej{background:#c8ced6 repeating-linear-gradient(135deg,rgba(0,0,0,.3) 0 3px,transparent 3px 6px)}
+.sar-umbrales{margin-top:6px;font-size:12.5px}.sar-umbrales summary{cursor:pointer;font-weight:600}.sar-umbrales table{border-collapse:collapse;margin:6px 0}.sar-umbrales td,.sar-umbrales th{padding:3px 8px;text-align:left}
+.sar-umbrales input{width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
+.sar-restablecer{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--ink)}
+.sar-aviso-mapa{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:870;background:#ff6a00;color:#fff;font-weight:600;padding:8px 14px;border-radius:8px;box-shadow:0 2px 10px #0004;font-size:13px}
+.sar-aviso-mapa[hidden]{display:none}

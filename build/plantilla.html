@@ -314,7 +314,7 @@ dialog button{border-color:var(--line)}
     <button type="button" class="btnCarta" onclick="abrirPolar()" title="Carta de superficie en proyección estereográfica polar: isobaras GFS, frentes, avisos, METAREA XV, estaciones y boyas">CARTA DE SUPERFICIE</button>
     <a class="btnCarta" href="hielos.html" style="text-decoration:none" title="Cartas de hielo marino de la Península Antártica, hielo en cubierta, témpanos e informe glaciológico, en proyección polar">MONITOREO DE HIELOS</a>
     <a class="btnIA" href="ia.html" title="Pronósticos por bahía generados con IA a partir del modelo WRF, con mapa">PRONÓSTICOS WRF + IA</a>
-    <div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
+    <button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
   </div>
@@ -1540,6 +1540,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*WW3_JS*/
 /*ECMWF_JS*/
 /*SST_JS*/
+/*CASO_SAR_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1773,6 +1774,9 @@ function refrescarTodo(rehacerEst) {
 }
 function initAreas() { const sel = document.getElementById('fArea'); const pres = new Set(ESTACIONES.map(s => s.area)); AREA_ORD.filter(a => pres.has(a)).forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = nombreArea(a); sel.appendChild(o); }); }
 renderCapas();
+// Caso SAR (fase 1): se crea una vez; usa los datos ya cargados de estaciones, boyas y avisos.
+const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso });
+document.getElementById('btnCasoSAR').onclick = () => casoSAR.abrir();
 document.getElementById('avAll').addEventListener('click', () => setTodosAv(true));
 document.getElementById('avNone').addEventListener('click', () => setTodosAv(false));
 (function layerBox() {
