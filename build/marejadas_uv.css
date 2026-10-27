@@ -62,3 +62,16 @@
 .sar-aviso-mapa[hidden]{display:none}
 .sarSw{display:inline-block;width:14px;height:14px;border-radius:50%;border:3px solid #ff6a00;box-sizing:border-box}
 .sar-form .sar-borrar{background:transparent;border-color:#b3261e;color:#b3261e}
+
+.sar-casos{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:10px 0 6px}.sar-casos label{display:flex;flex-direction:column;font-size:12px;gap:3px}
+.sar-casos select,.sar-casos input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--panel);color:var(--ink);min-width:150px}
+.sar-nuevo{padding:7px 12px;border-radius:6px;border:1px solid #ff6a00;background:transparent;color:#c45000;font-weight:600;cursor:pointer}
+.sar-fases{display:flex;gap:6px;margin:6px 0 2px}.sar-fases button{flex:1;padding:7px 6px;border-radius:6px;border:2px solid var(--c);background:transparent;color:var(--c);font-weight:700;cursor:pointer;font-size:12.5px}
+.sar-fases button[aria-pressed=true]{background:var(--c);color:#fff}
+.sar-fase-def{font-size:12.5px;margin:6px 0;line-height:1.4}.sar-fases-info{font-size:12px;margin:2px 0 6px}.sar-fases-info summary{cursor:pointer;color:var(--muted)}.sar-fases-info p{margin:5px 0}
+#mapWrap .sar-card{border-top:4px solid var(--fase,#6b7a8c)}
+.leaflet-tooltip.sar-et-incertidumbre{background:#d9a400}.leaflet-tooltip-top.sar-et-incertidumbre:before{border-top-color:#d9a400}
+.leaflet-tooltip.sar-et-alerta{background:#ff7a00}.leaflet-tooltip-top.sar-et-alerta:before{border-top-color:#ff7a00}
+.leaflet-tooltip.sar-et-peligro{background:#d32f2f}.leaflet-tooltip-top.sar-et-peligro:before{border-top-color:#d32f2f}
+.leaflet-tooltip.sar-et-nd{background:#6b7a8c}.leaflet-tooltip-top.sar-et-nd:before{border-top-color:#6b7a8c}
+.sarSw{border-color:#d32f2f}

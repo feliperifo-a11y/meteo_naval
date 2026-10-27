@@ -1779,11 +1779,12 @@ const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, b
 document.getElementById('btnCasoSAR').onclick = () => casoSAR.abrir();
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
   const box = document.getElementById('layers');
-  addLayerRow(box, 'caso_sar', 'Caso SAR (posición marcada)', '<span class="sarSw"></span>', false, () => casoSAR.capa);
+  addLayerRow(box, 'caso_sar', 'Casos SAR (posiciones marcadas)', '<span class="sarSw"></span>', false, () => casoSAR.capa);
   LAYERS.caso_sar.lyr = casoSAR.capa;
   const fila = document.getElementById('chk_caso_sar').closest('label'), grp = box.querySelector('.grp');
   grp.after(fila); document.getElementById('chk_caso_sar').checked = map.hasLayer(casoSAR.capa);
-  if (new URLSearchParams(location.search).has('caso') && casoSAR.hayCaso()) casoSAR.abrir();
+  const pCaso = new URLSearchParams(location.search).get('caso');
+  if (pCaso !== null && casoSAR.hayCaso()) { if (pCaso) casoSAR.seleccionar(pCaso); else casoSAR.abrir(); }
 }
 document.getElementById('avAll').addEventListener('click', () => setTodosAv(true));
 document.getElementById('avNone').addEventListener('click', () => setTodosAv(false));

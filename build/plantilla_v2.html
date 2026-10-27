@@ -461,16 +461,22 @@ const capaPuertos = buildPuertos();
 const contMapa = document.getElementById('mapa');
 const capaECMWF = crearCapaECMWF(L, map, escH, contMapa), capaWW3 = crearCapaWW3(L, map, escH, contMapa), capaSST = crearCapaSST(L, map, escH, contMapa);
 const CAMPOS_COLOR = [capaViento, capaECMWF, capaWW3, capaSST];
-// Caso SAR marcado en Desarrollo (guardado en este navegador): se muestra como punto.
+// Casos SAR marcados en Desarrollo (guardados en este navegador): un punto por caso, con el color de su fase.
 const capaCasoSAR = (() => {
-  let c = null; try { c = JSON.parse(localStorage.getItem('meteoia_caso_sar') || 'null'); } catch (e) { c = null; }
-  if (!c || !isFinite(c.lat) || !isFinite(c.lon)) return null;
+  let l = null;
+  try { l = JSON.parse(localStorage.getItem('meteoia_casos_sar') || 'null'); if (!Array.isArray(l)) { const v = JSON.parse(localStorage.getItem('meteoia_caso_sar') || 'null'); l = v ? [{ ...v, id: '', n: 1, nombre: 'Caso 1' }] : []; } } catch (e) { l = []; }
+  l = l.filter(c => isFinite(c.lat) && isFinite(c.lon)); if (!l.length) return null;
+  const FASES = { incertidumbre: ['Incertidumbre', '#d9a400'], alerta: ['Alerta', '#ff7a00'], peligro: ['Peligro', '#d32f2f'] };
   const dm = (v, p, n) => { const a = Math.abs(v), g = Math.floor(a); return `${g}°${((a - g) * 60).toFixed(1).replace('.', ',')}′ ${v < 0 ? n : p}`; };
-  return L.layerGroup([L.marker([c.lat, c.lon], { zIndexOffset: 2000, icon: L.divIcon({ className: 'sar-marca', html: '<svg width="30" height="30" viewBox="0 0 34 34"><circle cx="17" cy="17" r="13" fill="none" stroke="#ff6a00" stroke-width="3"/><path d="M17 2v9M17 23v9M2 17h9M23 17h9" stroke="#ff6a00" stroke-width="3"/><circle cx="17" cy="17" r="3" fill="#ff6a00"/></svg>', iconSize: [30, 30], iconAnchor: [15, 15] }) })
-    .bindTooltip('Caso SAR', { direction: 'top', offset: [0, -14] })
-    .bindPopup(`<b>Caso SAR</b><br>${dm(c.lat, 'N', 'S')} · ${dm(c.lon, 'E', 'W')}${c.hora ? '<br>Incidente: ' + escH(c.hora.replace('T', ' ')) : ''}<br><a href="dashboard.html?caso">Abrir ficha en Desarrollo →</a>`)]);
+  return L.layerGroup(l.map(c => {
+    const [fn, col] = FASES[c.fase] || ['Sin fase declarada', '#6b7a8c'];
+    return L.marker([c.lat, c.lon], { zIndexOffset: 2000, icon: L.divIcon({ className: 'sar-marca', iconSize: [30, 30], iconAnchor: [15, 15],
+      html: `<svg width="30" height="30" viewBox="0 0 34 34"><circle cx="17" cy="17" r="13" fill="rgba(255,255,255,.35)" stroke="${col}" stroke-width="3"/><path d="M17 1v8M17 25v8M1 17h8M25 17h8" stroke="${col}" stroke-width="3"/><text x="17" y="21.5" text-anchor="middle" font-size="12" font-weight="700" font-family="system-ui,Arial" fill="${col}">${c.n || ''}</text></svg>` }) })
+      .bindTooltip(`${escH(c.nombre || 'Caso SAR')} · ${fn}`, { direction: 'top', offset: [0, -14] })
+      .bindPopup(`<b>${escH(c.nombre || 'Caso SAR')}</b> · <span style="color:${col};font-weight:700">${fn}</span><br>${dm(c.lat, 'N', 'S')} · ${dm(c.lon, 'E', 'W')}${c.hora ? '<br>Incidente: ' + escH(c.hora.replace('T', ' ')) : ''}<br><a href="dashboard.html?caso=${encodeURIComponent(c.id || '')}">Abrir ficha en Desarrollo →</a>`);
+  }));
 })();
-const CAPAS = [...(capaCasoSAR ? [['Caso SAR (marcado en Desarrollo)', capaCasoSAR, true]] : []), ['Viento GFS (color)', capaViento, false], ['Viento ECMWF 9 km (costa)', capaECMWF, false], ['Oleaje WW3', capaWW3, false], ['Temperatura del mar (MUR 1 km)', capaSST, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, false], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
+const CAPAS = [...(capaCasoSAR ? [['Casos SAR (marcados en Desarrollo)', capaCasoSAR, true]] : []), ['Viento GFS (color)', capaViento, false], ['Viento ECMWF 9 km (costa)', capaECMWF, false], ['Oleaje WW3', capaWW3, false], ['Temperatura del mar (MUR 1 km)', capaSST, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, false], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +

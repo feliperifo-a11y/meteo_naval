@@ -64,34 +64,114 @@ function sarFmtHora(iso) { return iso.slice(11, 16); }
 function sarFmtDia(iso) { return new Date(iso.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit', month: 'short' }).replace(/\./g, ''); }
 function sarCompas(g) { return g == null ? '–' : ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(((g % 360) + 360) % 360 / 22.5) % 16]; }
 
+// Fases de emergencia según la Directiva SAR 2021 (Ord. N° 12600/287, anexo A, sección IV.B).
+const SAR_FASES = {
+  incertidumbre: { nombre: 'Incertidumbre', sigla: 'INCERFA', color: '#d9a400', def: 'Existen dudas acerca de la seguridad de una aeronave o de un buque y de las personas a bordo.' },
+  alerta: { nombre: 'Alerta', sigla: 'ALERFA', color: '#ff7a00', def: 'Se teme por la seguridad de una aeronave o de un buque y de las personas a bordo.' },
+  peligro: { nombre: 'Peligro', sigla: 'DETRESFA', color: '#d32f2f', def: 'Existen motivos justificados para creer que un buque u otra nave, incluida una aeronave o una persona, están amenazados por un peligro grave e inminente y necesitan auxilio inmediato.' }
+};
+const SAR_SIN_FASE = { nombre: 'Sin fase declarada', color: '#6b7a8c', def: 'El coordinador declara la fase en la etapa de acción inicial, según el grado de preocupación.' };
+const sarFase = f => SAR_FASES[f] || SAR_SIN_FASE;
+function sarIcono(color, n) {
+  return L.divIcon({ className: 'sar-marca', iconSize: [34, 34], iconAnchor: [17, 17],
+    html: `<svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="13" fill="rgba(255,255,255,.35)" stroke="${color}" stroke-width="3"/><path d="M17 1v8M17 25v8M1 17h8M25 17h8" stroke="${color}" stroke-width="3"/><text x="17" y="21.5" text-anchor="middle" font-size="12" font-weight="700" font-family="system-ui,Arial" fill="${color}">${n}</text></svg>` });
+}
+// Casos guardados en este navegador (los lee también el mapa principal).
+const SAR_CLAVE = 'meteoia_casos_sar';
+function sarLeerCasos() {
+  try {
+    let l = JSON.parse(localStorage.getItem(SAR_CLAVE) || 'null');
+    if (!Array.isArray(l)) l = [];
+    const v = JSON.parse(localStorage.getItem('meteoia_caso_sar') || 'null');   // formato anterior: un solo caso
+    if (v && isFinite(v.lat)) {
+      const n = Math.max(0, ...l.map(c => c.n || 0)) + 1;
+      l.push({ id: 'c' + Date.now().toString(36), nombre: 'Caso ' + n, n, fase: null, ...v });
+      localStorage.setItem(SAR_CLAVE, JSON.stringify(l)); localStorage.removeItem('meteoia_caso_sar');
+    }
+    return l.filter(c => isFinite(c.lat) && isFinite(c.lon));
+  } catch (e) { return []; }
+}
+
 function crearCasoSAR(L, map, ctx) {
   const { escH, nf } = ctx;
   let medios = SAR_MEDIOS_BASE.map(m => ({ ...m }));
   try { const g = JSON.parse(localStorage.getItem('meteoia_sar_medios') || 'null'); if (Array.isArray(g)) medios = SAR_MEDIOS_BASE.map(m => ({ ...m, ...(g.find(x => x.id === m.id) || {}) })); } catch (e) { /* sin almacenamiento */ }
   const guardarMedios = () => { try { localStorage.setItem('meteoia_sar_medios', JSON.stringify(medios)); } catch (e) { /* sin almacenamiento */ } };
-  let marca = null, eligiendo = false, ultimo = null, token = 0, ocultas = null;
-  // El caso queda guardado en este navegador y se muestra también en el mapa principal.
-  const CLAVE_CASO = 'meteoia_caso_sar';
-  const leerCaso = () => { try { const c = JSON.parse(localStorage.getItem(CLAVE_CASO) || 'null'); return c && isFinite(c.lat) && isFinite(c.lon) ? c : null; } catch (e) { return null; } };
-  const guardarCaso = c => { try { localStorage.setItem(CLAVE_CASO, JSON.stringify(c)); } catch (e) { /* sin almacenamiento */ } };
-  const borrarCaso = () => { try { localStorage.removeItem(CLAVE_CASO); } catch (e) { /* sin almacenamiento */ } };
-  const capaCaso = L.layerGroup();
+  let casos = sarLeerCasos(), actual = null, borrador = null, marca = null, eligiendo = false, ultimo = null, token = 0, ocultas = null;
+  const marcas = new Map(), capaCaso = L.layerGroup();
+  const guardar = () => { try { localStorage.setItem(SAR_CLAVE, JSON.stringify(casos)); } catch (e) { /* sin almacenamiento */ } };
+  const caso = () => casos.find(c => c.id === actual) || null;
+  const siguienteN = () => Math.max(0, ...casos.map(c => c.n || 0)) + 1;
 
   const card = document.createElement('section');
   card.className = 'card sar-card'; card.id = 'casoSAR'; card.hidden = true;
-  card.innerHTML = `<div class="sar-cab"><h2>Caso SAR · cuadro ambiental</h2><span class="sar-etq">Herramienta de apoyo en validación</span><button type="button" class="sar-min" aria-label="Minimizar ficha" title="Minimizar / ampliar">▾</button><button type="button" class="sar-cerrar" aria-label="Cerrar caso SAR">✕</button></div>
+  card.innerHTML = `<div class="sar-cab"><h2>Caso SAR · cuadro ambiental</h2><span class="sar-etq">Herramienta de apoyo en validación</span><button type="button" class="sar-min" aria-label="Minimizar ficha" title="Minimizar / ampliar">▾</button><button type="button" class="sar-cerrar" aria-label="Cerrar ficha">✕</button></div>
+    <div class="sar-casos"><label>Caso<select class="sar-lista" aria-label="Caso seleccionado"></select></label><button type="button" class="sar-nuevo">+ Nuevo caso</button><label class="sar-nombre-l">Nombre<input class="sar-nombre" maxlength="40" autocomplete="off"></label></div>
+    <div class="sar-fases" role="group" aria-label="Fase de la emergencia">${Object.entries(SAR_FASES).map(([k, f]) => `<button type="button" data-f="${k}" style="--c:${f.color}" aria-pressed="false">${f.nombre}</button>`).join('')}</div>
+    <p class="sar-fase-def"></p>
+    <details class="sar-fases-info"><summary>¿Qué significa cada fase?</summary>${Object.values(SAR_FASES).map(f => `<p><b style="color:${f.color}">${f.nombre}</b> (${f.sigla}): ${f.def}</p>`).join('')}<p class="sar-nota">El coordinador de la misión SAR clasifica el suceso y declara la fase en la etapa de acción inicial, según el grado de preocupación por las personas o la nave. Fuente: Directiva SAR 2021, anexo A, sección IV.</p></details>
     <form class="sar-form"><label>Latitud<input name="lat" placeholder="36 30,0 S" autocomplete="off"></label><label>Longitud<input name="lon" placeholder="73 24,0 W" autocomplete="off"></label>
     <label>Hora del incidente<input name="hora" type="datetime-local"></label><button type="submit">Analizar</button><button type="button" class="sar-elegir">Elegir en el mapa</button><button type="button" class="sar-borrar">Borrar caso</button></form>
-    <p class="sar-ayuda">Pulsa «Elegir en el mapa» y luego la posición del caso, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. El caso queda guardado en este navegador, también en el mapa principal; el marcador se puede arrastrar.</p>
+    <p class="sar-ayuda">Pulsa «Elegir en el mapa» y luego la posición, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. Los casos quedan guardados en este navegador y se ven también en el mapa principal; los marcadores se pueden arrastrar.</p>
     <div class="sar-res" aria-live="polite"></div>`;
   // La ficha va sobre el mapa, como panel lateral (en pantallas angostas, como panel inferior).
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const grupoMapa = L.layerGroup().addTo(map);
-  const form = card.querySelector('.sar-form'), res = card.querySelector('.sar-res');
+  const form = card.querySelector('.sar-form'), res = card.querySelector('.sar-res'), lista = card.querySelector('.sar-lista'), nombre = card.querySelector('.sar-nombre');
   const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true; aviso.textContent = 'Pulsa el mapa en la posición del caso (Esc para cancelar)';
-  document.getElementById('mapWrap').appendChild(aviso);
+  wrap.appendChild(aviso);
+
+  // ---- Lista de casos, nombre y fase
+  function pintarCabecera() {
+    const c = caso();
+    lista.innerHTML = casos.map(x => `<option value="${x.id}">${escH(x.nombre)} · ${sarFase(x.fase).nombre}</option>`).join('') + (borrador ? `<option value="">${escH(borrador.nombre)} (sin posición)</option>` : '');
+    lista.value = c ? c.id : ''; lista.disabled = casos.length + (borrador ? 1 : 0) < 2;
+    const ref = c || borrador;
+    nombre.value = ref ? ref.nombre : '';
+    const fase = ref?.fase || null;
+    card.querySelectorAll('.sar-fases button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === fase)));
+    const f = sarFase(fase);
+    card.querySelector('.sar-fase-def').innerHTML = `<b style="color:${f.color}">${f.nombre}${f.sigla ? ' (' + f.sigla + ')' : ''}:</b> ${f.def}`;
+    card.style.setProperty('--fase', f.color);
+  }
+  function pintarMarca(c) {
+    let m = marcas.get(c.id); const f = sarFase(c.fase);
+    if (!m) {
+      m = L.marker([c.lat, c.lon], { draggable: true, zIndexOffset: 2000, icon: sarIcono(f.color, c.n) }).addTo(capaCaso);
+      m.on('dragend', () => { const p = m.getLatLng(); seleccionar(c.id, false); fijar(p.lat, p.lng, false, true); });
+      m.on('click', () => seleccionar(c.id, true));
+      marcas.set(c.id, m);
+    } else { m.setLatLng([c.lat, c.lon]); m.setIcon(sarIcono(f.color, c.n)); }
+    if (!(c.id === actual && !card.hidden)) { m.unbindTooltip(); m.bindTooltip(`${escH(c.nombre)} · ${f.nombre}`, { direction: 'top', offset: [0, -16] }); }
+  }
+  function seleccionar(id, analizarYa) {
+    actual = id; borrador = null; const c = caso(); if (!c) return;
+    mostrarFicha();
+    form.lat.value = sarDM(c.lat, 'N', 'S'); form.lon.value = sarDM(c.lon, 'E', 'W'); form.hora.value = c.hora || '';
+    marca = marcas.get(id); casos.forEach(pintarMarca); pintarCabecera();
+    if (analizarYa) analizar(c.lat, c.lon, true);
+  }
+  lista.onchange = () => { if (lista.value) seleccionar(lista.value, true); };
+  nombre.onchange = () => {
+    const ref = caso() || borrador; if (!ref) return;
+    ref.nombre = nombre.value.trim() || ref.nombre; if (caso()) { guardar(); pintarMarca(ref); if (ultimo) pintar(); } pintarCabecera();
+  };
+  card.querySelectorAll('.sar-fases button').forEach(b => b.onclick = () => {
+    const ref = caso() || borrador; if (!ref) return;
+    ref.fase = ref.fase === b.dataset.f ? null : b.dataset.f;
+    if (caso()) { guardar(); pintarMarca(ref); if (ultimo) pintar(); }
+    pintarCabecera();
+  });
+  card.querySelector('.sar-nuevo').onclick = nuevoCaso;
+  function nuevoCaso() {
+    const n = siguienteN();
+    actual = null; borrador = { id: 'c' + Date.now().toString(36), n, nombre: 'Caso ' + n, fase: null };
+    marca = null; ultimo = null; grupoMapa.clearLayers(); res.innerHTML = '';
+    form.lat.value = ''; form.lon.value = ''; form.hora.value = sarHoraLocal(new Date()).slice(0, 16);
+    casos.forEach(pintarMarca); mostrarFicha(); pintarCabecera(); modoElegir(true);
+  }
 
   // Al elegir la posición se ocultan las capas superpuestas (avisos, METAREA, campos de color, bahías…) y se restauran al terminar.
   function ocultarCapas(on) {
@@ -109,26 +189,30 @@ function crearCasoSAR(L, map, ctx) {
     if (on && window.innerWidth <= 1050) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function abrir() {
-    mostrarFicha();
-    const c = leerCaso();
-    if (c && marca) { if (!ultimo) analizar(c.lat, c.lon, true); } else modoElegir(true);
+    if (actual && caso()) { seleccionar(actual, !ultimo); return; }
+    if (casos.length) { seleccionar(casos[casos.length - 1].id, true); return; }
+    nuevoCaso();
   }
   function mostrarFicha() {
     card.hidden = false; wrap.classList.add('sar-abierto');
     // Libera espacio en el mapa: el panel de capas se minimiza.
-    const lb = document.getElementById('layerBox'); if (lb && !lb.classList.contains('min')) { lb.classList.add('min'); const bt = document.getElementById('lbBtn'); if (bt) bt.textContent = '▴'; } card.classList.remove('sar-minimizada'); card.querySelector('.sar-min').textContent = '▾';
-    if (!form.hora.value) form.hora.value = sarHoraLocal(new Date()).slice(0, 16);
+    const lb = document.getElementById('layerBox'); if (lb && !lb.classList.contains('min')) { lb.classList.add('min'); const bt = document.getElementById('lbBtn'); if (bt) bt.textContent = '▴'; }
+    card.classList.remove('sar-minimizada'); card.querySelector('.sar-min').textContent = '▾';
+    if (!map.hasLayer(capaCaso) && casos.length) { capaCaso.addTo(map); const ch = document.getElementById('chk_caso_sar'); if (ch) ch.checked = true; }
   }
-  // Cerrar la ficha no borra el caso: el punto queda en el mapa como una capa más.
-  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); if (marca) { marca.unbindTooltip(); marca.bindTooltip('Caso SAR · pulsa para ver la ficha', { direction: 'top', offset: [0, -16] }); } }
-  function eliminar() {
-    if (!confirmarBorrado.dataset.ok) { confirmarBorrado.dataset.ok = '1'; confirmarBorrado.textContent = '¿Borrar? Pulsa de nuevo'; setTimeout(() => { delete confirmarBorrado.dataset.ok; confirmarBorrado.textContent = 'Borrar caso'; }, 4000); return; }
-    delete confirmarBorrado.dataset.ok; confirmarBorrado.textContent = 'Borrar caso';
-    borrarCaso(); capaCaso.clearLayers(); marca = null; grupoMapa.clearLayers(); res.innerHTML = ''; ultimo = null; form.lat.value = ''; form.lon.value = '';
-  }
-  const confirmarBorrado = card.querySelector('.sar-borrar');
-  confirmarBorrado.onclick = eliminar;
-  form.hora.addEventListener('change', () => { const c = leerCaso(); if (c) guardarCaso({ ...c, hora: form.hora.value }); });
+  // Cerrar la ficha no borra los casos: los puntos quedan en el mapa como una capa más.
+  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
+  const btnBorrar = card.querySelector('.sar-borrar');
+  btnBorrar.onclick = () => {
+    if (!caso()) { if (borrador) { borrador = null; modoElegir(false); abrir(); } return; }
+    if (!btnBorrar.dataset.ok) { btnBorrar.dataset.ok = '1'; btnBorrar.textContent = '¿Borrar? Pulsa de nuevo'; setTimeout(() => { delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso'; }, 4000); return; }
+    delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso';
+    const m = marcas.get(actual); if (m) capaCaso.removeLayer(m); marcas.delete(actual);
+    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); res.innerHTML = '';
+    if (casos.length) seleccionar(casos[casos.length - 1].id, true);
+    else { form.lat.value = ''; form.lon.value = ''; pintarCabecera(); }
+  };
+  form.hora.addEventListener('change', () => { const c = caso(); if (c) { c.hora = form.hora.value; guardar(); } else if (borrador) borrador.hora = form.hora.value; if (ultimo) pintar(); });
   card.querySelector('.sar-min').onclick = () => { const m = card.classList.toggle('sar-minimizada'); card.querySelector('.sar-min').textContent = m ? '▴' : '▾'; };
   card.querySelector('.sar-cerrar').onclick = cerrar;
   card.querySelector('.sar-elegir').onclick = () => modoElegir(true);
@@ -154,28 +238,23 @@ function crearCasoSAR(L, map, ctx) {
     if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [60, 70], paddingBottomRight: [ancho + 40, alto + 40], maxZoom: 9, animate: false });
     else { map.setView([lat, lon], Math.max(map.getZoom(), 6), { animate: false }); map.panBy([ancho / 2, alto / 2], { animate: false }); }
   }
+  // Fija la posición del caso actual (o crea el caso nuevo) y la guarda.
   function fijar(lat, lon, centrar, arrastre) {
     form.lat.value = sarDM(lat, 'N', 'S'); form.lon.value = sarDM(lon, 'E', 'W');
-    guardarCaso({ lat, lon, hora: form.hora.value || null, marcado: new Date().toISOString() });
+    let c = caso();
+    if (!c) {
+      c = { ...(borrador || { id: 'c' + Date.now().toString(36), n: siguienteN(), fase: null }), marcado: new Date().toISOString() };
+      if (!c.nombre) c.nombre = 'Caso ' + c.n;
+      casos.push(c); borrador = null; actual = c.id;
+    }
+    c.lat = lat; c.lon = lon; c.hora = form.hora.value || c.hora || null; guardar();
     if (!map.hasLayer(capaCaso)) { capaCaso.addTo(map); const ch = document.getElementById('chk_caso_sar'); if (ch) ch.checked = true; }
-    ponerMarca(lat, lon);
+    pintarMarca(c); marca = marcas.get(c.id); pintarCabecera();
     analizar(lat, lon, !arrastre);
   }
-  function ponerMarca(lat, lon) {
-    if (!marca) {
-      marca = L.marker([lat, lon], { draggable: true, zIndexOffset: 2000, icon: L.divIcon({ className: 'sar-marca', html: '<svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="13" fill="none" stroke="#ff6a00" stroke-width="3"/><path d="M17 2v9M17 23v9M2 17h9M23 17h9" stroke="#ff6a00" stroke-width="3"/><circle cx="17" cy="17" r="3" fill="#ff6a00"/></svg>', iconSize: [34, 34], iconAnchor: [17, 17] }) })
-        .bindTooltip('Caso SAR · pulsa para ver la ficha', { direction: 'top', offset: [0, -16] }).addTo(capaCaso);
-      marca.on('dragend', () => { const p = marca.getLatLng(); fijar(p.lat, p.lng, false, true); });
-      marca.on('click', () => { if (card.hidden) { mostrarFicha(); const p = marca.getLatLng(); analizar(p.lat, p.lng, false); } });
-    } else marca.setLatLng([lat, lon]);
-  }
-  // Caso guardado: se muestra al cargar la página.
-  const guardado = leerCaso();
-  if (guardado) {
-    form.lat.value = sarDM(guardado.lat, 'N', 'S'); form.lon.value = sarDM(guardado.lon, 'E', 'W');
-    if (guardado.hora) form.hora.value = guardado.hora;
-    ponerMarca(guardado.lat, guardado.lon); capaCaso.addTo(map);
-  }
+  // Casos guardados: se muestran al cargar la página.
+  casos.forEach(pintarMarca);
+  if (casos.length) capaCaso.addTo(map);
 
   async function datosPunto(lat, lon) {
     const q = `latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&forecast_days=4&timezone=America%2FSantiago`;
@@ -288,8 +367,9 @@ function crearCasoSAR(L, map, ctx) {
     grupoMapa.clearLayers();
     if (marca && !card.hidden) {
       marca.unbindTooltip();
-      const txt = c ? `<b>Caso SAR</b><br>${nf(c.viento, 0)} kt ${sarCompas(c.dir)} (ráf. ${nf(c.raf, 0)})<br>Ola ${nf(c.ola, 1)} m · agua ${nf(c.agua, 1)} °C` : '<b>Caso SAR</b>';
-      marca.bindTooltip(txt, { permanent: true, direction: 'top', offset: [0, -18], className: 'sar-etiqueta' }).openTooltip();
+      const cs = caso(), f = sarFase(cs?.fase), tit = `<b>${escH(cs ? cs.nombre : 'Caso SAR')}</b> · ${f.nombre}`;
+      const txt = c ? `${tit}<br>${nf(c.viento, 0)} kt ${sarCompas(c.dir)} (ráf. ${nf(c.raf, 0)})<br>Ola ${nf(c.ola, 1)} m · agua ${nf(c.agua, 1)} °C` : tit;
+      marca.bindTooltip(txt, { permanent: true, direction: 'top', offset: [0, -18], className: 'sar-etiqueta sar-et-' + (cs?.fase || 'nd') }).openTooltip();
     }
     const cen = env.centros[0];
     if (cen) {
@@ -341,5 +421,5 @@ function crearCasoSAR(L, map, ctx) {
     return html;
   }
 
-  return { abrir, cerrar, capa: capaCaso, hayCaso: () => !!leerCaso() };
+  return { abrir, cerrar, capa: capaCaso, hayCaso: () => casos.length > 0, seleccionar: id => seleccionar(id, true) };
 }
