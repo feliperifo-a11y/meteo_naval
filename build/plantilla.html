@@ -1775,8 +1775,16 @@ function refrescarTodo(rehacerEst) {
 function initAreas() { const sel = document.getElementById('fArea'); const pres = new Set(ESTACIONES.map(s => s.area)); AREA_ORD.filter(a => pres.has(a)).forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = nombreArea(a); sel.appendChild(o); }); }
 renderCapas();
 // Caso SAR (fase 1): se crea una vez; usa los datos ya cargados de estaciones, boyas y avisos.
-const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso });
+const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso, capas: () => LAYERS });
 document.getElementById('btnCasoSAR').onclick = () => casoSAR.abrir();
+{ // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
+  const box = document.getElementById('layers');
+  addLayerRow(box, 'caso_sar', 'Caso SAR (posición marcada)', '<span class="sarSw"></span>', false, () => casoSAR.capa);
+  LAYERS.caso_sar.lyr = casoSAR.capa;
+  const fila = document.getElementById('chk_caso_sar').closest('label'), grp = box.querySelector('.grp');
+  grp.after(fila); document.getElementById('chk_caso_sar').checked = map.hasLayer(casoSAR.capa);
+  if (new URLSearchParams(location.search).has('caso') && casoSAR.hayCaso()) casoSAR.abrir();
+}
 document.getElementById('avAll').addEventListener('click', () => setTodosAv(true));
 document.getElementById('avNone').addEventListener('click', () => setTodosAv(false));
 (function layerBox() {
