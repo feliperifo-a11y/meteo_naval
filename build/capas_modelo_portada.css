@@ -1,9 +1,9 @@
 /* Paneles de capas de modelo (ECMWF, WW3, temperatura del mar) en el mapa oscuro de la portada */
-#mapa .uv-panel{--panel:rgba(10,26,44,.96);--ink:#e8f1fa;--line:#1d3a58;--muted:#8fa7bf;right:58px;bottom:14px;z-index:860;border-radius:12px;color:var(--ink)}
+#mapa .uv-panel{--panel:rgba(10,26,44,.96);--ink:#e8f1fa;--line:#1d3a58;--muted:#8fa7bf;right:58px;bottom:44px;z-index:860;border-radius:12px;color:var(--ink)}
 #mapa .uv-panel a{color:#5fb0ff}
 #mapa .uv-panel button{background:#12294a;color:var(--ink);border:1px solid var(--line);border-radius:6px;cursor:pointer}
 #mapa .uv-panel .sst-modos button[aria-pressed=true]{background:#2f8cff;border-color:#2f8cff;color:#fff}
 #mapa .uv-marcas{color:var(--muted)}
 #mapa .sst-fecha{color-scheme:dark}
-.uv-popup .uv-ficha strong{color:#155a8a}
+#mapa .uv-popup .uv-ficha strong{color:#5fb0ff}
 @media(max-width:600px){#mapa .uv-panel{right:8px;left:8px;width:auto;bottom:8px;max-height:46%}}
