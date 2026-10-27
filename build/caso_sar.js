@@ -110,6 +110,7 @@ function crearCasoSAR(L, map, ctx) {
     <div class="sar-fases" role="group" aria-label="Fase de la emergencia">${Object.entries(SAR_FASES).map(([k, f]) => `<button type="button" data-f="${k}" style="--c:${f.color}" aria-pressed="false">${f.nombre}</button>`).join('')}</div>
     <p class="sar-fase-def"></p>
     <details class="sar-fases-info"><summary>¿Qué significa cada fase?</summary>${Object.values(SAR_FASES).map(f => `<p><b style="color:${f.color}">${f.nombre}</b> (${f.sigla}): ${f.def}</p>`).join('')}<p class="sar-nota">El coordinador de la misión SAR clasifica el suceso y declara la fase en la etapa de acción inicial, según el grado de preocupación por las personas o la nave. Fuente: Directiva SAR 2021, anexo A, sección IV.</p></details>
+    <label class="sar-notas-l">Descripción del caso y acciones adoptadas<textarea class="sar-notas" rows="4" maxlength="2000" placeholder="Ej.: embarcación pesquera con 4 tripulantes sin comunicación desde las 06:00; se alertó a la lancha de la capitanía de puerto y se solicitó apoyo aéreo…"></textarea></label><small class="sar-notas-estado" aria-live="polite"></small>
     <form class="sar-form"><label>Latitud<input name="lat" placeholder="36 30,0 S" autocomplete="off"></label><label>Longitud<input name="lon" placeholder="73 24,0 W" autocomplete="off"></label>
     <label>Hora del incidente<input name="hora" type="datetime-local"></label><button type="submit">Analizar</button><button type="button" class="sar-elegir">Elegir en el mapa</button><button type="button" class="sar-borrar">Borrar caso</button></form>
     <p class="sar-ayuda">Pulsa «Elegir en el mapa» y luego la posición, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. Los casos quedan guardados en este navegador y se ven también en el mapa principal; los marcadores se pueden arrastrar.</p>
@@ -122,6 +123,24 @@ function crearCasoSAR(L, map, ctx) {
   const form = card.querySelector('.sar-form'), res = card.querySelector('.sar-res'), lista = card.querySelector('.sar-lista'), nombre = card.querySelector('.sar-nombre');
   const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true; aviso.textContent = 'Pulsa el mapa en la posición del caso (Esc para cancelar)';
   wrap.appendChild(aviso);
+  // Coordenadas que siguen al cursor mientras se elige la posición.
+  const cursor = document.createElement('div'); cursor.className = 'sar-cursor'; cursor.hidden = true; wrap.appendChild(cursor);
+  map.getContainer().addEventListener('mousemove', e => {
+    if (!eligiendo) return;
+    const ll = map.mouseEventToLatLng(e), r = wrap.getBoundingClientRect();
+    cursor.textContent = `${sarDM(ll.lat, 'N', 'S')} · ${sarDM(ll.lng, 'E', 'W')}`;
+    cursor.style.left = (e.clientX - r.left + 16) + 'px'; cursor.style.top = (e.clientY - r.top + 18) + 'px'; cursor.hidden = false;
+  });
+  map.getContainer().addEventListener('mouseleave', () => { cursor.hidden = true; });
+  // Descripción y acciones: se guardan solas mientras se escribe.
+  const notas = card.querySelector('.sar-notas'), notasEstado = card.querySelector('.sar-notas-estado');
+  let notasTimer = null;
+  notas.addEventListener('input', () => {
+    const ref = caso() || borrador; if (!ref) return;
+    ref.notas = notas.value; notasEstado.textContent = 'Guardando…';
+    clearTimeout(notasTimer);
+    notasTimer = setTimeout(() => { if (caso()) { guardar(); notasEstado.textContent = 'Guardado en este navegador · ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }); } else notasEstado.textContent = 'Se guardará al marcar la posición del caso.'; }, 600);
+  });
 
   // ---- Lista de casos, nombre y fase
   function pintarCabecera() {
@@ -130,6 +149,7 @@ function crearCasoSAR(L, map, ctx) {
     lista.value = c ? c.id : ''; lista.disabled = casos.length + (borrador ? 1 : 0) < 2;
     const ref = c || borrador;
     nombre.value = ref ? ref.nombre : '';
+    notas.value = ref?.notas || ''; notasEstado.textContent = '';
     const fase = ref?.fase || null;
     card.querySelectorAll('.sar-fases button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === fase)));
     const f = sarFase(fase);
@@ -184,7 +204,7 @@ function crearCasoSAR(L, map, ctx) {
     }
   }
   function modoElegir(on) {
-    eligiendo = on; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : '';
+    eligiendo = on; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : ''; if (!on) cursor.hidden = true;
     ocultarCapas(on);
     if (on && window.innerWidth <= 1050) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
