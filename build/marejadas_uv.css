@@ -33,7 +33,7 @@
 .sar-min{border:1px solid var(--line);background:transparent;border-radius:6px;cursor:pointer;min-width:32px;min-height:30px;color:var(--ink);margin-left:auto}.sar-min+.sar-cerrar{margin-left:0}
 .leaflet-tooltip.sar-etiqueta{background:#ff6a00;color:#fff;border:0;font-size:12px;line-height:1.35;box-shadow:0 2px 6px #0004}.leaflet-tooltip-top.sar-etiqueta:before{border-top-color:#ff6a00}
 .leaflet-tooltip.sar-etiqueta-centro{background:#fff;color:#8a4b00}.leaflet-tooltip-bottom.sar-etiqueta-centro:before{border-bottom-color:#fff}
-@media (max-width:1050px){#mapWrap .sar-card{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:58%}#mapWrap.sar-abierto .uv-panel{right:10px;bottom:calc(58% + 16px)}}
+@media (max-width:1050px){#mapWrap .sar-card{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:58%}#mapWrap .sar-card.sar-minimizada{top:auto;bottom:8px}#mapWrap.sar-abierto .uv-panel{right:10px;bottom:calc(58% + 16px)}}
 .sar-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sar-cab h2{margin:0;font-size:17px}.sar-etq{font-size:11px;background:#fff3e0;color:#8a4b00;border:1px solid #ffcc80;border-radius:10px;padding:2px 8px}
 .sar-cerrar{margin-left:auto;border:1px solid var(--line);background:transparent;border-radius:6px;cursor:pointer;min-width:32px;min-height:30px;color:var(--ink)}
 .sar-form{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:12px 0 4px}.sar-form label{display:flex;flex-direction:column;font-size:12px;gap:3px}
@@ -60,6 +60,8 @@
 .sar-restablecer{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--ink)}
 .sar-aviso-mapa{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:870;background:#ff6a00;color:#fff;font-weight:600;padding:8px 14px;border-radius:8px;box-shadow:0 2px 10px #0004;font-size:13px}
 .sar-aviso-mapa[hidden]{display:none}
+.sar-aviso-mapa{display:flex;align-items:center;gap:10px}.sar-aviso-mapa button{border:0;background:rgba(255,255,255,.25);color:#fff;font-weight:700;border-radius:6px;padding:5px 10px;cursor:pointer}
+@media (max-width:600px){.sar-aviso-mapa{font-size:12.5px;padding:6px 8px 6px 12px;top:8px;max-width:calc(100% - 120px);white-space:nowrap}}
 .sarSw{display:inline-block;width:14px;height:14px;border-radius:50%;border:3px solid #ff6a00;box-sizing:border-box}
 .sar-form .sar-borrar{background:transparent;border-color:#b3261e;color:#b3261e}
 

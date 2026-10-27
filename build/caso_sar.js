@@ -121,8 +121,13 @@ function crearCasoSAR(L, map, ctx) {
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const grupoMapa = L.layerGroup().addTo(map);
   const form = card.querySelector('.sar-form'), res = card.querySelector('.sar-res'), lista = card.querySelector('.sar-lista'), nombre = card.querySelector('.sar-nombre');
-  const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true; aviso.textContent = 'Pulsa el mapa en la posición del caso (Esc para cancelar)';
+  // Instrucción al elegir: en pantallas táctiles, "Toca" y botón Cancelar (no hay tecla Esc).
+  const tactil = matchMedia('(pointer: coarse)').matches;
+  const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true;
+  aviso.innerHTML = tactil ? '<span>Toca el mapa en la posición del caso</span><button type="button">Cancelar</button>' : 'Pulsa el mapa en la posición del caso (Esc para cancelar)';
   wrap.appendChild(aviso);
+  L.DomEvent.disableClickPropagation(aviso);
+  const btnCancelar = aviso.querySelector('button'); if (btnCancelar) btnCancelar.onclick = e => { e.stopPropagation(); modoElegir(false); };
   // Coordenadas que siguen al cursor mientras se elige la posición.
   const cursor = document.createElement('div'); cursor.className = 'sar-cursor'; cursor.hidden = true; wrap.appendChild(cursor);
   map.getContainer().addEventListener('mousemove', e => {
@@ -206,7 +211,14 @@ function crearCasoSAR(L, map, ctx) {
   function modoElegir(on) {
     eligiendo = on; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : ''; if (!on) cursor.hidden = true;
     ocultarCapas(on);
-    if (on && window.innerWidth <= 1050) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Pantallas angostas: mientras se elige, la ficha se pliega para dejar libre el mapa, y vuelve al terminar.
+    if (window.innerWidth <= 1050) {
+      card.classList.toggle('sar-minimizada', on); card.querySelector('.sar-min').textContent = on ? '▴' : '▾';
+      if (on) {
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const c = map.getCenter(); if (c.lat > -15 || c.lat < -60 || c.lng < -90 || c.lng > -60) map.fitBounds([[-56, -80], [-18, -68]], { animate: false });
+      }
+    }
   }
   function abrir() {
     if (actual && caso()) { seleccionar(actual, !ultimo); return; }
