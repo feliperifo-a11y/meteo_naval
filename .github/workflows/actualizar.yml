@@ -135,7 +135,7 @@ jobs:
         timeout-minutes: 3
         run: python scripts/restricciones.py
 
-      - name: Viento GFS (campo para la versión nueva)
+      - name: Viento GFS 0,25° (campo para la portada y los pronósticos)
         continue-on-error: true
         timeout-minutes: 4
         run: python scripts/viento.py
@@ -147,6 +147,14 @@ jobs:
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then export PUBLICADO="https://$OWNER.github.io"; else export PUBLICADO="https://$OWNER.github.io/$REPO"; fi
           python scripts/ww3.py
+
+      - name: Viento ECMWF 9 km (franja costera, solo con corrida nueva)
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
+          if [ "$REPO" = "$OWNER.github.io" ]; then export PUBLICADO="https://$OWNER.github.io"; else export PUBLICADO="https://$OWNER.github.io/$REPO"; fi
+          python scripts/ecmwf_viento.py
 
       - name: Fondos de relieve para la carta polar y las cartas de hielo (solo si faltan o cambia la proyección)
         continue-on-error: true
@@ -168,6 +176,7 @@ jobs:
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
           cp data/hielo_cubierta_*.png _site/data/ 2>/dev/null || true
           [ -f data/ww3/indice.json ] && mkdir -p _site/data/ww3 && cp data/ww3/indice.json data/ww3/f*.bin _site/data/ww3/ || true
+          [ -f data/ecmwf/indice.json ] && mkdir -p _site/data/ecmwf && cp data/ecmwf/indice.json data/ecmwf/f*.bin _site/data/ecmwf/ || true
           for f in marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3

@@ -1538,6 +1538,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 // ---- Distritos SAR: capa opcional del dashboard completo
 /*SAR*/
 /*WW3_JS*/
+/*ECMWF_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1659,7 +1660,13 @@ function renderCapas() {
   addLayerRow(box, 'puertos', 'Puertos con restricción (SITPORT)', svgPuerto('#d32f2f', 16), false, buildPuertos);
   addLayerRow(box, 'ia', 'Pronóstico WRF + IA', svgNub('Parcial', 16), false, buildIA);
   addLayerRow(box, 'iso', 'Isobaras (presión, GFS)', lineSw('#1d2733', null, 1.6), false, buildIso);
+  addLayerRow(box, 'ecmwf', 'Viento ECMWF 9 km (costa)', '<span class="ecmwfSw"></span>', false, () => crearCapaECMWF(L, map, escH));
   addLayerRow(box, 'ww3', 'Oleaje WW3 (altura de ola, NOAA)', '<span class="ww3Sw"></span>', false, () => crearCapaWW3(L, map, escH));
+  // Los dos campos de color no se superponen: activar uno apaga el otro.
+  for (const [a, b] of [['ecmwf', 'ww3'], ['ww3', 'ecmwf']]) document.getElementById('chk_' + a).addEventListener('change', e => {
+    if (!e.target.checked) return; const otro = document.getElementById('chk_' + b);
+    if (otro.checked) { otro.checked = false; LAYERS[b].set(false); }
+  });
   addLayerRow(box, 'sat', 'Imagen satelital IR (nubosidad)', '<span class="satSw"></span>', false, buildSat);
   addLayerRow(box, 'vis', 'Imagen satelital visible (nubosidad diurna)', '<span class="visSw"></span>', false, buildVis);
   addLayerRow(box, 'av', 'Avisos meteorológicos', fillSw('#d32f2f', 'rgba(211,47,47,.30)'), true, buildAvisos);

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Campo de viento a 10 m del modelo GFS (0,5°) para el mapa de la versión nueva del dashboard → data/viento_gfs.json
+"""Campo de viento a 10 m del modelo GFS (0,25°) para el mapa de la versión nueva del dashboard → data/viento_gfs.json
 
 Toma la corrida más reciente disponible y el plazo más cercano a la hora actual, descarga solo los campos
-UGRD y VGRD a 10 m (lectura parcial del GRIB2 con su índice) y los guarda en una grilla de 1° en nudos,
+UGRD y VGRD a 10 m (lectura parcial del GRIB2 con su índice) y los guarda en una grilla de 0,5° en nudos,
 de 5° N a 70° S y de 140° W a 60° W. Se recalcula solo cuando cambia la corrida o el plazo.
 Nunca hace fallar el flujo de trabajo.
 """
@@ -17,7 +17,8 @@ import requests
 
 SALIDA = Path(__file__).resolve().parent.parent / "data" / "viento_gfs.json"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (viento GFS)"}
-NORTE, SUR, OESTE, ESTE, PASO = 5, -70, -140, -60, 1.0
+NORTE, SUR, OESTE, ESTE, PASO = 5, -70, -140, -60, 0.5
+RES = "0p25"
 MS_A_KT = 1.943844
 
 
@@ -30,7 +31,7 @@ def leer(p, defecto):
 
 def campos(corrida, fhr):
     d, h = corrida.strftime("%Y%m%d"), corrida.strftime("%H")
-    base = f"https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{d}/{h}/atmos/gfs.t{h}z.pgrb2.0p50.f{fhr:03d}"
+    base = f"https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.{d}/{h}/atmos/gfs.t{h}z.pgrb2.{RES}.f{fhr:03d}"
     idx = requests.get(base + ".idx", headers=CAB, timeout=40)
     idx.raise_for_status()
     lineas = idx.text.strip().splitlines()
@@ -70,7 +71,7 @@ def main():
         corrida = c0 - timedelta(hours=6 * k)
         fhr = int(round((ahora - corrida).total_seconds() / 3600 / 3) * 3)
         fhr = max(0, min(fhr, 120))
-        clave = f"{corrida:%Y%m%d%H}+{fhr:03d}"
+        clave = f"{corrida:%Y%m%d%H}+{fhr:03d}@{RES}"
         if previo.get("clave") == clave:
             print("Viento GFS: sin cambios", clave); return
         try:
@@ -87,7 +88,7 @@ def main():
             "lat0": round(float(lats[0, 0]), 3), "lon0": round(float(lons[0, 0]) - 360, 3), "dlat": -PASO, "dlon": PASO,
             "nlat": int(u.shape[0]), "nlon": int(u.shape[1]),
             "u": [round(float(x) * MS_A_KT, 1) for x in u.ravel()], "v": [round(float(x) * MS_A_KT, 1) for x in v.ravel()],
-            "fuente": "NOAA GFS 0,5° (viento a 10 m)",
+            "fuente": "NOAA GFS 0,25° (viento a 10 m)",
         }
         SALIDA.write_text(json.dumps(datos, separators=(",", ":")), encoding="utf-8")
         print(f"Viento GFS: {clave} · {datos['nlat']}×{datos['nlon']} puntos")
