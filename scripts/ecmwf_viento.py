@@ -39,6 +39,15 @@ def url(corrida, paso, ext):
     return f"{BASE}/{d}/{h}z/ifs/0p1/oper/{d}{h}0000-{paso}h-oper-fc-sfc.{ext}"
 
 
+REGISTRO = []
+
+
+def log(*a):
+    texto = " ".join(str(x) for x in a)
+    REGISTRO.append(texto)
+    print(texto)
+
+
 def leer(p, defecto):
     try:
         return json.loads(Path(p).read_text(encoding="utf-8"))
@@ -160,10 +169,10 @@ def copiar_publicado(clave):
                 return False
             (CARPETA / p["archivo"]).write_bytes(b.content)
         INDICE.write_text(json.dumps(pub, separators=(",", ":")), encoding="utf-8")
-        print(f"Viento ECMWF: {clave} copiado del sitio publicado ({len(pub['plazos'])} plazos)")
+        log(f"Viento ECMWF: {clave} copiado del sitio publicado ({len(pub['plazos'])} plazos)")
         return True
     except Exception as e:
-        print("Viento ECMWF: no se pudo copiar lo publicado:", e)
+        log("Viento ECMWF: no se pudo copiar lo publicado:", e)
         return False
 
 
@@ -171,11 +180,11 @@ def main():
     CARPETA.mkdir(parents=True, exist_ok=True)
     corrida = corrida_completa(datetime.now(timezone.utc))
     if corrida is None:
-        print("Viento ECMWF: ninguna corrida completa disponible; se mantiene lo anterior"); return
+        log("Viento ECMWF: ninguna corrida completa disponible; se mantiene lo anterior"); return
     clave = corrida.strftime("%Y%m%d%H")
     previo = leer(INDICE, {})
     if previo.get("clave") == clave and previo.get("version") == VERSION:
-        print("Viento ECMWF: sin cambios", clave); return
+        log("Viento ECMWF: sin cambios", clave); return
     if copiar_publicado(clave):
         return
     with ThreadPoolExecutor(max_workers=6) as ex:
@@ -187,9 +196,9 @@ def main():
             plazos.append({"paso": p, "archivo": f"f{p:03d}.bin",
                            "valido": (corrida + timedelta(hours=p)).strftime("%Y-%m-%dT%H:%MZ")})
         except Exception as e:
-            print(f"Viento ECMWF: plazo {p} h no disponible:", e)
+            log(f"Viento ECMWF: plazo {p} h no disponible:", repr(e))
     if len(plazos) < len(PLAZOS) // 2 or any(m != mallas[0] for m in mallas):
-        print("Viento ECMWF: corrida incompleta o grillas distintas; se mantiene lo anterior"); return
+        log("Viento ECMWF: corrida incompleta o grillas distintas; se mantiene lo anterior"); return
     indice = {
         "version": VERSION, "clave": clave, "corrida": corrida.strftime("%Y-%m-%dT%HZ"),
         "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -203,12 +212,18 @@ def main():
     for f in CARPETA.glob("f*.bin"):
         if f.name not in vigentes:
             f.unlink()
-    print(f"Viento ECMWF: {clave} · {len(plazos)} plazos · {indice['nlat']}×{indice['nlon']} puntos")
+    log(f"Viento ECMWF: {clave} · {len(plazos)} plazos · {indice['nlat']}×{indice['nlon']} puntos")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print("Viento ECMWF: error", e)
+        log("Viento ECMWF: error", repr(e))
+    try:
+        CARPETA.mkdir(parents=True, exist_ok=True)
+        (CARPETA / "estado.json").write_text(json.dumps({"hora": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                                          "registro": REGISTRO[-40:]}, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
     sys.exit(0)
