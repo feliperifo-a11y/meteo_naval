@@ -1855,15 +1855,7 @@ async function contarVisita(nueva) {
   contarVisita(nueva);
   setInterval(() => contarVisita(false), 5 * 60000);
 })();
-// Desarrollo abre la bahía de Talcahuano con su corrida de oleaje.
-// El acceso específico a la carta de superficie mantiene su propia vista.
-if (!SOLO_CARTA) {
-  document.getElementById('btnCapuertoTalc').click();
-  LAYERS.valpo_limite?.set(false);
-  const limiteValpo = document.getElementById('chk_valpo_limite'); if (limiteValpo) limiteValpo.checked = false;
-  document.getElementById('chk_talc_uv').checked = true;
-  LAYERS.talc_uv.set(true);
-}
+// Desarrollo abre con la vista general; las bahías (Capuertos) se abren solo desde su botón.
 cargarDatos().catch(() => {}).finally(() => { if (SOLO_CARTA) abrirPolar(); });
 setInterval(() => refrescarTodo(true), 60000);      // recalcula estados con la hora del equipo
 cargarBoyasVivo();
