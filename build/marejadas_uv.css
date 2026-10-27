@@ -37,7 +37,8 @@
 .sar-error{color:#b3261e;font-weight:600}.sar-cargando{color:var(--muted)}
 .sar-ventanas{margin-top:14px}.sar-tabla-scroll{overflow-x:auto}
 .sar-tabla{border-collapse:separate;border-spacing:2px;font-size:11px}.sar-tabla th{font-weight:500;color:var(--muted);text-align:center;min-width:22px;vertical-align:bottom;position:relative}
-.sar-tabla thead th .dia{display:block;font-weight:700;color:var(--ink);white-space:nowrap;text-align:left}
+.sar-tabla thead th{padding-top:18px}.sar-tabla thead th .dia{position:absolute;top:0;left:0;font-weight:700;color:var(--ink);white-space:nowrap;text-align:left}
+.sar-tabla thead th.nuevo-dia,.sar-tabla td.nuevo-dia{border-left:2px solid var(--line)}
 .sar-tabla tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap;padding-right:8px;min-width:0}
 .sar-tabla td{height:22px;min-width:22px;border-radius:3px}
 .c-ok{background:#2e9e5b}.c-lim{background:#f2c230}.c-no{background:#d6342c}.c-sd{background:#c8ced6}

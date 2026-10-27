@@ -199,11 +199,11 @@ function crearCasoSAR(L, map, ctx) {
     }
     // 4. Observaciones cercanas
     html += `<div class="sar-blq"><h3>Observaciones cercanas</h3>` +
-      (env.estaciones.length ? env.estaciones.map(({ s, mn }) => `<p><b>${escH(ctx.nombreEst(s))}</b> · ${Math.round(mn)} mn<br>${s.vel != null ? nf(s.vel, 0) + ' kt' : '–'} ${s.dirG != null ? sarCompas(s.dirG) : ''}${s.temp != null ? ' · ' + nf(s.temp, 1) + ' °C' : ''} · ${(t => t ? t.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }) + ' h' : '')(ctx.evaluar(s, Date.now()).t)}</p>`).join('') : '<p>Sin estaciones operativas cercanas.</p>') +
+      (env.estaciones.length ? env.estaciones.map(({ s, mn }) => `<p><b>${escH(ctx.nombreEst(s))}</b> · ${Math.round(mn)} mn<br>${s.vel != null ? nf(s.vel, 0) + ' kt' : '–'} ${s.dirG != null ? sarCompas(s.dirG) : ''}${s.temp != null ? ' · ' + nf(s.temp, 1) + ' °C' : ''} · ${(t => t ? t.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hour12: false }) + ' h' : '')(ctx.evaluar(s, Date.now()).t)}</p>`).join('') : '<p>Sin estaciones operativas cercanas.</p>') +
       env.boyas.map(({ b, mn }) => `<p><b>Boya ${escH(b.nombre)}</b> · ${Math.round(mn)} mn<br>${b.ultimo.hsig != null ? 'Hs ' + nf(b.ultimo.hsig, 1) + ' m' : ''}${b.ultimo.tp != null ? ' · Tp ' + nf(b.ultimo.tp, 0) + ' s' : ''}${b.ultimo.tw != null ? ' · agua ' + nf(b.ultimo.tw, 1) + ' °C' : ''}</p>`).join('') + '</div>';
     // 5. Avisos
     html += `<div class="sar-blq"><h3>Avisos en la posición</h3>` + (env.avisos.length ? env.avisos.map(({ a, z, e }) =>
-      `<p><span class="sar-pill sar-${e.k}">${e.txt}</span> <b>${escH(a.tipo)}</b><br>${escH(z.nombre)}<br><small>${e.ini.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} → ${e.fin.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small></p>`).join('')
+      `<p><span class="sar-pill sar-${e.k}">${e.txt}</span> <b>${escH(a.tipo)}</b><br>${escH(z.nombre)}<br><small>${e.ini.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} → ${e.fin.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</small></p>`).join('')
       : '<p>No hay avisos vigentes ni próximos que cubran la posición (radio de 5 mn).</p>') + '</div>';
     html += '</div>';
     // 6. Ventanas de operación
