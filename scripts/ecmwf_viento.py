@@ -40,6 +40,22 @@ def url(corrida, paso, ext):
 
 
 REGISTRO = []
+SESION = requests.Session()
+
+
+def pedir(u, encabezados=None, timeout=60):
+    """GET con reintentos: el repositorio S3 del ECMWF responde 503 (Slow Down) si se le pide demasiado rápido."""
+    import time
+    espera = 2
+    for intento in range(7):
+        r = SESION.get(u, headers={**CAB, **(encabezados or {})}, timeout=timeout)
+        if r.status_code not in (429, 500, 502, 503, 504):
+            r.raise_for_status()
+            return r
+        time.sleep(espera)
+        espera = min(espera * 2, 40)
+    r.raise_for_status()
+    return r
 
 
 def log(*a):
@@ -61,8 +77,8 @@ def corrida_completa(ahora):
     for k in range(4):
         corrida = c0 - timedelta(hours=12 * k)
         try:
-            r = requests.get(url(corrida, PLAZOS[-1], "index"), headers=CAB, timeout=30)
-            if r.ok and '"10u"' in r.text:
+            r = pedir(url(corrida, PLAZOS[-1], "index"), timeout=30)
+            if '"10u"' in r.text:
                 return corrida
         except Exception:
             pass
@@ -113,15 +129,13 @@ def recorte(v, lats, lons):
 
 
 def descargar(corrida, paso):
-    idx = requests.get(url(corrida, paso, "index"), headers=CAB, timeout=40)
-    idx.raise_for_status()
+    idx = pedir(url(corrida, paso, "index"), timeout=40)
     partes = {}
     for linea in idx.text.strip().splitlines():
         d = json.loads(linea)
         if d.get("param") in ("10u", "10v", "10fg") and d.get("param") not in partes:
             ini, largo = d["_offset"], d["_length"]
-            r = requests.get(url(corrida, paso, "grib2"), headers={**CAB, "Range": f"bytes={ini}-{ini + largo - 1}"}, timeout=120)
-            r.raise_for_status()
+            r = pedir(url(corrida, paso, "grib2"), {"Range": f"bytes={ini}-{ini + largo - 1}"}, timeout=120)
             partes[d["param"]] = r.content
     if "10u" not in partes or "10v" not in partes:
         raise RuntimeError(f"{paso} h: faltan 10u/10v")
@@ -187,7 +201,7 @@ def main():
         log("Viento ECMWF: sin cambios", clave); return
     if copiar_publicado(clave):
         return
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         futuros = {p: ex.submit(plazo, corrida, p) for p in PLAZOS}
     mallas, plazos = [], []
     for p, fut in futuros.items():
