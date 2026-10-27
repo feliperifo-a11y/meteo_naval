@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="MeteoIA">
 <meta name="application-name" content="MeteoIA">
 
-<style>/*LEAFLET_CSS*//*AVISOS_MAPA_CSS*/
+<style>/*LEAFLET_CSS*//*AVISOS_MAPA_CSS*//*CAPAS_MODELO_CSS*/
 </style>
 <style>
 :root{--bg:#06121f;--bg2:#0a1a2c;--card:#0e2136;--card2:#12294292;--line:#1d3a58;--ink:#e8f1fa;--muted:#8fa7bf;--acc:#2f8cff;--acc2:#5fb0ff;--am:#f2c230;--rj:#e53935;--ok:#34c26b;--ret:#f0a030;--no:#e5534b}
@@ -455,12 +455,23 @@ function cargarPuertos() {
 setInterval(cargarPuertos, 10 * 60000);
 
 const capaPuertos = buildPuertos();
-const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, false], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
+/*WW3_JS*/
+/*ECMWF_JS*/
+/*SST_JS*/
+const contMapa = document.getElementById('mapa');
+const capaECMWF = crearCapaECMWF(L, map, escH, contMapa), capaWW3 = crearCapaWW3(L, map, escH, contMapa), capaSST = crearCapaSST(L, map, escH, contMapa);
+const CAMPOS_COLOR = [capaViento, capaECMWF, capaWW3, capaSST];
+const CAPAS = [['Viento GFS (color)', capaViento, false], ['Viento ECMWF 9 km (costa)', capaECMWF, false], ['Oleaje WW3', capaWW3, false], ['Temperatura del mar (MUR 1 km)', capaSST, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, false], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
     '<div class="t" style="margin-top:8px">Mapa base</div><label><input type="radio" name="base" value="sat" checked> Imagen satelital</label><label><input type="radio" name="base" value="oc"> Océano (claro)</label><label><input type="radio" name="base" value="cos"> Sin conexión (costa)</label>';
-  pop.querySelectorAll('input[type=checkbox]').forEach(ch => ch.onchange = () => { const l = CAPAS[+ch.dataset.i][1]; ch.checked ? l.addTo(map) : map.removeLayer(l); if (l === capaViento) document.getElementById('leyViento').style.display = ch.checked && VIENTO ? '' : 'none'; });
+  pop.querySelectorAll('input[type=checkbox]').forEach(ch => ch.onchange = () => {
+    const l = CAPAS[+ch.dataset.i][1]; ch.checked ? l.addTo(map) : map.removeLayer(l);
+    // Los campos de color no se superponen: activar uno apaga los otros.
+    if (ch.checked && CAMPOS_COLOR.includes(l)) CAMPOS_COLOR.forEach(o => { if (o !== l && map.hasLayer(o)) { map.removeLayer(o); const c = pop.querySelector(`input[data-i="${CAPAS.findIndex(x => x[1] === o)}"]`); if (c) c.checked = false; } });
+    document.getElementById('leyViento').style.display = map.hasLayer(capaViento) && VIENTO ? '' : 'none';
+  });
   pop.querySelectorAll('input[name=base]').forEach(r => r.onchange = () => { map.removeLayer(base); base = r.value === 'sat' ? satelite : r.value === 'oc' ? oceano : costa; base.addTo(map); });
   CAPAS.forEach(([, l, on]) => { if (on) l.addTo(map); });
   document.getElementById('btnCapas').onclick = () => { pop.classList.toggle('on'); document.getElementById('btnCapas').classList.toggle('on'); };

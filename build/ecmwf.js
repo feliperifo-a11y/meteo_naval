@@ -14,7 +14,8 @@ const ECMWF_TABLA = (() => {
 })();
 function ecmwfRgb(kt) { return ECMWF_TABLA[Math.max(0, Math.min(70, Math.round(kt)))]; }
 function ecmwfBeaufort(kt) { return [1,4,7,11,17,22,28,34,41,48,56,64].findIndex(l => kt < l) < 0 ? 12 : [1,4,7,11,17,22,28,34,41,48,56,64].findIndex(l => kt < l); }
-function crearCapaECMWF(L, map, escapar) {
+function crearCapaECMWF(L, map, escapar, contenedor) {
+  contenedor = contenedor || document.getElementById('mapWrap');
   const grupo = L.layerGroup(), flechas = L.layerGroup();
   if (!map.getPane('ecmwfPane')) { map.createPane('ecmwfPane').style.zIndex = 404; }
   if (!map.getPane('ecmwfFlechaPane')) { const p = map.createPane('ecmwfFlechaPane'); p.style.zIndex = 407; p.style.pointerEvents = 'none'; }
@@ -32,7 +33,7 @@ function crearCapaECMWF(L, map, escapar) {
     '<details><summary>Actualización y alcance</summary><p class="uv-info"></p><p>Modelo global IFS del Centro Europeo (ECMWF) en su resolución nativa de 0,1° (≈ 9 km), ' +
     'recortado a la franja costera entre 17° S y 57° S. Datos abiertos con licencia CC-BY-4.0. Las flechas indican hacia dónde sopla el viento; ' +
     'la dirección del texto es la de procedencia. Se usan las corridas de 00 y 12 UTC; MeteoIA revisa cada 20 minutos si hay una nueva.</p></details></div>';
-  document.getElementById('mapWrap').appendChild(panel);
+  contenedor.appendChild(panel);
   L.DomEvent.disableClickPropagation(panel); L.DomEvent.disableScrollPropagation(panel);
   const estado = panel.querySelector('.uv-estado'), selector = panel.querySelector('select'), slider = panel.querySelector('.uv-slider'), play = panel.querySelector('.uv-play');
   const chkFlechas = panel.querySelector('.ww3-op input');

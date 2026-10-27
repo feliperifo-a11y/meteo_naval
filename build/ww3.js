@@ -18,7 +18,8 @@ function ww3Fecha(iso) {
   const d = new Date(iso);
   return d.toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).replace(/\./g, '');
 }
-function crearCapaWW3(L, map, escapar) {
+function crearCapaWW3(L, map, escapar, contenedor) {
+  contenedor = contenedor || document.getElementById('mapWrap');
   const grupo = L.layerGroup(), flechas = L.layerGroup();
   if (!map.getPane('ww3Pane')) { map.createPane('ww3Pane').style.zIndex = 405; }
   if (!map.getPane('ww3FlechaPane')) { const p = map.createPane('ww3FlechaPane'); p.style.zIndex = 406; p.style.pointerEvents = 'none'; }
@@ -36,7 +37,7 @@ function crearCapaWW3(L, map, escapar) {
     '<details><summary>Actualización y alcance</summary><p class="uv-info"></p><p>Modelo global WAVEWATCH III de NOAA (GFS-Wave), resolución 0,25° (≈ 28 km), mostrado en una grilla de 0,5°. ' +
     'Apto para alta mar y áreas costeras; no resuelve el interior de bahías. Las flechas indican hacia dónde avanza el oleaje; la dirección del texto es la de procedencia. ' +
     'MeteoIA revisa cada 20 minutos si hay una corrida nueva (el modelo corre cada 6 horas).</p></details></div>';
-  document.getElementById('mapWrap').appendChild(panel);
+  contenedor.appendChild(panel);
   L.DomEvent.disableClickPropagation(panel); L.DomEvent.disableScrollPropagation(panel);
   const estado = panel.querySelector('.uv-estado'), selector = panel.querySelector('select'), slider = panel.querySelector('.uv-slider'), play = panel.querySelector('.uv-play');
   const chkFlechas = panel.querySelector('.ww3-op input');
