@@ -48,6 +48,7 @@ BASE_AVISOS = "https://meteoarmada.directemar.cl"
 CABECERAS = {"User-Agent": "dashboard-meteo-publico/1.0 (consulta programada cada 20 min)"}
 PAUSA = 1.0          # segundos entre descargas, para no cargar los servidores
 CONSERVAR_H = 6      # horas que se mantiene un aviso después de expirar
+LECTOR_AVISOS_VERSION = 2  # releer PDFs cacheados cuando cambia la interpretación geográfica
 
 errores: list[str] = []
 
@@ -579,12 +580,11 @@ def ubicar(nombre: str):
     for k, v in sorted(LUGARES.items(), key=lambda x: -len(x[0])):
         if k in resto:
             lats.append(v); resto = resto.replace(k, "|")
-    # Límites por paralelo: "LATITUD 56 GDS SUR", "LAT 60 S", "PARALELO 56"
-    for m in re.finditer(r"(?:LATITUD|PARALELO|LAT)(\d{2})(?:GDS|GRADOS|G)?(?:SUR|S)?", resto):
-        v = int(m.group(1))
+    # Leer antes de compactar: conservar decimales y evitar que 960 se lea como 96.
+    for m in re.finditer(r"\b(?:LATITUD|PARALELO|LAT\.?)\s*(\d{1,2}(?:[.,]\d+)?)(?![\d.,])\s*(?:(?:GDS|GRADOS|G|[°º])\s*)?(?:SUR|S)?\b", nombre, re.I):
+        v = float(m.group(1).replace(",", "."))
         if 17 <= v <= 70:
-            lats.append(float(v))
-    resto = re.sub(r"(?:LATITUD|PARALELO|LAT)\d{2}(?:GDS|GRADOS|G)?(?:SUR|S)?", "|", resto)
+            lats.append(v)
     if not lats:
         return None
     n, m = min(lats), max(lats)
@@ -768,7 +768,7 @@ def leer_aviso_general(t: str, sector: str, ref: datetime, geo: Geo):
     sinop = seccion(tl, r"SITUACI[OÓ]N\s+SIN[OÓ]PTICA\s*:", [r"\bC\.\s*-", r"D[IÍ]A,\s*HORARIO"])
     zonas = []
     # Subsectores "SECTOR X A Y:" dentro del pronóstico
-    partes = list(re.finditer(r"SECTOR\s+([A-ZÁÉÍÓÚÑ0-9\.\s]+?)\s*:", pron, re.I))
+    partes = list(re.finditer(r"SECTOR\s+([A-ZÁÉÍÓÚÑ0-9.,°º\s]+?)\s*:", pron, re.I))
     for i, m in enumerate(partes):
         u = ubicar(m.group(1))
         if not u or u[0] != "banda": continue
@@ -1027,7 +1027,9 @@ def recolectar_avisos(geo: Geo) -> bool:
             if url in ignorar:
                 continue
             sector = titulo(p["sector"])
-            if url in previo and previo[url].get("_auto") and not previo[url].get("revisar") and os.environ.get("RELEER") != "1":
+            if (url in previo and previo[url].get("_auto") and not previo[url].get("revisar")
+                    and previo[url].get("_lector_version") == LECTOR_AVISOS_VERSION
+                    and os.environ.get("RELEER") != "1"):
                 avisos[url] = previo[url]; continue            # ya leído en una ejecución anterior
             t = texto_pdf(get(url).content)
             tipo = tipo_aviso(t, p["tipo_portada"])
@@ -1039,7 +1041,8 @@ def recolectar_avisos(geo: Geo) -> bool:
                 nota = ""
             zonas = zonas_validas(zonas)
             a = {"tipo": tipo, "sector": sector, "codigo": codigo_legible(codigo(t)) or p["publicado"], "url": url, "pagina": p["pagina"],
-                 "publicado": p["publicado"], "resumen": res, "nota": nota, "zonas": zonas, "_auto": True}
+                 "publicado": p["publicado"], "resumen": res, "nota": nota, "zonas": zonas, "_auto": True,
+                 "_lector_version": LECTOR_AVISOS_VERSION}
             if not zonas:
                 a["revisar"] = True
                 a["motivo"] = "No se pudo leer el PDF (posible imagen escaneada) o no trae fechas/sector reconocibles." if not t.strip() else "No se reconocieron fechas de validez o sectores."
@@ -1156,3 +1159,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+

@@ -25,7 +25,7 @@ test('las fechas UV no reciben una zona horaria inventada y una corrida incomple
 });
 test('Marejadas UV está desactivada inicialmente y solo pertenece al dashboard y al recolector con caché de dos horas',()=>{
   const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8'),principal=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.match(dashboard,/'talc_uv', 'Marejadas UV'.*false,/);assert.doesNotMatch(principal,/crearMarejadasUV|uv-panel/);
+  assert.match(dashboard,/'talc_uv', 'Marejadas UV'.*false,/);assert.doesNotMatch(principal,/crearMarejadasUV/); // La portada reutiliza el CSS del panel para otros modelos.
   assert.doesNotMatch(dashboard,/\/\*MAREJADAS_UV_(JS|CSS)\*\//);
   const wf=fs.readFileSync(path.join(root,'.github/workflows/actualizar.yml'),'utf8');
   assert.equal((wf.match(/for f in marejadas_uv.json/g)||[]).length,2);
