@@ -459,8 +459,26 @@ class Geo:
         costeras = [self.areas[k] for k in ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"] if k in self.areas]
         self.costera = unary_union(costeras)
         self.franja = self.tierra.buffer(0.22).difference(self.tierra)
+        self._interiores = None
 
-    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None, area=None, puntos=None):
+    @property
+    def interiores(self):
+        """Aguas interiores australes (fiordos, canales, estrecho de Magallanes, senos, canal Beagle).
+        Se cierran las bocas angostas de la costa (cierre morfológico de 0,12°) y se consideran interiores las aguas
+        que quedan sin conexión con el Pacífico; el límite oriental (68,6° W) evita contar el Atlántico, que se une al
+        Pacífico por el sur del cabo de Hornos. Se agrega el tramo oriental del canal Beagle."""
+        if self._interiores is None:
+            r, caja = 0.12, box(-82, -57.5, -68.6, -41.4)
+            cerr = self.tierra.intersection(caja.buffer(1)).buffer(r, resolution=8).buffer(-r, resolution=8)
+            mar = caja.difference(cerr)
+            exterior = unary_union([p for p in getattr(mar, "geoms", [mar]) if p.bounds[0] <= -81.9])
+            inter = caja.difference(self.tierra).difference(exterior.buffer(0.002))
+            beagle = box(-68.6, -55.0, -66.4, -54.75).difference(self.tierra)
+            partes = [p for p in getattr(inter, "geoms", [inter]) if p.area > 1e-5] + [beagle]
+            self._interiores = unary_union(partes).buffer(0)
+        return self._interiores
+
+    def zona(self, forma: str, lat_n=None, lat_s=None, centro=None, radio=None, lon_e=None, lon_w=None, area=None, puntos=None, interiores=False):
         if forma == "area" and area in self.areas:      # subárea completa de la capa METAREA XV
             g = self.areas[area]
         elif forma in ("rectangulo", "area"):   # sector de alta mar delimitado por latitudes y longitudes
@@ -479,6 +497,9 @@ class Geo:
                 g = self.franja.intersection(box(-77.5, s, este, n))
             else:
                 g = self.costera.intersection(box(-82, s, este, n))
+            # Los sectores costeros no incluyen las aguas interiores, salvo que el aviso las nombre.
+            if not interiores and s < -41.4:
+                g = g.difference(self.interiores)
         g = g.difference(self.tierra).buffer(0).simplify(0.01, preserve_topology=True)
         areas = [area] if forma == "area" and area in self.areas else [k for k, a in self.areas.items() if a.intersection(g).area > 1e-4]
         g = set_precision(g, 0.001)
@@ -521,6 +542,16 @@ ISLAS = {  # nombre compacto → (lat, lon)
     "RAPANUI": (-27.12, -109.35), "ISLADEPASCUA": (-27.12, -109.35), "JUANFERNANDEZ": (-33.65, -79.0),
     "SANFELIX": (-26.28, -80.09), "DESVENTURADAS": (-26.3, -80.0), "SALASYGOMEZ": (-26.47, -105.36),
 }
+
+
+AGUAS_INTERIORES = ("CANAL", "ESTRECHO", "MAGALLANES", "SENO", "FIORDO", "ESTERO", "BEAGLE", "AGUASINTERIORES",
+                    "MARINTERIOR", "GOLFODEANCUD", "CORCOVADO", "RELONCAVI", "CHACAO", "ANGOSTURA")
+
+
+def es_interior(nombre: str) -> bool:
+    """El sector nombra aguas interiores (canales, estrecho, senos…): su zona sí las incluye."""
+    c = compacto(nombre or "")
+    return any(k in c for k in AGUAS_INTERIORES)
 
 
 def compacto(s: str) -> str:
@@ -716,7 +747,7 @@ def leer_marejadas(t: str, ref: datetime, geo: Geo):
         if u[0] == "circulo":
             z = geo.zona("circulo", centro=u[1], radio=0.6)
         else:
-            z = geo.zona("franja", lat_n=u[1][0], lat_s=u[1][1])
+            z = geo.zona("franja", lat_n=u[1][0], lat_s=u[1][1], interiores=es_interior(nombre))
         zonas.append({"nombre": nom, "desde": iso(desde), "hasta": iso(hasta),
                       "detalle": f"{m.group(2).title()} {m.group(3)}{' (' + m.group(5) + ')' if m.group(5) else ''} al fin del {hasta.astimezone(TZ) - timedelta(days=1):%d/%m}.", **z})
     res = seccion(tt, r"DIRECCION DEL OLEAJE\s*:", [r"\d\.\s*INICIO", r"INICIO"])
@@ -741,12 +772,12 @@ def leer_aviso_general(t: str, sector: str, ref: datetime, geo: Geo):
         if not u or u[0] != "banda": continue
         cuerpo = pron[m.end(): partes[i + 1].start() if i + 1 < len(partes) else len(pron)]
         zonas.append({"nombre": titulo(m.group(1)), "desde": iso(desde), "hasta": iso(hasta),
-                      "detalle": resumen_corto(cuerpo, 260), **geo.zona("sector", lat_n=u[1][0], lat_s=u[1][1])})
+                      "detalle": resumen_corto(cuerpo, 260), **geo.zona("sector", lat_n=u[1][0], lat_s=u[1][1], interiores=es_interior(m.group(1)))})
     if not zonas:
         linea_a = seccion(tl, r"A\.\s*-?", [r"V[AÁ]LID", r"\bB\.\s*-"])
         u = ubicar(sector) or ubicar(linea_a)
         if u:
-            g = geo.zona("circulo", centro=u[1], radio=1.0) if u[0] == "circulo" else geo.zona("sector", lat_n=u[1][0], lat_s=u[1][1])
+            g = geo.zona("circulo", centro=u[1], radio=1.0) if u[0] == "circulo" else geo.zona("sector", lat_n=u[1][0], lat_s=u[1][1], interiores=es_interior(sector))
             zonas.append({"nombre": sector, "desde": iso(desde), "hasta": iso(hasta), "detalle": resumen_corto(pron, 300), **g})
     return zonas, resumen_corto(("Situación sinóptica: " + sinop) if sinop else pron, 260)
 
@@ -1097,7 +1128,7 @@ def aplicar_manual(a: dict, geo: Geo) -> dict:
         if z.get("forma") == "circulo":
             g = geo.zona("circulo", centro=z["centro"], radio=z.get("radio", 1.0))
         else:
-            g = geo.zona(z.get("forma", "sector"), lat_n=z["lat_norte"], lat_s=z["lat_sur"])
+            g = geo.zona(z.get("forma", "sector"), lat_n=z["lat_norte"], lat_s=z["lat_sur"], interiores=z.get("interiores", es_interior(z.get("nombre", ""))))
         zonas.append({k: v for k, v in z.items() if k not in ("forma", "lat_norte", "lat_sur", "centro", "radio")} | g)
     out = {**a, "zonas": zonas, "manual": True}
     out.pop("revisar", None); out.pop("motivo", None)
