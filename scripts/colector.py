@@ -500,6 +500,8 @@ class Geo:
             # Los sectores costeros no incluyen las aguas interiores, salvo que el aviso las nombre.
             if not interiores and s < -41.4:
                 g = g.difference(self.interiores)
+        # Costa atlántica de Tierra del Fuego al este del límite con Argentina (meridiano 68°36'38" W): fuera del área de responsabilidad.
+        g = g.difference(box(-68.61, -54.8, -60, -52.3))
         g = g.difference(self.tierra).buffer(0).simplify(0.01, preserve_topology=True)
         areas = [area] if forma == "area" and area in self.areas else [k for k, a in self.areas.items() if a.intersection(g).area > 1e-4]
         g = set_precision(g, 0.001)
