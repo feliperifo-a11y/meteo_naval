@@ -467,7 +467,7 @@ const capaCasoSAR = (() => {
   try { l = JSON.parse(localStorage.getItem('meteoia_casos_sar') || 'null'); if (!Array.isArray(l)) { const v = JSON.parse(localStorage.getItem('meteoia_caso_sar') || 'null'); l = v ? [{ ...v, id: '', n: 1, nombre: 'Caso 1' }] : []; } } catch (e) { l = []; }
   l = l.filter(c => isFinite(c.lat) && isFinite(c.lon)); if (!l.length) return null;
   const FASES = { incertidumbre: ['Incertidumbre', '#d9a400'], alerta: ['Alerta', '#ff7a00'], peligro: ['Peligro', '#d32f2f'] };
-  const dm = (v, p, n) => { const a = Math.abs(v), g = Math.floor(a); return `${g}°${((a - g) * 60).toFixed(1).replace('.', ',')}′ ${v < 0 ? n : p}`; };
+  const dm = (v, p, n) => { const t = Math.round(Math.abs(v) * 600), g = Math.floor(t / 600); return `${g}°${((t - g * 600) / 10).toFixed(1).replace('.', ',')}′ ${v < 0 ? n : p}`; };
   return L.layerGroup(l.map(c => {
     const [fn, col] = FASES[c.fase] || ['Sin fase declarada', '#6b7a8c'];
     return L.marker([c.lat, c.lon], { zIndexOffset: 2000, icon: L.divIcon({ className: 'sar-marca', iconSize: [30, 30], iconAnchor: [15, 15],

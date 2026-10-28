@@ -23,6 +23,23 @@ function sarLimiteSupervivencia(t) {
   }
   return { horas: 40 };
 }
+// Abatimiento (deriva causada por el viento) como fracción de la velocidad del viento, hacia sotavento.
+// Personas en el agua: sin abatimiento (IAMSAR ed. 2022, vol. III, pág. 12-4). Balsas: gráfico de la pág. 12-5 (lectura aproximada).
+const SAR_OBJETOS = {
+  piw: { nombre: 'Persona en el agua', k: 0, nota: 'sin abatimiento (IAMSAR vol. III, 12-4)' },
+  balsa: { nombre: 'Balsa salvavidas sin ancla flotante', k: 0.072 },
+  balsa_lastre: { nombre: 'Balsa con sistema de lastre perfeccionado', k: 0.043 },
+  balsa_ancla: { nombre: 'Balsa con ancla flotante', k: 0.032 },
+  balsa_capota: { nombre: 'Balsa con ancla flotante y capota plegada', k: 0.022 },
+  otro: { nombre: 'Otro objeto (indicar % del viento)', k: null }
+};
+// Desplaza una posición una distancia (mn) en un rumbo (°).
+function sarMover(lat, lon, rumbo, mn) {
+  const r = Math.PI / 180, d = mn / 3440.065, la1 = lat * r, lo1 = lon * r, b = rumbo * r;
+  const la2 = Math.asin(Math.sin(la1) * Math.cos(d) + Math.cos(la1) * Math.sin(d) * Math.cos(b));
+  const lo2 = lo1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la1), Math.cos(d) - Math.sin(la1) * Math.sin(la2));
+  return [la2 / r, lo2 / r];
+}
 const SAR_DISTRITOS = [[-26.0556, 'I'], [-34.6833, 'II'], [-40.2417, 'III'], [-48.8167, 'IV'], [-90, 'V']];
 function sarMillas(a, b) {
   const r = Math.PI / 180, dla = (b[0] - a[0]) * r, dlo = (b[1] - a[1]) * r;
@@ -35,7 +52,7 @@ function sarRumbo(a, b) {
   return (Math.atan2(y, x) / r + 360) % 360;
 }
 function sarDM(v, pos, neg) {
-  const a = Math.abs(v), g = Math.floor(a), m = (a - g) * 60;
+  const dm = Math.round(Math.abs(v) * 600), g = Math.floor(dm / 600), m = (dm - g * 600) / 10;   // redondeo a 0,1′ sin dar 60,0′
   return `${g}°${m.toFixed(1).replace('.', ',').padStart(4, '0')}′ ${v < 0 ? neg : pos}`;
 }
 // Admite "-36.5", "36,5 S", "36 30.0 S", "36°30,0'S", "36 30 15 S".
@@ -258,7 +275,12 @@ function crearCasoSAR(L, map, ctx) {
     if (casos.length) seleccionar(casos[casos.length - 1].id, true);
     else { form.lat.value = ''; form.lon.value = ''; pintarCabecera(); }
   };
-  form.hora.addEventListener('change', () => { const c = caso(); if (c) { c.hora = form.hora.value; guardar(); } else if (borrador) borrador.hora = form.hora.value; if (ultimo) pintar(); });
+  form.hora.addEventListener('change', () => {
+    const c = caso(); if (c) { c.hora = form.hora.value; guardar(); } else if (borrador) borrador.hora = form.hora.value;
+    if (!ultimo) return;
+    const t0 = ultimo.d?.a?.hourly?.time?.[0], hi = form.hora.value;
+    if (hi && t0 && hi.slice(0, 13) < t0.slice(0, 13)) analizar(ultimo.lat, ultimo.lon, false); else pintar();
+  });
   card.querySelector('.sar-min').onclick = () => { const m = card.classList.toggle('sar-minimizada'); card.querySelector('.sar-min').textContent = m ? '▴' : '▾'; };
   card.querySelector('.sar-cerrar').onclick = cerrar;
   card.querySelector('.sar-elegir').onclick = () => modoElegir(true);
@@ -273,6 +295,7 @@ function crearCasoSAR(L, map, ctx) {
     e.preventDefault();
     const la = sarLeerCoord(form.lat.value, true), lo = sarLeerCoord(form.lon.value, false);
     if (!isFinite(la) || !isFinite(lo)) { res.innerHTML = '<p class="sar-error">Revisa las coordenadas: no se pudieron interpretar.</p>'; return; }
+    if (eligiendo) modoElegir(false);   // posición escrita a mano: termina la elección y restaura las capas
     fijar(la, lo, true);
   };
 
@@ -302,8 +325,10 @@ function crearCasoSAR(L, map, ctx) {
   casos.forEach(pintarMarca);
   if (casos.length) capaCaso.addTo(map);
 
+  // Días hacia atrás según la hora del incidente, para poder calcular la deriva desde ese momento.
+  const diasAtras = () => { const t = form.hora.value ? (Date.now() - new Date(form.hora.value)) / 864e5 : 0; return Math.min(7, Math.max(1, Math.ceil(isFinite(t) ? t : 0) + 1)); };
   async function datosPunto(lat, lon) {
-    const q = `latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&forecast_days=4&timezone=America%2FSantiago`;
+    const q = `latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&forecast_days=4&past_days=${diasAtras()}&timezone=America%2FSantiago`;
     const [a, m] = await Promise.all([
       fetch(`https://api.open-meteo.com/v1/forecast?${q}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,precipitation&models=ecmwf_ifs,gfs_global&daily=sunrise,sunset&wind_speed_unit=kn`, { signal: AbortSignal.timeout(20000) }).then(r => r.json()),
       fetch(`https://marine-api.open-meteo.com/v1/marine?${q}&hourly=wave_height,wave_period,wave_direction,wind_wave_height,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature,ocean_current_velocity,ocean_current_direction`, { signal: AbortSignal.timeout(20000) }).then(r => r.json()).catch(() => ({}))
@@ -397,11 +422,29 @@ function crearCasoSAR(L, map, ctx) {
       `<p><span class="sar-pill sar-${e.k}">${e.txt}</span> <b>${escH(a.tipo)}</b><br>${escH(z.nombre)}<br><small>${e.ini.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} → ${e.fin.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</small></p>`).join('')
       : '<p>No hay avisos vigentes ni próximos que cubran la posición (radio de 5 mn).</p>') + '</div>';
     html += '</div>';
-    // 6. Ventanas de operación
+    // 6. Deriva y dátum
+    let deriva = null;
+    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); }
+    // 7. Ventanas de operación
     if (h) html += ventanas(h, mh, i0, d.a.daily || {});
     html += `<p class="sar-nota">Fuentes: pronóstico puntual Open-Meteo (ECMWF IFS 9 km y NOAA GFS para viento, ráfaga y visibilidad; Météo-France para oleaje, temperatura del agua y corriente), observaciones y avisos de MeteoIA.
       Herramienta de apoyo en validación: no reemplaza los procedimientos SAR, los avisos oficiales ni las herramientas de planificación de búsqueda.</p>`;
     res.innerHTML = html;
+    if (deriva && deriva.ok) {
+      const cir = dibujarDeriva(lat, lon, deriva);
+      // Encuadre: última posición conocida, trayectoria y círculo del error, sin quedar bajo la ficha.
+      const lim = L.latLngBounds(deriva.tray).extend(L.latLng(deriva.datum).toBounds(deriva.E * 1852 * 2)); void cir;
+      if (!map.getBounds().pad(-0.05).contains(lim)) {
+        const lateral = window.innerWidth > 1050, ancho = lateral ? card.offsetWidth + 20 : 0, alto = lateral ? 0 : card.offsetHeight + 16;
+        map.fitBounds(lim, { paddingTopLeft: [60, 70], paddingBottomRight: [ancho + 40, alto + 40], maxZoom: 11, animate: false });
+      }
+    }
+    res.querySelectorAll('.sar-der-in').forEach(inp => inp.onchange = () => {
+      const c = caso() || borrador; if (!c) return;
+      const v = inp.tagName === 'SELECT' ? inp.value : parseFloat(String(inp.value).replace(',', '.'));
+      c[inp.dataset.k] = inp.tagName === 'SELECT' ? v : (isFinite(v) && v >= 0 ? v : null);
+      if (caso()) guardar(); pintar();
+    });
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => {
       const m = medios.find(x => x.id === inp.dataset.id), v = parseFloat(String(inp.value).replace(',', '.'));
       m[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; guardarMedios(); pintar();
@@ -427,6 +470,72 @@ function crearCasoSAR(L, map, ctx) {
     }
     for (const { s, mn } of env.estaciones) L.polyline([[s.lat, s.lon], [lat, lon]], { color: '#147b88', weight: 1.5, dashArray: '3 5', opacity: .8, interactive: false })
       .bindTooltip(`${escH(ctx.nombreEst(s))} · ${Math.round(mn)} mn`).addTo(grupoMapa);
+  }
+
+  // ---- Deriva (IAMSAR vol. II, 4.4–4.5; vol. III, sección 12) ----
+  // Paso horario desde la hora del incidente hasta la hora del dátum: deriva = corriente total en el agua + abatimiento.
+  // Se usan el viento (ECMWF 9 km) y la corriente (Météo-France) pronosticados en la posición inicial durante todo el intervalo.
+  function calcularDeriva(lat, lon, h, mh, horaAhora) {
+    const c = caso() || borrador || {};
+    const objeto = SAR_OBJETOS[c.objeto] ? c.objeto : 'piw', obj = SAR_OBJETOS[objeto];
+    const k = obj.k != null ? obj.k : (c.factor != null ? c.factor / 100 : null);
+    const X = c.errX ?? 1, Y = c.errY ?? 0.5, plazo = +(c.plazo ?? 0);
+    const out = { objeto, k, X, Y, plazo, ok: false };
+    const hi = form.hora.value; if (!hi) { out.motivo = 'Indica la hora del incidente para calcular la deriva.'; return out; }
+    if (k == null) { out.motivo = 'Indica el abatimiento del objeto como porcentaje del viento (cartas de abatimiento del IAMSAR).'; return out; }
+    const t = h.time, iIni = t.findIndex(x => x.slice(0, 13) >= hi.slice(0, 13));
+    const iNow = Math.max(0, t.indexOf(horaAhora)), iFin = Math.min(t.length - 1, iNow + plazo);
+    if (iIni < 0 || iIni > iFin) { out.motivo = iIni > iFin ? 'La hora del incidente es posterior a la hora del dátum.' : 'La hora del incidente está fuera del rango de datos disponible.'; return out; }
+    if (hi.slice(0, 13) < t[0].slice(0, 13)) { out.motivo = 'El incidente es anterior al período con datos (máximo 7 días).'; return out; }
+    const sinCorriente = !mh.ocean_current_velocity;
+    let p = [lat, lon]; const tray = [p.slice()]; let horas = 0;
+    // Primera hora: fracción desde el minuto del incidente.
+    const frac0 = 1 - (+hi.slice(14, 16) || 0) / 60;
+    for (let i = iIni; i < iFin; i++) {
+      const dt = i === iIni ? frac0 : 1;
+      const w = h.wind_speed_10m_ecmwf_ifs?.[i] ?? h.wind_speed_10m_gfs_global?.[i], wd = h.wind_direction_10m_ecmwf_ifs?.[i] ?? h.wind_direction_10m_gfs_global?.[i];
+      const cv = sinCorriente ? 0 : (mh.ocean_current_velocity[i] ?? 0) / 1.852, cd = sinCorriente ? 0 : (mh.ocean_current_direction[i] ?? 0);
+      // Componentes (hacia el E y hacia el N) en nudos.
+      let ve = cv * Math.sin(cd * Math.PI / 180), vn = cv * Math.cos(cd * Math.PI / 180);
+      if (w != null && wd != null && k > 0) { const sot = (wd + 180) % 360; ve += k * w * Math.sin(sot * Math.PI / 180); vn += k * w * Math.cos(sot * Math.PI / 180); }
+      const vel = Math.hypot(ve, vn), rumbo = (Math.atan2(ve, vn) * 180 / Math.PI + 360) % 360;
+      p = sarMover(p[0], p[1], rumbo, vel * dt); tray.push(p.slice()); horas += dt;
+    }
+    const dist = sarMillas([lat, lon], p), rumboTotal = dist > 0.01 ? sarRumbo([lat, lon], p) : null;
+    // Error probable de la velocidad de deriva: 0,3 kt por componente (corriente y, si corresponde, abatimiento).
+    const DVe = Math.sqrt(0.3 ** 2 + (k > 0 ? 0.3 ** 2 : 0)), De = DVe * horas, E = Math.sqrt(De ** 2 + X ** 2 + Y ** 2);
+    return Object.assign(out, { ok: true, datum: p, tray, horas, dist, rumbo: rumboTotal, vel: horas > 0 ? dist / horas : 0, DVe, De, E, sinCorriente, hora: t[iFin] });
+  }
+  function bloqueDeriva(d) {
+    const c = caso() || borrador || {};
+    const opts = Object.entries(SAR_OBJETOS).map(([k, o]) => `<option value="${k}"${k === d.objeto ? ' selected' : ''}>${o.nombre}${o.k ? ` (≈${Math.round(o.k * 1000) / 10} % del viento)` : ''}</option>`).join('');
+    const plazos = [0, 3, 6, 12, 24].map(x => `<option value="${x}"${+d.plazo === x ? ' selected' : ''}>${x ? '+' + x + ' h (planificación)' : 'Ahora'}</option>`).join('');
+    const num = v => v == null ? '' : String(v).replace('.', ',');
+    let html = `<div class="sar-blq sar-deriva"><h3>Deriva y dátum</h3>
+      <div class="sar-der-form"><label>Objeto de la búsqueda<select class="sar-der-in" data-k="objeto">${opts}</select></label>
+      ${d.objeto === 'otro' ? `<label>Abatimiento (% del viento)<input class="sar-der-in" data-k="factor" inputmode="decimal" value="${num(c.factor)}"></label>` : ''}
+      <label>Dátum para<select class="sar-der-in" data-k="plazo">${plazos}</select></label>
+      <label>Error posición inicial X (mn)<input class="sar-der-in" data-k="errX" inputmode="decimal" value="${num(d.X)}"></label>
+      <label>Error medio de búsqueda Y (mn)<input class="sar-der-in" data-k="errY" inputmode="decimal" value="${num(d.Y)}"></label></div>`;
+    if (!d.ok) return html + `<p class="sar-nota">${d.motivo}</p></div>`;
+    html += `<p>Deriva de <b>${nf(d.dist, 1)} mn</b>${d.rumbo != null ? ` hacia el <b>${sarCompas(d.rumbo)}</b> (${Math.round(d.rumbo)}°)` : ''} en ${nf(d.horas, 1)} h · velocidad media ${nf(d.vel, 2)} kt</p>
+      <p>Dátum (${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h): <b>${sarDM(d.datum[0], 'N', 'S')} · ${sarDM(d.datum[1], 'E', 'W')}</b></p>
+      <p>Error total probable <b>E = ${nf(d.E, 1)} mn</b> (De ${nf(d.De, 1)} · X ${nf(d.X, 1)} · Y ${nf(d.Y, 1)} mn): círculo con 50 % de probabilidad de contener a los supervivientes.</p>
+      ${d.sinCorriente ? '<p class="sar-error">Sin dato de corriente en la posición: la deriva solo considera el abatimiento.</p>' : ''}
+      <details class="sar-sup-info"><summary>Supuestos del cálculo</summary>
+      <p>Deriva = corriente total en el agua + abatimiento, paso horario desde la hora del incidente. ${SAR_OBJETOS[d.objeto].nota ? 'Persona en el agua: ' + SAR_OBJETOS[d.objeto].nota + '.' : 'Abatimiento hacia sotavento, sin divergencia lateral.'} Viento ECMWF 9 km y corriente Météo-France pronosticados <b>en la posición inicial</b> durante todo el intervalo (válido para derivas cortas; no incluye corriente de marea local ni de arrastre por separado).</p>
+      <p>Error de la velocidad de deriva 0,3 kt por componente (valor por defecto del IAMSAR cuando no hay mejor estimación); De = error × horas; E = √(De² + X² + Y²).</p>
+      <p class="sar-nota">Fuentes: Manual IAMSAR vol. II ed. 2016, párrafos 4.4 y 4.5; vol. III ed. 2022, sección 12 (págs. 12-4 y 12-5). Herramienta de apoyo: no reemplaza la planificación de búsqueda del MRCC.</p></details></div>`;
+    return html;
+  }
+  function dibujarDeriva(lat, lon, d) {
+    L.circleMarker([lat, lon], { radius: 5, color: '#fff', weight: 2, fillColor: '#5b6673', fillOpacity: 1 }).bindTooltip('Última posición conocida (hora del incidente)').addTo(grupoMapa);
+    L.polyline(d.tray, { color: '#7a3cff', weight: 3, opacity: .9 }).bindTooltip(`Deriva ${nf(d.dist, 1)} mn en ${nf(d.horas, 1)} h`).addTo(grupoMapa);
+    const cir = L.circle(d.datum, { radius: d.E * 1852, color: '#7a3cff', weight: 2, dashArray: '6 5', fillColor: '#7a3cff', fillOpacity: .08 })
+      .bindTooltip(`Error total probable E = ${nf(d.E, 1)} mn`).addTo(grupoMapa);
+    L.marker(d.datum, { icon: L.divIcon({ className: 'sar-datum', html: '<svg width="26" height="24" viewBox="0 0 26 24"><path d="M13 2 24 22H2Z" fill="#7a3cff" stroke="#fff" stroke-width="2"/></svg>', iconSize: [26, 24], iconAnchor: [13, 16] }) })
+      .bindTooltip(`<b>Dátum</b> ${sarFmtHora(d.hora)} h<br>${sarDM(d.datum[0], 'N', 'S')} · ${sarDM(d.datum[1], 'E', 'W')}`, { direction: 'bottom', offset: [0, 8] }).addTo(grupoMapa);
+    return cir;
   }
 
   // Tiempo de supervivencia de referencia (IAMSAR vol. II, fig. N-14) según la temperatura del agua y el tiempo transcurrido.
