@@ -1,7 +1,7 @@
 name: Verificar app gratuita
 on:
   pull_request:
-    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano*', 'data/geo/valparaiso*', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'scripts/wrf_servimet.py', 'scripts/talcahuano_observaciones.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
+    paths: ['app/**', 'build/**', 'data/geo/sar.json', 'data/geo/talcahuano*', 'data/geo/valparaiso*', 'scripts/colector.py', 'data/geo/land.json', 'data/geo/metarea.json', 'scripts/construir_index.py', 'scripts/verificar_app.py', 'scripts/marejadas_uv.py', 'scripts/wrf_servimet.py', 'scripts/talcahuano_observaciones.py', 'requirements.txt', '.github/workflows/actualizar.yml', 'sw-app.js', 'tests/**', '.github/workflows/verificar-app.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
         run: node --test tests/*.test.cjs
       - name: Verificar lectura y georreferencia de cartas
         run: |
-          pip install numpy pillow pyproj
+          pip install numpy pillow pyproj requests pypdf shapely
           sudo apt-get update -qq
           sudo apt-get install -y -qq tesseract-ocr
           python -m unittest discover -s tests -p "test_*.py"
