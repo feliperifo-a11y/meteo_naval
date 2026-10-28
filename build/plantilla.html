@@ -1856,13 +1856,23 @@ map.on('popupopen', e => setTimeout(() => {
   ajustarMapa();
 })();
 map.fitBounds([[-56.5, -82], [-17.5, -66]]);
-// Contador de visitas (servicio público gratuito; una visita por sesión del navegador). Si falla, no se muestra.
+// Total de GoatCounter (estadísticas del sitio, visible por la opción «permitir recuentos»); se actualiza con hasta 4 h de retraso.
+async function totalGoatCounter() {
+  try {
+    const c = new AbortController(); setTimeout(() => c.abort(), 8000);
+    const r = await fetch('https://meteoia.goatcounter.com/counter/TOTAL.json', { cache: 'no-store', signal: c.signal });
+    const n = parseInt(String((await r.json()).count || '').replace(/\D/g, ''), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch (e) { return null; }
+}
+// Contador de visitas: muestra el total de GoatCounter; si no responde, el contador propio (una visita por sesión).
 async function contarVisita(nueva) {
   const base = 'https://abacus.jasoncameron.dev', clave = 'feliperifo-meteo-naval/visitas';
   try {
     const c = new AbortController(); setTimeout(() => c.abort(), 8000);
-    const r = await fetch(`${base}/${nueva ? 'hit' : 'get'}/${clave}`, { cache: 'no-store', signal: c.signal });
-    const v = (await r.json()).value;
+    let v = null;
+    try { const r = await fetch(`${base}/${nueva ? 'hit' : 'get'}/${clave}`, { cache: 'no-store', signal: c.signal }); v = (await r.json()).value; } catch (e) {}
+    v = (await totalGoatCounter()) ?? (typeof v === 'number' ? v : null);
     if (typeof v === 'number') {
       const el = document.getElementById('visitas');
       el.querySelector('span').textContent = `${v.toLocaleString('es-CL')} visita${v === 1 ? '' : 's'}`;

@@ -129,7 +129,7 @@ a{color:var(--acc2)}
 <body>
 <div class="top">
   <a class="logo" href="./" title="MeteoIA"><span class="mk"><img src="app/logo-meteoia.png" alt=""></span><span><b>Meteo<i>IA</i></b><span>Inteligencia artificial para decisiones marítimas más seguras</span></span></a>
-  <div class="reloj"><div class="h"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="hora">–</span></div><div class="s"><span id="estadoDatos">Cargando datos…</span><span class="visitas" id="visitas" title="Visitas a la página (una por sesión del navegador). Estadísticas anónimas: no se usan cookies ni datos personales." hidden><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span></span></span></div></div>
+  <div class="reloj"><div class="h"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="hora">–</span></div><div class="s"><span id="estadoDatos">Cargando datos…</span><span class="visitas" id="visitas" title="Visitas registradas por GoatCounter (se actualiza con hasta 4 horas de retraso). Estadísticas anónimas: no se usan cookies ni datos personales." hidden><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span></span></span></div></div>
 </div>
 <nav class="nav"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <linearGradient id="gOla" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1e88ff"/><stop offset="1" stop-color="#22c3ee"/></linearGradient>
@@ -672,14 +672,25 @@ setInterval(async () => { try { const v = (await (await fetch('version.txt?t=' +
 window.addEventListener('load', () => { try { window.mnEvento && mnEvento('inicio-v2'); } catch (e) {} });
 </script>
 <script>
-// Contador de visitas (mismo contador del dashboard; una visita por sesión del navegador). Si falla, no se muestra.
+// Total de GoatCounter (estadísticas del sitio, visible por la opción «permitir recuentos»); se actualiza con hasta 4 h de retraso.
+async function totalGoatCounter() {
+  try {
+    const c = new AbortController(); setTimeout(() => c.abort(), 8000);
+    const r = await fetch('https://meteoia.goatcounter.com/counter/TOTAL.json', { cache: 'no-store', signal: c.signal });
+    const n = parseInt(String((await r.json()).count || '').replace(/\D/g, ''), 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch (e) { return null; }
+}
+// Contador de visitas: muestra el total de GoatCounter; si no responde, el contador propio (una visita por sesión).
 async function contarVisita(nueva) {
+  let v = null;
   try {
     const c = new AbortController(); setTimeout(() => c.abort(), 8000);
     const r = await fetch(`https://abacus.jasoncameron.dev/${nueva ? 'hit' : 'get'}/feliperifo-meteo-naval/visitas`, { cache: 'no-store', signal: c.signal });
-    const v = (await r.json()).value;
-    if (typeof v === 'number') { const el = document.getElementById('visitas'); el.querySelector('span').textContent = `· ${v.toLocaleString('es-CL')} visita${v === 1 ? '' : 's'}`; el.hidden = false; }
+    v = (await r.json()).value;
   } catch (e) {}
+  v = (await totalGoatCounter()) ?? (typeof v === 'number' ? v : null);
+  if (v != null) { const el = document.getElementById('visitas'); el.querySelector('span').textContent = `· ${v.toLocaleString('es-CL')} visita${v === 1 ? '' : 's'}`; el.hidden = false; }
 }
 (function () { let nueva = true; try { nueva = !sessionStorage.getItem('mn_visita'); sessionStorage.setItem('mn_visita', '1'); } catch (e) {}
   contarVisita(nueva); setInterval(() => contarVisita(false), 5 * 60000); })();
