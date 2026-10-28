@@ -10,7 +10,7 @@ const SAR_MEDIOS_BASE = [
   { id: 'helo', nombre: 'Helicóptero', viento: 40, ola: null, vis: 1.5 }
 ];
 // Límite superior realista del tiempo de supervivencia en el agua con ropa normal, desde la entrada al agua.
-// Valores leídos del gráfico de la figura N-14 del Manual IAMSAR, vol. II, edición 2016 (lectura aproximada ±1 h).
+// Valores leídos del gráfico del Manual IAMSAR: vol. III ed. 2022, sección 12 (pág. 12-33), igual a vol. II ed. 2016, fig. N-14 (±1 h).
 // El gráfico cubre de 2 a 20 °C. No es un tiempo de búsqueda recomendado (IAMSAR vol. II, 3.8.6).
 const SAR_SUPERVIVENCIA = [[2, 7], [4, 8], [6, 10], [8, 12.5], [10, 15], [12, 18.3], [14, 22.2], [16, 27.2], [18, 33.5], [20, 40]];
 function sarLimiteSupervivencia(t) {
@@ -436,7 +436,7 @@ function crearCasoSAR(L, map, ctx) {
       <p>Es el <b>límite superior realista</b> para una persona en el agua con <b>ropa normal</b>, desde que entra al agua. <b>No es un tiempo de búsqueda recomendado</b>: el gráfico es una ayuda, no un instrumento, para la decisión. Con agua fría, muchas personas sobreviven bastante menos que este máximo.</p>
       <p><b>Lo alargan:</b> chaleco salvavidas, salir del agua total o parcialmente, agua tranquila, ropa gruesa, buen estado de salud, comportamiento protector (agruparse, posición fetal). Los trajes de inmersión o de neopreno pueden multiplicarlo de 2 a 10 veces; los trajes de supervivencia SOLAS deben mantener a la persona viva 24 h en aguas muy frías.</p>
       <p><b>Lo acortan:</b> agua agitada, inmersión total, lesiones, nadar, alcohol o medicamentos, niños y personas mayores, ropa ligera, mareo, y el golpe de frío de los primeros minutos. Cerca de la costa, las rompientes y corrientes pueden acortarlo, pero hay que considerar que la persona haya llegado a tierra.</p>
-      <p class="sar-nota">Fuente: Manual IAMSAR, vol. II, ed. 2016, párrafo 3.8.6 y figura N-14 (valores leídos del gráfico, ±1 h). Solicitar asesoramiento médico experto cuando sea posible.</p></details>`;
+      <p class="sar-nota">Fuente: Manual IAMSAR, ed. 2022, vol. III, sección 12 (gráfico del límite superior realista del tiempo de supervivencia, basado en la opinión de expertos médicos y los últimos datos científicos); misma curva que el vol. II, ed. 2016, figura N-14 y párrafo 3.8.6. Valores leídos del gráfico (±1 h). Solicitar asesoramiento médico experto cuando sea posible.</p></details>`;
     if (!lim) return `<div class="sar-blq"><h3>Supervivencia en el agua (referencia)</h3><p>Sin dato de temperatura del agua en la posición.</p>${pie}</div>`;
     if (lim.sobre20) return `<div class="sar-blq"><h3>Supervivencia en el agua (referencia)</h3><p>Agua a <b>${nf(tAgua, 1)} °C</b>: sobre 20 °C el manual <b>no fija un límite</b>; la supervivencia depende aún más de cada caso. Considerar búsquedas de más de 24 h y, con agua más cálida, de varios días.</p>${pie}</div>`;
     const H = lim.horas, fmtH = x => x < 1 ? Math.round(x * 60) + ' min' : nf(x, x < 10 ? 1 : 0) + ' h';
