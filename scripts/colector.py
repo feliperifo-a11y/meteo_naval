@@ -513,6 +513,7 @@ LUGARES = {
     "MAULLIN": 41.62, "CARELMAPU": 41.75, "FAROCORONA": 41.8, "PUNTACORONA": 41.8, "CANALCHACAO": 41.8,
     "ANCUD": 41.87, "PUERTOMONTT": 41.47, "CALBUCO": 41.77, "CASTRO": 42.48, "CHAITEN": 42.92, "QUELLON": 43.12,
     "GUAFO": 43.6, "MELINKA": 43.9, "PUERTOAYSEN": 45.4, "CHACABUCO": 45.47, "ANNAPINK": 45.8, "GOLFODEPENAS": 47.1,
+    "FAROSANPEDRO": 47.72, "ISLASANPEDRO": 47.72,
     "PUERTONATALES": 51.73, "EVANGELISTAS": 52.4, "PUNTAARENAS": 53.15, "PUERTOWILLIAMS": 54.93,
     "CABODEHORNOS": 55.98, "DIEGORAMIREZ": 56.5,
 }
@@ -545,6 +546,12 @@ def ubicar(nombre: str):
     for k, v in sorted(LUGARES.items(), key=lambda x: -len(x[0])):
         if k in resto:
             lats.append(v); resto = resto.replace(k, "|")
+    # Límites por paralelo: "LATITUD 56 GDS SUR", "LAT 60 S", "PARALELO 56"
+    for m in re.finditer(r"(?:LATITUD|PARALELO|LAT)(\d{2})(?:GDS|GRADOS|G)?(?:SUR|S)?", resto):
+        v = int(m.group(1))
+        if 17 <= v <= 70:
+            lats.append(float(v))
+    resto = re.sub(r"(?:LATITUD|PARALELO|LAT)\d{2}(?:GDS|GRADOS|G)?(?:SUR|S)?", "|", resto)
     if not lats:
         return None
     n, m = min(lats), max(lats)
