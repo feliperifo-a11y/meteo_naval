@@ -24,3 +24,13 @@
 .ev-f>b+.ev-txt,.ev-f>b+.ev-vacio{grid-column:2/-1}
 @media (max-width:600px){.ev-f{display:flex;flex-wrap:wrap;gap:3px 8px}.ev-f .ev-txt,.ev-f small,.ev-f .ev-vacio{flex-basis:100%;padding-left:0}}
 .ev-tabla th,.ev-tabla td{padding:4px 5px}
+/* Borrador de boletín */
+.btnBorr{background:#7a4b16!important;color:#fff!important;box-shadow:0 0 0 2px rgba(240,190,120,.4)!important}
+.bb-nota{background:#fff4e0;color:#5c3a00;border:1px solid #f0c27a;border-radius:6px;padding:6px 8px;font-size:12.5px}
+.bb-per{border-top:1px solid var(--line);padding:8px 0}
+.bb-cab{display:flex;align-items:center;gap:8px;justify-content:space-between;font-size:12.5px}
+.bb-copiar{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:5px;padding:3px 9px;font:600 11.5px system-ui,sans-serif;cursor:pointer;text-transform:none}
+.bb-f{display:grid;grid-template-columns:96px 1fr;gap:6px;margin-top:5px;font-size:12.5px}.bb-f p{margin:0;line-height:1.45}
+.bb-et{font-size:10.5px;font-weight:700;border-radius:4px;padding:2px 6px;align-self:start;text-align:center}
+.bb-et.ia{background:#e8dcff;color:#3d2a7a}.bb-et.of{background:#dbeedd;color:#1d4d27}
+@media (max-width:600px){.bb-f{grid-template-columns:1fr}.bb-et{justify-self:start}}

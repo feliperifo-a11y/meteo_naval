@@ -330,6 +330,7 @@ dialog button{border-color:var(--line)}
     <button type="button" class="btnCarta btnMar" id="btnAlertaMar" title="Perspectiva de marejadas a 10 días por zona costera, Juan Fernández y Rapa Nui, con los criterios de la O.P.I. N° 1107 sobre el modelo GFS-Wave">MAREJADAS 10 DÍAS</button>
     <button type="button" class="btnCarta btnVto" id="btnAlertaViento" title="Perspectiva de avisos por viento a 5 días por área de cada Centro Meteorológico Marítimo, Juan Fernández e Isla de Pascua, con los parámetros del PD OPE-07 sobre el modelo ECMWF">VIENTO 5 DÍAS</button>
     <button type="button" class="btnCarta btnEval" id="btnEvaluacionIA" title="Evaluación con pauta fija del pronóstico WRF + IA y del pronóstico profesional contra las estaciones de Iquique, Valparaíso y Talcahuano, por versión de prompt">EVALUACIÓN IA</button>
+    <button type="button" class="btnCarta btnBorr" id="btnBorrador" title="Borrador del boletín de bahía de las 16:00 redactado por IA a partir del WRF + IA y el oleaje WW3, imitando al especialista">BORRADOR BOLETÍN</button>
     <button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
@@ -1562,6 +1563,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*MAREJADAS_ALERTA_JS*/
 /*VIENTO_ALERTA_JS*/
 /*EVALUACION_IA_JS*/
+/*BORRADOR_BOLETIN_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1801,16 +1803,19 @@ const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, b
 const alertaMar = crearAlertaMarejadas(L, map, { escH });
 const alertaVto = crearAlertaViento(L, map, { escH });
 const evalIA = crearEvaluacionIA(L, map, { escH });
+const borrador = crearBorradorBoletin(L, map, { escH });
 function cerrarPaneles(salvo) {
   if (salvo !== 'sar') { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } }
   if (salvo !== 'mar' && alertaMar.abierto) alertaMar.cerrar();
   if (salvo !== 'vto' && alertaVto.abierto) alertaVto.cerrar();
   if (salvo !== 'eval' && evalIA.abierto) evalIA.cerrar();
+  if (salvo !== 'borr' && borrador.abierto) borrador.cerrar();
 }
 document.getElementById('btnCasoSAR').onclick = () => { cerrarPaneles('sar'); casoSAR.abrir(); };
 document.getElementById('btnAlertaMar').onclick = () => { cerrarPaneles('mar'); alertaMar.abrir(); };
 document.getElementById('btnAlertaViento').onclick = () => { cerrarPaneles('vto'); alertaVto.abrir(); };
 document.getElementById('btnEvaluacionIA').onclick = () => { cerrarPaneles('eval'); evalIA.abrir(); };
+document.getElementById('btnBorrador').onclick = () => { cerrarPaneles('borr'); borrador.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
   const box = document.getElementById('layers');
   addLayerRow(box, 'caso_sar', 'Casos SAR (posiciones marcadas)', '<span class="sarSw"></span>', false, () => casoSAR.capa);

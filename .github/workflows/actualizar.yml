@@ -172,6 +172,7 @@ jobs:
         run: |
           git fetch --quiet --shallow-since=2026-10-01 origin main || true
           python scripts/archivo_pares.py
+          python scripts/entradas_borrador.py
           python scripts/evaluacion_ia.py
 
       - name: Guardar el archivo de boletines y pares en el repositorio
@@ -215,6 +216,8 @@ jobs:
           [ -f data/ecmwf/indice.json ] && mkdir -p _site/data/ecmwf && cp data/ecmwf/indice.json data/ecmwf/f*.bin _site/data/ecmwf/ || true
           [ -f data/ecmwf/estado.json ] && mkdir -p _site/data/ecmwf && cp data/ecmwf/estado.json _site/data/ecmwf/ || true
           [ -f data/evaluacion/resumen.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/resumen.json _site/data/evaluacion/ || true
+          [ -f data/evaluacion/entradas_borrador.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/entradas_borrador.json _site/data/evaluacion/ || true
+          [ -f data/borradores.json ] && cp data/borradores.json _site/data/ || true
           for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3

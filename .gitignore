@@ -33,3 +33,4 @@ data/ecmwf/
 data/marejadas_alerta.json
 data/viento_alerta.json
 data/evaluacion/resumen.json
+data/evaluacion/entradas_borrador.json

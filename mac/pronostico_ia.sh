@@ -88,6 +88,12 @@ Zona Antártica|Base Yelcho|A_BAHIASOUTH_Antartica_d02|10 km"
 
 printf '%s\n' "$BAHIAS" > "$TRAB/bahias.txt"
 
+# 0b. Borrador de boletín «estilo especialista» (paso aislado, una vez al día entre 09 y 16 h; si falla no afecta lo que sigue)
+if [ -z "${MN_PRUEBA:-}" ] && curl -fsS --max-time 20 "https://raw.githubusercontent.com/$REPO/main/mac/borrador_boletin.sh" -o "$DIR/borrador_boletin.sh" 2>/dev/null \
+   && bash -n "$DIR/borrador_boletin.sh" 2>/dev/null; then
+  TRAB="$TRAB" CLAUDE="$CLAUDE" REPO="$REPO" /bin/bash "$DIR/borrador_boletin.sh" || echo "$(ts) Borrador: terminó con error (sin efecto en WRF + IA)"
+fi
+
 # 1. ¿Qué meteogramas cambiaron? (consulta liviana de la fecha de modificación)
 MARCAS="$TRAB/marcas.txt"; touch "$MARCAS"
 : > "$TRAB/cambios.txt"
