@@ -548,14 +548,15 @@ const COLOR_AL = { rj: '#ff4d4d', am: '#f2c230', az: '#5fb0ff' };
 function puntoAlerta(lat, lon, n, tip) {
   return L.featureGroup([L.circleMarker([lat, lon], { pane: 'avPane', radius: 11, color: COLOR_AL[n], weight: 3, fillColor: COLOR_AL[n], fillOpacity: 0.25 }).bindTooltip(tip)]);
 }
+/*UMBRALES_VIENTO_JS*/
 function pintarAlertas() {
   const out = [], ahora = new Date();
   for (const b of BOYAS) { const u = b.ultimo; if (!u || u.hsig == null || ahora - u.fecha > UMBRAL_BOYA.ret) continue;
     if (u.hsig >= 3) { const n = u.hsig >= 4 ? 'rj' : 'am', t = `Oleaje sobre ${u.hsig >= 4 ? 4 : 3} m en boya ${b.nombre}`;
       out.push({ k: 'b:' + b.nombre, n, ico: ICO.ola2(n === 'rj' ? '#ff6b6b' : '#f2c230'), t, d: `Altura significativa ${nf(u.hsig, 2)} m · ${fmtDM(u.fecha)}`, bd: n === 'rj' ? 'Roja' : 'Amarilla', capa: () => puntoAlerta(b.lat, b.lon, n, escH(t)) }); } }
-  for (const s of EST) { if (s.lat == null) continue; const um = s.lat < -39.95 ? 25 : 20;   // Corral al norte (incluido): > 20 kt; al sur de Corral: > 25 kt
-    const e = estadoEst(s, ahora); if (e.k === 'no') continue; const kt = aKt(s.vel, s.uVel); if (kt == null || kt <= um) continue;
-    const n = kt > 34 ? 'rj' : 'am', t = `Viento > ${kt > 34 ? 34 : um} kt en ${nombreEst(s)}`;
+  for (const s of EST) { if (s.lat == null) continue;   // umbrales del PD OPE-07 según el área de cada CMM (build/umbrales_viento.js)
+    const e = estadoEst(s, ahora); if (e.k === 'no') continue; const kt = aKt(s.vel, s.uVel), al = alertaVientoEst(s.lat, s.lon, kt, s.dirG, aKt(s.racha, s.uVel)); if (!al) continue;
+    const n = al.n, um = al.um, t = `Viento ≥ ${um} kt en ${nombreEst(s)}`;
     out.push({ k: 's:' + s.codigo, n, ico: ICO.alerta(n === 'rj' ? '#ff6b6b' : '#f2c230'), t, d: `${s.dirG != null ? cardinal(s.dirG) + ' ' : ''}${nf(kt, 0)} kt · ${e.t ? fmtDM(e.t) : ''}`, bd: n === 'rj' ? 'Roja' : 'Amarilla', capa: () => puntoAlerta(s.lat, s.lon, n, escH(t)) }); }
   AVISOS.forEach((a, ia) => { const zs = (a.zonas || []).map(z => [z, estadoAviso(z, ahora)]).filter(([, e]) => e !== 'X'); if (!zs.length) return;
     const vig = zs.some(([, e]) => e === 'V'), ini = new Date(Math.min(...zs.map(([z]) => +new Date(z.desde)))), fin = new Date(Math.max(...zs.map(([z]) => +new Date(z.hasta))));
@@ -570,7 +571,7 @@ function pintarAlertas() {
   const el = document.getElementById('listaAlertas');
   el.innerHTML = out.length ? out.map(a => { const on = !OCULTAS.has(a.k);
     return `<div class="alerta ${a.n}${on ? '' : ' oculta'}" data-k="${escH(a.k)}" title="Clic para ubicarla en el mapa">${a.ico}<div><b>${escH(a.t)}</b><div class="tx">${a.html ? a.d.split('<br>').map(escH).join('<br>') : escH(a.d)}</div></div><div class="der"><span class="bd ${a.n}">${escH(a.bd)}</span><button type="button" class="ojo${on ? '' : ' off'}" title="Mostrar u ocultar en el mapa">${OJO(on)}</button></div></div>`; }).join('')
-    : '<div class="vacioTxt">Sin avisos vigentes ni alertas por viento (> 20 kt de Corral al norte, > 25 kt al sur) u oleaje (≥ 3 m) en este momento.</div>';
+    : `<div class="vacioTxt">Sin avisos vigentes ni alertas por viento u oleaje (≥ 3 m) en este momento. Umbrales de viento del PD OPE-07: ${TXT_UMBRAL_VIENTO}.</div>`;
   const btn = document.getElementById('btnTodasAl'); btn.style.display = out.length ? '' : 'none';
   const ninguna = out.every(a => OCULTAS.has(a.k)); btn.textContent = ninguna ? 'Mostrar todas en el mapa' : 'Ocultar todas del mapa';
   btn.onclick = () => { if (ninguna) out.forEach(a => OCULTAS.delete(a.k)); else out.forEach(a => OCULTAS.add(a.k)); guardarOcultas(); pintarAlertas(); };

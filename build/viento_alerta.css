@@ -1,0 +1,8 @@
+/* Alerta preventiva de viento a 5 días (página Desarrollo); reutiliza la estructura del panel de marejadas (.mar-*) */
+.btnVto{background:#5b3fa8!important;color:#fff!important;box-shadow:0 0 0 2px rgba(180,160,255,.4)!important}
+.mar-c.v1,.mar-ley i.v1{background:#5fb0ff;border-color:#2f86d6;color:#0b2540}
+.mar-c.v2,.mar-ley i.v2{background:#f2a900;border-color:#c98c00;color:#1b1200}
+.mar-c.v3,.mar-ley i.v3{background:#e8452c;border-color:#a8301d;color:#fff}
+.mar-c.v4,.mar-ley i.v4{background:#b3149a;border-color:#7d0d6b;color:#fff}
+.mar-cat.v1{background:#5fb0ff;color:#0b2540}.mar-cat.v2{background:#f2a900;color:#1b1200}.mar-cat.v3{background:#e8452c;color:#fff}.mar-cat.v4{background:#b3149a;color:#fff}
+.mar-c.vto-sd{cursor:default;opacity:.45;font-weight:400}

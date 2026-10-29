@@ -32,6 +32,7 @@
 /*VALPARAISO_CSS*/
 /*MAREJADAS_UV_CSS*/
 /*MAREJADAS_ALERTA_CSS*/
+/*VIENTO_ALERTA_CSS*/
 </style>
 <style>
 :root{
@@ -326,6 +327,7 @@ dialog button{border-color:var(--line)}
     <a class="btnCarta" href="hielos.html" style="text-decoration:none" title="Cartas de hielo marino de la Península Antártica, hielo en cubierta, témpanos e informe glaciológico, en proyección polar">MONITOREO DE HIELOS</a>
     <a class="btnIA" href="ia.html" title="Pronósticos por bahía generados con IA a partir del modelo WRF, con mapa">PRONÓSTICOS WRF + IA</a>
     <button type="button" class="btnCarta btnMar" id="btnAlertaMar" title="Perspectiva de marejadas a 10 días por zona costera, Juan Fernández y Rapa Nui, con los criterios de la O.P.I. N° 1107 sobre el modelo GFS-Wave">MAREJADAS 10 DÍAS</button>
+    <button type="button" class="btnCarta btnVto" id="btnAlertaViento" title="Perspectiva de avisos por viento a 5 días por área de cada Centro Meteorológico Marítimo, Juan Fernández e Isla de Pascua, con los parámetros del PD OPE-07 sobre el modelo ECMWF">VIENTO 5 DÍAS</button>
     <button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
@@ -993,10 +995,10 @@ function refreshBoyas() {
 
 
 // ============================ Alertas en tiempo real ============================
-// Boyas (altura significativa reciente): ≥ 3 m amarilla, ≥ 4 m roja. Estaciones de Corral al norte (viento medio
-// reciente): > 20 kt amarilla (al sur de Corral, > 25 kt), > 34 kt roja. Todo en un solo recuadro; al cerrarlo no vuelve a aparecer mientras
+// Boyas (altura significativa reciente): ≥ 3 m amarilla, ≥ 4 m roja. Estaciones (viento medio reciente): umbrales de aviso del
+// PD OPE-07 según el área de cada CMM (build/umbrales_viento.js). Todo en un solo recuadro; al cerrarlo no vuelve a aparecer mientras
 // las alertas sigan siendo las mismas (reaparece si cambian o suben de nivel).
-const LAT_CORRAL = -39.95;
+/*UMBRALES_VIENTO_JS*/
 const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
 function calcularAlertas() {
   const ahora = Date.now(), out = [];
@@ -1008,15 +1010,13 @@ function calcularAlertas() {
   }
   for (const st of ESTACIONES || []) {
     if (st.lat == null) continue;
-    const umbral = st.lat < LAT_CORRAL ? 25 : 20;   // Corral al norte (incluido): > 20 kt; al sur de Corral: > 25 kt
     const ev = evaluar(st, ahora);
     if (!(ev.k === 'ok' || ev.k === 'ret') || ev.fl.some(f => /viento/.test(f))) continue;
     const kt = aKt(st.vel, st.uVel), r = aKt(st.racha, st.uVel);
-    if (kt == null || kt <= umbral) continue;
+    const al = alertaVientoEst(st.lat, st.lon, kt, st.dirG, r); if (!al) continue;
     const nom = nombreEst(st), dir = st.dirG != null ? `${cardinal(st.dirG)} ` : '';
-    const det = `Viento ${dir}${nf(kt, 0)} kt${r != null ? ` (racha ${nf(r, 0)} kt)` : ''} · ${ev.t ? fmtLocal(ev.t) + ' (hora Chile)' : ''}`;
-    if (kt > 34) out.push({ n: 'rj', id: 'e' + st.codigo + '34', txt: `Aviso por viento > 34 kt en ${nom}`, det });
-    else out.push({ n: 'am', id: 'e' + st.codigo + umbral, txt: `Aviso por viento > ${umbral} kt en ${nom}`, det });
+    const det = `Viento ${dir}${nf(kt, 0)} kt${r != null ? ` (racha ${nf(r, 0)} kt)` : ''} · ${ev.t ? fmtLocal(ev.t) + ' (hora Chile)' : ''} · umbral ${al.c.nombre}: ${al.txt}`;
+    out.push({ n: al.n, id: 'e' + st.codigo + al.um, txt: `Viento ${al.n === 'rj' ? 'de temporal' : 'de mal tiempo'} (≥ ${al.um} kt) en ${nom}`, det });
   }
   return out.sort((a, b) => (a.n === b.n ? 0 : a.n === 'rj' ? -1 : 1));
 }
@@ -1558,6 +1558,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*SST_JS*/
 /*CASO_SAR_JS*/
 /*MAREJADAS_ALERTA_JS*/
+/*VIENTO_ALERTA_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1793,10 +1794,17 @@ function initAreas() { const sel = document.getElementById('fArea'); const pres 
 renderCapas();
 // Caso SAR (fase 1): se crea una vez; usa los datos ya cargados de estaciones, boyas y avisos.
 const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso, capas: () => LAYERS });
-document.getElementById('btnCasoSAR').onclick = () => { if (alertaMar.abierto) alertaMar.cerrar(); casoSAR.abrir(); };
-// Alerta preventiva de marejadas a 10 días: comparte el espacio de la ficha SAR, por eso se abre una a la vez.
+// Alertas preventivas de marejadas (10 días) y de viento (5 días): comparten el espacio de la ficha SAR, por eso se abre uno a la vez.
 const alertaMar = crearAlertaMarejadas(L, map, { escH });
-document.getElementById('btnAlertaMar').onclick = () => { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } alertaMar.abrir(); };
+const alertaVto = crearAlertaViento(L, map, { escH });
+function cerrarPaneles(salvo) {
+  if (salvo !== 'sar') { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } }
+  if (salvo !== 'mar' && alertaMar.abierto) alertaMar.cerrar();
+  if (salvo !== 'vto' && alertaVto.abierto) alertaVto.cerrar();
+}
+document.getElementById('btnCasoSAR').onclick = () => { cerrarPaneles('sar'); casoSAR.abrir(); };
+document.getElementById('btnAlertaMar').onclick = () => { cerrarPaneles('mar'); alertaMar.abrir(); };
+document.getElementById('btnAlertaViento').onclick = () => { cerrarPaneles('vto'); alertaVto.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
   const box = document.getElementById('layers');
   addLayerRow(box, 'caso_sar', 'Casos SAR (posiciones marcadas)', '<span class="sarSw"></span>', false, () => casoSAR.capa);
