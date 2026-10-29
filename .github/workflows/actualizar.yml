@@ -122,26 +122,6 @@ jobs:
         timeout-minutes: 5
         run: python scripts/pronosticos.py
 
-      - name: Evaluación WRF + IA (O.P.I. N° 1104; archiva el boletín profesional)
-        # Usa el historial de git de data/wrf_ia.json y data/estaciones.json; recalcula una vez al día.
-        continue-on-error: true
-        timeout-minutes: 4
-        run: |
-          git fetch --quiet --shallow-since=2026-10-01 origin main || true
-          python scripts/evaluacion_ia.py
-
-      - name: Guardar el archivo de boletines profesionales en el repositorio
-        continue-on-error: true
-        timeout-minutes: 2
-        run: |
-          if [ -n "$(git status --porcelain data/evaluacion/profesional.jsonl)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/evaluacion/profesional.jsonl
-            git commit -m "Archivo de boletines profesionales para la evaluación WRF + IA"
-            for i in 1 2 3; do git pull --rebase --autostash --quiet origin main && git push --quiet origin HEAD:main && break; sleep 5; done
-          fi
-
       - name: Monitoreo de hielos (cartas de hielo, hielo en cubierta, témpanos)
         continue-on-error: true
         timeout-minutes: 8
@@ -183,6 +163,28 @@ jobs:
           OWNER="${GITHUB_REPOSITORY%%/*}"; REPO="${GITHUB_REPOSITORY#*/}"
           if [ "$REPO" = "$OWNER.github.io" ]; then export PUBLICADO="https://$OWNER.github.io"; else export PUBLICADO="https://$OWNER.github.io/$REPO"; fi
           python scripts/ecmwf_viento.py
+
+      - name: Evaluación WRF + IA y archivo de pares para aprendizaje (O.P.I. N° 1104; boletín profesional, WRF + IA y oleaje WW3)
+        # Va después del oleaje WW3 (data/ww3). La evaluación usa el historial de git y recalcula una vez al día;
+        # el archivo de pares guarda cada boletín nuevo con las entradas del modelo disponibles a esa hora.
+        continue-on-error: true
+        timeout-minutes: 4
+        run: |
+          git fetch --quiet --shallow-since=2026-10-01 origin main || true
+          python scripts/archivo_pares.py
+          python scripts/evaluacion_ia.py
+
+      - name: Guardar el archivo de boletines y pares en el repositorio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          if [ -n "$(git status --porcelain data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl 2>/dev/null || git add data/evaluacion/profesional.jsonl
+            git commit -m "Archivo de boletines profesionales y pares para aprendizaje WRF + IA"
+            for i in 1 2 3; do git pull --rebase --autostash --quiet origin main && git push --quiet origin HEAD:main && break; sleep 5; done
+          fi
 
       - name: Alerta preventiva de viento a 5 días (ECMWF 0–120 h y PD OPE-07)
         # Usa data/ecmwf del paso anterior; con corrida nueva recalcula, si no, solo revisa los avisos oficiales vigentes.
