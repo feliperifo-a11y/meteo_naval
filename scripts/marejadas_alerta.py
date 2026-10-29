@@ -16,7 +16,7 @@ Criterios (O.P.I. N° 1107; referencia: costa de la Región de Valparaíso):
                          mar de viento S/SW sobre 3 m en el litoral central (criterio c, asociado al Anticiclón)
   Marejadas anormales .. mar de fondo SW/W sobre 4 m · mar de fondo NW con período de 14 a 17 s y 2,5 m o más ·
                          mar de fondo NW con período de 18 s o más y 2,0 m o más ·
-                         mar de viento NW/W sobre 3,0 m (criterio d, sistema frontal)
+                         mar de viento NW/W sobre 3,0 m (criterio d, sistema frontal; solo de la zona IV al norte e islas)
 Las alturas del modelo son mar afuera (altura significativa de cada partición), no la altura en la rompiente.
 El período de cada partición es su período medio. Se marcan además los días cercanos a sicigias (luna nueva o llena).
 
@@ -41,7 +41,7 @@ DATA = R / "data"
 SALIDA = DATA / "marejadas_alerta.json"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (alerta de marejadas)"}
 TZ = ZoneInfo("America/Santiago")
-VERSION = 1
+VERSION = 2
 PLAZOS = list(range(0, 241, 6))
 DIAS = 10
 CORRIDAS_HISTORIAL = 4
@@ -51,6 +51,9 @@ ZONA_CONTIGUA_MN = 24.0
 LAT_ARICA, LAT_PENAS = -18.35, -47.8   # límite norte (frontera) y Golfo de Penas (Faro San Pedro 47°43' S)
 COSTERAS = ["I", "II", "III", "IV", "V", "VI"]
 LITORAL_CENTRAL = {"II", "III"}
+# Criterio d (mar de viento frontal NW/W): solo de la zona IV al norte y en las islas. Al sur, el mar de viento de 3 m
+# con los oestes es habitual y la O.P.I. fija sus umbrales con la costa de Valparaíso como referencia.
+CRITERIO_D = {"I", "II", "III", "IV", "JF", "RN"}
 ISLAS = {
     "JF": {"nombre": "Archipiélago Juan Fernández", "centros": [(-33.64, -78.83), (-33.77, -80.78)], "radio_isla_mn": 4},
     "RN": {"nombre": "Rapa Nui", "centros": [(-27.12, -109.35)], "radio_isla_mn": 7},
@@ -69,7 +72,7 @@ CRITERIOS = {
     "anormales": ["Mar de fondo del SW/W sobre 4 m",
                   "Mar de fondo del NW con período de 14 a 17 s y olas de 2,5 m o más",
                   "Mar de fondo del NW con período de 18 s o más y olas de 2,0 m o más",
-                  "Mar de viento del NW/W sobre 3,0 m (sistema frontal)"],
+                  "Mar de viento del NW/W sobre 3,0 m (sistema frontal); se aplica de la zona IV al norte y en Juan Fernández y Rapa Nui"],
     "notas": ["La O.P.I. usa como referencia la costa de la Región de Valparaíso; aquí se aplica a toda la costa evaluada.",
               "El modelo entrega altura significativa mar afuera por partición, no la altura de las olas en la rompiente.",
               "El período de cada partición del modelo es su período medio.",
@@ -254,7 +257,7 @@ def evaluar(v, zona):
     h, t, d = v["hw"], v["tw"], v["dw"]
     if math.isfinite(h) and math.isfinite(d):
         s = sector(d)
-        if s in ("W", "NW") and h > 3.0:
+        if s in ("W", "NW") and h > 3.0 and zona in CRITERIO_D:
             tomar(2, "Mar de viento del NW/W", h, t, d)
         elif zona in LITORAL_CENTRAL and 157.5 <= d % 360 < 247.5 and h > 3.0:
             tomar(1, "Mar de viento del S/SW", h, t, d)
@@ -390,7 +393,8 @@ def procesar(corrida):
 def persistencia(res, previo):
     """Historial de las últimas corridas y cuántas muestran marejadas en cada zona y día."""
     clave = res["clave"]
-    hist = [h for h in previo.get("historial", []) if h.get("clave") != clave][-(CORRIDAS_HISTORIAL - 1):]
+    previas = previo.get("historial", []) if previo.get("version") == VERSION else []   # criterios distintos: no se mezclan
+    hist = [h for h in previas if h.get("clave") != clave][-(CORRIDAS_HISTORIAL - 1):]
     actual = {"clave": clave, "cat": {z["id"]: {c["fecha"]: c["cat"] for c in z["celdas"]} for z in res["zonas"]}}
     hist.append(actual)
     res["historial"] = hist
