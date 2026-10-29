@@ -220,6 +220,23 @@ jobs:
           [ -f data/borradores.json ] && cp data/borradores.json _site/data/ || true
           for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
+      # Página Desarrollo con clave: dashboard.html se publica cifrado (StatiCrypt, AES-256) con el secreto DESARROLLO_CLAVE.
+      # Sin el secreto se publica como antes, para no dejar el sitio sin la página. La carta pública es carta.html.
+      - name: Cifrar la página Desarrollo
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.DESARROLLO_CLAVE }}
+        run: |
+          if [ -z "$STATICRYPT_PASSWORD" ]; then echo "::warning::Falta el secreto DESARROLLO_CLAVE: Desarrollo se publica sin clave"; exit 0; fi
+          SAL=$(printf 'meteoia-desarrollo-%s' "$STATICRYPT_PASSWORD" | sha256sum | cut -c1-32)
+          mkdir -p _cifrado
+          npx --yes staticrypt@3.5.4 _site/dashboard.html -c false -s "$SAL" -d _cifrado --short --remember 30 \
+            --template-title "MeteoIA · Desarrollo" --template-instructions "Página de desarrollo de MeteoIA: acceso restringido." \
+            --template-button "Entrar" --template-placeholder "Clave" --template-remember "Recordar en este equipo (30 días)" \
+            --template-error "Clave incorrecta" --template-color-primary "#2f7bff" --template-color-secondary "#0b1d33"
+          grep -q "staticrypt" _cifrado/dashboard.html
+          mv _cifrado/dashboard.html _site/dashboard.html
+          echo "Desarrollo cifrado ($(wc -c < _site/dashboard.html) bytes)"
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
