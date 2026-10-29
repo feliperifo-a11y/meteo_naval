@@ -1,0 +1,39 @@
+/* Alerta preventiva de marejadas a 10 días (página Desarrollo) */
+.btnMar{background:#0b7a8a!important;color:#fff!important;box-shadow:0 0 0 2px rgba(94,214,230,.4)!important}
+.mar-card[hidden]{display:none}
+#mapWrap .mar-card{position:absolute;top:62px;right:10px;bottom:10px;width:min(560px,52%);z-index:1001;overflow-y:auto;margin:0;box-sizing:border-box;background:var(--panel);color:var(--ink);box-shadow:0 4px 18px #0005;padding:12px 14px}
+#mapWrap .mar-card.mar-minimizada{bottom:auto;overflow:hidden}#mapWrap .mar-card.mar-minimizada>:not(.mar-cab){display:none}
+#mapWrap.mar-abierto .uv-panel{right:calc(min(560px,52%) + 20px)}
+.mar-cab{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap}.mar-cab h2{margin:0;font-size:17px}
+.mar-etq{font-size:11px;background:#e0f4f6;color:#0b5560;border:1px solid #8fd3dc;border-radius:10px;padding:2px 8px}
+.mar-min,.mar-cerrar{border:1px solid var(--line);background:transparent;border-radius:6px;cursor:pointer;min-width:32px;min-height:30px;color:var(--ink)}.mar-min{margin-left:auto}
+.mar-sub{font-size:12px;color:var(--muted);margin:8px 0}.mar-viejo{color:var(--no)}
+.mar-tabla-wrap{overflow-x:auto;margin:0 -2px}
+.mar-tabla{border-collapse:separate;border-spacing:2px;width:100%;font-size:11.5px;table-layout:fixed}
+.mar-tabla tbody tr>th.mar-z,.mar-tabla thead tr:last-child th.mar-z{width:30px}.mar-tabla thead tr:last-child th{line-height:1.15;font-size:10.5px}
+.mar-tabla th{font-weight:600;color:var(--muted);text-align:center;white-space:nowrap;padding:2px 1px;text-transform:none;letter-spacing:0;background:none;border:0}
+.mar-tabla thead tr:first-child th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--line)}
+.mar-tabla th.mar-g0{border-bottom-color:#8a939e}.mar-tabla th.mar-g1{border-bottom-color:#f2a900;color:var(--ink)}.mar-tabla th.mar-g2{border-bottom-color:#5fb0ff}
+.mar-tabla th.mar-z{text-align:left;width:30px;color:var(--ink);font-weight:700}
+.mar-zonas{font-size:11px;color:var(--muted);margin:4px 0 0;line-height:1.5}.mar-zonas b{color:var(--ink)}
+#mapWrap .mar-card h2{text-transform:none;letter-spacing:0}
+.mar-sic{display:block;font-size:11px;line-height:1;color:#7a5cc8}
+.mar-tabla td{padding:0;border:0;background:none}
+.mar-tabla tr:hover td,.mar-tabla tr:hover th{background:none}
+.mar-c{width:100%;min-width:0;height:30px;box-sizing:border-box;border:1px solid var(--line);border-radius:5px;background:var(--chip);color:var(--ink);font:700 11px/1 system-ui,sans-serif;cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.mar-c small{font-size:8.5px;font-weight:500;opacity:.85}
+.mar-c.m1,.mar-ley i.m1{background:#f2a900;border-color:#c98c00;color:#1b1200}
+.mar-c.m2,.mar-ley i.m2{background:#c62828;border-color:#8e1b1b;color:#fff}
+.mar-c.mav,.mar-ley i.mav{box-shadow:inset 0 0 0 2px #1f6fb2}
+.mar-c.sel{outline:2px solid var(--ink);outline-offset:1px}
+.mar-ley{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--muted);margin:8px 0}
+.mar-ley i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line);vertical-align:-2px;margin-right:4px;background:var(--chip)}
+.mar-det{border-top:1px solid var(--line);padding-top:8px;font-size:12.5px}.mar-det h3{margin:0 0 4px;font-size:14px}
+.mar-det dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:6px 0}.mar-det dt{color:var(--muted)}.mar-det dd{margin:0}
+.mar-cat{display:inline-block;margin:2px 0 4px;padding:2px 8px;border-radius:4px;font-weight:700;background:var(--chip)}
+.mar-cat.m1{background:#f2a900;color:#1b1200}.mar-cat.m2{background:#c62828;color:#fff}
+.mar-ayuda,.mar-nota{color:var(--muted);font-size:12px;margin:4px 0}.mar-nota-av{color:#1f6fb2}
+.mar-crit{font-size:12px;margin-top:8px;border-top:1px solid var(--line);padding-top:6px}.mar-crit summary{cursor:pointer;font-weight:600}
+.mar-crit ul{margin:2px 0 6px;padding-left:18px}.mar-crit p{margin:6px 0 2px}
+@media (max-width:1050px){#mapWrap .mar-card{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:62%}#mapWrap .mar-card.mar-minimizada{top:auto;bottom:8px}#mapWrap.mar-abierto .uv-panel{right:10px;bottom:calc(62% + 16px)}}
+@media (max-width:600px){.mar-c{height:32px}.mar-tabla{font-size:10.5px}.mar-tabla thead tr:first-child th{font-size:9px;letter-spacing:0}}

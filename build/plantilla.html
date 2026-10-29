@@ -31,6 +31,7 @@
 /*TALCAHUANO_CSS*/
 /*VALPARAISO_CSS*/
 /*MAREJADAS_UV_CSS*/
+/*MAREJADAS_ALERTA_CSS*/
 </style>
 <style>
 :root{
@@ -324,6 +325,7 @@ dialog button{border-color:var(--line)}
     <button type="button" class="btnCarta" onclick="abrirPolar()" title="Carta de superficie en proyección estereográfica polar: isobaras GFS, frentes, avisos, METAREA XV, estaciones y boyas">CARTA DE SUPERFICIE</button>
     <a class="btnCarta" href="hielos.html" style="text-decoration:none" title="Cartas de hielo marino de la Península Antártica, hielo en cubierta, témpanos e informe glaciológico, en proyección polar">MONITOREO DE HIELOS</a>
     <a class="btnIA" href="ia.html" title="Pronósticos por bahía generados con IA a partir del modelo WRF, con mapa">PRONÓSTICOS WRF + IA</a>
+    <button type="button" class="btnCarta btnMar" id="btnAlertaMar" title="Perspectiva de marejadas a 10 días por zona costera, Juan Fernández y Rapa Nui, con los criterios de la O.P.I. N° 1107 sobre el modelo GFS-Wave">MAREJADAS 10 DÍAS</button>
     <button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
@@ -1555,6 +1557,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*ECMWF_JS*/
 /*SST_JS*/
 /*CASO_SAR_JS*/
+/*MAREJADAS_ALERTA_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1790,7 +1793,10 @@ function initAreas() { const sel = document.getElementById('fArea'); const pres 
 renderCapas();
 // Caso SAR (fase 1): se crea una vez; usa los datos ya cargados de estaciones, boyas y avisos.
 const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso, capas: () => LAYERS });
-document.getElementById('btnCasoSAR').onclick = () => casoSAR.abrir();
+document.getElementById('btnCasoSAR').onclick = () => { if (alertaMar.abierto) alertaMar.cerrar(); casoSAR.abrir(); };
+// Alerta preventiva de marejadas a 10 días: comparte el espacio de la ficha SAR, por eso se abre una a la vez.
+const alertaMar = crearAlertaMarejadas(L, map, { escH });
+document.getElementById('btnAlertaMar').onclick = () => { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } alertaMar.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
   const box = document.getElementById('layers');
   addLayerRow(box, 'caso_sar', 'Casos SAR (posiciones marcadas)', '<span class="sarSw"></span>', false, () => casoSAR.capa);

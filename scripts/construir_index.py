@@ -48,7 +48,7 @@ datos = "\n".join([
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
 version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
-                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "")
+                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "") + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
                         + leer(B / "valparaiso.js", "") + leer(B / "valparaiso.css", "") + leer(D / "geo" / "valparaiso.geojson", "{}") + leer(D / "geo" / "valparaiso_limites.json", "{}") + leer(D / "geo" / "valparaiso.kml", "")
@@ -64,6 +64,8 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*ECMWF_JS*/", leer(B / "ecmwf.js", ""))
         .replace("/*SST_JS*/", leer(B / "sst.js", ""))
         .replace("/*CASO_SAR_JS*/", leer(B / "caso_sar.js", ""))
+        .replace("/*MAREJADAS_ALERTA_JS*/", leer(B / "marejadas_alerta.js", ""))
+        .replace("/*MAREJADAS_ALERTA_CSS*/", leer(B / "marejadas_alerta.css", ""))
         .replace("/*WRF_SERVIMET_JS*/", leer(B / "wrf_servimet.js", ""))
         .replace("/*MAREJADAS_UV_JS*/", leer(B / "marejadas_uv.js", ""))
         .replace("/*MAREJADAS_UV_CSS*/", leer(B / "marejadas_uv.css", ""))
