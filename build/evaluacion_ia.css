@@ -1,0 +1,26 @@
+/* Evaluación WRF + IA (página Desarrollo); reutiliza la estructura de los paneles de alerta (.mar-*) */
+.btnEval{background:#2e6b3f!important;color:#fff!important;box-shadow:0 0 0 2px rgba(140,220,160,.4)!important}
+#mapWrap .ev-card{width:min(640px,58%)}
+.ev-h{font-size:13.5px;margin:12px 0 6px}
+.ev-tw{overflow-x:auto}
+.ev-tabla{border-collapse:collapse;width:100%;font-size:12px}
+.ev-tabla th,.ev-tabla td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;text-transform:none;letter-spacing:0;background:none;color:var(--ink);font-weight:400}
+.ev-tabla thead th{color:var(--muted);font-weight:600;font-size:11px}
+.ev-tabla tbody th{font-weight:700;vertical-align:top}
+.ev-tabla tr.ev-sep td,.ev-tabla tr.ev-sep th{border-top:2px solid var(--line)}
+.ev-tabla small{color:var(--muted)}
+.ev-par{color:var(--muted);font-size:11.5px}
+.ev-vacio{color:var(--muted);font-style:italic}
+.ev-chip{display:inline-block;min-width:30px;text-align:center;font-weight:700;border-radius:4px;padding:1px 5px;background:var(--chip)}
+.ev-chip.ev1{background:#f6c3bd;color:#5c0f08}.ev-chip.ev2{background:#ffe08a;color:#3d2c00}.ev-chip.ev3{background:#a8dfb5;color:#0d3a1a}
+.ev-n{margin-left:4px;color:var(--muted);font-size:10.5px}
+.ev-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.ev-tabs button{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:6px;padding:5px 10px;font:600 12px system-ui,sans-serif;cursor:pointer}
+.ev-tabs button[aria-selected=true]{background:#2e6b3f;border-color:#2e6b3f;color:#fff}
+.ev-dia{border-top:1px solid var(--line);padding:7px 0;font-size:12px}
+.ev-cab{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.ev-cab span{color:var(--muted)}
+.ev-f{display:grid;grid-template-columns:86px auto 1fr;gap:2px 8px;align-items:start;margin-top:4px}
+.ev-f>b{font-size:11.5px}.ev-f .ev-txt{grid-column:3}.ev-f small{grid-column:1/-1;color:var(--muted);padding-left:94px}
+.ev-f>b+.ev-txt,.ev-f>b+.ev-vacio{grid-column:2/-1}
+@media (max-width:600px){.ev-f{display:flex;flex-wrap:wrap;gap:3px 8px}.ev-f .ev-txt,.ev-f small,.ev-f .ev-vacio{flex-basis:100%;padding-left:0}}
+.ev-tabla th,.ev-tabla td{padding:4px 5px}

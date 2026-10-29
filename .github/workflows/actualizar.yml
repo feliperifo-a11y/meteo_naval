@@ -52,6 +52,8 @@ jobs:
           for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do
             if curl -fsSL "$BASE/data/$f" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
+          mkdir -p data/evaluacion
+          curl -fsSL "$BASE/data/evaluacion/resumen.json" -o data/evaluacion/resumen.json || rm -f data/evaluacion/resumen.json
 
       - name: Recolectar datos
         env:
@@ -119,6 +121,26 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/pronosticos.py
+
+      - name: Evaluación WRF + IA (O.P.I. N° 1104; archiva el boletín profesional)
+        # Usa el historial de git de data/wrf_ia.json y data/estaciones.json; recalcula una vez al día.
+        continue-on-error: true
+        timeout-minutes: 4
+        run: |
+          git fetch --quiet --shallow-since=2026-10-01 origin main || true
+          python scripts/evaluacion_ia.py
+
+      - name: Guardar el archivo de boletines profesionales en el repositorio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          if [ -n "$(git status --porcelain data/evaluacion/profesional.jsonl)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/evaluacion/profesional.jsonl
+            git commit -m "Archivo de boletines profesionales para la evaluación WRF + IA"
+            for i in 1 2 3; do git pull --rebase --autostash --quiet origin main && git push --quiet origin HEAD:main && break; sleep 5; done
+          fi
 
       - name: Monitoreo de hielos (cartas de hielo, hielo en cubierta, témpanos)
         continue-on-error: true
@@ -190,6 +212,7 @@ jobs:
           [ -f data/ww3/indice.json ] && mkdir -p _site/data/ww3 && cp data/ww3/indice.json data/ww3/f*.bin _site/data/ww3/ || true
           [ -f data/ecmwf/indice.json ] && mkdir -p _site/data/ecmwf && cp data/ecmwf/indice.json data/ecmwf/f*.bin _site/data/ecmwf/ || true
           [ -f data/ecmwf/estado.json ] && mkdir -p _site/data/ecmwf && cp data/ecmwf/estado.json _site/data/ecmwf/ || true
+          [ -f data/evaluacion/resumen.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/resumen.json _site/data/evaluacion/ || true
           for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       - uses: actions/upload-pages-artifact@v3

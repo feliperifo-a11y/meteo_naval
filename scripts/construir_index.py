@@ -48,7 +48,7 @@ datos = "\n".join([
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
 version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
-                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "") + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "") + leer(B / "viento_alerta.js", "") + leer(B / "viento_alerta.css", "") + leer(B / "umbrales_viento.js", "")
+                        + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "") + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "") + leer(B / "viento_alerta.js", "") + leer(B / "viento_alerta.css", "") + leer(B / "evaluacion_ia.js", "") + leer(B / "evaluacion_ia.css", "") + leer(B / "umbrales_viento.js", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
                         + leer(B / "valparaiso.js", "") + leer(B / "valparaiso.css", "") + leer(D / "geo" / "valparaiso.geojson", "{}") + leer(D / "geo" / "valparaiso_limites.json", "{}") + leer(D / "geo" / "valparaiso.kml", "")
@@ -66,6 +66,8 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*CASO_SAR_JS*/", leer(B / "caso_sar.js", ""))
         .replace("/*MAREJADAS_ALERTA_JS*/", leer(B / "marejadas_alerta.js", ""))
         .replace("/*VIENTO_ALERTA_JS*/", leer(B / "viento_alerta.js", ""))
+        .replace("/*EVALUACION_IA_JS*/", leer(B / "evaluacion_ia.js", ""))
+        .replace("/*EVALUACION_IA_CSS*/", leer(B / "evaluacion_ia.css", ""))
         .replace("/*VIENTO_ALERTA_CSS*/", leer(B / "viento_alerta.css", ""))
         .replace("/*UMBRALES_VIENTO_JS*/", leer(B / "umbrales_viento.js", ""))
         .replace("/*MAREJADAS_ALERTA_CSS*/", leer(B / "marejadas_alerta.css", ""))
