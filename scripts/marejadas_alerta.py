@@ -41,7 +41,8 @@ DATA = R / "data"
 SALIDA = DATA / "marejadas_alerta.json"
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (alerta de marejadas)"}
 TZ = ZoneInfo("America/Santiago")
-VERSION = 2
+VERSION = 2     # criterios (la persistencia solo compara corridas con la misma versión)
+FORMATO = 2     # contenido del archivo; si cambia, se recalcula aunque la corrida sea la misma
 PLAZOS = list(range(0, 241, 6))
 DIAS = 10
 CORRIDAS_HISTORIAL = 4
@@ -60,6 +61,7 @@ ISLAS = {
 }
 # clave interna, texto del índice GRIB
 CAMPOS = [
+    ("hs", ":HTSGW:surface:"),
     ("hw", ":WVHGT:surface:"), ("tw", ":WVPER:surface:"), ("dw", ":WVDIR:surface:"),
     ("h1", ":SWELL:1 in sequence:"), ("t1", ":SWPER:1 in sequence:"), ("d1", ":SWDIR:1 in sequence:"),
     ("h2", ":SWELL:2 in sequence:"), ("t2", ":SWPER:2 in sequence:"), ("d2", ":SWDIR:2 in sequence:"),
@@ -73,7 +75,8 @@ CRITERIOS = {
                   "Mar de fondo del NW con período de 14 a 17 s y olas de 2,5 m o más",
                   "Mar de fondo del NW con período de 18 s o más y olas de 2,0 m o más",
                   "Mar de viento del NW/W sobre 3,0 m (sistema frontal); se aplica de la zona IV al norte y en Juan Fernández y Rapa Nui"],
-    "notas": ["La O.P.I. usa como referencia la costa de la Región de Valparaíso; aquí se aplica a toda la costa evaluada.",
+    "notas": ["El rango de cada día es la altura significativa total (mar de viento y de fondo) del modelo: mediana y percentil 90 de los máximos diarios de los puntos de la zona, en múltiplos de 0,5 m.",
+              "La O.P.I. usa como referencia la costa de la Región de Valparaíso; aquí se aplica a toda la costa evaluada.",
               "El modelo entrega altura significativa mar afuera por partición, no la altura de las olas en la rompiente.",
               "El período de cada partición del modelo es su período medio.",
               "Sectores de procedencia: SW 202,5°–247,5°, W 247,5°–292,5°, NW 292,5°–337,5°, S/SW 157,5°–247,5°.",
@@ -367,6 +370,7 @@ def procesar(corrida):
     salida = []
     for k, z in zonas.items():
         celdas = {f: {"fecha": f, "cat": 0} for f in fechas}
+        hs_dia = {}   # altura significativa total: máximo diario por punto, para el rango del día
         for fhr, campos in sorted(valores.items()):
             valido = corrida + timedelta(hours=fhr)
             f = valido.astimezone(TZ).date().isoformat()
@@ -374,6 +378,8 @@ def procesar(corrida):
                 continue
             c = celdas[f]
             c["plazos"] = c.get("plazos", 0) + 1
+            hs = np.array([campos["hs"][i, j] for i, j in z["idx"]], dtype=float)
+            hs_dia[f] = hs if f not in hs_dia else np.fmax(hs_dia[f], hs)
             for i, j in z["idx"]:
                 v = {cl: float(campos[cl][i, j]) for cl, _ in CAMPOS}
                 cat, origen, h, t, d = evaluar(v, k)
@@ -384,6 +390,11 @@ def procesar(corrida):
                               "dir": round(d) % 360 if d is not None and math.isfinite(d) else None,
                               "lat": round(float(lats[i, j]), 2), "lon": round(float(lons[i, j]), 2),
                               "valido": valido.strftime("%Y-%m-%dT%H:%MZ"), "fhr": fhr})
+        for f, hs in hs_dia.items():
+            hs = hs[np.isfinite(hs)]
+            if hs.size:
+                lo, hi = (round(float(np.percentile(hs, q)) * 2) / 2 for q in (50, 90))
+                celdas[f]["rango"] = [lo, max(hi, lo + 0.5)]
         salida.append({"id": k, "nombre": z["nombre"],
                        "puntos": [[round(float(lats[i, j]), 2), round(float(lons[i, j]), 2)] for i, j in z["idx"]],
                        "celdas": [celdas[f] for f in fechas]})
@@ -414,14 +425,14 @@ def main():
             SALIDA.write_text(json.dumps(previo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         return
     clave = corrida.strftime("%Y%m%d%H")
-    if previo.get("clave") == clave and previo.get("version") == VERSION and not os.environ.get("FORZAR"):
+    if previo.get("clave") == clave and previo.get("version") == VERSION and previo.get("formato") == FORMATO and not os.environ.get("FORZAR"):
         marcar_avisos(previo)
         SALIDA.write_text(json.dumps(previo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print("Alerta de marejadas: sin corrida nueva", clave, "(avisos oficiales revisados)"); return
     fechas, zonas = procesar(corrida)
     fases, dias_sicigia = sicigias(date.fromisoformat(fechas[0]), date.fromisoformat(fechas[-1]))
     res = {
-        "version": VERSION, "clave": clave, "corrida": corrida.strftime("%Y-%m-%dT%HZ"),
+        "version": VERSION, "formato": FORMATO, "clave": clave, "corrida": corrida.strftime("%Y-%m-%dT%HZ"),
         "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fuente": "NOAA GFS-Wave (WAVEWATCH III) 0,25°, 0–240 h cada 6 h",
         "zona_contigua_mn": ZONA_CONTIGUA_MN, "fechas": fechas, "zonas": zonas,

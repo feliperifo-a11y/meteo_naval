@@ -26,7 +26,7 @@ function crearAlertaViento(L, map, h) {
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
     <p class="mar-sub" aria-live="polite">Cargando…</p>
     <div class="mar-tabla-wrap"></div>
-    <div class="mar-ley">${Object.values(CAT).map(c => `<span><i class="${c.cls}"></i>${c.txt}</span>`).join('')}<span><i class="mav"></i>Aviso oficial vigente</span><span><b>2/3</b> corridas que lo muestran</span></div>
+    <div class="mar-ley">${Object.values(CAT).map(c => `<span><i class="${c.cls}"></i>${c.txt}</span>`).join('')}<span><i class="mav"></i>Aviso oficial vigente</span><span><b>15/20</b> rango de viento del día (kt)</span></div>
     <div class="mar-det" aria-live="polite"><p class="mar-ayuda">Selecciona un día para ver el viento que lo determina y el área evaluada en el mapa.</p></div>
     <details class="mar-crit"><summary>Criterios y fuentes</summary><div></div></details>`;
   const wrap = document.getElementById('mapWrap');
@@ -72,9 +72,10 @@ function crearAlertaViento(L, map, h) {
         const i = z.celdas.findIndex(c => c.fecha === f), c = z.celdas[i];
         if (!c) { html += '<td><span class="mar-c vto-sd" title="Sin datos">–</span></td>'; return; }
         const k = CAT[c.cat] || NADA, p = c.persistencia || [0, 0], esSel = sel && sel[0] === zi && sel[1] === i;
-        const tit = `${z.nombre} · ${fechaLarga(f)}: ${k.txt}${c.cat ? ` (${c.vel} kt del ${rosa(c.dir)})` : c.vmax != null ? ` (máximo ${c.vmax} kt)` : ''}${c.aviso ? ' · aviso oficial vigente' : ''}`;
+        const rg = c.rango ? `${c.dir_dom != null ? rosa(c.dir_dom) + ' ' : ''}${c.rango[0]}/${c.rango[1]} kt` : '';
+        const tit = `${z.nombre} · ${fechaLarga(f)}: ${k.txt}${c.cat ? ` (${c.vel} kt del ${rosa(c.dir)})` : ''}${rg ? ` · viento ${rg}` : ''}${c.cat && p[1] > 1 ? ` · ${p[0]} de ${p[1]} corridas` : ''}${c.aviso ? ' · aviso oficial vigente' : ''}`;
         html += `<td><button type="button" class="mar-c ${k.cls}${c.aviso ? ' mav' : ''}${esSel ? ' sel' : ''}" data-z="${zi}" data-i="${i}" title="${escH(tit)}" aria-label="${escH(tit)}">`
-          + `${k.corto}${c.cat && p[1] > 1 ? `<small>${p[0]}/${p[1]}</small>` : ''}</button></td>`;
+          + `${k.corto ? `<b>${k.corto}</b>` : ''}${c.rango ? `<small class="mar-rg">${c.rango[0]}/${c.rango[1]}</small>` : ''}</button></td>`;
       });
       html += '</tr>';
     });
@@ -94,14 +95,14 @@ function crearAlertaViento(L, map, h) {
     const z = datos.zonas[zi], c = z.celdas[i], k = CAT[c.cat] || NADA, p = c.persistencia || [0, 0];
     let t = `<h3>${escH(z.nombre)} · ${escH(fechaLarga(c.fecha))}</h3><p class="mar-cat ${k.cls}">${escH(k.txt)}</p>`;
     if (c.cat) {
-      t += `<dl><dt>Viento máximo</dt><dd>${c.vel} kt del ${escH(rosa(c.dir))} (${c.dir}°) · Beaufort ${beaufort(c.vel)}</dd>`
+      t += `<dl>${c.rango ? `<dt>Viento en el área</dt><dd>${c.dir_dom != null ? escH(rosa(c.dir_dom)) + ' ' : ''}${c.rango[0]}/${c.rango[1]} kt</dd>` : ''}<dt>Viento máximo</dt><dd>${c.vel} kt del ${escH(rosa(c.dir))} (${c.dir}°) · Beaufort ${beaufort(c.vel)}</dd>`
         + `<dt>Ráfaga en ese punto</dt><dd>${c.raf == null ? '–' : c.raf + ' kt'}</dd>`
         + `<dt>Extensión</dt><dd>${c.frac} % de los puntos del área · sector ${escH(c.sector)}</dd>`
         + `<dt>Punto del máximo</dt><dd>${dm(c.lat, 'N', 'S')} · ${dm(c.lon, 'E', 'W')}</dd>`
         + `<dt>Hora del máximo</dt><dd>${escH(horaChile(c.valido))} (hora Chile)</dd>`
         + `<dt>Persistencia</dt><dd>${p[1] ? `${p[0]} de ${p[1]} corridas recientes` : 'primera corrida'}</dd></dl>`;
     } else if (c.vmax != null) {
-      t += `<p>Viento máximo en el área ese día: ${c.vmax} kt, bajo los parámetros de aviso (o sin la extensión y duración requeridas).</p>`;
+      t += `<p>${c.rango ? `Viento en el área: ${c.dir_dom != null ? escH(rosa(c.dir_dom)) + ' ' : ''}${c.rango[0]}/${c.rango[1]} kt. ` : ''}Máximo puntual: ${c.vmax} kt, bajo los parámetros de aviso (o sin la extensión y duración requeridas).</p>`;
     }
     if (c.aviso) t += `<p class="mar-nota mar-nota-av">Aviso oficial de viento vigente: ${escH(c.aviso)}.</p>`;
     const n = Math.round((new Date(c.fecha + 'T12:00:00Z') - new Date(hoy() + 'T12:00:00Z')) / 864e5);

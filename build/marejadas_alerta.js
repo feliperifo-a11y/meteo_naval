@@ -14,6 +14,8 @@ function crearAlertaMarejadas(L, map, h) {
   // Escala Armada de oleaje
   const escala = hs => hs == null ? '' : hs < 0.5 ? 'rizada' : hs < 1.25 ? 'marejadilla' : hs < 2.5 ? 'marejada' : hs < 4 ? 'gruesa' : hs <= 6 ? 'muy gruesa' : 'sobre 6 m';
   const num = (v, d = 1) => v == null ? '–' : Number(v).toFixed(d).replace('.', ',');
+  const m05 = v => Number.isInteger(+v) ? String(v) : String(v).replace('.', ',');   // 2 · 2,5
+  const rangoTxt = c => c.rango ? `${m05(c.rango[0])}/${m05(c.rango[1])}` : '';
   const dm = (v, pos, neg) => {
     const t = Math.round(Math.abs(v) * 60), g = Math.floor(t / 60), mi = t - g * 60;
     return `${g}°${String(mi).padStart(2, '0')}′ ${v < 0 ? neg : pos}`;
@@ -29,7 +31,7 @@ function crearAlertaMarejadas(L, map, h) {
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
     <p class="mar-sub" aria-live="polite">Cargando…</p>
     <div class="mar-tabla-wrap"></div>
-    <div class="mar-ley"><span><i class="m1"></i>Marejadas</span><span><i class="m2"></i>Marejadas anormales</span><span><i class="mav"></i>Aviso oficial vigente</span><span><b>☾</b> Sicigias (±1 día)</span><span><b>3/4</b> corridas que lo muestran</span></div>
+    <div class="mar-ley"><span><i class="m1"></i>Marejadas</span><span><i class="m2"></i>Marejadas anormales</span><span><i class="mav"></i>Aviso oficial vigente</span><span><b>☾</b> Sicigias (±1 día)</span><span><b>2/3</b> rango de oleaje del día (m)</span></div>
     <div class="mar-det" aria-live="polite"><p class="mar-ayuda">Selecciona un día para ver el oleaje que lo determina y los puntos evaluados en el mapa.</p></div>
     <details class="mar-crit"><summary>Criterios y fuentes</summary><div></div></details>`;
   const wrap = document.getElementById('mapWrap');
@@ -77,9 +79,9 @@ function crearAlertaMarejadas(L, map, h) {
       idxs.forEach(([f, i]) => {
         const c = z.celdas[i], k = CAT[c.cat] || CAT[0], p = c.persistencia || [0, 0];
         const esSel = sel && sel[0] === zi && sel[1] === i;
-        const tit = `${z.nombre} · ${fechaLarga(f)}: ${k.txt}${c.cat ? ` (${num(c.hs)} m, ${c.origen})` : ''}${c.aviso ? ' · aviso oficial vigente' : ''}`;
+        const tit = `${z.nombre} · ${fechaLarga(f)}: ${k.txt}${c.cat ? ` (${num(c.hs)} m, ${c.origen})` : ''}${c.rango ? ` · oleaje ${rangoTxt(c)} m` : ''}${c.cat && p[1] > 1 ? ` · ${p[0]} de ${p[1]} corridas` : ''}${c.aviso ? ' · aviso oficial vigente' : ''}`;
         html += `<td><button type="button" class="mar-c ${k.cls}${c.aviso ? ' mav' : ''}${esSel ? ' sel' : ''}" data-z="${zi}" data-i="${i}" title="${escH(tit)}" aria-label="${escH(tit)}">`
-          + `${k.corto}${c.cat && p[1] > 1 ? `<small>${p[0]}/${p[1]}</small>` : ''}</button></td>`;
+          + `${k.corto ? `<b>${k.corto}</b>` : ''}${c.rango ? `<small class="mar-rg">${rangoTxt(c)}</small>` : ''}</button></td>`;
       });
       html += '</tr>';
     });
@@ -103,13 +105,14 @@ function crearAlertaMarejadas(L, map, h) {
     if (c.cat) {
       t += `<dl><dt>Origen</dt><dd>${escH(c.origen)}</dd>`
         + `<dt>Altura significativa</dt><dd>${num(c.hs)} m (${escH(escala(c.hs))})</dd>`
+        + (c.rango ? `<dt>Oleaje en la zona</dt><dd>${rangoTxt(c)} m (${escH(escala(c.rango[0]))} a ${escH(escala(c.rango[1]))})</dd>` : '')
         + `<dt>Período medio</dt><dd>${c.tp == null ? '–' : num(c.tp) + ' s'}</dd>`
         + `<dt>Procedencia</dt><dd>${c.dir == null ? '–' : c.dir + '° (' + rosa(c.dir) + ')'}</dd>`
         + `<dt>Punto del máximo</dt><dd>${dm(c.lat, 'N', 'S')} · ${dm(c.lon, 'E', 'W')}</dd>`
         + `<dt>Hora del máximo</dt><dd>${escH(horaChile(c.valido))} (hora Chile, plazo ${c.fhr} h)</dd>`
         + `<dt>Persistencia</dt><dd>${p[1] ? `${p[0]} de ${p[1]} corridas recientes` : 'primera corrida'}</dd></dl>`;
     } else if (c.hs != null) {
-      t += `<p>Mayor altura de mar de fondo o de viento en la zona ese día: ${num(c.hs)} m (${escH(escala(c.hs))}), bajo los criterios de emisión.</p>`;
+      t += `<p>${c.rango ? `Oleaje en la zona: ${rangoTxt(c)} m (${escH(escala(c.rango[0]))} a ${escH(escala(c.rango[1]))}). ` : ''}Mayor altura de mar de fondo o de viento: ${num(c.hs)} m, bajo los criterios de emisión.</p>`;
     }
     if (sic) t += '<p class="mar-nota">Día a ±1 día de sicigias (luna nueva o llena): la O.P.I. pide considerarlo al evaluar marejadas anormales.</p>';
     if (c.aviso) t += `<p class="mar-nota mar-nota-av">Aviso oficial de marejadas vigente: ${escH(c.aviso)}.</p>`;

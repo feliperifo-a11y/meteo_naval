@@ -30,7 +30,8 @@ DATA = R / "data"
 ECMWF = DATA / "ecmwf"
 SALIDA = DATA / "viento_alerta.json"
 TZ = ZoneInfo("America/Santiago")
-VERSION = 1
+VERSION = 1     # criterios (la persistencia solo compara corridas con la misma versión)
+FORMATO = 2     # contenido del archivo; si cambia, se recalcula aunque la corrida sea la misma
 CORRIDAS_HISTORIAL = 3
 FRAC_MIN, PUNTOS_MIN, PLAZOS_MIN = 0.10, 2, 2
 SUBMUESTREO = 2          # 0,2° a partir de la grilla de 0,1°
@@ -69,6 +70,7 @@ CRITERIOS = {
         "Juan Fernández e Isla de Pascua: mal tiempo 20–33 kt y temporal 34 kt o más. El PD los asocia a situaciones prefrontales, frontales (IV y I cuadrante; W en Juan Fernández) y postfrontales (II y III cuadrante), es decir, a todas las direcciones; el aviso especial de las islas depende de la situación sinóptica y no se distingue de forma automática.",
     ],
     "notas": [
+        "El rango de cada día (p. ej. 15/20 kt) es la mediana y el percentil 90 de los máximos diarios de los puntos del área, en múltiplos de 5 kt; la dirección es la predominante entre los vientos más fuertes del día.",
         "Viento general norte: componente norte (procedencia de 270° a 90° pasando por el norte); viento general sur: componente sur.",
         "Criterio de MeteoIA (el PD no define 'viento general'): el umbral se cumple en al menos el 10 % de los puntos del área (mínimo 2) durante al menos dos plazos consecutivos del modelo (6 h hasta 72 h; 12 h después).",
         "No se evalúan las aguas interiores de Puerto Montt y Magallanes ni los avisos locales (Punta Arenas, Puerto Harris, Bahía Fildes), que tienen parámetros propios.",
@@ -281,6 +283,19 @@ def evaluar_area(a, pts, vel, dirc, raf, validos):
         celda = {"fecha": d.isoformat(), "cat": None, "plazos": len(fs)}
         vmax = np.nanmax(vel[fs]) if len(fs) and np.isfinite(vel[fs]).any() else None
         celda["vmax"] = None if vmax is None else round(float(vmax))
+        if vmax is not None:
+            # Rango del día al estilo del pronóstico (p. ej. 15/20 kt): mediana y percentil 90 de los máximos diarios
+            # por punto, en múltiplos de 5 kt; dirección predominante de los vientos más fuertes del día.
+            md = np.nanmax(vel[fs], axis=0)
+            ok = np.isfinite(md)
+            if ok.any():
+                lo, hi = (int(round(float(np.percentile(md[ok], q)) / 5) * 5) for q in (50, 90))
+                celda["rango"] = [lo, max(hi, lo + 5)]
+                v, d = vel[fs].ravel(), dirc[fs].ravel()
+                fuerte = np.isfinite(v) & np.isfinite(d) & (v >= np.nanpercentile(v, 75))
+                if fuerte.any():
+                    r = np.radians(d[fuerte])
+                    celda["dir_dom"] = int(round(math.degrees(math.atan2(np.sin(r).mean(), np.cos(r).mean())))) % 360
         for k in sorted(activo, key=lambda x: -CATS[x][0]):
             dur, c, cuenta = activo[k]
             fk = [f for f in fs if dur[f]]
@@ -365,7 +380,7 @@ def main():
             marcar_avisos(previo); escribir(previo)
         return
     clave = ec["indice"]["clave"]
-    if previo.get("clave") == clave and previo.get("version") == VERSION and not os.environ.get("FORZAR"):
+    if previo.get("clave") == clave and previo.get("version") == VERSION and previo.get("formato") == FORMATO and not os.environ.get("FORZAR"):
         marcar_avisos(previo); escribir(previo)
         print("Alerta de viento: sin corrida nueva", clave, "(avisos oficiales revisados)"); return
     validos = [p["valido"] for p in ec["pasos"]]
@@ -391,7 +406,7 @@ def main():
         print("Alerta de viento: ninguna área evaluada; se mantiene lo anterior"); return
     fechas = sorted({c["fecha"] for z in zonas for c in z["celdas"]})
     res = {
-        "version": VERSION, "clave": clave, "corrida": ec["indice"]["corrida"],
+        "version": VERSION, "formato": FORMATO, "clave": clave, "corrida": ec["indice"]["corrida"],
         "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fuente": "ECMWF IFS 0,1° (datos abiertos CC-BY-4.0), viento a 10 m, 0–120 h",
         "fechas": fechas, "zonas": zonas, "categorias": {k: v[1] for k, v in CATS.items()},

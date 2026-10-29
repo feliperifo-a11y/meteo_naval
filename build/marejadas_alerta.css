@@ -37,3 +37,8 @@
 .mar-crit ul{margin:2px 0 6px;padding-left:18px}.mar-crit p{margin:6px 0 2px}
 @media (max-width:1050px){#mapWrap .mar-card{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:62%}#mapWrap .mar-card.mar-minimizada{top:auto;bottom:8px}#mapWrap.mar-abierto .uv-panel{right:10px;bottom:calc(62% + 16px)}}
 @media (max-width:600px){.mar-c{height:32px}.mar-tabla{font-size:10.5px}.mar-tabla thead tr:first-child th{font-size:9px;letter-spacing:0}}
+/* Rango del día dentro de cada celda (oleaje en m o viento en kt) */
+.mar-c{height:36px}.mar-c b{font-size:11px;line-height:1}
+.mar-c small.mar-rg{font-size:9.5px;font-weight:600;opacity:1;line-height:1.05;letter-spacing:-.2px;white-space:nowrap;color:inherit}
+.mar-c.m0 small.mar-rg,.mar-c.v0 small.mar-rg{color:var(--muted)}
+@media (max-width:600px){.mar-c{height:38px}.mar-c small.mar-rg{font-size:8.5px;white-space:normal;overflow-wrap:anywhere}}
