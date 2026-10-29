@@ -12,7 +12,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["build/**", "app/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "hielos.html", "nuevo.html", "dashboard.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
+    paths: ["build/**", "app/**", "sw.js", "sw-app.js", "favicon.ico", "ia.html", "pronosticos.html", "hielos.html", "nuevo.html", "dashboard.html", "carta.html", "data/avisos_manual.json", "data/estaciones.json", "data/estaciones_extra.json", "data/wrf_ia.json", "data/geo/**", "scripts/**"]
 
 permissions:
   contents: write
@@ -202,7 +202,7 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data/geo
-          cp index.html dashboard.html ia.html pronosticos.html hielos.html nuevo.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
+          cp index.html dashboard.html carta.html ia.html pronosticos.html hielos.html nuevo.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
           cp -r app _site/
           cp data/geo/talcahuano.geojson data/geo/talcahuano.kml _site/data/geo/
           cp data/geo/talcahuano_fondeos.geojson data/geo/talcahuano_fondeos.kml _site/data/geo/

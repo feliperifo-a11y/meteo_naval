@@ -83,6 +83,13 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "dashboard.html").write_text(preparar_app(preparar_avisos(html)), encoding="utf-8")
 print(f"dashboard.html: {len(html) / 1024:.0f} KB")
+# Carta de superficie pública (carta.html): la misma página en modo «solo carta», siempre. Así la página Desarrollo
+# (dashboard.html) puede quedar con acceso restringido sin romper los enlaces públicos a la carta.
+MARCA_CARTA = "try { if (new URLSearchParams(location.search).has('carta')) document.documentElement.classList.add('soloCarta'); } catch (e) {}"
+html_dash = (R / "dashboard.html").read_text(encoding="utf-8")
+assert MARCA_CARTA in html_dash, "falta la marca del modo solo carta"
+(R / "carta.html").write_text(html_dash.replace(MARCA_CARTA, "document.documentElement.classList.add('soloCarta');")
+                              .replace("<title>", "<meta name=\"robots\" content=\"noindex\"><title>", 1), encoding="utf-8")
 
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
