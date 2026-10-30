@@ -9,7 +9,7 @@ Puerto Montt) del Cuadro "F" (data/geo/metarea.json), con salida libre al océan
 
 Probabilidad = porcentaje de miembros en que al menos un punto del área supera el umbral del índice
 (STP ≤ −0,3; SHERBE ≥ 1; NST > 1). Por plazo y por día (hora de Chile: al menos una vez en el día).
-Limitaciones: el GEFS 0,5° (pgrb2a) solo tiene 1000, 925 y 850 hPa bajo 700 hPa, por lo que el SRH 0–500 m y el
+Limitaciones: el GEFS 0,5° (pgrb2a) solo tiene 1000, 925 y 850 hPa bajo 700 hPa (y 500, 250, 200 arriba), por lo que el SRH 0–500 m y el
 gradiente 0–1 km quedan más suavizados que en el GFS 0,25°. Los umbrales no están calibrados para trombas.
 Estimación experimental: no constituye aviso. Solo corre con corrida nueva; nunca hace fallar el flujo.
 """
@@ -36,7 +36,7 @@ TZ = ZoneInfo("America/Santiago")
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (trombas GEFS)"}
 NORTE, SUR, OESTE, ESTE = -32, -43, -79, -71
 ZONAS = ["III", "IV", "V"]
-NIVELES = [1000, 925, 850, 700, 500, 400, 300, 250, 200]
+NIVELES = [1000, 925, 850, 700, 500, 250, 200]   # niveles comunes a HGT, TMP, RH y viento en pgrb2a
 FHRS = list(range(0, 73, 6))
 MIEMBROS = ["gec00"] + [f"gep{i:02d}" for i in range(1, 31)]
 MIN_MIEMBROS = 20
@@ -152,7 +152,8 @@ def indices(campos, lat, lon, flat_idx):
     t2 = sel(c("t", 103, 2))
     rh2 = np.clip(sel(c("r", 103, 2)), 1, 100)
     td2 = ti.td_de_w(ti.EPS * (rh2 / 100 * ti.es_hpa(t2)) / (sel(c("sp", 1, 0)) / 100 - rh2 / 100 * ti.es_hpa(t2)), sel(c("sp", 1, 0)) / 100)
-    q = ti.calcular(np.array(NIVELES, float), sel(c("sp", 1, 0)) / 100.0, sel(c("gh", 1, 0)), t2, td2,
+    zsfc = sel(campos[("gh", 1, 0)]) if ("gh", 1, 0) in campos else np.zeros(len(flat_idx))   # pgrb2a no trae HGT de superficie; sobre el mar es 0 m
+    q = ti.calcular(np.array(NIVELES, float), sel(c("sp", 1, 0)) / 100.0, zsfc, t2, td2,
                     sel(u10f), sel(v10f), niv("gh"), niv("t"), niv("r"), niv("u"), niv("v"))
     q["nst"] = ti.nst(q["lr01"], q["mlcape3"], q["mlcin"], q["bwd06"], -sel(zeta))
     return q
