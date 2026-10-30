@@ -31,7 +31,7 @@ import viento_alerta as va    # noqa: E402  (polígonos de tierra para excluir c
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 SALIDA = DATA / "trombas_prob.json"
-VERSION = 2
+VERSION = 3
 TZ = ZoneInfo("America/Santiago")
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (trombas GEFS)"}
 NORTE, SUR, OESTE, ESTE = -32, -48.5, -81.5, -71
