@@ -1,0 +1,9 @@
+/* Trombas marinas: ficha técnica (página Desarrollo); reutiliza .mar-* y .ev-tabla */
+.btnTromba{background:#37474f!important;color:#fff!important;box-shadow:0 0 0 2px rgba(160,190,205,.45)!important}
+@media (min-width:1051px){#mapWrap .tr-card{width:min(640px,58%)}}
+.tr-etq{background:#eceff1;color:#263238;border-color:#90a4ae}
+.tr-h{font-size:13.5px;margin:12px 0 6px}
+.tr-l{margin:0 0 4px;padding-left:18px;font-size:12.5px}.tr-l li{margin:3px 0}
+.tr-tabla td,.tr-tabla th{white-space:normal;vertical-align:top}
+.tr-tabla tbody th{min-width:80px}
+.tr-ref li{margin:4px 0}.tr-ref a{word-break:break-all}
