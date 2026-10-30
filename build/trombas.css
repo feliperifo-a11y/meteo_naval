@@ -7,3 +7,10 @@
 .tr-tabla td,.tr-tabla th{white-space:normal;vertical-align:top}
 .tr-tabla tbody th{min-width:80px}
 .tr-ref li{margin:4px 0}.tr-ref a{word-break:break-all}
+.tr-tira{display:flex;flex-wrap:wrap;gap:6px 10px;margin:4px 0}
+.tr-dia{display:flex;align-items:center;gap:2px;flex-wrap:wrap}.tr-dia-t{font-size:10.5px;color:var(--muted);text-transform:uppercase;margin-right:3px;min-width:38px}
+.tr-p{width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:var(--chip);color:var(--ink);cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 11px/1.05 system-ui,sans-serif}
+.tr-p small{font-size:9px;font-weight:500}
+.tr-p.tr-stp{background:#b3149a;border-color:#7d0d6b;color:#fff}.tr-p.tr-sherbe{background:#f28c00;border-color:#b86a00;color:#1b1200}.tr-p.tr-nst{background:#1f6fb2;border-color:#16507f;color:#fff}
+.tr-p.sel{outline:2px solid var(--ink);outline-offset:1px}
+.tr-ley i{border:0}

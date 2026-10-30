@@ -1,12 +1,26 @@
-// ============================ Trombas marinas: ficha técnica de parámetros (página Desarrollo) ============================
-// Referencia estática, sin datos de modelo: resume los parámetros de pronóstico de trombas y sus fuentes, como base del
-// futuro cálculo automático (GFS 0,25° / WRF). No constituye aviso. Toda cifra lleva su fuente; no agregar umbrales sin ella.
-function crearTrombas(L, map) {
+// ============================ Trombas marinas: perspectiva 0–72 h y ficha técnica (página Desarrollo) ============================
+// Lee data/trombas.json (scripts/trombas.py): STP (hemisferio sur), SHERBE y NST calculados sobre el océano con el GFS 0,25°,
+// e ingredientes del nomograma de Szilagyi. Estimación experimental: no constituye aviso. Toda cifra de la ficha lleva su fuente.
+function crearTrombas(L, map, h) {
+  const escH = h.escH;
+  const nf = (v, d = 1) => v == null ? '–' : Number(v).toFixed(d).replace('.', ',');
+  const horaChile = iso => new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+  const hhChile = iso => new Date(iso).toLocaleString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', hour12: false });
+  const diaChile = iso => new Date(iso).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: 'numeric' }).replace('.', '');
+  const dm = (v, pos, neg) => { const t = Math.round(Math.abs(v) * 60), g = Math.floor(t / 60), mi = t - g * 60; return `${g}°${String(mi).padStart(2, '0')}′ ${v < 0 ? neg : pos}`; };
+  const COLOR = { stp: '#b3149a', sherbe: '#f28c00', nst: '#1f6fb2' };
+  const grupo = L.layerGroup();
+  let datos = null, sel = null, cargado = 0;
   const card = document.createElement('section');
   card.className = 'card mar-card tr-card'; card.id = 'trombas'; card.hidden = true;
-  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · parámetros de pronóstico</h2><span class="mar-etq tr-etq">En desarrollo · sin cálculo automático</span>
+  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · perspectiva 72 h</h2><span class="mar-etq tr-etq">Experimental · no constituye aviso</span>
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
-    <p class="mar-sub">Ficha de referencia para construir una alerta preventiva de trombas. Reúne los índices con respaldo bibliográfico, sus umbrales y dónde obtener los datos. Aún no se calcula ningún índice: no constituye aviso.</p>
+    <p class="mar-sub tr-sub" aria-live="polite">Cargando…</p>
+    <div class="tr-tira"></div>
+    <div class="mar-ley tr-ley"><span><i style="background:${COLOR.stp}"></i>STP ≤ −0,3</span><span><i style="background:${COLOR.sherbe}"></i>SHERBE ≥ 1</span><span><i style="background:${COLOR.nst}"></i>NST &gt; 1</span><span>número = celdas de 0,25° sobre umbral</span></div>
+    <div class="mar-det tr-det" aria-live="polite"><p class="mar-ayuda">Selecciona un plazo para ver en el mapa las celdas que superan algún umbral.</p></div>
+    <p class="mar-nota">Índices calculados sobre el océano con el GFS 0,25°, dominio 20°–56° S / 85°–68° W. Los umbrales vienen de tornados chilenos en tierra (Marín et al., 2024) y del NST del SPC: aún no están calibrados para trombas. El GFS no resuelve la vorticidad de escala local, por lo que el NST rara vez supera su umbral.</p>
+    <h3 class="tr-h">Ficha técnica</h3>
 
     <h3 class="tr-h">Dos mecanismos, dos juegos de parámetros</h3>
     <ul class="tr-l">
@@ -77,11 +91,70 @@ function crearTrombas(L, map) {
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
+  const sub = card.querySelector('.tr-sub'), tira = card.querySelector('.tr-tira'), det = card.querySelector('.tr-det');
   card.querySelector('.mar-cerrar').onclick = () => cerrar();
   card.querySelector('.mar-min').onclick = () => card.classList.toggle('mar-minimizada');
-  function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); map.removeLayer(grupo); }
+
+  async function cargar() {
+    try {
+      const r = await fetch('data/trombas.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      datos = await r.json(); cargado = Date.now();
+    } catch (e) {
+      datos = null; tira.innerHTML = '';
+      sub.textContent = 'Aún no hay una corrida procesada. Se genera con cada corrida nueva del GFS (cuatro al día) cuando está disponible el plazo de 72 h.';
+      return;
+    }
+    pintar();
+  }
+
+  function pintar() {
+    const d = datos, ahora = Date.now() - 3 * 3600e3;
+    const pasos = d.pasos.filter(p => new Date(p.valida) >= ahora);
+    const viejo = Date.now() - new Date(d.generado) > 15 * 3600e3;
+    sub.innerHTML = `Corrida ${escH(d.corrida.replace('T', ' ').replace('Z', ' UTC'))} · ${escH(d.fuente)} · procesada ${escH(horaChile(d.generado))} (hora Chile)${viejo ? ' · <b class="mar-viejo">corrida antigua</b>' : ''}`;
+    let html = '', dia = '';
+    for (const p of pasos) {
+      const dd = diaChile(p.valida);
+      if (dd !== dia) { html += `${dia ? '</div>' : ''}<div class="tr-dia"><span class="tr-dia-t">${escH(dd)}</span>`; dia = dd; }
+      const n = p.celdas.length, k = p.n.stp ? 'stp' : p.n.sherbe ? 'sherbe' : p.n.nst ? 'nst' : '';
+      html += `<button type="button" class="tr-p${k ? ' tr-' + k : ''}${sel === p.fhr ? ' sel' : ''}" data-f="${p.fhr}" title="Válido ${escH(horaChile(p.valida))} · +${p.fhr} h"><b>${escH(hhChile(p.valida))}</b><small>${n || '·'}</small></button>`;
+    }
+    tira.innerHTML = (html ? html + '</div>' : '<p class="mar-nota">Sin plazos vigentes en la corrida disponible.</p>');
+    tira.querySelectorAll('.tr-p').forEach(b => b.onclick = () => elegir(+b.dataset.f));
+    if (sel == null) { const p = pasos.find(x => x.celdas.length) || pasos[0]; if (p) elegir(p.fhr); }
+    else elegir(sel);
+  }
+
+  function elegir(fhr) {
+    const p = datos.pasos.find(x => x.fhr === fhr); if (!p) return;
+    sel = fhr;
+    tira.querySelectorAll('.tr-p').forEach(b => b.classList.toggle('sel', +b.dataset.f === fhr));
+    grupo.clearLayers();
+    const col = datos.columnas, i = Object.fromEntries(col.map((c, k) => [c, k])), m = datos.paso_grilla / 2;
+    for (const c of p.celdas) {
+      const k = c[i.stp] <= datos.umbrales.stp ? 'stp' : c[i.sherbe] >= datos.umbrales.sherbe ? 'sherbe' : 'nst';
+      L.rectangle([[c[0] - m, c[1] - m], [c[0] + m, c[1] + m]], { color: COLOR[k], weight: 0.5, fillOpacity: 0.45 })
+        .bindPopup(`<div class="pp"><div class="ppT">${dm(c[0], 'N', 'S')} · ${dm(c[1], 'E', 'W')}</div><table>` +
+          `<tr><th>Válido</th><td>${escH(horaChile(p.valida))}</td></tr>` +
+          `<tr><th>STP (HS)</th><td>${nf(c[i.stp], 2)}</td></tr><tr><th>SHERBE</th><td>${nf(c[i.sherbe], 2)}</td></tr><tr><th>NST</th><td>${nf(c[i.nst], 2)}</td></tr>` +
+          `<tr><th>MLCAPE</th><td>${nf(c[i.mlcape], 0)} J/kg</td></tr><tr><th>SRH 0–500 m</th><td>${nf(c[i.srh500], 0)} m²/s²</td></tr><tr><th>Cizalle efectivo</th><td>${nf(c[i.ebsmu_kt], 0)} kt</td></tr>` +
+          `<tr><th>ΔT (TSM − T850)</th><td>${nf(c[i.dT])} °C</td></tr><tr><th>ΔZ (EL − LCL)</th><td>${nf(c[i.dZ_km])} km</td></tr><tr><th>Viento 850 hPa</th><td>${nf(c[i.w850_kt], 0)} kt</td></tr></table></div>`)
+        .addTo(grupo);
+    }
+    if (!map.hasLayer(grupo)) grupo.addTo(map);
+    const e = p.extremos;
+    det.innerHTML = `<h3>${escH(horaChile(p.valida))} <small>(+${p.fhr} h)</small></h3>
+      <dl><dt>STP mínimo</dt><dd>${nf(e.stp, 2)} · ${p.n.stp} celdas ≤ −0,3</dd>
+      <dt>SHERBE máximo</dt><dd>${nf(e.sherbe, 2)} · ${p.n.sherbe} celdas ≥ 1</dd>
+      <dt>NST máximo</dt><dd>${nf(e.nst, 2)} · ${p.n.nst} celdas &gt; 1</dd>
+      <dt>ΔT máximo</dt><dd>${nf(e.dT)} °C (TSM − T850)</dd></dl>
+      <p class="mar-ayuda">${p.celdas.length ? 'Toca una celda en el mapa para ver sus valores.' : 'Ninguna celda supera los umbrales en este plazo.'} Evaluados ${p.n.puntos} puntos de océano.</p>`;
+  }
+
   return {
-    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); },
+    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); if (map.hasLayer(grupo) === false && datos) grupo.addTo(map); if (!datos || Date.now() - cargado > 30 * 60e3) cargar(); },
     cerrar,
     get abierto() { return !card.hidden; }
   };
