@@ -95,7 +95,9 @@ def leer_grib(contenido):
             nombre = next((k for k, v in COD.items() if v == clave), None)
             if nombre is None:
                 continue
-            tipo = int(g["typeOfFirstFixedSurface"])
+            tipo = {"isobaricInhPa": 100, "surface": 1, "heightAboveGround": 103}.get(g.typeOfLevel)
+            if tipo is None:
+                continue
             nivel = 0 if tipo == 1 else int(round(g.level))   # superficie: el nivel no importa
             campos[(nombre, tipo, nivel)] = np.ma.filled(g.values.astype(float), np.nan)
             if lat is None:
