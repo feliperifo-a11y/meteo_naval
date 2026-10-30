@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Probabilidad de ambiente favorable a trombas en las zonas III, IV y V con el ensamble GEFS → data/trombas_prob.json
+"""Probabilidad de ambiente favorable a trombas en las zonas III a VI con el ensamble GEFS → data/trombas_prob.json
 
 Para la corrida GEFS de 00 o 12 UTC más reciente con plazo 72 h disponible, baja los 31 miembros (control gec00 y
-perturbados gep01–gep30) a 0,5°, de 0 a 72 h cada 6 h, recortados a 32°–43° S / 79°–71° W (filtro NOMADS, archivos
+perturbados gep01–gep30) a 0,5°, de 0 a 72 h cada 6 h, recortados a 32°–48,5° S / 81,5°–71° W (filtro NOMADS, archivos
 pgrb2a), y en cada miembro calcula STP (hemisferio sur), SHERBE y NST con scripts/trombas_indices.py sobre los
-puntos de mar de las zonas III (Valparaíso a Constitución), IV (Constitución a Isla Mocha) y V (Isla Mocha a
-Puerto Montt) del Cuadro "F" (data/geo/metarea.json), con salida libre al océano (sin canales ni aguas interiores).
+puntos de mar de las zonas III (Valparaíso a Constitución), IV (Constitución a Isla Mocha), V (Isla Mocha a
+Puerto Montt) y VI (Puerto Montt a San Pedro) del Cuadro "F" (data/geo/metarea.json), con salida libre al océano (sin canales ni aguas interiores).
 
 Probabilidad = porcentaje de miembros en que al menos un punto del área supera el umbral del índice
 (STP ≤ −0,1; ambiente HSLC; NST > 1; ver UMBRAL). Por plazo y por día (hora de Chile: al menos una vez en el día).
@@ -34,8 +34,8 @@ SALIDA = DATA / "trombas_prob.json"
 VERSION = 2
 TZ = ZoneInfo("America/Santiago")
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (trombas GEFS)"}
-NORTE, SUR, OESTE, ESTE = -32, -43, -79, -71
-ZONAS = ["III", "IV", "V"]
+NORTE, SUR, OESTE, ESTE = -32, -48.5, -81.5, -71
+ZONAS = ["III", "IV", "V", "VI"]
 NIVELES = [1000, 925, 850, 700, 500, 250, 200]   # niveles comunes a HGT, TMP, RH y viento en pgrb2a
 FHRS = list(range(0, 73, 6))
 MIEMBROS = ["gec00"] + [f"gep{i:02d}" for i in range(1, 31)]

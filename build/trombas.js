@@ -19,7 +19,7 @@ function crearTrombas(L, map, h) {
   const diaLargo = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).replace('.', '');
   const card = document.createElement('section');
   card.className = 'card mar-card tr-card'; card.id = 'trombas'; card.hidden = true;
-  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · zonas III a V · 72 h</h2><span class="mar-etq tr-etq">Experimental · no constituye aviso</span>
+  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · zonas III a VI · 72 h</h2><span class="mar-etq tr-etq">Experimental · no constituye aviso</span>
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
     <h3 class="tr-h">Probabilidad por zona · ensamble GEFS</h3>
     <p class="mar-sub tr-psub" aria-live="polite">Cargando…</p>

@@ -201,7 +201,7 @@ jobs:
         timeout-minutes: 15
         run: python scripts/trombas.py
 
-      - name: Trombas marinas, probabilidad por zona III a V (ensamble GEFS 0,5°, corridas 00 y 12 UTC)
+      - name: Trombas marinas, probabilidad por zona III a VI (ensamble GEFS 0,5°, corridas 00 y 12 UTC)
         # Solo con corrida nueva del ensamble; si falla, se mantiene el archivo anterior.
         continue-on-error: true
         timeout-minutes: 20
