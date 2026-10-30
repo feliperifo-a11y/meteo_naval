@@ -95,9 +95,9 @@ def leer_grib(contenido):
             nombre = next((k for k, v in COD.items() if v == clave), None)
             if nombre is None:
                 continue
-            tipo = g["typeOfFirstFixedSurface"]
-            nivel = g.level
-            campos[(nombre, tipo, nivel)] = g.values.astype(float)
+            tipo = int(g["typeOfFirstFixedSurface"])
+            nivel = 0 if tipo == 1 else int(round(g.level))   # superficie: el nivel no importa
+            campos[(nombre, tipo, nivel)] = np.ma.filled(g.values.astype(float), np.nan)
             if lat is None:
                 lat, lon = g.latlons()
     return campos, lat, lon
@@ -107,7 +107,7 @@ def procesar(campos, lat, lon):
     def c(nombre, tipo, nivel):
         k = (nombre, tipo, nivel)
         if k not in campos:
-            raise KeyError(f"falta {k}")
+            raise KeyError(f"falta {k}; hay {sorted(x for x in campos if x[1] != 100)}")
         return campos[k]
     p = np.array(NIVELES, float)
     lsm = c("lsm", 1, 0)
