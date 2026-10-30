@@ -52,7 +52,7 @@ CONTROL = [(-90, -20), (-90, -30), (-90, -40), (-100, -30), (-80, -30), (-110, -
 OESTE, ESTE, SUR, NORTE = -165.0, -40.0, -80.0, 2.0
 ANCHO_SALIDA = 3000
 NIVELES = list(range(940, 1061, 4))
-VERSION = 4          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
+VERSION = 5          # al cambiar el procesamiento se sube este número y la carta vigente se vuelve a procesar
 
 
 def fwd(lon, lat):
