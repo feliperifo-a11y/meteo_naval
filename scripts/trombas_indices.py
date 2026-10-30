@@ -175,6 +175,7 @@ def calcular(p, psfc, zsfc, t2, td2, u10, v10, gh, tt, rh, uu, vv):
     ua = np.stack([interp_altura(Z, U, h) for h in alt], 1); va = np.stack([interp_altura(Z, V, h) for h in alt], 1)
     ua[:, 0], va[:, 0] = u10, v10
     q["bwd06"] = np.hypot(ua[:, -1] - u10, va[:, -1] - v10)
+    q["shr01"] = np.hypot(ua[:, 4] - u10, va[:, 4] - v10)              # 0–1 km (alt[4] = 1000 m)
     umed, vmed = np.nanmean(ua, 1), np.nanmean(va, 1)
     sx = np.nanmean(ua[:, -3:], 1) - np.nanmean(ua[:, :3], 1)
     sy = np.nanmean(va[:, -3:], 1) - np.nanmean(va[:, :3], 1)
@@ -202,6 +203,11 @@ def calcular(p, psfc, zsfc, t2, td2, u10, v10, gh, tt, rh, uu, vv):
     q["stp"] = (q["mlcape"] / 1500.0) * t_lcl_ * (q["srh500"] / 75.0) * t_eb * t_cin
     # SHERBE (Marín et al. 2024, ec. 1)
     q["sherbe"] = (q["ebsmu"] / 27.0) * (q["lr03"] / 5.2) * (q["lr75"] / 5.6)
+    # VGP: cizalle medio 0–1 km × √CAPE (Caballero-Morán y Rondanelli, 2025, GRL; sin umbral publicado para Chile)
+    q["vgp"] = (q["shr01"] / 1000.0) * np.sqrt(np.maximum(q["mlcape"], 0))
+    # Ambiente de alto cizalle y bajo CAPE (HSLC) según Marín et al. (2026, Atmos. Res. 344): MUCAPE < 1000 J/kg,
+    # EBSMU > 18 m/s y SHERBE ≥ 1. MeteoIA exige además MUCAPE > 0 (sin flotabilidad no hay convección).
+    q["hslc"] = (q["mucape"] > 0) & (q["mucape"] < 1000) & (q["ebsmu"] > 18) & (q["sherbe"] >= 1)
     q["u850"] = interp_presion_campo(pf, U, 850); q["v850"] = interp_presion_campo(pf, V, 850)
     q["t850"] = interp_presion_campo(pf, T, 850)
     return q

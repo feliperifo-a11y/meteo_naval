@@ -3,7 +3,8 @@
 
 Para cada plazo de 0 a 72 h (cada 3 h) de la corrida GFS más reciente con plazo 72 h disponible, baja
 un subconjunto recortado al dominio 20°–56° S / 85°–68° W (filtro NOMADS) y calcula sobre el océano:
-  - STP versión hemisferio sur (umbral ≤ −0,3) y SHERBE (umbral ≥ 1), Marín et al. (2024, MWR 152).
+  - STP versión hemisferio sur (≤ −0,1) y ambiente HSLC (SHERBE ≥ 1 con cizalle > 18 m/s y CAPE bajo),
+    según los estudios chilenos de Marín et al. (2024, MWR 152; 2026, Atmos. Res. 344). VGP y LCL como referencia.
   - NST (umbral > 1), SPC/NWS, con la vorticidad ciclónica del hemisferio sur (−ζ).
   - Ingredientes del nomograma de Szilagyi: ΔT = TSM − T850, ΔZ = EL − LCL y viento en 850 hPa.
     El valor del SWI queda pendiente: requiere el nomograma digitalizado de fuente autorizada.
@@ -24,13 +25,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trombas_indices as ti  # noqa: E402
 
 SALIDA = Path(__file__).resolve().parent.parent / "data" / "trombas.json"
-VERSION = 1
+VERSION = 2
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (trombas GFS)"}
 NORTE, SUR, OESTE, ESTE = -20, -56, -85, -68
 NIVELES = [1000, 975, 950, 925, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350, 300, 250, 200, 150]
 FHRS = list(range(0, 73, 3))
 MS_A_KT = 1.943844
-UMBRAL = {"stp": -0.3, "sherbe": 1.0, "nst": 1.0}
+# Umbrales (ajustados a estudios chilenos):
+#   STP ≤ −0,1: los máximos de STP de los 16 tornados notables de Chile estuvieron entre −0,1 y −0,9 (Marín et al., 2024,
+#              MWR 152); además cerca de la mitad de los tornados chilenos tuvo STP = 0 (Marín et al., 2026), así que
+#              el STP solo no basta.
+#   HSLC:      MUCAPE 0–1000 J/kg, EBSMU > 18 m/s y SHERBE ≥ 1 (definición de Marín et al., 2026, Atmos. Res. 344).
+#   NST > 1:   SPC/NWS; sin validación en Chile (referencia para trombas de buen tiempo).
+UMBRAL = {"stp": -0.1, "hslc": True, "nst": 1.0}
 # Códigos WMO GRIB2: (disciplina, categoría, número)
 COD = {"gh": (0, 3, 5), "t": (0, 0, 0), "r": (0, 1, 1), "u": (0, 2, 2), "v": (0, 2, 3),
        "sp": (0, 3, 0), "td": (0, 0, 6), "lsm": (2, 0, 0)}
@@ -157,15 +164,15 @@ def main():
             msj = f"f{fhr:03d}: {type(e).__name__}: {e} ({Path(linea.filename).name}:{linea.lineno})"
             print("  " + msj); errores.append(msj[:300]); continue
         stp, sh, ns = q["stp"], q["sherbe"], q["nst"]
-        f_stp, f_sh, f_ns = stp <= UMBRAL["stp"], sh >= UMBRAL["sherbe"], ns > UMBRAL["nst"]
+        f_stp, f_sh, f_ns = stp <= UMBRAL["stp"], q["hslc"], ns > UMBRAL["nst"]
         idx = np.where(f_stp | f_sh | f_ns)[0]
         celdas = [[r(la[i], 2), r(lo[i], 2), r(stp[i], 2), r(sh[i], 2), r(ns[i], 2),
                    r(q["dT"][i], 1), r(q["dZ"][i], 1), r(q["w850"][i], 0), r(q["mlcape"][i], 0), r(q["srh500"][i], 0),
-                   r(q["ebsmu"][i] * MS_A_KT, 0)] for i in idx]
+                   r(q["ebsmu"][i] * MS_A_KT, 0), r(q["mucape"][i], 0), r(q["vgp"][i], 2), r(q["mllcl"][i], 0), int(bool(q["hslc"][i]))] for i in idx]
         pasos.append({"fhr": fhr, "valida": (c + timedelta(hours=fhr)).strftime("%Y-%m-%dT%H:%MZ"),
-                      "extremos": {"stp": r(np.nanmin(stp), 2), "sherbe": r(np.nanmax(sh), 2), "nst": r(np.nanmax(ns), 2),
+                      "extremos": {"stp": r(np.nanmin(stp), 2), "sherbe": r(np.nanmax(sh), 2), "nst": r(np.nanmax(ns), 2), "vgp": r(np.nanmax(q["vgp"]), 2),
                                    "dT": r(np.nanmax(q["dT"]), 1)},
-                      "n": {"stp": int(f_stp.sum()), "sherbe": int(f_sh.sum()), "nst": int(f_ns.sum()), "puntos": int(stp.size)},
+                      "n": {"stp": int(f_stp.sum()), "hslc": int(f_sh.sum()), "nst": int(f_ns.sum()), "puntos": int(stp.size)},
                       "celdas": celdas})
         print(f"  f{fhr:03d}: STP mín {np.nanmin(stp):.2f} · SHERBE máx {np.nanmax(sh):.2f} · NST máx {np.nanmax(ns):.2f} · {len(idx)} celdas")
         time.sleep(1)
@@ -179,7 +186,7 @@ def main():
     salida = {"version": VERSION, "corrida": tag, "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
               "fuente": "NOAA GFS 0,25° (filtro NOMADS)", "dominio": [SUR, OESTE, NORTE, ESTE], "paso_grilla": 0.25,
               "umbrales": UMBRAL, "solo_oceano": True, "completo": True, "errores": errores[:8],
-              "columnas": ["lat", "lon", "stp", "sherbe", "nst", "dT", "dZ_km", "w850_kt", "mlcape", "srh500", "ebsmu_kt"],
+              "columnas": ["lat", "lon", "stp", "sherbe", "nst", "dT", "dZ_km", "w850_kt", "mlcape", "srh500", "ebsmu_kt", "mucape", "vgp", "mllcl", "hslc"],
               "pasos": pasos}
     SALIDA.write_text(json.dumps(salida, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Trombas: corrida {tag}, {len(pasos)} plazos, {time.time() - t0:.0f} s")

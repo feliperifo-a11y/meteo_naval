@@ -8,7 +8,7 @@ puntos de mar de las zonas III (Valparaíso a Constitución), IV (Constitución 
 Puerto Montt) del Cuadro "F" (data/geo/metarea.json), con salida libre al océano (sin canales ni aguas interiores).
 
 Probabilidad = porcentaje de miembros en que al menos un punto del área supera el umbral del índice
-(STP ≤ −0,3; SHERBE ≥ 1; NST > 1). Por plazo y por día (hora de Chile: al menos una vez en el día).
+(STP ≤ −0,1; ambiente HSLC; NST > 1; ver UMBRAL). Por plazo y por día (hora de Chile: al menos una vez en el día).
 Limitaciones: el GEFS 0,5° (pgrb2a) solo tiene 1000, 925 y 850 hPa bajo 700 hPa (y 500, 250, 200 arriba), por lo que el SRH 0–500 m y el
 gradiente 0–1 km quedan más suavizados que en el GFS 0,25°. Los umbrales no están calibrados para trombas.
 Estimación experimental: no constituye aviso. Solo corre con corrida nueva; nunca hace fallar el flujo.
@@ -31,7 +31,7 @@ import viento_alerta as va    # noqa: E402  (polígonos de tierra para excluir c
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 SALIDA = DATA / "trombas_prob.json"
-VERSION = 1
+VERSION = 2
 TZ = ZoneInfo("America/Santiago")
 CAB = {"User-Agent": "dashboard-meteo-publico/1.0 (trombas GEFS)"}
 NORTE, SUR, OESTE, ESTE = -32, -43, -79, -71
@@ -40,7 +40,13 @@ NIVELES = [1000, 925, 850, 700, 500, 250, 200]   # niveles comunes a HGT, TMP, R
 FHRS = list(range(0, 73, 6))
 MIEMBROS = ["gec00"] + [f"gep{i:02d}" for i in range(1, 31)]
 MIN_MIEMBROS = 20
-UMBRAL = {"stp": -0.3, "sherbe": 1.0, "nst": 1.0}
+# Umbrales (ajustados a estudios chilenos):
+#   STP ≤ −0,1: los máximos de STP de los 16 tornados notables de Chile estuvieron entre −0,1 y −0,9 (Marín et al., 2024,
+#              MWR 152); además cerca de la mitad de los tornados chilenos tuvo STP = 0 (Marín et al., 2026), así que
+#              el STP solo no basta.
+#   HSLC:      MUCAPE 0–1000 J/kg, EBSMU > 18 m/s y SHERBE ≥ 1 (definición de Marín et al., 2026, Atmos. Res. 344).
+#   NST > 1:   SPC/NWS; sin validación en Chile (referencia para trombas de buen tiempo).
+UMBRAL = {"stp": -0.1, "hslc": True, "nst": 1.0}
 COD = {"gh": (0, 3, 5), "t": (0, 0, 0), "r": (0, 1, 1), "u": (0, 2, 2), "v": (0, 2, 3), "sp": (0, 3, 0)}
 TIPO = {"isobaricInhPa": 100, "surface": 1, "heightAboveGround": 103}
 
@@ -185,7 +191,7 @@ def main():
                     for a, v in areas.items():
                         pos[a] = inv[ini:ini + len(v["i"])]; ini += len(v["i"])
                 q = indices(campos, lat, lon, flat)
-                ex = {"stp": q["stp"] <= UMBRAL["stp"], "sherbe": q["sherbe"] >= UMBRAL["sherbe"], "nst": q["nst"] > UMBRAL["nst"]}
+                ex = {"stp": q["stp"] <= UMBRAL["stp"], "hslc": q["hslc"], "nst": q["nst"] > UMBRAL["nst"]}
                 for a in areas:
                     for ind, f in ex.items():
                         fm.setdefault(a, {}).setdefault(ind, [False] * len(FHRS))[k] = bool(f[pos[a]].any())
