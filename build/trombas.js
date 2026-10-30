@@ -114,6 +114,7 @@ function crearTrombas(L, map, h) {
     const pasos = d.pasos.filter(p => new Date(p.valida) >= ahora);
     const viejo = Date.now() - new Date(d.generado) > 15 * 3600e3;
     sub.innerHTML = `Corrida ${escH(d.corrida.replace('T', ' ').replace('Z', ' UTC'))} · ${escH(d.fuente)} · procesada ${escH(horaChile(d.generado))} (hora Chile)${viejo ? ' · <b class="mar-viejo">corrida antigua</b>' : ''}`;
+    if (d.completo === false) sub.innerHTML += ' · <b class="mar-viejo">no se pudo procesar; se reintenta en la próxima ejecución</b>';
     let html = '', dia = '';
     for (const p of pasos) {
       const dd = diaChile(p.valida);

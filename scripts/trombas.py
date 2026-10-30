@@ -142,15 +142,18 @@ def main():
     if c is None:
         print("Trombas: no hay corrida GFS con plazo 72 h disponible"); return
     tag = c.strftime("%Y-%m-%dT%HZ")
-    if previo.get("corrida") == tag and previo.get("version") == VERSION:
+    if previo.get("corrida") == tag and previo.get("version") == VERSION and previo.get("completo", True):
         print("Trombas: sin corrida nueva", tag); return
-    pasos, t0 = [], time.time()
+    pasos, errores, t0 = [], [], time.time()
     for fhr in FHRS:
         try:
             campos, lat, lon = leer_grib(bajar(c, fhr))
             q, la, lo = procesar(campos, lat, lon)
         except Exception as e:
-            print(f"  f{fhr:03d}: error {e}"); continue
+            import traceback
+            linea = traceback.extract_tb(e.__traceback__)[-1]
+            msj = f"f{fhr:03d}: {type(e).__name__}: {e} ({Path(linea.filename).name}:{linea.lineno})"
+            print("  " + msj); errores.append(msj[:300]); continue
         stp, sh, ns = q["stp"], q["sherbe"], q["nst"]
         f_stp, f_sh, f_ns = stp <= UMBRAL["stp"], sh >= UMBRAL["sherbe"], ns > UMBRAL["nst"]
         idx = np.where(f_stp | f_sh | f_ns)[0]
@@ -165,10 +168,15 @@ def main():
         print(f"  f{fhr:03d}: STP mín {np.nanmin(stp):.2f} · SHERBE máx {np.nanmax(sh):.2f} · NST máx {np.nanmax(ns):.2f} · {len(idx)} celdas")
         time.sleep(1)
     if len(pasos) < len(FHRS) // 2:
-        print(f"Trombas: solo {len(pasos)} plazos procesados; se conserva el archivo anterior"); return
+        print(f"Trombas: solo {len(pasos)} plazos procesados; se conserva el archivo anterior")
+        if not previo.get("pasos"):   # sin archivo útil previo: publica el diagnóstico (completo=False → se reintenta)
+            SALIDA.write_text(json.dumps({"version": VERSION, "corrida": tag, "completo": False, "pasos": [],
+                                          "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                          "errores": errores[:8]}, ensure_ascii=False), encoding="utf-8")
+        return
     salida = {"version": VERSION, "corrida": tag, "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
               "fuente": "NOAA GFS 0,25° (filtro NOMADS)", "dominio": [SUR, OESTE, NORTE, ESTE], "paso_grilla": 0.25,
-              "umbrales": UMBRAL, "solo_oceano": True,
+              "umbrales": UMBRAL, "solo_oceano": True, "completo": True, "errores": errores[:8],
               "columnas": ["lat", "lon", "stp", "sherbe", "nst", "dT", "dZ_km", "w850_kt", "mlcape", "srh500", "ebsmu_kt"],
               "pasos": pasos}
     SALIDA.write_text(json.dumps(salida, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
