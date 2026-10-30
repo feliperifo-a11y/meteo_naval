@@ -28,6 +28,8 @@ import numpy as np
 import requests
 from PIL import Image
 
+from fuente_directemar import descargar  # noqa: E402  (respaldo desde el equipo local)
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import satelite as ir  # noqa: E402  (georreferencia y proyecciones compartidas)
 
@@ -138,11 +140,11 @@ def hora_imagen(im):
 def main():
     previo = ir.leer_json(DATA / "satelite_vis.json", {})
     try:
-        r = requests.get(URL, headers=CAB, timeout=60)
-        r.raise_for_status()
+        r = descargar(URL, CAB)
     except Exception as e:
         print("Visible: no se pudo descargar:", e); return
     lm = r.headers.get("Last-Modified", "")
+    print("  imagen descargada:", r.origen, lm)
     if lm and lm == previo.get("last_modified") and previo.get("version") == VERSION and os.environ.get("FORZAR") != "1":
         print("Visible: sin cambios", lm); return
     im = Image.open(io.BytesIO(r.content)).convert("RGB")

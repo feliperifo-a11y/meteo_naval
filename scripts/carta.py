@@ -32,6 +32,8 @@ import numpy as np
 import requests
 from PIL import Image
 
+from fuente_directemar import descargar  # noqa: E402  (respaldo desde el equipo local)
+
 RAIZ = Path(__file__).resolve().parent.parent
 DATA = RAIZ / "data"
 URL_CARTA = "https://web.directemar.cl/met/jturno/cartas/carta.jpg"
@@ -235,12 +237,12 @@ def isobaras(grib):
 def main():
     previo = leer_json(DATA / "carta.json", {})
     try:
-        r = requests.get(URL_CARTA, headers=CAB, timeout=60)
-        r.raise_for_status()
+        r = descargar(URL_CARTA, CAB)
     except Exception as e:
         print("Carta: no se pudo descargar:", e)
         return
     lm = r.headers.get("Last-Modified", "")
+    print("  imagen descargada:", r.origen, lm)
     if lm and lm == previo.get("last_modified") and previo.get("version") == VERSION and os.environ.get("FORZAR") != "1":
         print("Carta: sin cambios", lm)
         return

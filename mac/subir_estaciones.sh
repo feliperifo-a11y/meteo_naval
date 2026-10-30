@@ -32,6 +32,56 @@ if [ -z "${MN_PRUEBA:-}" ]; then
     || { echo "$(ts) ERROR: no hay token guardado en el Llavero (ejecute instalar.sh)"; exit 1; }
 fi
 
+# 0b. Imágenes de DIRECTEMAR (carta de superficie, satélite IR y visible). El servidor a veces rechaza a
+#     GitHub Actions; este Mac las baja y, solo cuando alguna cambió, las deja en la rama «fuentes» con
+#     fuentes.json (Last-Modified original). scripts/fuente_directemar.py las usa si falla la descarga directa.
+#     La rama se reescribe con un solo commit (force), para no acumular imágenes en el historial.
+subir_imagenes() {
+  local base="${MN_IMG_BASE:-https://web.directemar.cl/met/jturno}" d="$DIR/fuentes" n url lm cambio=0
+  local api="https://api.github.com/repos/$REPO/git" h1="Authorization: Bearer $TOKEN" h2="Accept: application/vnd.github+json" h3="X-GitHub-Api-Version: 2022-11-28"
+  mkdir -p "$d"
+  for par in "carta.jpg|$base/cartas/carta.jpg" "color.png|$base/pub/GFS/color.png" "visual.png|$base/pub/GFS/visual.png"; do
+    n="${par%%|*}"; url="${par#*|}"
+    if curl -fsS --max-time 60 -A "$UA" -D "$d/$n.h" -o "$d/$n.tmp" "$url" 2>/dev/null && [ -s "$d/$n.tmp" ]; then
+      lm=$(grep -i '^last-modified:' "$d/$n.h" | tail -1 | cut -d' ' -f2- | tr -d '\r')
+      if [ ! -s "$d/$n" ] || [ "$lm" != "$(cat "$d/$n.lm" 2>/dev/null)" ]; then
+        mv "$d/$n.tmp" "$d/$n"; printf '%s' "$lm" > "$d/$n.lm"; date -u +%Y-%m-%dT%H:%M:%SZ > "$d/$n.t"; cambio=1
+      fi
+    fi
+    rm -f "$d/$n.tmp" "$d/$n.h"
+  done
+  [ "$cambio" = 1 ] || return 0
+  llamar() { curl -sS --max-time 120 -o "$d/resp.json" -w '%{http_code}' -X "$1" -H "$h1" -H "$h2" -H "$h3" -H "Content-Type: application/json" --data-binary @"$d/cuerpo.json" "$2"; }
+  fallo() { echo "$(ts) AVISO: rama fuentes, $1: $(head -c 200 "$d/resp.json" 2>/dev/null)"; rm -f "$d"/*.lm; return 0; }
+  sha_resp() { grep -m1 '"sha"' "$d/resp.json" | sed -E 's/.*"sha": *"([^"]+)".*/\1/'; }
+  blob() {   # $1 = archivo → imprime el sha del blob
+    { printf '{"encoding":"base64","content":"'; base64 < "$1" | tr -d '\n'; printf '"}'; } > "$d/cuerpo.json"
+    [ "$(llamar POST "$api/blobs")" = "201" ] && sha_resp
+  }
+  local arbol="" manif="" s
+  for n in carta.jpg color.png visual.png; do
+    [ -s "$d/$n" ] || continue
+    s=$(blob "$d/$n") || { fallo "$n"; return 0; }
+    arbol="$arbol${arbol:+,}{\"path\":\"$n\",\"mode\":\"100644\",\"type\":\"blob\",\"sha\":\"$s\"}"
+    manif="$manif${manif:+,}\"$n\":{\"last_modified\":\"$(cat "$d/$n.lm")\",\"subido\":\"$(cat "$d/$n.t" 2>/dev/null)\"}"
+  done
+  printf '{%s}' "$manif" > "$d/fuentes.json"
+  s=$(blob "$d/fuentes.json") || { fallo "fuentes.json"; return 0; }
+  arbol="$arbol,{\"path\":\"fuentes.json\",\"mode\":\"100644\",\"type\":\"blob\",\"sha\":\"$s\"}"
+  printf '{"tree":[%s]}' "$arbol" > "$d/cuerpo.json"
+  [ "$(llamar POST "$api/trees")" = "201" ] || { fallo "árbol"; return 0; }
+  printf '{"message":"Imágenes DIRECTEMAR %s (equipo local)","tree":"%s"}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(sha_resp)" > "$d/cuerpo.json"
+  [ "$(llamar POST "$api/commits")" = "201" ] || { fallo "commit"; return 0; }
+  s=$(sha_resp)
+  printf '{"sha":"%s","force":true}' "$s" > "$d/cuerpo.json"
+  if [ "$(llamar PATCH "$api/refs/heads/${MN_RAMA:-fuentes}")" != "200" ]; then
+    printf '{"ref":"refs/heads/%s","sha":"%s"}' "${MN_RAMA:-fuentes}" "$s" > "$d/cuerpo.json"
+    [ "$(llamar POST "$api/refs")" = "201" ] || { fallo "referencia"; return 0; }
+  fi
+  echo "$(ts) OK: imágenes DIRECTEMAR actualizadas en la rama fuentes ($(printf '%s' "$manif" | grep -o '"last_modified"' | wc -l | tr -d ' ') archivos)"
+}
+[ -z "${MN_PRUEBA:-}" ] && { subir_imagenes || echo "$(ts) AVISO: falló la subida de imágenes DIRECTEMAR"; }
+
 get() { curl -fsS --max-time 30 -A "$UA" "$1" 2>/dev/null; }
 es_json() { case "$1" in \[*|\{*) return 0;; esac; return 1; }
 # De una serie de graficoEstacion conserva solo la observación más reciente (la primera).

@@ -32,6 +32,8 @@ import numpy as np
 import requests
 from PIL import Image
 
+from fuente_directemar import descargar  # noqa: E402  (respaldo desde el equipo local)
+
 RAIZ = Path(__file__).resolve().parent.parent
 DATA = RAIZ / "data"
 URL = "https://web.directemar.cl/met/jturno/pub/GFS/color.png"
@@ -214,11 +216,11 @@ def hora_imagen(im, y0=768, y1=795, ref=None):
 def main():
     previo = leer_json(DATA / "satelite.json", {})
     try:
-        r = requests.get(URL, headers=CAB, timeout=60)
-        r.raise_for_status()
+        r = descargar(URL, CAB)
     except Exception as e:
         print("Satélite: no se pudo descargar:", e); return
     lm = r.headers.get("Last-Modified", "")
+    print("  imagen descargada:", r.origen, lm)
     if lm and lm == previo.get("last_modified") and previo.get("version") == VERSION and os.environ.get("FORZAR") != "1":
         print("Satélite: sin cambios", lm); return
     im = Image.open(io.BytesIO(r.content)).convert("RGB")
