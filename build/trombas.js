@@ -11,10 +11,23 @@ function crearTrombas(L, map, h) {
   const COLOR = { stp: '#b3149a', sherbe: '#f28c00', nst: '#1f6fb2' };
   const grupo = L.layerGroup();
   let datos = null, sel = null, cargado = 0;
+  // Probabilidad por zona (GEFS, data/trombas_prob.json)
+  const grupoZona = L.layerGroup();
+  let prob = null, indProb = 'stp', celdaProb = null;
+  const NOMBRE_IND = { stp: 'STP ≤ −0,3', sherbe: 'SHERBE ≥ 1', nst: 'NST > 1' };
+  const claseP = v => v == null ? '' : v >= 80 ? 'p4' : v >= 50 ? 'p3' : v >= 20 ? 'p2' : v > 0 ? 'p1' : 'p0';
+  const diaLargo = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).replace('.', '');
   const card = document.createElement('section');
   card.className = 'card mar-card tr-card'; card.id = 'trombas'; card.hidden = true;
-  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · perspectiva 72 h</h2><span class="mar-etq tr-etq">Experimental · no constituye aviso</span>
+  card.innerHTML = `<div class="mar-cab"><h2>Trombas marinas · zonas III a V · 72 h</h2><span class="mar-etq tr-etq">Experimental · no constituye aviso</span>
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
+    <h3 class="tr-h">Probabilidad por zona · ensamble GEFS</h3>
+    <p class="mar-sub tr-psub" aria-live="polite">Cargando…</p>
+    <div class="ev-tabs tr-ptabs" role="tablist">${Object.entries(NOMBRE_IND).map(([k, t]) => `<button type="button" role="tab" data-i="${k}" aria-selected="${k === 'stp'}">${t}</button>`).join('')}</div>
+    <div class="tr-ptabla"></div>
+    <div class="mar-ley tr-pley"><span><i class="tr-p0"></i>0 %</span><span><i class="tr-p1"></i>1–19</span><span><i class="tr-p2"></i>20–49</span><span><i class="tr-p3"></i>50–79</span><span><i class="tr-p4"></i>80–100 %</span></div>
+    <div class="mar-det tr-pdet" aria-live="polite"><p class="mar-ayuda">Porcentaje de los miembros del ensamble en que al menos un punto de la zona supera el umbral durante el día (hora de Chile). Selecciona una casilla para ver el detalle cada 6 h.</p></div>
+    <h3 class="tr-h">Detalle por celda · GFS 0,25° (una corrida, sin probabilidad)</h3>
     <p class="mar-sub tr-sub" aria-live="polite">Cargando…</p>
     <div class="tr-tira"></div>
     <div class="mar-ley tr-ley"><span><i style="background:${COLOR.stp}"></i>STP ≤ −0,3</span><span><i style="background:${COLOR.sherbe}"></i>SHERBE ≥ 1</span><span><i style="background:${COLOR.nst}"></i>NST &gt; 1</span><span>número = celdas de 0,25° sobre umbral</span></div>
@@ -92,9 +105,55 @@ function crearTrombas(L, map, h) {
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const sub = card.querySelector('.tr-sub'), tira = card.querySelector('.tr-tira'), det = card.querySelector('.tr-det');
+  const psub = card.querySelector('.tr-psub'), ptabla = card.querySelector('.tr-ptabla'), pdet = card.querySelector('.tr-pdet');
+  card.querySelectorAll('.tr-ptabs button').forEach(b => b.onclick = () => {
+    indProb = b.dataset.i;
+    card.querySelectorAll('.tr-ptabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+    if (prob) pintarProb();
+  });
+
+  async function cargarProb() {
+    try {
+      const r = await fetch('data/trombas_prob.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      prob = await r.json();
+    } catch (e) {
+      prob = null; ptabla.innerHTML = '';
+      psub.textContent = 'Aún no hay una corrida del ensamble procesada. Se calcula con las corridas GEFS de 00 y 12 UTC cuando está disponible el plazo de 72 h.';
+      return;
+    }
+    if (!prob.prob) { psub.innerHTML = 'La última corrida del ensamble no se pudo procesar; se reintenta en la próxima ejecución.'; ptabla.innerHTML = ''; return; }
+    pintarProb();
+  }
+
+  function pintarProb() {
+    const d = prob, hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+    const dias = d.dias.filter(f => f >= hoy);
+    psub.innerHTML = `Corrida ${escH(d.corrida.replace('T', ' ').replace('Z', ' UTC'))} · ${escH(d.fuente)} · procesada ${escH(horaChile(d.generado))} (hora Chile)`;
+    ptabla.innerHTML = `<div class="ev-tw"><table class="ev-tabla tr-pt"><thead><tr><th>Zona</th>${dias.map(f => `<th>${escH(diaLargo(f))}</th>`).join('')}</tr></thead><tbody>` +
+      d.areas.map(a => `<tr><th title="${escH(a.nombre)}">${escH(a.nombre.replace(/^Zona (\S+) · /, '$1 · '))}</th>` +
+        dias.map(f => { const v = d.prob_dia[a.id][indProb][f]; return `<td><button type="button" class="tr-pc tr-${claseP(v)}${celdaProb && celdaProb[0] === a.id && celdaProb[1] === f ? ' sel' : ''}" data-a="${a.id}" data-f="${f}">${v == null ? '–' : v + ' %'}</button></td>`; }).join('') + '</tr>').join('') +
+      '</tbody></table></div>';
+    ptabla.querySelectorAll('.tr-pc').forEach(b => b.onclick = () => elegirProb(b.dataset.a, b.dataset.f));
+    if (celdaProb) elegirProb(...celdaProb, true);
+  }
+
+  function elegirProb(id, f, silencioso) {
+    celdaProb = [id, f];
+    ptabla.querySelectorAll('.tr-pc').forEach(b => b.classList.toggle('sel', b.dataset.a === id && b.dataset.f === f));
+    const d = prob, a = d.areas.find(x => x.id === id); if (!a) return;
+    const filas = d.validas.map((v, k) => [v, d.prob[id][indProb][k]]).filter(([v]) => new Date(v).toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }) === f);
+    pdet.innerHTML = `<h3>${escH(a.nombre)} · ${escH(diaLargo(f))}</h3>
+      <p class="mar-ayuda">${escH(NOMBRE_IND[indProb])}: porcentaje de ${d.miembros} miembros, cada 6 h (hora de Chile).</p>
+      <div class="tr-6h">${filas.map(([v, x]) => `<span class="tr-${claseP(x)}"><b>${escH(hhChile(v))} h</b>${x} %</span>`).join('')}</div>`;
+    grupoZona.clearLayers();
+    for (const [la, lo] of a.puntos) L.circleMarker([la, lo], { radius: 4, color: '#18212b', weight: 1, fillColor: '#ffffff', fillOpacity: 0.7 }).addTo(grupoZona);
+    if (!map.hasLayer(grupoZona)) grupoZona.addTo(map);
+    if (!silencioso) map.fitBounds(L.latLngBounds(a.puntos).pad(0.2), { maxZoom: 7 });
+  }
   card.querySelector('.mar-cerrar').onclick = () => cerrar();
   card.querySelector('.mar-min').onclick = () => card.classList.toggle('mar-minimizada');
-  function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); map.removeLayer(grupo); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); map.removeLayer(grupo); map.removeLayer(grupoZona); }
 
   async function cargar() {
     try {
@@ -155,7 +214,7 @@ function crearTrombas(L, map, h) {
   }
 
   return {
-    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); if (map.hasLayer(grupo) === false && datos) grupo.addTo(map); if (!datos || Date.now() - cargado > 30 * 60e3) cargar(); },
+    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); if (map.hasLayer(grupo) === false && datos) grupo.addTo(map); if (!datos || Date.now() - cargado > 30 * 60e3) { cargar(); cargarProb(); } },
     cerrar,
     get abierto() { return !card.hidden; }
   };
