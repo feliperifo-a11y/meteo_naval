@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from archivo_pares import Oleaje, leer  # noqa: E402
-from evaluacion_ia import leer_viento  # noqa: E402
+from evaluacion_ia import BAHIAS as BAHIAS_EVAL, leer_viento, observaciones, resumen_obs  # noqa: E402
 
 R = Path(__file__).resolve().parent.parent
 DATA = R / "data"
@@ -71,7 +71,28 @@ def distancia(a, b):
     return d
 
 
-def ejemplos(pares, codigo, hoy_rasgos, hoy):
+def observado(obs, codigo, fecha):
+    """Lo que midió la estación de capitanía de puerto en el período 08–20 h (O.P.I. N° 1104), si la bahía tiene estación."""
+    est = next((b["est"] for b in BAHIAS_EVAL if b["prof"] == codigo), None)
+    o = resumen_obs((obs.get(est) or {}).get(fecha)) if est else None
+    if not o or not o.get("suficiente"):
+        return None
+    return {"estacion": est, "horas": o["horas"], "viento_kt": o["vel"], "direcciones": o["dirs"], "viento_promedio_kt": o["vprom"],
+            "viento_max_kt": o["vmax"], "tmax": o["tmax"]}
+
+
+def verificacion(codigo):
+    """Sesgos recientes contra las estaciones (data/evaluacion/resumen.json): WRF + IA, especialista y borradores anteriores."""
+    ids = {b["prof"]: b["id"] for b in BAHIAS_EVAL}
+    r = (leer(DATA / "evaluacion" / "resumen.json", {}).get("resumen") or {}).get(ids.get(codigo))
+    if not r:
+        return None
+    f = lambda a: None if not a or not a.get("n") else {"dias": a["n"], "acierto_pct": a.get("puntaje"), "sesgo_viento_kt_obs_menos_pron": a.get("sesgo_int"),
+                                                          "error_tmax_abs_c": a.get("error_tmax_abs")}
+    return {"wrf_ia": f(r.get("wrf")), "especialista": f(r.get("prof")), "tus_borradores": f(r.get("borr"))}
+
+
+def ejemplos(pares, codigo, hoy_rasgos, hoy, obs=None):
     # Solo boletines anteriores a hoy: el de hoy es justamente el que el borrador debe anticipar.
     propios = [p for p in pares if p.get("codigo") == codigo and p["entradas"].get("wrf_ia") and p.get("emitido", "") < hoy.isoformat()]
     if not propios:
@@ -93,7 +114,9 @@ def ejemplos(pares, codigo, hoy_rasgos, hoy):
         w = p["entradas"]["wrf_ia"]
         out.append({"emitido": p["emitido"],
                     "wrf_ia": {"situacion_sinoptica": w.get("situacion_sinoptica"), "dias": [d for d in w.get("dias", []) if d.get("fecha") in fechas]},
-                    "boletin_especialista": [{k: x.get(k) for k in ("tipo", "fecha", "situacion", "texto", "tmin", "tmax", "ww3")} for x in p["boletin"]]})
+                    "boletin_especialista": [dict({k: x.get(k) for k in ("tipo", "fecha", "situacion", "texto", "tmin", "tmax", "ww3")},
+                                                  **({"observado": ob} if x.get("tipo") == "dia" and obs is not None and (ob := observado(obs, codigo, x.get("fecha"))) else {}))
+                                             for x in p["boletin"]]})
     return out
 
 
@@ -111,6 +134,10 @@ def main():
             except Exception:
                 pass
     ola = Oleaje()
+    try:
+        obs = observaciones()
+    except Exception:
+        obs = {}
     obj = periodos_objetivo(hoy)
     init_hoy = datetime.now(timezone.utc).strftime("%Y-%m-%dT12")
     bahias, listos = [], 0
@@ -128,7 +155,8 @@ def main():
                        "wrf_ia": {"codigo": cod_wrf, "inicializacion": pr.get("inicializacion_utc"), "situacion_sinoptica": pr.get("situacion_sinoptica"),
                                   "dias": pr.get("dias", [])},
                        "ww3_punto": None if celda is None else [round(celda[3], 2), round(celda[4], 2)],
-                       "ejemplos": ejemplos(pares, codigo, hoy_r, hoy)})
+                       "verificacion": verificacion(codigo),
+                       "ejemplos": ejemplos(pares, codigo, hoy_r, hoy, obs)})
     res = {"version": 1, "fecha_base": hoy.isoformat(), "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "listo": listos >= 2, "wrf_inicializacion_esperada": init_hoy, "bahias_listas": listos,
            "ww3_corrida": ola.idx.get("corrida"), "ww3_fuente": ola.idx.get("fuente"),
@@ -136,7 +164,8 @@ def main():
            "bahias": bahias}
     SALIDA.parent.mkdir(parents=True, exist_ok=True)
     SALIDA.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"Entradas del borrador: {hoy} · listo={res['listo']} ({listos}/{len(BAHIAS)} con WRF 12Z de hoy) · ejemplos {[len(b['ejemplos']) for b in bahias]}")
+    n_obs = sum(1 for b in bahias for e in b["ejemplos"] for x in e["boletin_especialista"] if x.get("observado"))
+    print(f"Entradas del borrador: {hoy} · listo={res['listo']} ({listos}/{len(BAHIAS)} con WRF 12Z de hoy) · ejemplos {[len(b['ejemplos']) for b in bahias]} · {n_obs} períodos con observación")
 
 
 if __name__ == "__main__":

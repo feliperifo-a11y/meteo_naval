@@ -343,6 +343,34 @@ def puntuar(fc, obs):
 
 # ------------------------------------------------------------ pronósticos por día
 
+def borradores():
+    """Borradores de la IA archivados (data/evaluacion/borradores.jsonl): {código de bahía: [(emitido, períodos)]}."""
+    out = {}
+    p = EVAL / "borradores.jsonl"
+    if p.exists():
+        for l in p.read_text(encoding="utf-8").splitlines():
+            try:
+                d = json.loads(l)
+                em = datetime.fromisoformat(d["generado"].replace("Z", "+00:00")).astimezone(TZ)
+                for b in d.get("bahias", []):
+                    out.setdefault(b["codigo"], []).append((em, d.get("fecha_base"), b.get("periodos", [])))
+            except Exception:
+                pass
+    for v in out.values():
+        v.sort(key=lambda x: x[0])
+    return out
+
+
+def tramo_viento(texto):
+    t = texto or ""
+    i = t.lower().find("viento ")
+    if i < 0:
+        return t
+    t = t[i:]
+    j = t.lower().find(", mar ")
+    return t[:j] if j >= 0 else t
+
+
 def huella_prompt(sha, cache):
     """Versión de prompt vigente en un commit: huella del bloque INSTR (y ESQUEMA) de mac/pronostico_ia.sh."""
     if sha in cache:
@@ -374,7 +402,9 @@ def main():
     nuevos = archivar_profesional()
     previo = leer(SALIDA, {})
     ayer = (datetime.now(TZ) - timedelta(days=1)).date()
-    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and not nuevos and not os.environ.get("FORZAR"):
+    borr = borradores()
+    n_borr = sum(len(v) for v in borr.values())
+    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and not nuevos and previo.get("borradores_n") == n_borr and not os.environ.get("FORZAR"):
         print(f"Evaluación WRF + IA: al día hasta {ayer} (sin cambios)"); return
     obs = observaciones()
     wrf = versiones_wrf()
@@ -415,6 +445,16 @@ def main():
                     fila["prof"] = {"texto": dia.get("viento"), "tmax": dia.get("tmax"), "tmin": dia.get("tmin"), "nubosidad": dia.get("nubosidad"), "emitido": x["emitido"]}
                     if o and o.get("suficiente"):
                         fila["prof"]["pauta"] = puntuar(fc, o)
+            # Borrador de la IA: el último redactado antes del día evaluado (se emite la mañana del día anterior)
+            cand = [x for x in borr.get(b["prof"], []) if x[0] < datetime(d.year, d.month, d.day, tzinfo=TZ)]
+            if cand:
+                em, fb, pers = cand[-1]
+                dia = next((q for q in pers if q.get("fecha") == d.isoformat() and q.get("tipo") == "dia"), None)
+                if dia:
+                    fc = {"viento": tramo_viento(dia.get("texto")), "tmax": dia.get("tmax"), "tmin": dia.get("tmin")}
+                    fila["borr"] = {"texto": fc["viento"], "tmax": dia.get("tmax"), "tmin": dia.get("tmin"), "emitido": em.strftime("%Y-%m-%dT%H:%M"), "fecha_base": fb}
+                    if o and o.get("suficiente"):
+                        fila["borr"]["pauta"] = puntuar(fc, o)
             dias_out.append(fila)
         d += timedelta(days=1)
 
@@ -438,14 +478,17 @@ def main():
         fb = [f for f in dias_out if f["bahia"] == b["id"]]
         u30 = [f for f in fb if date.fromisoformat(f["fecha"]) > hoy - timedelta(days=31)]
         pares = [f for f in fb if f.get("wrf", {}).get("pauta") and f.get("prof", {}).get("pauta")]
-        resumen[b["id"]] = {"wrf": agregar(fb, "wrf"), "prof": agregar(fb, "prof"), "wrf_30": agregar(u30, "wrf"), "prof_30": agregar(u30, "prof"),
-                            "pares": {"n": len(pares), "wrf": agregar(pares, "wrf").get("puntaje"), "prof": agregar(pares, "prof").get("puntaje")}}
+        trios = [f for f in fb if all(f.get(k, {}).get("pauta") for k in ("wrf", "prof", "borr"))]
+        resumen[b["id"]] = {"wrf": agregar(fb, "wrf"), "prof": agregar(fb, "prof"), "borr": agregar(fb, "borr"),
+                            "wrf_30": agregar(u30, "wrf"), "prof_30": agregar(u30, "prof"), "borr_30": agregar(u30, "borr"),
+                            "pares": {"n": len(pares), "wrf": agregar(pares, "wrf").get("puntaje"), "prof": agregar(pares, "prof").get("puntaje")},
+                            "trios": {"n": len(trios), **{k: agregar(trios, k).get("puntaje") for k in ("wrf", "prof", "borr")}}}
     for ver, info in versiones.items():
         fv = [f for f in dias_out if f.get("wrf", {}).get("prompt") == ver]
         info.update(agregar(fv, "wrf"))
         info["bahias"] = {b["id"]: agregar([f for f in fv if f["bahia"] == b["id"]], "wrf").get("puntaje") for b in BAHIAS}
     res = {
-        "pauta": PAUTA, "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "pauta": PAUTA, "borradores_n": n_borr, "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "desde": DESDE.isoformat(), "hasta": ayer.isoformat(),
         "bahias": [{k: b[k] for k in ("id", "nombre", "est_nombre")} for b in BAHIAS],
         "pesos": PESOS, "resumen": resumen,
@@ -458,6 +501,7 @@ def main():
             "Un pronóstico con 75 % o menos de acierto equivale a una «no conformidad» según la O.P.I.; se informa el porcentaje de días conformes.",
             "La apreciación nocturna (20:00–08:00) no se evalúa: el WRF + IA entrega días calendario, no ese período.",
             "Se compara el boletín profesional emitido a las 16:00 del día anterior con la versión WRF + IA disponible a las 18:00 del día anterior.",
+            "El borrador de la IA (redactado la mañana del día anterior con el estilo del especialista) se evalúa con la misma pauta y las mismas observaciones.",
             "La versión de prompt es la huella de las instrucciones del equipo local (mac/pronostico_ia.sh) vigentes al subir el pronóstico.",
             "Las estaciones de capitanía de puerto pueden estar abrigadas: un sesgo sistemático de la estación afecta por igual a ambas fuentes.",
         ],

@@ -42,13 +42,15 @@ function crearEvaluacionIA(L, map, h) {
     let t = '<h3 class="ev-h">Resumen por bahía</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Fuente</th><th title="Porcentaje de acierto medio">Acierto</th><th title="Días con más de 75 % de acierto (sin no conformidad)">Conformes</th><th title="Acierto medio en dirección del viento (tabla N° 3)">Dir.</th><th title="Acierto medio en intensidad (tabla N° 4); entre paréntesis, sesgo observado − pronosticado en kt">Int.</th><th title="Acierto medio en temperatura máxima (tabla N° 6); entre paréntesis, error absoluto medio en °C">T máx.</th></tr></thead><tbody>';
     for (const b of d.bahias) {
       const r = d.resumen[b.id] || {};
-      [['wrf', 'WRF + IA'], ['prof', 'Profesional']].forEach(([k, nom], i) => {
+      [['wrf', 'WRF + IA'], ['borr', 'Borrador IA'], ['prof', 'Profesional']].forEach(([k, nom], i) => {
         const a = r[k] || { n: 0 };
-        t += `<tr class="${i ? '' : 'ev-sep'}">${i ? '' : `<th rowspan="2">${escH(b.nombre)}</th>`}<td>${nom}</td><td>${chip(a.puntaje, a.n)}</td>`
+        t += `<tr class="${i ? '' : 'ev-sep'}">${i ? '' : `<th rowspan="3">${escH(b.nombre)}</th>`}<td>${nom}</td><td>${chip(a.puntaje, a.n)}</td>`
           + (a.n ? `<td>${a.conformes} %</td><td>${a.direccion ?? '–'} %</td><td>${a.intensidad ?? '–'} % <small>(${sg(a.sesgo_int)})</small></td><td>${a.temperatura ?? '–'} % <small>(${nf(a.error_tmax_abs)})</small></td>` : '<td colspan="4" class="ev-vacio">sin días evaluados</td>') + '</tr>';
       });
       const p = r.pares || {};
       if (p.n) t += `<tr><td colspan="7" class="ev-par">Mismos días (${p.n}): WRF + IA ${nf(p.wrf, 0)} · profesional ${nf(p.prof, 0)}</td></tr>`;
+      const q = r.trios || {};
+      if (q.n) t += `<tr><td colspan="7" class="ev-par">Mismos días con las tres fuentes (${q.n}): WRF + IA ${nf(q.wrf, 0)} · borrador IA ${nf(q.borr, 0)} · profesional ${nf(q.prof, 0)}</td></tr>`;
     }
     t += '</tbody></table></div>';
     const vs = Object.entries(d.versiones || {});
@@ -77,7 +79,7 @@ function crearEvaluacionIA(L, map, h) {
         const det = p ? `dir. ${c.direccion ?? '–'} %${p.desvio_dir != null ? ` (desvío ${p.desvio_dir}°)` : ''} · int. ${c.intensidad ?? '–'} % (${nf(p.int_pron)} vs ${nf(p.int_obs)} kt) · T máx. ${c.temperatura ?? '–'} % (${sg(p.error_tmax)} °C)` : '';
         return `<div class="ev-f"><b>${nom}</b>${p ? chip(p.puntaje) : ''}<span class="ev-txt">${escH(x.texto || '–')} · T máx. ${x.tmax ?? '–'} °C</span>${det ? `<small>${det}${k === 'wrf' ? ` · prompt <code>${escH(x.prompt)}</code>` : ''}</small>` : ''}</div>`;
       };
-      return `<div class="ev-dia"><div class="ev-cab"><b>${escH(fecha(f.fecha))}</b><span>Observado: ${obs}</span></div>${fuente('wrf', 'WRF + IA')}${fuente('prof', 'Profesional')}</div>`;
+      return `<div class="ev-dia"><div class="ev-cab"><b>${escH(fecha(f.fecha))}</b><span>Observado: ${obs}</span></div>${fuente('wrf', 'WRF + IA')}${fuente('borr', 'Borrador IA')}${fuente('prof', 'Profesional')}</div>`;
     }).join('') || '<p class="mar-nota">Sin días evaluados.</p>';
   }
 

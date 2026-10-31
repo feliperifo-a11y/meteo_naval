@@ -15,7 +15,7 @@ function crearBorradorBoletin(L, map, h) {
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const sub = card.querySelector('.mar-sub'), tabs = card.querySelector('.bb-tabs'), cuerpo = card.querySelector('.bb-cuerpo');
-  let bor = null, ofi = {}, cmp = null, sel = null, cargado = 0;
+  let bor = null, ofi = {}, cmp = null, ver = null, sel = null, cargado = 0;
   card.querySelector('.mar-cerrar').onclick = () => cerrar();
   card.querySelector('.mar-min').onclick = () => card.classList.toggle('mar-minimizada');
   function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); }
@@ -25,6 +25,7 @@ function crearBorradorBoletin(L, map, h) {
       const [r1, r2] = await Promise.all([fetch('data/borradores.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }),
         fetch('data/pronosticos.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }).catch(() => null)]);
       try { const r3 = await fetch('data/evaluacion/borradores_comparacion.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }); cmp = r3.ok ? await r3.json() : null; } catch (e) { cmp = null; }
+      try { const r4 = await fetch('data/evaluacion/resumen.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }); ver = r4.ok ? await r4.json() : null; } catch (e) { ver = null; }
       if (!r1.ok) throw new Error('HTTP ' + r1.status);
       bor = await r1.json(); cargado = Date.now();
       ofi = {};
@@ -46,6 +47,15 @@ function crearBorradorBoletin(L, map, h) {
     if (!d) return '';
     return `<div class="bb-cmp">Comparación con el especialista: <b>similitud ${d.similitud} %</b> · situación ${ok(d.situacion_coincide)} · nubosidad ${ok(d.nubosidad_coincide)} · dirección ${ok(d.direccion_coincide)}`
       + ` · Δ viento ${sg(d.dif_vmax)} kt · Δ mar ${sg(d.dif_hmax, 1)} m · bahía ${ok(d.bahia_coincide)}${d.dif_tmax != null ? ` · Δ Tmax ${sg(d.dif_tmax)} °C` : ''}</div>`;
+  }
+  // Acierto contra las estaciones (pauta O.P.I. N° 1104): borrador IA, especialista y WRF + IA
+  function tablaVer() {
+    const IDS = { iquique: 'IQQ', valparaiso: 'VAL', talcahuano: 'TAL' };
+    if (!ver || !ver.resumen) return '';
+    const celda = a => a && a.n ? `<b>${nf(a.puntaje, 0)} %</b> <small>n=${a.n} · int ${sg(a.sesgo_int, 1)} kt · Tmax ${nf(a.error_tmax_abs)} °C</small>` : '<span class="ev-vacio">sin días aún</span>';
+    const filas = Object.entries(IDS).map(([cod, id]) => { const r = ver.resumen[id] || {}; return `<tr><th>${escH((ver.bahias.find(x => x.id === id) || {}).nombre || cod)}</th><td>${celda(r.borr)}</td><td>${celda(r.prof)}</td><td>${celda(r.wrf)}</td></tr>`; }).join('');
+    return `<h3 class="ev-h">Acierto contra lo observado</h3><p class="mar-nota">Pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, período 08:00–20:00) con las estaciones de capitanía de puerto; el estado del mar no se evalúa por falta de observación. «int» es el sesgo observado − pronosticado: positivo = el pronóstico se quedó corto.</p>`
+      + `<div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filas}</tbody></table></div>`;
   }
   function tablaCmp() {
     if (!cmp || !cmp.periodos_comparados) return '<p class="mar-nota">La comparación con el especialista aparece cuando se archiva el boletín oficial del mismo día (después de las 16:00).</p>';
@@ -75,7 +85,7 @@ function crearBorradorBoletin(L, map, h) {
     };
     cuerpo.innerHTML = (b.nota ? `<p class="bb-nota"><b>Revisar:</b> ${escH(b.nota)}</p>` : '')
       + `<p class="mar-nota">Ejemplos usados: ${(b.entradas && b.entradas.ejemplos || []).length ? b.entradas.ejemplos.map(escH).join(' · ') : 'ninguno de esta bahía (estilo de las otras bahías)'}.</p>`
-      + b.periodos.map(per).join('') + tablaCmp();
+      + b.periodos.map(per).join('') + tablaCmp() + tablaVer();
     cuerpo.querySelectorAll('.bb-copiar').forEach(x => x.onclick = async () => { try { await navigator.clipboard.writeText(x.dataset.t); x.textContent = 'Copiado'; setTimeout(() => x.textContent = 'Copiar', 1500); } catch (e) { x.textContent = 'No se pudo'; } });
   }
 
