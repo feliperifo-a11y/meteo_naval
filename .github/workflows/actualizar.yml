@@ -51,7 +51,7 @@ jobs:
           # Siempre con parámetro único: el sitio pasa por Cloudflare y una copia en caché volvería a publicarse como vigente.
           T=$(date +%s)
           if [ "$REPO" = "$OWNER.github.io" ]; then BASE="https://$OWNER.github.io"; else BASE="https://$OWNER.github.io/$REPO"; fi
-          for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json trombas.json trombas_prob.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do
+          for f in estaciones_qc.json viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json avisos.json seguimiento.json oleaje.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json trombas.json trombas_prob.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do
             if curl -fsSL -H "Cache-Control: no-cache" "$BASE/data/$f?t=$T" -o "/tmp/$f" && [ -s "/tmp/$f" ]; then mv "/tmp/$f" "data/$f"; else echo "Sin $f publicado; se usa el del repositorio"; fi
           done
           mkdir -p data/evaluacion
@@ -178,6 +178,12 @@ jobs:
           python scripts/evaluacion_ia.py
           python scripts/comparar_borradores.py
 
+      - name: Control de calidad de estaciones (Isolation Forest, una vez por hora)
+        # Usa el historial de git de data/estaciones.json (30 días) que trajo el paso anterior.
+        continue-on-error: true
+        timeout-minutes: 6
+        run: python scripts/qc_estaciones.py
+
       - name: Guardar el archivo de boletines y pares en el repositorio
         continue-on-error: true
         timeout-minutes: 2
@@ -237,7 +243,7 @@ jobs:
           [ -f data/evaluacion/entradas_borrador.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/entradas_borrador.json _site/data/evaluacion/ || true
           [ -f data/evaluacion/borradores_comparacion.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/borradores_comparacion.json _site/data/evaluacion/ || true
           [ -f data/borradores.json ] && cp data/borradores.json _site/data/ || true
-          for f in viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json trombas.json trombas_prob.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
+          for f in estaciones_qc.json viento_alerta.json marejadas_alerta.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json trombas.json trombas_prob.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
       # Página Desarrollo con clave: dashboard.html se publica cifrado (StatiCrypt, AES-256) con el secreto DESARROLLO_CLAVE.
       # Sin el secreto se publica como antes, para no dejar el sitio sin la página. La carta pública es carta.html.

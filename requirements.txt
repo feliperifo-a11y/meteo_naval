@@ -7,3 +7,4 @@ scipy
 matplotlib
 pygrib
 pyproj>=3.6
+scikit-learn

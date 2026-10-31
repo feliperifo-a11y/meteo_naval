@@ -68,6 +68,7 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*VIENTO_ALERTA_JS*/", leer(B / "viento_alerta.js", ""))
         .replace("/*EVALUACION_IA_JS*/", leer(B / "evaluacion_ia.js", ""))
         .replace("/*BORRADOR_BOLETIN_JS*/", leer(B / "borrador_boletin.js", ""))
+        .replace("/*QC_ESTACIONES_JS*/", leer(B / "qc_estaciones.js", ""))
         .replace("/*TROMBAS_JS*/", leer(B / "trombas.js", ""))
         .replace("/*TROMBAS_CSS*/", leer(B / "trombas.css", ""))
         .replace("/*EVALUACION_IA_CSS*/", leer(B / "evaluacion_ia.css", ""))
