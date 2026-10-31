@@ -29,9 +29,7 @@ BAHIAS = [  # código del boletín, nombre, código WRF + IA, posición
     ("iquique", "Iquique", "IQUIQUE_norte_d03", (-20.205, -70.155)),
     ("valparaiso", "Valparaíso", "VALPARAISO_centro_d08", (-33.03, -71.625)),
     ("talcahuano", "Talcahuano", "TALCAHUANO_centro_d09", (-36.715, -73.11)),
-    ("puertomontt", "Puerto Montt", "PUERTOMONTT_sur_d12", (-41.48, -72.94)),
-    ("puntaarenas", "Punta Arenas", "PUNTAARENAS_sur_d14", (-53.165, -70.9)),
-]
+]   # Puerto Montt y Punta Arenas se quitaron del borrador (31-oct); sus boletines se siguen archivando en pares.jsonl
 MAX_EJEMPLOS = 5
 
 
@@ -132,13 +130,13 @@ def main():
                        "ww3_punto": None if celda is None else [round(celda[3], 2), round(celda[4], 2)],
                        "ejemplos": ejemplos(pares, codigo, hoy_r, hoy)})
     res = {"version": 1, "fecha_base": hoy.isoformat(), "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-           "listo": listos >= 3, "wrf_inicializacion_esperada": init_hoy, "bahias_listas": listos,
+           "listo": listos >= 2, "wrf_inicializacion_esperada": init_hoy, "bahias_listas": listos,
            "ww3_corrida": ola.idx.get("corrida"), "ww3_fuente": ola.idx.get("fuente"),
            "pares_disponibles": {c: sum(1 for x in pares if x.get("codigo") == c) for c, *_ in BAHIAS},
            "bahias": bahias}
     SALIDA.parent.mkdir(parents=True, exist_ok=True)
     SALIDA.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"Entradas del borrador: {hoy} · listo={res['listo']} ({listos}/5 con WRF 12Z de hoy) · ejemplos {[len(b['ejemplos']) for b in bahias]}")
+    print(f"Entradas del borrador: {hoy} · listo={res['listo']} ({listos}/{len(BAHIAS)} con WRF 12Z de hoy) · ejemplos {[len(b['ejemplos']) for b in bahias]}")
 
 
 if __name__ == "__main__":
