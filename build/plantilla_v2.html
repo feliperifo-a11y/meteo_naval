@@ -692,7 +692,7 @@ async function contarVisita(nueva) {
 </script>
 <script>/*INSTALAR*/</script>
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
-<!-- Video de bienvenida: se muestra una vez por pestaña (sessionStorage), parte silenciado (regla de los navegadores) con botón de sonido y botón para cerrar -->
+<!-- Video de bienvenida: una vez por pestaña (sessionStorage). Intenta partir CON sonido; si el navegador lo bloquea, parte silenciado y activa el sonido con la primera interacción. -->
 <style>
 #vIntro{position:fixed;inset:0;z-index:5000;background:rgba(3,10,20,.82);display:flex;align-items:center;justify-content:center;padding:16px}
 #vIntro[hidden]{display:none}
@@ -706,9 +706,9 @@ async function contarVisita(nueva) {
 </style>
 <div id="vIntro" hidden role="dialog" aria-modal="true" aria-label="Video de bienvenida a MeteoIA">
   <div class="vi-caja">
-    <video id="vIntroVid" playsinline muted preload="none" poster="media/meteoia_intro.jpg"><source src="media/meteoia_intro.mp4" type="video/mp4"></video>
+    <video id="vIntroVid" playsinline preload="none" poster="media/meteoia_intro.jpg"><source src="media/meteoia_intro.mp4" type="video/mp4"></video>
     <button type="button" class="vi-cerrar" aria-label="Cerrar video" title="Cerrar (Esc)">✕</button>
-    <div class="vi-barra"><span>Bienvenido a MeteoIA · 50 s</span><span style="display:flex;gap:8px"><button type="button" class="vi-sonido">🔊 Activar sonido</button><button type="button" class="vi-saltar">Ir a la página</button></span></div>
+    <div class="vi-barra"><span>Bienvenido a MeteoIA · 50 s</span><span style="display:flex;gap:8px"><button type="button" class="vi-sonido">🔇 Silenciar</button><button type="button" class="vi-saltar">Ir a la página</button></span></div>
   </div>
 </div>
 <script>
@@ -721,11 +721,17 @@ async function contarVisita(nueva) {
   const cerrar = () => { try { v.pause(); } catch (e) {} caja.hidden = true; document.removeEventListener('keydown', tecla); };
   const tecla = e => { if (e.key === 'Escape') cerrar(); };
   caja.hidden = false; document.addEventListener('keydown', tecla);
-  v.preload = 'auto'; v.load();
-  v.play().catch(() => {});
+  const rotulo = () => { bs.textContent = v.muted ? '🔊 Activar sonido' : '🔇 Silenciar'; };
+  v.preload = 'auto'; v.load(); v.muted = false;
+  // Con sonido por defecto; los navegadores pueden impedirlo sin una interacción previa: entonces parte silenciado
+  // y el sonido se activa solo con el primer clic, toque o tecla del usuario (salvo que haya elegido silenciar).
+  let elegido = false;
+  const activar = () => { if (elegido || caja.hidden) return; v.muted = false; v.play().catch(() => {}); rotulo(); quitar(); };
+  const quitar = () => ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.removeEventListener(ev, activar, true));
+  v.play().then(rotulo).catch(() => { v.muted = true; rotulo(); v.play().catch(() => {}); ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, activar, true)); });
   caja.querySelector('.vi-cerrar').onclick = cerrar; caja.querySelector('.vi-saltar').onclick = cerrar;
   caja.addEventListener('click', e => { if (e.target === caja) cerrar(); });
-  bs.onclick = () => { v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } bs.textContent = v.muted ? '🔊 Activar sonido' : '🔇 Silenciar'; };
+  bs.onclick = e => { e.stopPropagation(); elegido = true; quitar(); v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } rotulo(); };
   v.addEventListener('ended', () => setTimeout(cerrar, 1200));
 })();
 </script>
