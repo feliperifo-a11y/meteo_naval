@@ -692,6 +692,43 @@ async function contarVisita(nueva) {
 </script>
 <script>/*INSTALAR*/</script>
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
+<!-- Video de bienvenida: se muestra una vez por pestaña (sessionStorage), parte silenciado (regla de los navegadores) con botón de sonido y botón para cerrar -->
+<style>
+#vIntro{position:fixed;inset:0;z-index:5000;background:rgba(3,10,20,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+#vIntro[hidden]{display:none}
+#vIntro .vi-caja{position:relative;width:min(1100px,100%);background:#0a1a2c;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#vIntro video{display:block;width:100%;aspect-ratio:16/9;background:#000}
+#vIntro .vi-barra{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px}
+#vIntro .vi-barra span{font-size:13px;color:var(--muted)}
+#vIntro button{font:inherit;font-size:14px;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:#12294a;color:var(--ink)}
+#vIntro .vi-cerrar{position:absolute;top:10px;right:10px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;background:rgba(6,18,31,.85);border-radius:50%}
+#vIntro .vi-sonido{background:var(--acc);border-color:var(--acc);color:#fff}
+</style>
+<div id="vIntro" hidden role="dialog" aria-modal="true" aria-label="Video de bienvenida a MeteoIA">
+  <div class="vi-caja">
+    <video id="vIntroVid" playsinline muted preload="none" poster="media/meteoia_intro.jpg"><source src="media/meteoia_intro.mp4" type="video/mp4"></video>
+    <button type="button" class="vi-cerrar" aria-label="Cerrar video" title="Cerrar (Esc)">✕</button>
+    <div class="vi-barra"><span>Bienvenido a MeteoIA · 50 s</span><span style="display:flex;gap:8px"><button type="button" class="vi-sonido">🔊 Activar sonido</button><button type="button" class="vi-saltar">Ir a la página</button></span></div>
+  </div>
+</div>
+<script>
+(function () {
+  let visto = false;
+  try { visto = sessionStorage.getItem('meteoia_intro_visto') === '1'; } catch (e) {}
+  if (visto || new URLSearchParams(location.search).has('sinvideo')) return;
+  const caja = document.getElementById('vIntro'), v = document.getElementById('vIntroVid'), bs = caja.querySelector('.vi-sonido');
+  try { sessionStorage.setItem('meteoia_intro_visto', '1'); } catch (e) {}
+  const cerrar = () => { try { v.pause(); } catch (e) {} caja.hidden = true; document.removeEventListener('keydown', tecla); };
+  const tecla = e => { if (e.key === 'Escape') cerrar(); };
+  caja.hidden = false; document.addEventListener('keydown', tecla);
+  v.preload = 'auto'; v.load();
+  v.play().catch(() => {});
+  caja.querySelector('.vi-cerrar').onclick = cerrar; caja.querySelector('.vi-saltar').onclick = cerrar;
+  caja.addEventListener('click', e => { if (e.target === caja) cerrar(); });
+  bs.onclick = () => { v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } bs.textContent = v.muted ? '🔊 Activar sonido' : '🔇 Silenciar'; };
+  v.addEventListener('ended', () => setTimeout(cerrar, 1200));
+})();
+</script>
 </body>
 </html>
 
