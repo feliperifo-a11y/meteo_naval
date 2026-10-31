@@ -15,7 +15,7 @@ function crearBorradorBoletin(L, map, h) {
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const sub = card.querySelector('.mar-sub'), tabs = card.querySelector('.bb-tabs'), cuerpo = card.querySelector('.bb-cuerpo');
-  let bor = null, ofi = {}, sel = null, cargado = 0;
+  let bor = null, ofi = {}, cmp = null, sel = null, cargado = 0;
   card.querySelector('.mar-cerrar').onclick = () => cerrar();
   card.querySelector('.mar-min').onclick = () => card.classList.toggle('mar-minimizada');
   function cerrar() { card.hidden = true; wrap.classList.remove('mar-abierto'); }
@@ -24,6 +24,7 @@ function crearBorradorBoletin(L, map, h) {
     try {
       const [r1, r2] = await Promise.all([fetch('data/borradores.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }),
         fetch('data/pronosticos.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }).catch(() => null)]);
+      try { const r3 = await fetch('data/evaluacion/borradores_comparacion.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) }); cmp = r3.ok ? await r3.json() : null; } catch (e) { cmp = null; }
       if (!r1.ok) throw new Error('HTTP ' + r1.status);
       bor = await r1.json(); cargado = Date.now();
       ofi = {};
@@ -34,6 +35,27 @@ function crearBorradorBoletin(L, map, h) {
     }
     sel = sel || (bor.bahias[0] || {}).codigo;
     pintar();
+  }
+
+  const nf = (v, d = 1) => v == null ? '–' : Number(v).toFixed(d).replace('.', ',');
+  const sg = (v, d = 0) => v == null ? '–' : (v > 0 ? '+' : '') + nf(v, d);
+  const ok = v => v == null ? '–' : v ? '✓' : '✗';
+  // Comparación de un período del borrador con el boletín del especialista (archivo diario)
+  function lineaCmp(p) {
+    const d = cmp && (cmp.detalle || []).find(x => x.fecha_base === bor.fecha_base && x.bahia === sel && x.fecha === p.fecha && x.tipo === p.tipo);
+    if (!d) return '';
+    return `<div class="bb-cmp">Comparación con el especialista: <b>similitud ${d.similitud} %</b> · situación ${ok(d.situacion_coincide)} · nubosidad ${ok(d.nubosidad_coincide)} · dirección ${ok(d.direccion_coincide)}`
+      + ` · Δ viento ${sg(d.dif_vmax)} kt · Δ mar ${sg(d.dif_hmax, 1)} m · bahía ${ok(d.bahia_coincide)}${d.dif_tmax != null ? ` · Δ Tmax ${sg(d.dif_tmax)} °C` : ''}</div>`;
+  }
+  function tablaCmp() {
+    if (!cmp || !cmp.periodos_comparados) return '<p class="mar-nota">La comparación con el especialista aparece cuando se archiva el boletín oficial del mismo día (después de las 16:00).</p>';
+    const fila = (nom, a) => `<tr><th>${escH(nom)}</th><td>${a.n}</td><td><b>${nf(a.similitud, 0)} %</b></td><td>${a.situacion ?? '–'} %</td><td>${a.nubosidad ?? '–'} %</td><td>${a.direccion ?? '–'} %</td>`
+      + `<td>${nf(a.dif_vmax_abs)} <small>(${sg(a.sesgo_vmax, 1)})</small></td><td>${nf(a.dif_hmax_abs)} <small>(${sg(a.sesgo_hmax, 1)})</small></td><td>${a.bahia ?? '–'} %</td><td>${nf(a.dif_tmax_abs)}</td></tr>`;
+    const pb = cmp.por_bahia || {};
+    return `<h3 class="ev-h">Borrador frente al especialista</h3><p class="mar-nota">${cmp.borradores_archivados} borradores archivados · ${cmp.periodos_comparados} períodos comparados con el boletín emitido el mismo día. Entre paréntesis, el sesgo (borrador − especialista).</p>`
+      + '<div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th title="Períodos comparados">n</th><th title="Similitud del texto completo: cuánto se parece la redacción">Texto</th><th>Situación</th><th title="Primer término de nubosidad">Nubosidad</th><th title="Algún sector del viento a 45° o menos">Dirección</th><th title="Diferencia absoluta media del viento máximo (sin «ocasional»)">|Δ viento| kt</th><th title="Diferencia absoluta media de la altura máxima en área oceánica">|Δ mar| m</th><th title="Estado del mar en bahía (escala de la Armada)">Bahía</th><th>|Δ Tmax| °C</th></tr></thead><tbody>'
+      + Object.entries(pb).map(([k, a]) => fila(a.nombre || k, a)).join('') + fila('Total', cmp.total) + '</tbody></table></div>'
+      + '<p class="mar-nota">Mientras más alta la similitud y más bajas las diferencias, menos correcciones necesitó el borrador. Se espera que mejore a medida que crece el archivo de ejemplos.</p>';
   }
 
   function pintar() {
@@ -49,11 +71,11 @@ function crearBorradorBoletin(L, map, h) {
       const t = `${p.situacion ? p.situacion + ', ' : ''}${p.texto}${p.tmin != null || p.tmax != null ? ` · T ${p.tmin ?? '–'}/${p.tmax ?? '–'} °C` : ''}`;
       return `<div class="bb-per"><div class="bb-cab"><b>${escH(fecha(p.fecha))} · ${p.tipo === 'noche' ? 'noche 20:00–08:00' : 'día 08:00–20:00'}</b><button type="button" class="bb-copiar" data-t="${escH(t)}" title="Copiar el texto del borrador">Copiar</button></div>`
         + `<div class="bb-f"><span class="bb-et ia">Borrador IA</span><p>${escH(t)}</p></div>`
-        + `<div class="bb-f"><span class="bb-et of">Boletín oficial</span><p>${op ? escH(`${op.situacion ? op.situacion + ', ' : ''}${op.texto || ''}${op.tmin != null || op.tmax != null ? ` · T ${op.tmin ?? '–'}/${op.tmax ?? '–'} °C` : ''}`) : '<span class="ev-vacio">' + (oDeHoy ? 'sin este período' : 'se publica a las 16:00') + '</span>'}</p></div></div>`;
+        + lineaCmp(p) + `<div class="bb-f"><span class="bb-et of">Boletín oficial</span><p>${op ? escH(`${op.situacion ? op.situacion + ', ' : ''}${op.texto || ''}${op.tmin != null || op.tmax != null ? ` · T ${op.tmin ?? '–'}/${op.tmax ?? '–'} °C` : ''}`) : '<span class="ev-vacio">' + (oDeHoy ? 'sin este período' : 'se publica a las 16:00') + '</span>'}</p></div></div>`;
     };
     cuerpo.innerHTML = (b.nota ? `<p class="bb-nota"><b>Revisar:</b> ${escH(b.nota)}</p>` : '')
       + `<p class="mar-nota">Ejemplos usados: ${(b.entradas && b.entradas.ejemplos || []).length ? b.entradas.ejemplos.map(escH).join(' · ') : 'ninguno de esta bahía (estilo de las otras bahías)'}.</p>`
-      + b.periodos.map(per).join('');
+      + b.periodos.map(per).join('') + tablaCmp();
     cuerpo.querySelectorAll('.bb-copiar').forEach(x => x.onclick = async () => { try { await navigator.clipboard.writeText(x.dataset.t); x.textContent = 'Copiado'; setTimeout(() => x.textContent = 'Copiar', 1500); } catch (e) { x.textContent = 'No se pudo'; } });
   }
 
