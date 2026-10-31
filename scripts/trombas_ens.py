@@ -40,6 +40,8 @@ NIVELES = [1000, 925, 850, 700, 500, 250, 200]   # niveles comunes a HGT, TMP, R
 FHRS = list(range(0, 73, 6))
 MIEMBROS = ["gec00"] + [f"gep{i:02d}" for i in range(1, 31)]
 MIN_MIEMBROS = 20
+HILOS = 3            # descargas simultáneas a NOMADS (~120 solicitudes por minuto como máximo)
+PRESUPUESTO = 540    # s: tope de descarga para no exceder el tiempo del flujo; los miembros incompletos se omiten
 # Umbrales (ajustados a estudios chilenos):
 #   STP ≤ −0,1: los máximos de STP de los 16 tornados notables de Chile estuvieron entre −0,1 y −0,9 (Marín et al., 2024,
 #              MWR 152); además cerca de la mitad de los tornados chilenos tuvo STP = 0 (Marín et al., 2026), así que
@@ -177,11 +179,21 @@ def main():
     areas, flat = None, None
     # banderas[miembro][area][indice][plazo]
     banderas, errores, ok_miembros = {}, [], []
+    # Descarga en paralelo (HILOS) con tope de tiempo: en serie los 403 archivos tardaban más que el flujo completo.
+    from concurrent.futures import ThreadPoolExecutor
+    def bajar_con_tope(args):
+        m, fhr = args
+        if time.time() - t0 > PRESUPUESTO:
+            raise TimeoutError("tope de tiempo de descarga")
+        return bajar(c, m, fhr)
+    with ThreadPoolExecutor(HILOS) as ex:
+        futuros = {(m, fhr): ex.submit(bajar_con_tope, (m, fhr)) for m in MIEMBROS for fhr in FHRS}
+    print(f"  descargas terminadas ({time.time() - t0:.0f} s)")
     for m in MIEMBROS:
         fm = {}
         try:
             for k, fhr in enumerate(FHRS):
-                campos, lat, lon = leer_grib(bajar(c, m, fhr))
+                campos, lat, lon = leer_grib(futuros[(m, fhr)].result())
                 if areas is None:   # puntos de mar por área, una sola vez (grilla fija)
                     lat1, lon1 = lat[:, 0], np.where(lon[0] > 180, lon[0] - 360, lon[0])
                     areas = {a: v for a, v in seleccionar(lat1, lon1).items() if len(v["i"])}
@@ -195,7 +207,6 @@ def main():
                 for a in areas:
                     for ind, f in ex.items():
                         fm.setdefault(a, {}).setdefault(ind, [False] * len(FHRS))[k] = bool(f[pos[a]].any())
-                time.sleep(0.8)   # respeta el límite de solicitudes de NOMADS
             banderas[m] = fm; ok_miembros.append(m)
         except Exception as e:
             ln = traceback.extract_tb(e.__traceback__)[-1]

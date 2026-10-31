@@ -26,7 +26,7 @@ concurrency:
 jobs:
   publicar:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -204,7 +204,7 @@ jobs:
       - name: Trombas marinas, probabilidad por zona III a VI (ensamble GEFS 0,5°, corridas 00 y 12 UTC)
         # Solo con corrida nueva del ensamble; si falla, se mantiene el archivo anterior.
         continue-on-error: true
-        timeout-minutes: 20
+        timeout-minutes: 12
         run: python scripts/trombas_ens.py
 
       - name: Fondos de relieve para la carta polar y las cartas de hielo (solo si faltan o cambia la proyección)
