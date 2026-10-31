@@ -197,12 +197,14 @@ jobs:
 
       - name: Trombas marinas (GFS 0,25°, STP, SHERBE y NST, solo con corrida nueva)
         # Estimación experimental; si falla, se mantiene el archivo anterior.
+        if: false   # desactivado temporalmente (31-oct): se reactiva cambiando a true
         continue-on-error: true
         timeout-minutes: 15
         run: python scripts/trombas.py
 
       - name: Trombas marinas, probabilidad por zona III a VI (ensamble GEFS 0,5°, corridas 00 y 12 UTC)
         # Solo con corrida nueva del ensamble; si falla, se mantiene el archivo anterior.
+        if: false   # desactivado temporalmente (31-oct): se reactiva cambiando a true
         continue-on-error: true
         timeout-minutes: 12
         run: python scripts/trombas_ens.py
