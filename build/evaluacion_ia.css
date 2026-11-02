@@ -6,7 +6,7 @@
 .ev-tabla{border-collapse:collapse;width:100%;font-size:12px}
 .ev-tabla th,.ev-tabla td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;text-transform:none;letter-spacing:0;background:none;color:var(--ink);font-weight:400}
 .ev-tabla thead th{color:var(--muted);font-weight:600;font-size:11px}
-.ev-tabla tbody th{font-weight:700;vertical-align:top}
+.ev-tabla tbody th{font-weight:700;vertical-align:top}.ev-tabla tbody td{vertical-align:top}
 .ev-tabla tr.ev-sep td,.ev-tabla tr.ev-sep th{border-top:2px solid var(--line)}
 .ev-tabla small{color:var(--muted)}
 .ev-par{color:var(--muted);font-size:11.5px}

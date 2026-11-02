@@ -52,10 +52,22 @@ function crearBorradorBoletin(L, map, h) {
   function tablaVer() {
     const IDS = { iquique: 'IQQ', valparaiso: 'VAL', talcahuano: 'TAL' };
     if (!ver || !ver.resumen) return '';
-    const celda = a => a && a.n ? `<b>${nf(a.puntaje, 0)} %</b> <small>n=${a.n} · int ${sg(a.sesgo_int, 1)} kt · Tmax ${nf(a.error_tmax_abs)} °C</small>` : '<span class="ev-vacio">sin días aún</span>';
-    const filas = Object.entries(IDS).map(([cod, id]) => { const r = ver.resumen[id] || {}; return `<tr><th>${escH((ver.bahias.find(x => x.id === id) || {}).nombre || cod)}</th><td>${celda(r.borr)}</td><td>${celda(r.prof)}</td><td>${celda(r.wrf)}</td></tr>`; }).join('');
-    return `<h3 class="ev-h">Acierto contra lo observado</h3><p class="mar-nota">Pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, período 08:00–20:00) con las estaciones de capitanía de puerto; el estado del mar no se evalúa por falta de observación. «int» es el sesgo observado − pronosticado: positivo = el pronóstico se quedó corto.</p>`
-      + `<div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+    const nom = (cod, id) => escH((ver.bahias.find(x => x.id === id) || {}).nombre || cod);
+    const fcorta = f => { const [a, m, d] = String(f).split('-'); return `${+d}/${+m}`; };
+    // Último día evaluado de cada bahía (puntaje diario de cada fuente)
+    const diaCelda = p => p ? `<b>${nf(p.puntaje, 0)} %</b><br><small>int ${sg(p.error_int, 1)} kt${p.error_tmax != null ? `<br>Tmax ${sg(p.error_tmax, 1)} °C` : ''}</small>` : '<span class="ev-vacio">–</span>';
+    const filasDia = Object.entries(IDS).map(([cod, id]) => {
+      const f = (ver.dias || []).find(x => x.bahia === id && ['borr', 'prof', 'wrf'].some(k => x[k] && x[k].pauta));
+      if (!f) return `<tr><th>${nom(cod, id)}</th><td colspan="4"><span class="ev-vacio">sin días evaluados aún</span></td></tr>`;
+      return `<tr><th>${nom(cod, id)}</th><td>${fcorta(f.fecha)}</td><td>${diaCelda(f.borr && f.borr.pauta)}</td><td>${diaCelda(f.prof && f.prof.pauta)}</td><td>${diaCelda(f.wrf && f.wrf.pauta)}</td></tr>`;
+    }).join('');
+    // Promedio de todos los días evaluados
+    const celda = a => a && a.n ? `<b>${nf(a.puntaje, 0)} %</b> <small>(${a.n} d)</small><br><small>int ${sg(a.sesgo_int, 1)} kt<br>|Tmax| ${nf(a.error_tmax_abs)} °C</small>` : '<span class="ev-vacio">sin días aún</span>';
+    const filas = Object.entries(IDS).map(([cod, id]) => { const r = ver.resumen[id] || {}; return `<tr><th>${nom(cod, id)}</th><td>${celda(r.borr)}</td><td>${celda(r.prof)}</td><td>${celda(r.wrf)}</td></tr>`; }).join('');
+    return `<h3 class="ev-h">Acierto contra lo observado</h3><p class="mar-nota">Pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, período 08:00–20:00) con las estaciones de capitanía de puerto; el estado del mar no se evalúa por falta de observación. El acierto se calcula día a día. «int» es el error observado − pronosticado: positivo = el pronóstico se quedó corto.</p>`
+      + `<h4 class="ev-h">Último día evaluado</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Día</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filasDia}</tbody></table></div>`
+      + `<h4 class="ev-h">Promedio de referencia${ver.desde ? ` (desde el ${fcorta(ver.desde)})` : ''}</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filas}</tbody></table></div>`
+      + '<p class="mar-nota">El promedio es la media simple de los porcentajes diarios, no una suma. Más de 75 % es conforme según la pauta.</p>';
   }
   function tablaCmp() {
     if (!cmp || !cmp.periodos_comparados) return '<p class="mar-nota">La comparación con el especialista aparece cuando se archiva el boletín oficial del mismo día (después de las 16:00).</p>';
