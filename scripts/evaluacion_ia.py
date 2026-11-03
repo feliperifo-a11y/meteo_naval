@@ -18,8 +18,11 @@ verificar sus pronósticos, aplicada a ambas fuentes en el período 08:00–20:0
   · Observaciones de los horarios sinópticos 12, 15, 18, 21 y 00 UTC (la muestra de la estación más cercana, ±30 min).
   · Dirección (0,30), tabla N° 3: se compara cada observación con el sector pronosticado (arco que abarcan
     las direcciones pronosticadas) y se toma el mayor desvío; notas 1 y 2 para calma o viento de 5 kt o menos.
-  · Intensidad (0,30), tabla N° 4: promedio de lo pronosticado (con rachas, promediado con ellas) contra el promedio
-    observado; columna 0–20 kt o 21–34 kt según lo pronosticado.
+  · Intensidad del viento sostenido, tabla N° 4: promedio de los valores pronosticados distintos (calma = 0; sin los
+    valores «ocasional» ni las rachas) contra el promedio observado; columna 0–20 kt o 21–34 kt según lo pronosticado.
+    Coeficiente 0,30; si se pronostican rachas, 0,25 para el sostenido y 0,05 para la racha máxima (directiva de
+    verificación de pronósticos de bahía, III.b.iv). Las estaciones de la plataforma no informan rachas, así que el
+    componente de racha (0,05) no se puede evaluar y se deja fuera, igual que nubosidad, visibilidad y mar.
   · Temperatura máxima (0,05), tabla N° 6.
   · Nubosidad (0,05), visibilidad (0,10) y estado del mar (0,20) no tienen observación en la plataforma: los coeficientes
     se renormalizan sobre 0,65. Un acierto de 75 % o menos equivale a «no conformidad».
@@ -44,7 +47,7 @@ EVAL = DATA / "evaluacion"
 ARCHIVO_PROF = EVAL / "profesional.jsonl"
 SALIDA = EVAL / "resumen.json"
 TZ = ZoneInfo("America/Santiago")
-PAUTA = 2   # 2: O.P.I. N° 1104 (abr 2026)
+PAUTA = 3   # 3: rachas aparte (0,25 + 0,05) y sin valores «ocasional» en el promedio, según la directiva de verificación
 DESDE = date(2026, 10, 8)    # primera versión de data/wrf_ia.json en el repositorio
 BAHIAS = [  # id, nombre, código WRF + IA, código del boletín profesional, código de la estación
     {"id": "IQQ", "nombre": "Iquique", "wrf": "IQUIQUE_norte_d03", "prof": "iquique", "est": "IQUIQUE", "est_nombre": "CP Iquique"},
@@ -138,12 +141,19 @@ def boletines():
 def leer_viento(txt):
     """Rango de intensidad (sin rachas), direcciones y si menciona calma o viento variable."""
     t = txt or ""
-    rachas = [int(x) for x in re.findall(r"racha[s]?\s+(?:de\s+)?(\d+)", t, re.I)]
-    t2 = re.sub(r"racha[s]?\s+(?:de\s+)?\d+\s*(?:kt)?", " ", t, flags=re.I)
+    t = re.sub(r"\b(\d+)\s+a\s+(\d+)\s*(?:kt|nds?|nudos)\b", r"\1/\2 kt", t, flags=re.I)        # «5 a 12 nudos» → «5/12 kt»
+    t = re.sub(r"\b(?:nds?|nudos)\b", "kt", t, flags=re.I)
+    rachas = [int(x) for x in re.findall(r"racha[s]?\s+(?:de\s+|m[aá]x(?:ima)?s?\s+)?(\d+)", t, re.I)]
+    t2 = re.sub(r"racha[s]?\s+(?:de\s+|m[aá]x(?:ima)?s?\s+)?\d+\s*(?:kt)?", " ", t, flags=re.I)
+    # Los valores «ocasional(es)» no entran en el promedio (directiva de verificación, ejemplos 2.2 y 2.4)
+    ocas = [int(x) for x in re.findall(r"ocasional(?:es)?\s+(?:(?:AM|PM|al\s+\w+|en\s+\w+)\s+)?(\d+)", t2, re.I)]
+    t2 = re.sub(r"ocasional(?:es)?\s+(?:(?:AM|PM|al\s+\w+|en\s+\w+)\s+)?\d+\s*(?:kt)?", " ", t2, flags=re.I)
     nums = []
-    for a, b in re.findall(r"(\d+)\s*/\s*(\d+)\s*kt", t2):
+    # Rangos «5/10 kt» y también sin unidad («SW 10/15 ocasional…», directiva ej. 2.4); se excluyen alturas (m) y visibilidad (km)
+    patron = r"(?<![\d.])(\d+)\s*/\s*(\d+)(?![\d.])(?!\s*(?:m\b|km|\)))(?:\s*kt)?"
+    for a, b in re.findall(patron, t2):
         nums += [int(a), int(b)]
-    t3 = re.sub(r"\d+\s*/\s*\d+\s*kt", " ", t2)
+    t3 = re.sub(patron, " ", t2)
     nums += [int(x) for x in re.findall(r"(\d+)\s*kt", t3)]
     solo = list(nums)
     calma = bool(re.search(r"\bcalma\b", t, re.I))
@@ -154,7 +164,7 @@ def leer_viento(txt):
     if not nums:
         return None
     return {"min": min(nums), "max": max(nums), "nums": solo, "dirs": sorted(set(dirs)), "calma": calma, "variable": variable,
-            "rachas": max(rachas) if rachas else None}
+            "rachas": max(rachas) if rachas else None, "ocasional": max(ocas) if ocas else None}
 
 
 def formato_wrf(p):
@@ -288,14 +298,12 @@ def fuera_de_sector(d, sec):
 
 
 def intensidad_pronosticada(v):
-    """Promedio de las intensidades pronosticadas (valores distintos, sin calma); con rachas, promedio con las rachas."""
-    vals = sorted(set(v["nums"]))
+    """Promedio de las intensidades pronosticadas del viento sostenido: valores distintos, con la calma como 0 y sin los
+    valores «ocasional» ni las rachas (directiva: «Calma a W/SW 5 a 12» → 0, 5 y 12 = 5,7; «6/12 ocasional 20» → 9)."""
+    vals = set(v["nums"]) | ({0} if v["calma"] else set())
     if not vals:
         return 0.0
-    prom = sum(vals) / len(vals)
-    if v["rachas"]:
-        prom = (prom + v["rachas"]) / 2
-    return prom
+    return sum(vals) / len(vals)
 
 
 def puntuar(fc, obs):
@@ -334,8 +342,12 @@ def puntuar(fc, obs):
         comp["temperatura"] = tabla_temperatura(e)
     if not comp:
         return None
-    w = sum(PESOS[k] for k in comp)
-    det["puntaje"] = round(sum(PESOS[k] * comp[k] for k in comp) / w, 1)
+    pesos = dict(PESOS)
+    if v is not None and v.get("rachas"):
+        pesos["intensidad"] = 0.25          # con rachas pronosticadas: 0,25 sostenido + 0,05 racha (no observable en las estaciones)
+        det["rachas_pron"] = v["rachas"]
+    w = sum(pesos[k] for k in comp)
+    det["puntaje"] = round(sum(pesos[k] * comp[k] for k in comp) / w, 1)
     det["componentes"] = comp
     det["conforme"] = det["puntaje"] > 75
     return det
@@ -498,6 +510,7 @@ def main():
         "notas": [
             "Pauta de la O.P.I. N° 1104 de la Gobernación Marítima de Valparaíso (10 abr 2026): período de pronóstico 08:00–20:00, observaciones de 12, 15, 18, 21 y 00 UTC, tablas N° 3 (dirección), N° 4 (intensidad) y N° 6 (temperatura máxima), notas 1 y 2 para calma. Las observaciones de 5 kt o menos no cuentan para la dirección.",
             "Solo se evalúan los parámetros con observación en la plataforma: dirección (0,30), intensidad (0,30) y temperatura máxima (0,05), renormalizados sobre 0,65. Nubosidad, visibilidad y estado del mar quedan fuera hasta contar con esas observaciones.",
+            "Intensidad según la directiva de verificación de pronósticos de bahía: se promedian los valores distintos del viento sostenido (calma = 0), sin los valores «ocasional» ni las rachas. Si se pronostican rachas, el sostenido pesa 0,25 y la racha máxima 0,05; las estaciones no informan rachas, así que ese 0,05 no se evalúa (pauta v3, desde el 03-11-2026; antes las rachas y los valores «ocasional» entraban al promedio y bajaban el acierto del profesional).",
             "Un pronóstico con 75 % o menos de acierto equivale a una «no conformidad» según la O.P.I.; se informa el porcentaje de días conformes.",
             "La apreciación nocturna (20:00–08:00) no se evalúa: el WRF + IA entrega días calendario, no ese período.",
             "Se compara el boletín profesional emitido a las 16:00 del día anterior con la versión WRF + IA disponible a las 18:00 del día anterior.",
