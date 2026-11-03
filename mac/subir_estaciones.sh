@@ -4,6 +4,7 @@
 #   - Red de Capitanías de Puerto: observaciones/directemar
 #   - Red EMA Campbell: mapa, top y fichaEstacion (o graficoEstacion si la ficha viene vacía)
 #   - Boletín de alta mar Zona X (respaldo para los avisos de temporal)
+#   - Restricciones portuarias de SITPORT (respaldo: el servidor no responde a GitHub Actions)
 # Lo ejecuta launchd cada 20 minutos. Se actualiza solo desde el repositorio.
 set -u
 REPO="feliperifo-a11y/meteo_naval"
@@ -122,12 +123,24 @@ HIST=null
 # 2b. Boletín de alta mar Zona X (respaldo, por si GitHub no logra descargarlo): se envía en base64.
 ZX=$(curl -fsS --max-time 30 -A "$UA" "${MN_ZONA_X:-https://web.directemar.cl/met/jturno/PRONOSTICOS/Cenmeteovalp/zonadiez.txt}" 2>/dev/null | base64 | tr -d '\n')
 
+# 2c. SITPORT (bahías y restricciones portuarias). Su servidor no responde fuera de Chile; se adjunta tal cual y
+#     scripts/restricciones.py lo usa cuando la consulta directa desde GitHub falla.
+SP_OK=""
+for f in consultaBahias consultaRestricciones; do
+  curl -fsS --max-time 40 -X POST -A "Mozilla/5.0 (MeteoIA, equipo local)" "https://orion.directemar.cl/sitport/back/users/$f" -o "$DIR/sp_$f.json" 2>/dev/null || rm -f "$DIR/sp_$f.json"
+done
+if [ -s "$DIR/sp_consultaBahias.json" ] && [ -s "$DIR/sp_consultaRestricciones.json" ]; then SP_OK=1; fi
+
 # 3. Archivo final (se valida antes de subir; si algo de las redes EMA viene mal, se sube sin ellas)
 AHORA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 armar() {
   printf '{"actualizado":"%s","fuente":"%s","origen":"equipo local","datos":' "$AHORA" "$FUENTE"
   cat "$DIR/obs.json"
   [ -n "$ZX" ] && printf ',"zona_x_b64":"%s"' "$ZX"
+  if [ -n "$SP_OK" ] && [ "${2:-}" != "sin_sitport" ]; then
+    printf ',"sitport":{"consultado":"%s","bahias":' "$AHORA"; cat "$DIR/sp_consultaBahias.json"
+    printf ',"restricciones":'; cat "$DIR/sp_consultaRestricciones.json"; printf '}'
+  fi
   [ "${1:-}" = "con_ema" ] && printf ',"ema":{"mapa":%s,"top":%s,"fichas":{%s},"graficos":{%s},"graficos_campbell":{%s},"historico":%s}' \
     "$MAPA" "$TOP" "$FICHAS" "$GRAF" "${GRAF_C:-}" "$HIST"
   printf '}'
@@ -139,8 +152,13 @@ json_valido() {
 }
 armar con_ema > "$DIR/estaciones.json"
 if ! json_valido "$DIR/estaciones.json"; then
-  echo "$(ts) AVISO: datos EMA con formato inesperado; se suben solo las Capitanías de Puerto"
-  armar > "$DIR/estaciones.json"
+  armar con_ema sin_sitport > "$DIR/estaciones.json"
+  if json_valido "$DIR/estaciones.json"; then echo "$(ts) AVISO: SITPORT con formato inesperado; se sube sin SITPORT"; SP_OK=""
+  else
+    echo "$(ts) AVISO: datos EMA con formato inesperado; se suben solo las Capitanías de Puerto"
+    armar "" > "$DIR/estaciones.json"
+    json_valido "$DIR/estaciones.json" || { armar "" sin_sitport > "$DIR/estaciones.json"; SP_OK=""; }
+  fi
 fi
 
 if [ -n "${MN_PRUEBA:-}" ]; then echo "$(ts) PRUEBA: archivo generado en $DIR/estaciones.json"; exit 0; fi
@@ -157,6 +175,7 @@ COD=$(curl -sS --max-time 60 -o "$DIR/respuesta.json" -w '%{http_code}' -X PUT -
 if [ "$COD" = "200" ] || [ "$COD" = "201" ]; then
   N_C=$(printf '%s' "$FICHAS" | grep -o '"codigoEstacion"' | wc -l | tr -d ' ')
   [ -n "$ZX" ] && TXT_B=" + boletín Zona X" || TXT_B=""
+  [ -n "$SP_OK" ] && TXT_B="$TXT_B + SITPORT"
   echo "$(ts) OK: $(grep -o '"nombre"' "$DIR/obs.json" | wc -l | tr -d ' ') Capitanías + $N_C Campbell$TXT_B subidas"
 else
   echo "$(ts) ERROR: GitHub respondió $COD — $(head -c 300 "$DIR/respuesta.json")"; exit 1
