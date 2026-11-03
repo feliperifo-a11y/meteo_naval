@@ -27,6 +27,10 @@ function crearTrombas(L, map, h) {
     <div class="tr-ptabla"></div>
     <div class="mar-ley tr-pley"><span><i class="tr-p0"></i>0 %</span><span><i class="tr-p1"></i>1–19</span><span><i class="tr-p2"></i>20–49</span><span><i class="tr-p3"></i>50–79</span><span><i class="tr-p4"></i>80–100 %</span></div>
     <div class="mar-det tr-pdet" aria-live="polite"><p class="mar-ayuda">Porcentaje de los miembros del ensamble en que al menos un punto de la zona supera el umbral durante el día (hora de Chile). Selecciona una casilla para ver el detalle cada 6 h.</p></div>
+    <h3 class="tr-h">Avisos de trombas · qué mostraba el modelo</h3>
+    <p class="mar-sub tr-asub" aria-live="polite">Cargando…</p>
+    <div class="ev-tabs tr-atabs" role="tablist"></div>
+    <div class="tr-adet" aria-live="polite"></div>
     <h3 class="tr-h">Detalle por celda · GFS 0,25° (una corrida, sin probabilidad)</h3>
     <p class="mar-sub tr-sub" aria-live="polite">Cargando…</p>
     <div class="tr-tira"></div>
@@ -118,6 +122,54 @@ function crearTrombas(L, map, h) {
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const sub = card.querySelector('.tr-sub'), tira = card.querySelector('.tr-tira'), det = card.querySelector('.tr-det');
+  // Avisos de trombas (data/trombas_avisos.json, scripts/trombas_avisos.py)
+  const asub = card.querySelector('.tr-asub'), atabs = card.querySelector('.tr-atabs'), adet = card.querySelector('.tr-adet');
+  const VARS_AV = [
+    ['dT', 'ΔT TSM − T850', '°C', 1], ['lr01', 'Gradiente 0–1 km', '°C/km', 1], ['lr03', 'Gradiente 0–3 km', '°C/km', 1],
+    ['t500', 'T 500 hPa', '°C', 1], ['t850', 'T 850 hPa', '°C', 1], ['mucape', 'MUCAPE', 'J/kg', 0], ['mlcape3', 'MLCAPE 0–3 km', 'J/kg', 0],
+    ['mlcin', 'MLCIN', 'J/kg', 0], ['dZ', 'Profundidad convectiva EL − LCL', 'km', 1], ['mllcl', 'Base de nube (LCL)', 'm', 0],
+    ['w850', 'Viento 850 hPa', 'kt', 0], ['ebsmu', 'Cizalle efectivo', 'kt', 0], ['shr01', 'Cizalle 0–1 km', 'kt', 0],
+    ['bwd06', 'Cizalle 0–6 km', 'kt', 0], ['srh500', 'Helicidad 0–500 m', 'm²/s²', 0], ['lr75', 'Gradiente 700–500 hPa', '°C/km', 1],
+    ['stp', 'STP (HS)', '', 2], ['sherbe', 'SHERBE', '', 2], ['nst', 'NST', '', 2], ['vgp', 'VGP', 'm/s²', 2]];
+  let avs = null, avSel = null;
+  async function cargarAvisos() {
+    try {
+      const r = await fetch('data/trombas_avisos.json?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      avs = await r.json();
+    } catch (e) { avs = null; asub.textContent = 'Aún no hay avisos de trombas procesados. Cada aviso nuevo se calcula automáticamente.'; atabs.innerHTML = ''; adet.innerHTML = ''; return; }
+    const lista = Object.entries(avs.avisos).filter(([, a]) => a.emision).sort((a, b) => b[1].desde.localeCompare(a[1].desde));
+    if (!lista.length) { asub.textContent = 'Aún no hay avisos de trombas procesados. Cada aviso nuevo se calcula automáticamente.'; return; }
+    asub.innerHTML = `${lista.length} aviso${lista.length > 1 ? 's' : ''} procesado${lista.length > 1 ? 's' : ''}. Mediana del área del aviso (mar a 1° o menos de la costa) en las horas de vigencia, GFS 0,25°. Se destaca lo que queda fuera del rango normal del día de referencia (percentiles 10–90, 7 días antes).`;
+    atabs.innerHTML = lista.map(([k, a]) => `<button type="button" role="tab" data-k="${escH(k)}">${escH(new Date(a.desde).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: 'numeric', month: 'short' }).replace('.', ''))} · ${escH(a.zonas.join('–') || a.sector)}</button>`).join('') +
+      (lista.length > 1 ? '<button type="button" role="tab" data-k="__todos">Todos</button>' : '');
+    atabs.querySelectorAll('button').forEach(b => b.onclick = () => pintarAviso(b.dataset.k));
+    pintarAviso(avSel && (avSel === '__todos' || avs.avisos[avSel]) ? avSel : lista[0][0]);
+  }
+  function pintarAviso(k) {
+    avSel = k;
+    atabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.k === k));
+    const fmt = (v, d) => v == null ? '–' : nf(Math.abs(v) < 0.5 * 10 ** -d ? 0 : v, d);
+    if (k === '__todos') {
+      const lista = Object.values(avs.avisos).filter(a => a.emision);
+      const med = (arr) => { const x = arr.filter(v => v != null).sort((a, b) => a - b); return x.length ? x[Math.floor((x.length - 1) / 2)] : null; };
+      adet.innerHTML = `<p class="mar-ayuda">Mediana, entre ${lista.length} avisos, de la mediana de cada aviso al emitirse; a su lado, la de los días de referencia.</p>
+        <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Avisos</th><th>Referencias</th></tr></thead><tbody>` +
+        VARS_AV.map(([v, t, u, d]) => `<tr><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${fmt(med(lista.map(a => a.emision.estad[v]?.[1])), d)}</td><td>${fmt(med(lista.filter(a => a.referencia).map(a => a.referencia.estad[v]?.[1])), d)}</td></tr>`).join('') +
+        '</tbody></table></div>';
+      return;
+    }
+    const a = avs.avisos[k], e = a.emision, du = a.durante, rf = a.referencia;
+    const fuera = v => { const x = e.estad[v], y = rf?.estad[v]; return x && y ? (x[1] > y[2] ? 'tr-alto' : x[1] < y[0] ? 'tr-bajo' : '') : ''; };
+    adet.innerHTML = `<div class="tr-acab"><b>${escH(a.codigo || '')}</b> · ${escH(a.sector || '')} · ${escH(horaChile(a.desde))} a ${escH(horaChile(a.hasta))} (hora Chile)${a.url ? ` · <a href="${escH(a.url)}" target="_blank" rel="noopener">aviso</a>` : ''}</div>
+      ${a.situacion ? `<p class="mar-ayuda">Situación sinóptica del aviso: ${escH(a.situacion)}</p>` : ''}
+      <p class="mar-ayuda">Al emitir: GFS ${escH(e.corrida.replace('T', ' ').replace('Z', ' UTC'))}, ${e.puntos} puntos, ${e.horas} horas.${du ? ' Durante: análisis de cada hora.' : ' "Durante" se calcula al terminar la vigencia.'}${a.error ? ` <span class="mar-viejo">${escH(a.error)}</span>` : ''}</p>
+      <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Al emitir <small>mediana (p90)</small></th><th>Durante</th><th>Referencia −7 d</th></tr></thead><tbody>` +
+      VARS_AV.map(([v, t, u, d]) => { const x = e.estad[v]; return `<tr class="${fuera(v)}"><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${x ? `${fmt(x[1], d)} <small>(${fmt(x[2], d)})</small>` : '–'}</td><td>${fmt(du?.estad[v]?.[1], d)}</td><td>${fmt(rf?.estad[v]?.[1], d)}</td></tr>`; }).join('') +
+      `</tbody></table></div>
+      <p class="mar-ayuda">Celdas sobre umbral (puntos × horas, de ${e.conteos.total}): STP ≤ −0,1: ${e.conteos.stp} · alto cizalle y CAPE bajo: ${e.conteos.hslc} · NST &gt; 1: ${e.conteos.nst} · ΔT ≥ 12 °C: ${e.conteos.dT12} · gradiente 0–1 km ≥ 9 °C/km: ${e.conteos.lr01_9}.
+      <span class="tr-alto">Fondo naranjo</span>: sobre el rango normal del día de referencia; <span class="tr-bajo">fondo azul</span>: bajo ese rango.</p>`;
+  }
   const psub = card.querySelector('.tr-psub'), ptabla = card.querySelector('.tr-ptabla'), pdet = card.querySelector('.tr-pdet');
   card.querySelectorAll('.tr-ptabs button').forEach(b => b.onclick = () => {
     indProb = b.dataset.i;
@@ -228,7 +280,7 @@ function crearTrombas(L, map, h) {
   }
 
   return {
-    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); if (map.hasLayer(grupo) === false && datos) grupo.addTo(map); if (!datos || Date.now() - cargado > 30 * 60e3) { cargar(); cargarProb(); } },
+    abrir() { card.hidden = false; card.classList.remove('mar-minimizada'); wrap.classList.add('mar-abierto'); if (map.hasLayer(grupo) === false && datos) grupo.addTo(map); if (!datos || Date.now() - cargado > 30 * 60e3) { cargar(); cargarProb(); cargarAvisos(); } },
     cerrar,
     get abierto() { return !card.hidden; }
   };
