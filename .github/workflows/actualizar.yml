@@ -219,7 +219,7 @@ jobs:
       - name: Avisos de trombas, qué mostraba el modelo (GFS 0,25° en el área de cada aviso)
         # Solo trabaja cuando hay un aviso de trombas nuevo o terminado; el resultado se acumula en el repositorio.
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           python scripts/trombas_avisos.py
           if [ -n "$(git status --porcelain data/trombas_avisos.json)" ]; then

@@ -26,3 +26,5 @@
 .tr-at tr.tr-alto td,.tr-at tr.tr-alto th,span.tr-alto{background:#ffe2b8}.tr-at tr.tr-bajo td,.tr-at tr.tr-bajo th,span.tr-bajo{background:#d6e8fb}
 span.tr-alto,span.tr-bajo{padding:0 4px;border-radius:3px;color:#18212b}
 .tr-acab{font-size:12.5px;margin:4px 0}.tr-atabs button[aria-selected=true]{background:#37474f;border-color:#37474f;color:#fff}
+.tr-fte{font-size:10.5px;border:1px solid var(--line);border-radius:8px;padding:1px 6px;color:var(--muted)}
+.tr-obs{font-size:12px;margin:3px 0;color:#7a3e00}

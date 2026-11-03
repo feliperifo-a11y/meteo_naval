@@ -9,10 +9,15 @@ los ingredientes convectivos sobre el mar del área del aviso, cada 3 h dentro d
 Área: zonas del Cuadro "F" que nombra el aviso (desde su límite norte), puntos de mar a 1° o menos de la costa.
 Por variable guarda percentiles 10, 50 y 90, mínimo y máximo de todos los puntos y horas, más conteos sobre umbral.
 El archivo se acumula: con el tiempo muestra qué condiciones acompañan a los avisos de trombas.
-NOMADS guarda unos 10 días de corridas: avisos más antiguos no se pueden calcular. Nunca hace fallar el flujo.
+Avisos anteriores: data/trombas_avisos_historicos.json (lista curada: oficiales y de prensa que citan al CMM).
+NOMADS guarda unos 10 días de corridas; para fechas anteriores se lee el archivo del GFS 0,25° en la nube de NOAA
+(noaa-gfs-bdp-pds, desde 2021) con descargas parciales por mensaje GRIB. Para no alargar el flujo, cada ejecución
+procesa como máximo PRESUPUESTO plazos del GFS; los avisos pendientes se completan en las siguientes.
+En avisos largos se usan como máximo MAX_HORAS horas por etapa, repartidas en la vigencia. Nunca hace fallar el flujo.
 """
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 import sys
 import time
 import traceback
@@ -32,6 +37,14 @@ VERSION = 1
 TZ = ZoneInfo("America/Santiago")
 DIAS_NOMADS = 9
 DIST_COSTA = 1.0          # grados
+MAX_HORAS = 8
+PRESUPUESTO = 40          # plazos GFS por ejecución
+ZONAS_LAT = {"III": (-33.03, -35.33), "IV": (-35.33, -38.37), "V": (-38.37, -41.8), "VI": (-41.8, -48.0)}
+S3 = "https://noaa-gfs-bdp-pds.s3.amazonaws.com"
+CAMPOS_S3 = ([(v, f"{n} mb") for v in ("HGT", "TMP", "RH", "UGRD", "VGRD") for n in tr.NIVELES]
+             + [("PRES", "surface"), ("HGT", "surface"), ("TMP", "surface"), ("LAND", "surface"), ("TMP", "2 m above ground"),
+                ("DPT", "2 m above ground"), ("UGRD", "10 m above ground"), ("VGRD", "10 m above ground")])
+gasto = 0
 VARS = ["mucape", "mlcape", "mlcape3", "mlcin", "ebsmu", "bwd06", "shr01", "srh500", "lr01", "lr03", "lr75",
         "mllcl", "dT", "dZ", "w850", "t850", "t500", "stp", "sherbe", "vgp", "nst"]
 
@@ -56,7 +69,7 @@ def area(aviso):
     from shapely.geometry import box, shape
     from shapely.ops import unary_union
     feats = {f["properties"]["id"]: shape(f["geometry"]) for f in leer(DATA / "geo" / "metarea.json", {"features": []})["features"]}
-    partes, norte = [], None
+    partes, norte, sur = [], None, None
     for z in aviso.get("zonas") or []:
         ids = [a for a in (z.get("areas") or []) if a in feats]
         if ids:
@@ -65,12 +78,14 @@ def area(aviso):
             partes.append(shape(z["geom"]))
         if z.get("north") is not None:
             norte = max(norte, z["north"]) if norte is not None else z["north"]
+        if z.get("south") is not None:
+            sur = min(sur, z["south"]) if sur is not None else z["south"]
     if not partes:
         return None
     g = unary_union(partes)
-    if norte is not None:
+    if norte is not None or sur is not None:
         b = g.bounds
-        g = g.intersection(box(b[0] - 1, b[1] - 1, b[2] + 1, norte))
+        g = g.intersection(box(b[0] - 1, sur if sur is not None else b[1] - 1, b[2] + 1, norte if norte is not None else b[3] + 1))
     t = va.tierra()
     return g.intersection(t.buffer(DIST_COSTA)).difference(t)
 
@@ -82,7 +97,53 @@ def horas(desde, hasta):
     out = []
     while t <= hasta:
         out.append(t); t += timedelta(hours=3)
-    return out or [piso(desde, 3)]
+    out = out or [piso(desde, 3)]
+    if len(out) > MAX_HORAS:
+        idx = np.unique(np.round(np.linspace(0, len(out) - 1, MAX_HORAS)).astype(int))
+        out = [out[i] for i in idx]
+    return out
+
+
+def bajar_s3(c, f):
+    """Mensajes GRIB necesarios de un archivo GFS 0,25° del archivo de NOAA (lecturas parciales por rango)."""
+    import requests
+    d, h = c.strftime("%Y%m%d"), c.strftime("%H")
+    base = f"{S3}/gfs.{d}/{h}/atmos/gfs.t{h}z.pgrb2.0p25.f{f:03d}"
+    lineas = requests.get(base + ".idx", headers=tr.CAB, timeout=60).text.strip().splitlines()
+    pos = [(int(l.split(":")[1]), ":".join(l.split(":")[3:5])) for l in lineas]
+    quiero = {f"{v}:{n}" for v, n in CAMPOS_S3}
+    rangos, vistos = [], set()
+    for i, (ini, clave) in enumerate(pos):
+        if clave in quiero and clave not in vistos:
+            vistos.add(clave)
+            rangos.append([ini, pos[i + 1][0] - 1 if i + 1 < len(pos) else None])
+    unidos = []
+    for r in rangos:
+        if unidos and unidos[-1][1] is not None and r[0] == unidos[-1][1] + 1:
+            unidos[-1][1] = r[1]
+        else:
+            unidos.append(r)
+
+    def uno(r):
+        for intento in range(3):
+            try:
+                x = requests.get(base, headers={**tr.CAB, "Range": f"bytes={r[0]}-{'' if r[1] is None else r[1]}"}, timeout=90)
+                x.raise_for_status(); return x.content
+            except Exception:
+                if intento == 2:
+                    raise
+                time.sleep(3)
+    with ThreadPoolExecutor(8) as ex:
+        return b"".join(ex.map(uno, unidos))
+
+
+def leer_recortado(contenido):
+    campos, lat, lon = tr.leer_grib(contenido)
+    lon180 = np.where(lon > 180, lon - 360, lon)
+    filas = np.where((lat[:, 0] <= tr.NORTE) & (lat[:, 0] >= tr.SUR))[0]
+    cols = np.where((lon180[0] >= tr.OESTE) & (lon180[0] <= tr.ESTE))[0]
+    sl = (slice(filas.min(), filas.max() + 1), slice(cols.min(), cols.max() + 1))
+    return {k: v[sl] for k, v in campos.items()}, lat[sl], lon[sl]
 
 
 def estadistica(pares, g):
@@ -94,8 +155,13 @@ def estadistica(pares, g):
     acum = {v: [] for v in VARS}
     cont = {"stp": 0, "hslc": 0, "nst": 0, "sherbe": 0, "dT12": 0, "lr01_9": 0, "total": 0}
     por_hora = []
+    global gasto
     for c, f in pares:
-        campos, lat, lon = tr.leer_grib(tr.bajar(c, f))
+        gasto += 1
+        if (datetime.now(timezone.utc) - c).days > DIAS_NOMADS:
+            campos, lat, lon = leer_recortado(bajar_s3(c, f))
+        else:
+            campos, lat, lon = tr.leer_grib(tr.bajar(c, f))
         q, la, lo = tr.procesar(campos, lat, lon)
         mar = (campos[("lsm", 1, 0)] < 0.5).ravel()
         q["t500"] = campos[("t", 100, 500)].ravel()[mar] - 273.15
@@ -121,7 +187,16 @@ def estadistica(pares, g):
 
 def main():
     arch = leer(SALIDA, {"version": VERSION, "avisos": {}})
-    avisos = [a for a in leer(DATA / "avisos.json", {}).get("avisos", []) if "tromba" in (a.get("tipo", "") + a.get("resumen", "")).lower()]
+    avisos = [dict(a, fuente="oficial") for a in leer(DATA / "avisos.json", {}).get("avisos", []) if "tromba" in (a.get("tipo", "") + a.get("resumen", "")).lower()]
+    for h in sorted(leer(DATA / "trombas_avisos_historicos.json", {}).get("avisos", []), key=lambda x: x["desde"], reverse=True):
+        d0 = datetime.fromisoformat(h["desde"]).replace(tzinfo=TZ).astimezone(timezone.utc)
+        d1 = datetime.fromisoformat(h["hasta"]).replace(tzinfo=TZ).astimezone(timezone.utc)
+        zs = [z for z, (n, s_) in ZONAS_LAT.items() if n > h["sur"] and s_ < h["norte"]]
+        avisos.append({"codigo": h.get("codigo"), "tipo": "Aviso especial · trombas marinas", "sector": h.get("sector"),
+                       "publicado": h.get("publicado"), "resumen": h.get("situacion", ""), "url": (h.get("urls") or [None])[0],
+                       "fuente": h.get("fuente"), "centro": h.get("centro"), "urls": h.get("urls"), "nota_aviso": h.get("nota"),
+                       "observadas": h.get("observadas"), "historico": True,
+                       "zonas": [{"areas": zs, "north": h["norte"], "south": h["sur"], "desde": iso(d0), "hasta": iso(d1)}]})
     ahora = datetime.now(timezone.utc)
     cambios = False
     for a in avisos:
@@ -130,33 +205,34 @@ def main():
             continue
         desde = min(datetime.fromisoformat(z["desde"].replace("Z", "+00:00")) for z in zonas)
         hasta = max(datetime.fromisoformat(z["hasta"].replace("Z", "+00:00")) for z in zonas)
-        clave = f"{a.get('codigo', '?')} · {desde:%Y-%m-%dT%HZ}"
+        clave = f"{a.get('codigo') or 'Prensa'} · {desde:%Y-%m-%dT%HZ}"
         reg = arch["avisos"].setdefault(clave, {})
-        if (ahora - desde).days > DIAS_NOMADS and not reg.get("emision"):
-            reg.setdefault("nota", "Aviso anterior a los datos disponibles del GFS en NOMADS (unos 10 días).")
+        if a.get("historico") and reg.get("fuente") == "oficial" and not a.get("codigo"):
             continue
+        for k in ("fuente", "centro", "urls", "observadas", "nota_aviso"):
+            if a.get(k) is not None:
+                reg[k] = a[k]
         reg.update({"codigo": a.get("codigo"), "tipo": a.get("tipo"), "sector": a.get("sector"), "publicado": a.get("publicado"),
-                    "situacion": a.get("resumen", "").replace("Situación sinóptica:", "").strip(), "url": a.get("url"),
+                    "situacion": (a.get("resumen") or "").replace("Situación sinóptica:", "").strip() or reg.get("situacion", ""), "url": a.get("url"),
                     "desde": iso(desde), "hasta": iso(hasta), "zonas": sorted({x for z in zonas for x in (z.get("areas") or [])})})
         try:
             g = area(a)
             if g is None or g.is_empty:
                 reg["nota"] = "Sin área evaluable en el Cuadro F"; continue
             hs = horas(desde, hasta)
-            if "emision" not in reg:
-                try:
-                    pub = datetime.strptime(a["publicado"], "%d/%m/%Y %H:%M").replace(tzinfo=TZ).astimezone(timezone.utc)
-                except Exception:
-                    pub = desde - timedelta(hours=12)
+            if gasto >= PRESUPUESTO:
+                continue
+            if "emision" not in reg and a.get("publicado"):
+                pub = datetime.strptime(a["publicado"], "%d/%m/%Y %H:%M").replace(tzinfo=TZ).astimezone(timezone.utc)
                 c = piso(pub - timedelta(hours=5), 6)
                 pares = [(c, int((t - c).total_seconds() // 3600)) if t >= c else (piso(t, 6), t.hour % 6) for t in hs]
                 print(f"{clave}: emisión con GFS {c:%Y-%m-%d %HZ}")
                 reg["emision"] = {"corrida": c.strftime("%Y-%m-%dT%HZ"), **estadistica(pares, g)}; cambios = True
-            if "referencia" not in reg:
+            if "referencia" not in reg and gasto < PRESUPUESTO:
                 pares = [(piso(t - timedelta(days=7), 6), (t - timedelta(days=7)).hour % 6) for t in hs]
                 print(f"{clave}: referencia 7 días antes")
                 reg["referencia"] = {"desde": iso(desde - timedelta(days=7)), **estadistica(pares, g)}; cambios = True
-            if "durante" not in reg and ahora > hasta + timedelta(hours=7):
+            if "durante" not in reg and ahora > hasta + timedelta(hours=7) and gasto < PRESUPUESTO:
                 pares = [(piso(t, 6), t.hour % 6) for t in hs]
                 print(f"{clave}: durante (análisis)")
                 reg["durante"] = estadistica(pares, g); cambios = True

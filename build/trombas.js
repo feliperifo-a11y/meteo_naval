@@ -138,10 +138,12 @@ function crearTrombas(L, map, h) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       avs = await r.json();
     } catch (e) { avs = null; asub.textContent = 'Aún no hay avisos de trombas procesados. Cada aviso nuevo se calcula automáticamente.'; atabs.innerHTML = ''; adet.innerHTML = ''; return; }
-    const lista = Object.entries(avs.avisos).filter(([, a]) => a.emision).sort((a, b) => b[1].desde.localeCompare(a[1].desde));
+    const todos = Object.values(avs.avisos);
+    const lista = Object.entries(avs.avisos).filter(([, a]) => a.emision || a.durante).sort((a, b) => b[1].desde.localeCompare(a[1].desde));
     if (!lista.length) { asub.textContent = 'Aún no hay avisos de trombas procesados. Cada aviso nuevo se calcula automáticamente.'; return; }
-    asub.innerHTML = `${lista.length} aviso${lista.length > 1 ? 's' : ''} procesado${lista.length > 1 ? 's' : ''}. Mediana del área del aviso (mar a 1° o menos de la costa) en las horas de vigencia, GFS 0,25°. Se destaca lo que queda fuera del rango normal del día de referencia (percentiles 10–90, 7 días antes).`;
-    atabs.innerHTML = lista.map(([k, a]) => `<button type="button" role="tab" data-k="${escH(k)}">${escH(new Date(a.desde).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: 'numeric', month: 'short' }).replace('.', ''))} · ${escH(a.zonas.join('–') || a.sector)}</button>`).join('') +
+    const pend = todos.length - lista.length;
+    asub.innerHTML = `${lista.length} aviso${lista.length > 1 ? 's' : ''} procesado${lista.length > 1 ? 's' : ''}${pend > 0 ? ` (${pend} en cálculo; se completan en las próximas actualizaciones)` : ''}. Mediana del área del aviso (mar a 1° o menos de la costa) en las horas de vigencia, GFS 0,25°. Se destaca lo que queda fuera del rango normal del día de referencia (percentiles 10–90, 7 días antes).`;
+    atabs.innerHTML = lista.map(([k, a]) => `<button type="button" role="tab" data-k="${escH(k)}">${escH(new Date(a.desde).toLocaleDateString('es-CL', { timeZone: 'America/Santiago', day: 'numeric', month: 'short', year: '2-digit' }).replace(/\./g, ''))}${a.observadas && a.observadas.length ? ' ●' : ''}</button>`).join('') +
       (lista.length > 1 ? '<button type="button" role="tab" data-k="__todos">Todos</button>' : '');
     atabs.querySelectorAll('button').forEach(b => b.onclick = () => pintarAviso(b.dataset.k));
     pintarAviso(avSel && (avSel === '__todos' || avs.avisos[avSel]) ? avSel : lista[0][0]);
@@ -151,23 +153,25 @@ function crearTrombas(L, map, h) {
     atabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.k === k));
     const fmt = (v, d) => v == null ? '–' : nf(Math.abs(v) < 0.5 * 10 ** -d ? 0 : v, d);
     if (k === '__todos') {
-      const lista = Object.values(avs.avisos).filter(a => a.emision);
+      const lista = Object.values(avs.avisos).filter(a => a.emision || a.durante);
       const med = (arr) => { const x = arr.filter(v => v != null).sort((a, b) => a - b); return x.length ? x[Math.floor((x.length - 1) / 2)] : null; };
-      adet.innerHTML = `<p class="mar-ayuda">Mediana, entre ${lista.length} avisos, de la mediana de cada aviso al emitirse; a su lado, la de los días de referencia.</p>
+      adet.innerHTML = `<p class="mar-ayuda">Mediana, entre ${lista.length} avisos, de la mediana de cada aviso (al emitir si se conoce la hora de emisión; si no, durante la vigencia); a su lado, la de los días de referencia.</p>
         <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Avisos</th><th>Referencias</th></tr></thead><tbody>` +
-        VARS_AV.map(([v, t, u, d]) => `<tr><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${fmt(med(lista.map(a => a.emision.estad[v]?.[1])), d)}</td><td>${fmt(med(lista.filter(a => a.referencia).map(a => a.referencia.estad[v]?.[1])), d)}</td></tr>`).join('') +
+        VARS_AV.map(([v, t, u, d]) => `<tr><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${fmt(med(lista.map(a => (a.emision || a.durante).estad[v]?.[1])), d)}</td><td>${fmt(med(lista.filter(a => a.referencia).map(a => a.referencia.estad[v]?.[1])), d)}</td></tr>`).join('') +
         '</tbody></table></div>';
       return;
     }
-    const a = avs.avisos[k], e = a.emision, du = a.durante, rf = a.referencia;
+    const a = avs.avisos[k], em = a.emision, du = a.durante, rf = a.referencia, e = em || du;
     const fuera = v => { const x = e.estad[v], y = rf?.estad[v]; return x && y ? (x[1] > y[2] ? 'tr-alto' : x[1] < y[0] ? 'tr-bajo' : '') : ''; };
-    adet.innerHTML = `<div class="tr-acab"><b>${escH(a.codigo || '')}</b> · ${escH(a.sector || '')} · ${escH(horaChile(a.desde))} a ${escH(horaChile(a.hasta))} (hora Chile)${a.url ? ` · <a href="${escH(a.url)}" target="_blank" rel="noopener">aviso</a>` : ''}</div>
-      ${a.situacion ? `<p class="mar-ayuda">Situación sinóptica del aviso: ${escH(a.situacion)}</p>` : ''}
-      <p class="mar-ayuda">Al emitir: GFS ${escH(e.corrida.replace('T', ' ').replace('Z', ' UTC'))}, ${e.puntos} puntos, ${e.horas} horas.${du ? ' Durante: análisis de cada hora.' : ' "Durante" se calcula al terminar la vigencia.'}${a.error ? ` <span class="mar-viejo">${escH(a.error)}</span>` : ''}</p>
+    const links = (a.urls || (a.url ? [a.url] : [])).map((u, i) => `<a href="${escH(u)}" target="_blank" rel="noopener">${a.fuente === 'oficial' && i === 0 ? 'aviso' : 'fuente ' + (i + 1)}</a>`).join(' · ');
+    adet.innerHTML = `<div class="tr-acab"><b>${escH(a.codigo || 'Aviso sin código')}</b> <span class="tr-fte">${a.fuente === 'oficial' ? 'Oficial' : 'Prensa (cita al CMM)'}</span> · ${escH(a.sector || '')} · ${escH(horaChile(a.desde))} a ${escH(horaChile(a.hasta))} (hora Chile)${links ? ' · ' + links : ''}</div>
+      ${a.situacion ? `<p class="mar-ayuda">Situación sinóptica: ${escH(a.situacion)}</p>` : ''}${a.nota_aviso ? `<p class="mar-ayuda">${escH(a.nota_aviso)}</p>` : ''}
+      ${(a.observadas || []).map(o => `<p class="tr-obs">● Tromba observada: ${escH(o.lugar)}, ${escH(o.fecha.replace('T', ' ') + (o.fecha.length > 10 ? ' h' : ''))} · ${escH(o.confirmada || '')}${o.url ? ` · <a href="${escH(o.url)}" target="_blank" rel="noopener">nota</a>` : ''}</p>`).join('')}
+      <p class="mar-ayuda">${em ? `Al emitir: GFS ${escH(em.corrida.replace('T', ' ').replace('Z', ' UTC'))}, ` : 'Hora de emisión desconocida: se usan los análisis de la vigencia. '}${e.puntos} puntos, ${e.horas} horas.${du ? '' : ' "Durante" se calcula al terminar la vigencia.'}${a.error ? ` <span class="mar-viejo">${escH(a.error)}</span>` : ''}</p>
       <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Al emitir <small>mediana (p90)</small></th><th>Durante</th><th>Referencia −7 d</th></tr></thead><tbody>` +
-      VARS_AV.map(([v, t, u, d]) => { const x = e.estad[v]; return `<tr class="${fuera(v)}"><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${x ? `${fmt(x[1], d)} <small>(${fmt(x[2], d)})</small>` : '–'}</td><td>${fmt(du?.estad[v]?.[1], d)}</td><td>${fmt(rf?.estad[v]?.[1], d)}</td></tr>`; }).join('') +
+      VARS_AV.map(([v, t, u, d]) => { const x = e.estad[v]; return `<tr class="${fuera(v)}"><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${em && em.estad[v] ? `${fmt(em.estad[v][1], d)} <small>(${fmt(em.estad[v][2], d)})</small>` : '–'}</td><td>${du && du.estad[v] ? `${fmt(du.estad[v][1], d)}${em ? '' : ` <small>(${fmt(du.estad[v][2], d)})</small>`}` : '–'}</td><td>${fmt(rf?.estad[v]?.[1], d)}</td></tr>`; }).join('') +
       `</tbody></table></div>
-      <p class="mar-ayuda">Celdas sobre umbral (puntos × horas, de ${e.conteos.total}): STP ≤ −0,1: ${e.conteos.stp} · alto cizalle y CAPE bajo: ${e.conteos.hslc} · NST &gt; 1: ${e.conteos.nst} · ΔT ≥ 12 °C: ${e.conteos.dT12} · gradiente 0–1 km ≥ 9 °C/km: ${e.conteos.lr01_9}.
+      <p class="mar-ayuda">Celdas sobre umbral ${em ? 'al emitir' : 'durante'} (puntos × horas, de ${e.conteos.total}): STP ≤ −0,1: ${e.conteos.stp} · alto cizalle y CAPE bajo: ${e.conteos.hslc} · NST &gt; 1: ${e.conteos.nst} · ΔT ≥ 12 °C: ${e.conteos.dT12} · gradiente 0–1 km ≥ 9 °C/km: ${e.conteos.lr01_9}.
       <span class="tr-alto">Fondo naranjo</span>: sobre el rango normal del día de referencia; <span class="tr-bajo">fondo azul</span>: bajo ese rango.</p>`;
   }
   const psub = card.querySelector('.tr-psub'), ptabla = card.querySelector('.tr-ptabla'), pdet = card.querySelector('.tr-pdet');
