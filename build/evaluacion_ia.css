@@ -1,4 +1,4 @@
-/* Evaluación WRF + IA (página Desarrollo); reutiliza la estructura de los paneles de alerta (.mar-*) */
+/* Evaluación WRF (página Desarrollo); reutiliza la estructura de los paneles de alerta (.mar-*) */
 .btnEval{background:#2e6b3f!important;color:#fff!important;box-shadow:0 0 0 2px rgba(140,220,160,.4)!important}
 #mapWrap .ev-card{width:min(640px,58%)}
 .ev-h{font-size:13.5px;margin:12px 0 6px}

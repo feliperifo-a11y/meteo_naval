@@ -10,7 +10,7 @@ function crearBorradorBoletin(L, map, h) {
   card.innerHTML = `<div class="mar-cab"><h2>Borrador de boletín</h2><span class="mar-etq">Redactado por IA · requiere revisión del meteorólogo</span>
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
     <p class="mar-sub" aria-live="polite">Cargando…</p><div class="ev-tabs bb-tabs" role="tablist"></div><div class="bb-cuerpo"></div>
-    <details class="mar-crit"><summary>Cómo se genera</summary><div><p>Cada mañana, con la corrida 12Z del WRF, el equipo local entrega a Claude (suscripción) el pronóstico WRF + IA de la bahía, el oleaje WW3 por período y ejemplos de boletines anteriores del especialista para esa bahía, cada uno con lo que entregaban los modelos cuando se escribió. Claude redacta el boletín de las 16:00 imitando la redacción y los ajustes del especialista. A medida que se archivan más boletines, los ejemplos son más parecidos a la situación del día.</p><p>Es una ayuda de redacción: no constituye pronóstico oficial.</p></div></details>`;
+    <details class="mar-crit"><summary>Cómo se genera</summary><div><p>Cada mañana, con la corrida 12Z del WRF, el equipo local entrega a Claude (suscripción) el pronóstico WRF de la bahía, el oleaje WW3 por período y ejemplos de boletines anteriores del especialista para esa bahía, cada uno con lo que entregaban los modelos cuando se escribió. Claude redacta el boletín de las 16:00 imitando la redacción y los ajustes del especialista. A medida que se archivan más boletines, los ejemplos son más parecidos a la situación del día.</p><p>Es una ayuda de redacción: no constituye pronóstico oficial.</p></div></details>`;
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
@@ -48,7 +48,7 @@ function crearBorradorBoletin(L, map, h) {
     return `<div class="bb-cmp">Comparación con el especialista: <b>similitud ${d.similitud} %</b> · situación ${ok(d.situacion_coincide)} · nubosidad ${ok(d.nubosidad_coincide)} · dirección ${ok(d.direccion_coincide)}`
       + ` · Δ viento ${sg(d.dif_vmax)} kt · Δ mar ${sg(d.dif_hmax, 1)} m · bahía ${ok(d.bahia_coincide)}${d.dif_tmax != null ? ` · Δ Tmax ${sg(d.dif_tmax)} °C` : ''}</div>`;
   }
-  // Acierto contra las estaciones (pauta O.P.I. N° 1104): borrador IA, especialista y WRF + IA
+  // Acierto contra las estaciones (pauta O.P.I. N° 1104): borrador IA, especialista y WRF
   function tablaVer() {
     const IDS = { iquique: 'IQQ', valparaiso: 'VAL', talcahuano: 'TAL' };
     if (!ver || !ver.resumen) return '';
@@ -65,8 +65,8 @@ function crearBorradorBoletin(L, map, h) {
     const celda = a => a && a.n ? `<b>${nf(a.puntaje, 0)} %</b> <small>(${a.n} d)</small><br><small>int ${sg(a.sesgo_int, 1)} kt<br>|Tmax| ${nf(a.error_tmax_abs)} °C</small>` : '<span class="ev-vacio">sin días aún</span>';
     const filas = Object.entries(IDS).map(([cod, id]) => { const r = ver.resumen[id] || {}; return `<tr><th>${nom(cod, id)}</th><td>${celda(r.borr)}</td><td>${celda(r.prof)}</td><td>${celda(r.wrf)}</td></tr>`; }).join('');
     return `<h3 class="ev-h">Acierto contra lo observado</h3><p class="mar-nota">Pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, período 08:00–20:00) con las estaciones de capitanía de puerto; el estado del mar no se evalúa por falta de observación. El acierto se calcula día a día. «int» es el error observado − pronosticado: positivo = el pronóstico se quedó corto.</p>`
-      + `<h4 class="ev-h">Último día evaluado</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Día</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filasDia}</tbody></table></div>`
-      + `<h4 class="ev-h">Promedio de referencia${ver.desde ? ` (desde el ${fcorta(ver.desde)})` : ''}</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Borrador IA</th><th>Especialista</th><th>WRF + IA</th></tr></thead><tbody>${filas}</tbody></table></div>`
+      + `<h4 class="ev-h">Último día evaluado</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Día</th><th>Borrador IA</th><th>Especialista</th><th>WRF</th></tr></thead><tbody>${filasDia}</tbody></table></div>`
+      + `<h4 class="ev-h">Promedio de referencia${ver.desde ? ` (desde el ${fcorta(ver.desde)})` : ''}</h4><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Borrador IA</th><th>Especialista</th><th>WRF</th></tr></thead><tbody>${filas}</tbody></table></div>`
       + '<p class="mar-nota">El promedio es la media simple de los porcentajes diarios, no una suma. Más de 75 % es conforme según la pauta.</p>';
   }
   function tablaCmp() {
@@ -82,7 +82,7 @@ function crearBorradorBoletin(L, map, h) {
 
   function pintar() {
     const pd = bor.pares_disponibles || {};
-    sub.innerHTML = `Borrador del ${escH(fecha(bor.fecha_base))}, generado ${escH(hora(bor.generado))} (hora Chile) con el WRF + IA ${escH(bor.wrf_inicializacion || '–')} UTC y el oleaje WW3 ${escH(bor.ww3_corrida || '–')}. `
+    sub.innerHTML = `Borrador del ${escH(fecha(bor.fecha_base))}, generado ${escH(hora(bor.generado))} (hora Chile) con el WRF ${escH(bor.wrf_inicializacion || '–')} UTC y el oleaje WW3 ${escH(bor.ww3_corrida || '–')}. `
       + `Ejemplos del especialista archivados: ${Object.entries(pd).map(([k, v]) => `${escH(k)} ${v}`).join(' · ')}.`;
     tabs.innerHTML = bor.bahias.map(b => `<button type="button" role="tab" data-c="${escH(b.codigo)}" aria-selected="${b.codigo === sel}">${escH(b.nombre)}</button>`).join('');
     tabs.querySelectorAll('button').forEach(x => x.onclick = () => { sel = x.dataset.c; pintar(); });

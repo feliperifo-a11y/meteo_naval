@@ -1,5 +1,5 @@
-// ============================ Evaluación sistemática del WRF + IA (página Desarrollo) ============================
-// Lee data/evaluacion/resumen.json (scripts/evaluacion_ia.py): pauta fija aplicada al pronóstico WRF + IA y al pronóstico
+// ============================ Evaluación sistemática del WRF (página Desarrollo) ============================
+// Lee data/evaluacion/resumen.json (scripts/evaluacion_ia.py): pauta fija aplicada al pronóstico WRF y al pronóstico
 // profesional contra las estaciones de capitanía de puerto de Iquique, Valparaíso y Talcahuano, por versión de prompt.
 function crearEvaluacionIA(L, map, h) {
   const escH = h.escH;
@@ -11,7 +11,7 @@ function crearEvaluacionIA(L, map, h) {
   const fecha = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\./g, '');
   const card = document.createElement('section');
   card.className = 'card mar-card ev-card'; card.id = 'evaluacionIA'; card.hidden = true;
-  card.innerHTML = `<div class="mar-cab"><h2>Evaluación WRF + IA</h2><span class="mar-etq">Pauta O.P.I. N° 1104 · se actualiza una vez al día</span>
+  card.innerHTML = `<div class="mar-cab"><h2>Evaluación WRF</h2><span class="mar-etq">Pauta O.P.I. N° 1104 · se actualiza una vez al día</span>
       <button type="button" class="mar-min" aria-label="Minimizar panel" title="Minimizar / ampliar">▾</button><button type="button" class="mar-cerrar" aria-label="Cerrar panel">✕</button></div>
     <p class="mar-sub" aria-live="polite">Cargando…</p><div class="ev-cuerpo"></div>
     <details class="mar-crit"><summary>Pauta (O.P.I. N° 1104) y notas</summary><div></div></details>`;
@@ -42,21 +42,21 @@ function crearEvaluacionIA(L, map, h) {
     let t = '<h3 class="ev-h">Resumen por bahía</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Bahía</th><th>Fuente</th><th title="Porcentaje de acierto medio">Acierto</th><th title="Días con más de 75 % de acierto (sin no conformidad)">Conformes</th><th title="Acierto medio en dirección del viento (tabla N° 3)">Dir.</th><th title="Acierto medio en intensidad (tabla N° 4); entre paréntesis, sesgo observado − pronosticado en kt">Int.</th><th title="Acierto medio en temperatura máxima (tabla N° 6); entre paréntesis, error absoluto medio en °C">T máx.</th></tr></thead><tbody>';
     for (const b of d.bahias) {
       const r = d.resumen[b.id] || {};
-      [['wrf', 'WRF + IA'], ['borr', 'Borrador IA'], ['prof', 'Profesional']].forEach(([k, nom], i) => {
+      [['wrf', 'WRF'], ['borr', 'Borrador IA'], ['prof', 'Profesional']].forEach(([k, nom], i) => {
         const a = r[k] || { n: 0 };
         t += `<tr class="${i ? '' : 'ev-sep'}">${i ? '' : `<th rowspan="3">${escH(b.nombre)}</th>`}<td>${nom}</td><td>${chip(a.puntaje, a.n)}</td>`
           + (a.n ? `<td>${a.conformes} %</td><td>${a.direccion ?? '–'} %</td><td>${a.intensidad ?? '–'} % <small>(${sg(a.sesgo_int)})</small></td><td>${a.temperatura ?? '–'} % <small>(${nf(a.error_tmax_abs)})</small></td>` : '<td colspan="4" class="ev-vacio">sin días evaluados</td>') + '</tr>';
       });
       const p = r.pares || {};
-      if (p.n) t += `<tr><td colspan="7" class="ev-par">Mismos días (${p.n}): WRF + IA ${nf(p.wrf, 0)} · profesional ${nf(p.prof, 0)}</td></tr>`;
+      if (p.n) t += `<tr><td colspan="7" class="ev-par">Mismos días (${p.n}): WRF ${nf(p.wrf, 0)} · profesional ${nf(p.prof, 0)}</td></tr>`;
       const q = r.trios || {};
-      if (q.n) t += `<tr><td colspan="7" class="ev-par">Mismos días con las tres fuentes (${q.n}): WRF + IA ${nf(q.wrf, 0)} · borrador IA ${nf(q.borr, 0)} · profesional ${nf(q.prof, 0)}</td></tr>`;
+      if (q.n) t += `<tr><td colspan="7" class="ev-par">Mismos días con las tres fuentes (${q.n}): WRF ${nf(q.wrf, 0)} · borrador IA ${nf(q.borr, 0)} · profesional ${nf(q.prof, 0)}</td></tr>`;
     }
     t += '</tbody></table></div>';
     const vs = Object.entries(d.versiones || {});
     const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
     const fdm = f => { const [a, m, dd] = String(f || '').split('-'); return dd ? `${+dd} ${MESES[+m - 1]}` : '–'; };
-    t += '<h3 class="ev-h">Acierto del WRF + IA por versión de las instrucciones</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Versión</th><th>En uso desde</th><th title="Día-bahía evaluados contra las estaciones">Evaluaciones</th><th>Acierto promedio</th>'
+    t += '<h3 class="ev-h">Acierto del WRF por versión de las instrucciones</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Versión</th><th>En uso desde</th><th title="Día-bahía evaluados contra las estaciones">Evaluaciones</th><th>Acierto promedio</th>'
       + d.bahias.map(b => `<th>${escH(b.nombre || b.id)}</th>`).join('') + '<th title="Porcentaje de evaluaciones sobre 75 %">Días conformes</th></tr></thead><tbody>'
       + vs.map(([k, v], i) => `<tr><th title="${escH(k)}">Versión ${i + 1}${i === vs.length - 1 ? ' <small>(actual)</small>' : ''}</th><td>${fdm(v.desde)}</td><td>${v.n ?? 0}</td><td><b>${nf(v.puntaje, 0)} %</b></td>${d.bahias.map(b => `<td>${nf(v.bahias && v.bahias[b.id], 0)} %</td>`).join('')}<td>${v.conformes ?? '–'} %</td></tr>`).join('')
       + '</tbody></table></div><p class="mar-nota">Las instrucciones son el texto fijo que recibe Claude junto con cada meteograma. Cuando se modifican, aparece una versión nueva y su acierto se mide por separado contra las estaciones, para saber si el cambio mejoró el pronóstico. Conviene comparar versiones con al menos 10 a 15 días cada una.</p>';
@@ -82,7 +82,7 @@ function crearEvaluacionIA(L, map, h) {
         const det = p ? `dir. ${c.direccion ?? '–'} %${p.desvio_dir != null ? ` (desvío ${p.desvio_dir}°)` : ''} · int. ${c.intensidad ?? '–'} % (${nf(p.int_pron)} vs ${nf(p.int_obs)} kt) · T máx. ${c.temperatura ?? '–'} % (${sg(p.error_tmax)} °C)` : '';
         return `<div class="ev-f"><b>${nom}</b>${p ? chip(p.puntaje) : ''}<span class="ev-txt">${escH(x.texto || '–')} · T máx. ${x.tmax ?? '–'} °C</span>${det ? `<small>${det}${k === 'wrf' ? ` · prompt <code>${escH(x.prompt)}</code>` : ''}</small>` : ''}</div>`;
       };
-      return `<div class="ev-dia"><div class="ev-cab"><b>${escH(fecha(f.fecha))}</b><span>Observado: ${obs}</span></div>${fuente('wrf', 'WRF + IA')}${fuente('borr', 'Borrador IA')}${fuente('prof', 'Profesional')}</div>`;
+      return `<div class="ev-dia"><div class="ev-cab"><b>${escH(fecha(f.fecha))}</b><span>Observado: ${obs}</span></div>${fuente('wrf', 'WRF')}${fuente('borr', 'Borrador IA')}${fuente('prof', 'Profesional')}</div>`;
     }).join('') || '<p class="mar-nota">Sin días evaluados.</p>';
   }
 
