@@ -61,6 +61,9 @@ main{flex:1;display:flex;min-height:0}
 .bLbl em{font-style:normal;background:#2b1b52;color:#e5d9ff;border-radius:10px;padding:1px 6px;font-size:11px}
 .bLbl.sel em{background:#160c2e;color:#e5d9ff}
 .mLbl span{display:inline-block;transform:translate(-50%,-50%);color:#fff;font-weight:800;font-size:11.5px;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8)}
+.como summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}.como summary::-webkit-details-marker{display:none}
+.como summary::after{content:'Ver ▾';font-size:12px;color:#7fb8ff;font-weight:600}.como[open] summary::after{content:'Ocultar ▴'}
+.como ol{margin:8px 0 0;padding-left:20px;font-size:12.8px}.como li{margin:0 0 8px}.como li b{color:#fff}.como .ej{display:block;margin-top:3px;font-size:12px;color:var(--mut);border-left:2px solid var(--ia);padding-left:8px}
 .pie{font-size:11.5px;color:var(--mut);margin-top:8px}
 @media (max-width:900px){
   body{overflow:auto;display:block}main{display:block}.mapa{height:58vh}.panel{width:auto;border-left:0;border-top:1px solid var(--line)}
@@ -169,6 +172,13 @@ function pintarMapa() {
   }
 }
 function celdaAc(clase, nombre, a) { return `<div class="${clase}"><b>${a && a.n ? nf(a.puntaje) + ' %' : '–'}</b><span>${nombre}${a && a.n ? ` · ${a.n} d` : ''}</span></div>`; }
+const COMO = `<details class="card como" id="como"><summary>¿Cómo mejora la IA el pronóstico del WRF?</summary><ol>
+<li><b>El punto de partida es el WRF.</b> El modelo WRF (3 km) entrega un meteograma por bahía; una lectura automática lo transcribe a texto tal como viene, sin corregirlo: es el pronóstico «WRF». Es bueno en la tendencia, pero tiene errores que se repiten en cada lugar: por ejemplo, temperaturas máximas más bajas que las observadas o direcciones de viento que no calzan con la estación.</li>
+<li><b>Cada mañana, con la corrida 12Z, la IA recibe todo lo que usaría un pronosticador:</b> el pronóstico WRF de la bahía, el oleaje del modelo WW3 en el punto de mar más cercano y boletines anteriores del especialista para esa bahía, elegidos entre los de situación más parecida y los más recientes. Cada ejemplo trae lo que decían el WRF y el WW3 cuando se escribió y lo que midió después la estación de capitanía de puerto. También recibe el acierto reciente y el sesgo del WRF, del especialista y del propio borrador.</li>
+<li><b>Con eso redacta el pronóstico como lo haría el especialista:</b> usa su orden, sus términos y su escala de estado del mar, y corrige los errores que muestran los ejemplos y la verificación. No agrega fenómenos que las entradas no respalden.<span class="ej">Ejemplo real (Iquique): «El WRF sigue dando máximas de 19–21 °C y lo observado ha sido 24–25 °C todos los días, así que usé 23–24 °C». Cada pronóstico muestra abajo su «Criterio aplicado por la IA».</span></li>
+<li><b>Todos los días se verifica contra lo observado.</b> El pronóstico WRF + IA, el del especialista y el WRF se comparan con la estación según la pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, 08:00–20:00). Ese es el acierto que aparece más abajo y en el mapa.</li>
+<li><b>Mejora con el tiempo.</b> La IA no se reentrena: aprende de los ejemplos. Cada boletín del especialista que se archiva, con su observación, se suma a los ejemplos del día siguiente, y cada error medido entra en la verificación que la IA lee antes de redactar.</li>
+</ol><p class="nota">Es un producto experimental de apoyo al pronosticador: no reemplaza el pronóstico oficial.</p></details>`;
 function pintarPanel() {
   const panel = document.getElementById('panel');
   const b = BOR.bahias.find(x => x.codigo === SEL);
@@ -187,10 +197,12 @@ function pintarPanel() {
       + `<div class="f"><span class="et ia">WRF + IA</span><p>${escH(t)}</p></div>`
       + `<div class="f"><span class="et of">Boletín oficial</span><p>${to ? escH(to) : `<span class="vac">${oDeHoy ? 'sin este período' : 'se publica a las 16:00'}</span>`}</p></div></div>`;
   };
-  panel.innerHTML = tabs + acierto
+  const abierto = (document.getElementById('como') || {}).open;
+  panel.innerHTML = tabs + COMO + acierto
     + `<div class="card"><h3>Pronóstico de bahía · ${escH(b.nombre)}</h3>${(b.periodos || []).map(per).join('')}</div>`
     + (b.nota ? `<div class="card"><h3>Criterio aplicado por la IA</h3><p class="nota" style="color:var(--ink)">${escH(b.nota)}</p></div>` : '')
-    + `<p class="pie">Cada mañana, con la corrida 12Z del modelo WRF, el equipo local entrega a Claude el pronóstico WRF de la bahía, el oleaje WW3 y ejemplos de boletines del especialista; Claude redacta el pronóstico con el estilo y los criterios del especialista. Es un producto experimental de apoyo y no reemplaza el pronóstico oficial.</p>`;
+    + `<p class="pie">Redactado con Claude (Anthropic) a partir del WRF, el oleaje WW3 y los boletines archivados del especialista. Producto experimental de apoyo; no reemplaza el pronóstico oficial.</p>`;
+  if (abierto) document.getElementById('como').open = true;
   panel.querySelectorAll('.tabs button').forEach(x => x.onclick = () => seleccionar(x.dataset.c));
 }
 function seleccionar(cod) { SEL = cod; pintarMapa(); pintarPanel(); const i = BAHIAS[cod]; if (i && map.getZoom() > 6) map.panTo(i.pos); }
