@@ -13,7 +13,6 @@
 <meta name="application-name" content="MeteoIA">
 <style>/*LEAFLET_CSS*/</style>
 <style>
-/*AVISOS_MAPA_CSS*/
 :root{--bg:#0a1a2c;--panel:#0d2136;--line:#1e3a58;--ink:#e8f1fb;--mut:#93a9c0;--acc:#2f8cff;--chip:#0f2a45;--ia:#b48cff;--of:#5fd08a;--wrf:#5fb0ff}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -84,19 +83,16 @@ main{flex:1;display:flex;min-height:0}
     <div id="map" role="application" aria-label="Mapa de pronósticos WRF + IA"></div>
     <details class="capas" id="capas" open><summary>Capas</summary>
       <label><input type="checkbox" id="cBah" checked>Bahías WRF + IA</label>
-      <label><input type="checkbox" id="cAv" checked>Avisos vigentes y próximos</label>
-      <label><input type="checkbox" id="cMet" checked>METAREA XV</label>
       <div class="t">Mapa base</div>
       <select id="selBase" aria-label="Mapa base"><option value="sat">Imagen satelital</option><option value="oc">Océano</option><option value="cos">Sin conexión (costa)</option></select>
     </details>
-    <div class="ley"><div><i style="background:rgba(255,77,77,.5);border:1.5px solid #ff4d4d"></i>Aviso vigente</div><div><i style="background:rgba(95,176,255,.2);border:1.5px dashed #5fb0ff"></i>Aviso próximo</div><div><i style="background:#b48cff"></i>Bahía con pronóstico WRF + IA</div></div>
+    <div class="ley"><div><i style="background:#b48cff"></i>Bahía con pronóstico WRF + IA</div></div>
   </section>
   <aside class="panel" id="panel"><div class="card vac">Cargando pronósticos…</div></aside>
 </main>
 <script>/*LEAFLET_JS*/</script>
 <script>
 /*DATA*/
-/*AVISOS_MAPA_JS*/
 const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nf = (v, d = 0) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d).replace('.', ',');
 const sg = (v, d = 1) => v == null ? '–' : (v > 0 ? '+' : '') + nf(v, d);
@@ -118,9 +114,6 @@ const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25, zoomControl:
 L.control.zoom({ position: 'topleft' }).addTo(map);
 L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 map.createPane('landPane').style.zIndex = 250;
-map.createPane('metPane').style.zIndex = 360;
-map.createPane('avPane').style.zIndex = 380;
-map.createPane('lblPane').style.zIndex = 450; map.getPane('lblPane').style.pointerEvents = 'none';
 map.createPane('bahPane').style.zIndex = 650;
 const BASES = {
   sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Imagen © Esri', maxZoom: 17, maxNativeZoom: 13 }),
@@ -136,30 +129,9 @@ const movil = matchMedia('(max-width:900px)').matches;
 if (movil) document.getElementById('capas').open = false;
 map.fitBounds(movil ? [[-38, -76], [-19, -68]] : [[-56.5, -86], [-17.5, -66]]);
 
-// METAREA XV
-const capaMet = L.layerGroup().addTo(map);
-const nombreArea = p => p.tipo === 'costera' ? `Área ${p.id} · ${p.nombre}` : p.nombre;
-L.geoJSON(METAREA, { pane: 'metPane', style: f => ({ color: '#ffffff', weight: f.properties.tipo === 'costera' ? 1.3 : 1.5, opacity: 0.8, dashArray: f.properties.tipo === 'costera' ? null : '7 6', fill: false }),
-  onEachFeature: (f, l) => l.bindTooltip(escH(nombreArea(f.properties)), { sticky: true }) }).addTo(capaMet);
-for (const f of METAREA.features) { const p = f.properties;
-  L.marker(p.lp, { pane: 'lblPane', interactive: false, icon: L.divIcon({ className: 'mLbl', html: `<span>${escH(p.id.replace('-', '·'))}</span>`, iconSize: [0, 0] }) }).addTo(capaMet); }
-
-// Avisos vigentes y próximos (data/avisos.json)
-const capaAv = L.layerGroup().addTo(map);
-function estadoAviso(z, ahora) { const ini = new Date(z.desde), fin = new Date(z.hasta); return ahora < ini ? 'P' : ahora <= fin ? 'V' : 'X'; }
-function pintarAvisos(avisos) {
-  capaAv.clearLayers(); const ahora = new Date();
-  for (const a of avisos) for (const z of a.zonas || []) {
-    const e = estadoAviso(z, ahora); if (e === 'X' || !z.geom) continue;
-    const lyr = L.geoJSON(z.geom, { pane: 'avPane', style: { color: e === 'V' ? '#ff4d4d' : '#5fb0ff', weight: 2, dashArray: e === 'V' ? null : '6 4', fillColor: e === 'V' ? '#ff4d4d' : '#5fb0ff', fillOpacity: e === 'V' ? 0.25 : 0.1 } })
-      .bindTooltip(`${escH(a.tipo)} · ${escH(z.nombre)} · ${e === 'V' ? 'vigente' : 'próximo'}<br>${escH(fmtDM(new Date(z.desde)))} a ${escH(fmtDM(new Date(z.hasta)))}`, { sticky: true }).addTo(capaAv);
-    try { configurarAvisoInteractivo(lyr, a, z, escH, fmtDM, ahora); } catch (x) {}
-  }
-}
-
 // Bahías con pronóstico WRF + IA
 const capaBah = L.layerGroup().addTo(map);
-for (const [id, c] of [['cBah', capaBah], ['cAv', capaAv], ['cMet', capaMet]]) document.getElementById(id).onchange = e => e.target.checked ? c.addTo(map) : map.removeLayer(c);
+for (const [id, c] of [['cBah', capaBah]]) document.getElementById(id).onchange = e => e.target.checked ? c.addTo(map) : map.removeLayer(c);
 
 let BOR = null, OFI = {}, VER = null, SEL = null;
 const promedio = cod => { const r = VER && VER.resumen && VER.resumen[(BAHIAS[cod] || {}).id]; return r || {}; };
@@ -208,9 +180,8 @@ function pintarPanel() {
 function seleccionar(cod) { SEL = cod; pintarMapa(); pintarPanel(); const i = BAHIAS[cod]; if (i && map.getZoom() > 6) map.panTo(i.pos); }
 
 async function cargar() {
-  const [bor, ofi, ver, av] = await Promise.all([leerJSON('data/borradores.json').catch(() => null), leerJSON('data/pronosticos.json').catch(() => null),
-    leerJSON('data/evaluacion/resumen.json').catch(() => null), leerJSON('data/avisos.json').catch(() => null)]);
-  if (av) pintarAvisos(av.avisos || []);
+  const [bor, ofi, ver] = await Promise.all([leerJSON('data/borradores.json').catch(() => null), leerJSON('data/pronosticos.json').catch(() => null),
+    leerJSON('data/evaluacion/resumen.json').catch(() => null)]);
   VER = ver; OFI = {}; if (ofi) (ofi.items || []).forEach(x => { OFI[x.codigo] = x; });
   if (!bor || !(bor.bahias || []).length) { document.getElementById('sub').textContent = 'Aún no hay pronósticos WRF + IA: el equipo local los genera una vez al día con la corrida 12Z del WRF.'; document.getElementById('panel').innerHTML = '<div class="card vac">Sin pronósticos disponibles.</div>'; return; }
   BOR = bor;

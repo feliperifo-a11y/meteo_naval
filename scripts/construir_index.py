@@ -102,10 +102,10 @@ html_ia = (leer(B / "plantilla_ia.html").replace("/*LEAFLET_CSS*/", leer(B / "le
 (R / "ia.html").write_text(preparar_app(html_ia), encoding="utf-8")
 print(f"ia.html: {len(html_ia) / 1024:.0f} KB")
 
-# Página WRF + IA: pronósticos de bahía redactados con IA, con METAREA y avisos.
+# Página WRF + IA: pronósticos de bahía redactados con IA sobre el mapa.
 html_wrfia = (leer(B / "plantilla_wrfia.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "wrfia.html").write_text(preparar_app(preparar_avisos(html_wrfia)), encoding="utf-8")
+(R / "wrfia.html").write_text(preparar_app(html_wrfia), encoding="utf-8")
 print(f"wrfia.html: {len(html_wrfia) / 1024:.0f} KB")
 
 # Página de pronósticos marítimos publicados (bahías y áreas): misma estructura que la de WRF + IA.
