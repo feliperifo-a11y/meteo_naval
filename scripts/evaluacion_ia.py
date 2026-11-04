@@ -48,7 +48,7 @@ ARCHIVO_PROF = EVAL / "profesional.jsonl"
 SALIDA = EVAL / "resumen.json"
 TZ = ZoneInfo("America/Santiago")
 PAUTA = 3   # 3: rachas aparte (0,25 + 0,05) y sin valores «ocasional» en el promedio, según la directiva de verificación
-DESDE = date(2026, 10, 8)    # primera versión de data/wrf_ia.json en el repositorio
+DESDE = date(2026, 10, 9)    # 8-oct (primera versión, un solo día de prueba) se excluye a pedido de Felipe
 BAHIAS = [  # id, nombre, código WRF + IA, código del boletín profesional, código de la estación
     {"id": "IQQ", "nombre": "Iquique", "wrf": "IQUIQUE_norte_d03", "prof": "iquique", "est": "IQUIQUE", "est_nombre": "CP Iquique"},
     {"id": "VAL", "nombre": "Valparaíso", "wrf": "VALPARAISO_centro_d08", "prof": "valparaiso", "est": "VALPARAISO", "est_nombre": "CP Valparaíso"},
@@ -416,7 +416,7 @@ def main():
     ayer = (datetime.now(TZ) - timedelta(days=1)).date()
     borr = borradores()
     n_borr = sum(len(v) for v in borr.values())
-    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and not nuevos and previo.get("borradores_n") == n_borr and not os.environ.get("FORZAR"):
+    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and previo.get("desde") == DESDE.isoformat() and not nuevos and previo.get("borradores_n") == n_borr and not os.environ.get("FORZAR"):
         print(f"Evaluación WRF + IA: al día hasta {ayer} (sin cambios)"); return
     obs = observaciones()
     wrf = versiones_wrf()
