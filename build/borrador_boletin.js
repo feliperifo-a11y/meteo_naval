@@ -50,8 +50,8 @@ function crearBorradorBoletin(L, map, h) {
   }
   // Acierto contra las estaciones (pauta O.P.I. N° 1104): borrador IA, especialista y WRF
   function tablaVer() {
-    const IDS = { iquique: 'IQQ', valparaiso: 'VAL', talcahuano: 'TAL' };
     if (!ver || !ver.resumen) return '';
+    const IDS = Object.fromEntries((ver.bahias || []).map(x => [x.prof || x.id, x.id]));
     const nom = (cod, id) => escH((ver.bahias.find(x => x.id === id) || {}).nombre || cod);
     const fcorta = f => { const [a, m, d] = String(f).split('-'); return `${+d}/${+m}`; };
     // Último día evaluado de cada bahía (puntaje diario de cada fuente)

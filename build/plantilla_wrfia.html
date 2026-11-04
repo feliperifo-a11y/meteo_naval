@@ -107,7 +107,8 @@ function decodePolyline6(str) {
 }
 
 // Posición de cada bahía (puerto) y código de la estación con la que se evalúa
-const BAHIAS = { iquique: { pos: [-20.21, -70.16], id: 'IQQ' }, valparaiso: { pos: [-33.03, -71.63], id: 'VAL' }, talcahuano: { pos: [-36.71, -73.11], id: 'TAL' } };
+const BAHIAS = { arica: { pos: [-18.475, -70.325], id: 'ARI' }, iquique: { pos: [-20.21, -70.16], id: 'IQQ' }, caldera: { pos: [-27.065, -70.83], id: 'CAL' }, quintero: { pos: [-32.775, -71.51], id: 'QTO', dy: -36 },
+  valparaiso: { pos: [-33.03, -71.63], id: 'VAL', dy: 10 }, talcahuano: { pos: [-36.71, -73.11], id: 'TAL' }, corral: { pos: [-39.87, -73.43], id: 'COR' }, natales: { pos: [-51.73, -72.51], id: 'NAT' } };
 
 // ---- Mapa
 const map = L.map('map', { minZoom: 3, maxZoom: 13, zoomSnap: 0.25, zoomControl: false, maxBounds: [[-75, -150], [5, -30]], maxBoundsViscosity: 0.8 });
@@ -127,7 +128,7 @@ function ponerBase(k) { if (base) map.removeLayer(base); base = BASES[k]; base.a
 document.getElementById('selBase').onchange = e => ponerBase(e.target.value);
 const movil = matchMedia('(max-width:900px)').matches;
 if (movil) document.getElementById('capas').open = false;
-map.fitBounds(movil ? [[-38, -76], [-19, -68]] : [[-56.5, -86], [-17.5, -66]]);
+map.fitBounds(movil ? [[-52.5, -77], [-18, -67]] : [[-53.5, -84], [-17.5, -66]]);
 
 // Bahías con pronóstico WRF + IA
 const capaBah = L.layerGroup().addTo(map);
@@ -139,7 +140,7 @@ function pintarMapa() {
   capaBah.clearLayers();
   for (const b of BOR.bahias) { const info = BAHIAS[b.codigo]; if (!info) continue;
     const pr = promedio(b.codigo).borr;
-    L.marker(info.pos, { pane: 'bahPane', icon: L.divIcon({ className: 'bLbl' + (b.codigo === SEL ? ' sel' : ''), html: `<div>● ${escH(b.nombre)}${pr && pr.n ? `<em>${nf(pr.puntaje)} %</em>` : ''}</div>`, iconSize: [0, 0] }) })
+    L.marker(info.pos, { pane: 'bahPane', icon: L.divIcon({ className: 'bLbl' + (b.codigo === SEL ? ' sel' : ''), html: `<div style="margin-top:${info.dy || 0}px">● ${escH(b.nombre)}${pr && pr.n ? `<em>${nf(pr.puntaje)} %</em>` : ''}</div>`, iconSize: [0, 0] }) })
       .on('click', () => seleccionar(b.codigo)).addTo(capaBah);
   }
 }
@@ -184,6 +185,7 @@ async function cargar() {
     leerJSON('data/evaluacion/resumen.json').catch(() => null)]);
   VER = ver; OFI = {}; if (ofi) (ofi.items || []).forEach(x => { OFI[x.codigo] = x; });
   if (!bor || !(bor.bahias || []).length) { document.getElementById('sub').textContent = 'Aún no hay pronósticos WRF + IA: el equipo local los genera una vez al día con la corrida 12Z del WRF.'; document.getElementById('panel').innerHTML = '<div class="card vac">Sin pronósticos disponibles.</div>'; return; }
+  bor.bahias.sort((x, y) => ((BAHIAS[y.codigo] || {}).pos || [-99])[0] - ((BAHIAS[x.codigo] || {}).pos || [-99])[0]);
   BOR = bor;
   document.getElementById('sub').textContent = `Pronóstico de bahía redactado con IA a partir del WRF ${bor.wrf_inicializacion || '–'} UTC y el oleaje WW3 · generado ${hora(bor.generado)} (hora Chile)`;
   const q = new URLSearchParams(location.search).get('bahia');

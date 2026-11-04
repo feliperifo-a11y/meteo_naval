@@ -2,7 +2,7 @@
 """Evaluación sistemática de los pronósticos WRF + IA (página Desarrollo) → data/evaluacion/resumen.json
 
 Compara, con una pauta fija, el pronóstico WRF + IA y el pronóstico profesional publicado contra lo observado en
-las estaciones de las capitanías de puerto de Iquique, Valparaíso y Talcahuano. Así se puede saber si un cambio de
+las estaciones de las capitanías de puerto de Iquique, Valparaíso, Talcahuano, Arica, Caldera, Quintero, Corral y Puerto Natales. Así se puede saber si un cambio de
 prompt mejora o empeora el pronóstico.
 
 Fuentes
@@ -53,6 +53,11 @@ BAHIAS = [  # id, nombre, código WRF + IA, código del boletín profesional, c�
     {"id": "IQQ", "nombre": "Iquique", "wrf": "IQUIQUE_norte_d03", "prof": "iquique", "est": "IQUIQUE", "est_nombre": "CP Iquique"},
     {"id": "VAL", "nombre": "Valparaíso", "wrf": "VALPARAISO_centro_d08", "prof": "valparaiso", "est": "VALPARAISO", "est_nombre": "CP Valparaíso"},
     {"id": "TAL", "nombre": "Talcahuano", "wrf": "TALCAHUANO_centro_d09", "prof": "talcahuano", "est": "TALCAHUANO", "est_nombre": "CP Talcahuano"},
+    {"id": "ARI", "nombre": "Arica", "wrf": "ARICA_norte_d03", "prof": "arica", "est": "ARICA", "est_nombre": "CP Arica"},
+    {"id": "CAL", "nombre": "Caldera", "wrf": "CALDERA_norte_d05", "prof": "caldera", "est": "CALDERA", "est_nombre": "CP Caldera"},
+    {"id": "QTO", "nombre": "Quintero", "wrf": "QUINTERO_centro_d08", "prof": "quintero", "est": "QUINTERO", "est_nombre": "CP Quintero"},
+    {"id": "COR", "nombre": "Corral", "wrf": "CORRAL_centro_d10", "prof": "corral", "est": "CORRAL", "est_nombre": "CP Corral"},
+    {"id": "NAT", "nombre": "Puerto Natales", "wrf": "PUERTONATALES_sur_d11", "prof": "natales", "est": "NATALES", "est_nombre": "CP Puerto Natales"},
 ]
 PESOS = {"direccion": 0.30, "intensidad": 0.30, "temperatura": 0.05}   # O.P.I. N° 1104, III (sin nubosidad, visibilidad ni mar)
 RUMBOS = {"N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5, "E": 90, "ESE": 112.5, "SE": 135, "SSE": 157.5, "S": 180,
@@ -416,7 +421,7 @@ def main():
     ayer = (datetime.now(TZ) - timedelta(days=1)).date()
     borr = borradores()
     n_borr = sum(len(v) for v in borr.values())
-    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and previo.get("desde") == DESDE.isoformat() and not nuevos and previo.get("borradores_n") == n_borr and not os.environ.get("FORZAR"):
+    if previo.get("hasta") == ayer.isoformat() and previo.get("pauta") == PAUTA and previo.get("desde") == DESDE.isoformat() and [x.get("id") for x in previo.get("bahias", [])] == [b["id"] for b in BAHIAS] and not nuevos and previo.get("borradores_n") == n_borr and not os.environ.get("FORZAR"):
         print(f"Evaluación WRF + IA: al día hasta {ayer} (sin cambios)"); return
     obs = observaciones()
     wrf = versiones_wrf()
@@ -502,7 +507,7 @@ def main():
     res = {
         "pauta": PAUTA, "borradores_n": n_borr, "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "desde": DESDE.isoformat(), "hasta": ayer.isoformat(),
-        "bahias": [{k: b[k] for k in ("id", "nombre", "est_nombre")} for b in BAHIAS],
+        "bahias": [{k: b[k] for k in ("id", "nombre", "est_nombre", "prof")} for b in BAHIAS],
         "pesos": PESOS, "resumen": resumen,
         "versiones": dict(sorted(versiones.items(), key=lambda kv: kv[1]["desde"])),
         "dias": sorted(dias_out, key=lambda f: (f["fecha"], f["bahia"]), reverse=True),

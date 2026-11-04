@@ -29,7 +29,12 @@ BAHIAS = [  # código del boletín, nombre, código WRF + IA, posición
     ("iquique", "Iquique", "IQUIQUE_norte_d03", (-20.205, -70.155)),
     ("valparaiso", "Valparaíso", "VALPARAISO_centro_d08", (-33.03, -71.625)),
     ("talcahuano", "Talcahuano", "TALCAHUANO_centro_d09", (-36.715, -73.11)),
-]   # Puerto Montt y Punta Arenas se quitaron del borrador (31-oct); sus boletines se siguen archivando en pares.jsonl
+    ("arica", "Arica", "ARICA_norte_d03", (-18.475, -70.325)),
+    ("caldera", "Caldera", "CALDERA_norte_d05", (-27.065, -70.83)),
+    ("quintero", "Quintero", "QUINTERO_centro_d08", (-32.775, -71.51)),
+    ("corral", "Corral", "CORRAL_centro_d10", (-39.87, -73.43)),
+    ("natales", "Puerto Natales", "PUERTONATALES_sur_d11", (-51.73, -72.51)),
+]   # 04-nov: se agregan Arica, Caldera, Quintero, Corral y Puerto Natales. Puerto Montt y Punta Arenas se quitaron del borrador (31-oct); sus boletines se siguen archivando en pares.jsonl
 MAX_EJEMPLOS = 5
 
 
