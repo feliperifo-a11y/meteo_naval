@@ -695,7 +695,7 @@ async function contarVisita(nueva) {
 </script>
 <script>/*INSTALAR*/</script>
 <div id="firmaAutor">Felipe Rifo Espósito™</div>
-<!-- Video de bienvenida: una vez por pestaña (sessionStorage). Intenta partir CON sonido; si el navegador lo bloquea, parte silenciado y activa el sonido con la primera interacción. -->
+<!-- Video de presentación: ya no se abre solo; se abre con el botón «Ver video» de la cabecera (o con ?video en la dirección). -->
 <style>
 #vIntro{position:fixed;inset:0;z-index:5000;background:rgba(3,10,20,.82);display:flex;align-items:center;justify-content:center;padding:16px}
 #vIntro[hidden]{display:none}
@@ -706,36 +706,36 @@ async function contarVisita(nueva) {
 #vIntro button{font:inherit;font-size:14px;font-weight:600;border-radius:9px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:#12294a;color:var(--ink)}
 #vIntro .vi-cerrar{position:absolute;top:10px;right:10px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;background:rgba(6,18,31,.85);border-radius:50%}
 #vIntro .vi-sonido{background:var(--acc);border-color:var(--acc);color:#fff}
+.btnVideo{display:inline-block;margin:8px 0 0 8px;padding:0 12px;border:1px solid #39618b;border-radius:9px;background:none;color:#a8d3ff;font:600 12px system-ui,sans-serif;min-height:30px;line-height:28px;cursor:pointer}.btnVideo:hover{background:#153452;color:#fff}
 </style>
 <div id="vIntro" hidden role="dialog" aria-modal="true" aria-label="Video de bienvenida a MeteoIA">
   <div class="vi-caja">
     <video id="vIntroVid" playsinline preload="none" poster="media/meteoia_intro.jpg"><source src="media/meteoia_intro.mp4" type="video/mp4"></video>
     <button type="button" class="vi-cerrar" aria-label="Cerrar video" title="Cerrar (Esc)">✕</button>
-    <div class="vi-barra"><span>Bienvenido a MeteoIA · 50 s</span><span style="display:flex;gap:8px"><button type="button" class="vi-sonido">🔇 Silenciar</button><button type="button" class="vi-saltar">Ir a la página</button></span></div>
+    <div class="vi-barra"><span>Presentación de MeteoIA · 50 s</span><span style="display:flex;gap:8px"><button type="button" class="vi-sonido">🔇 Silenciar</button><button type="button" class="vi-saltar">Cerrar video</button></span></div>
   </div>
 </div>
 <script>
 (function () {
-  let visto = false;
-  try { visto = sessionStorage.getItem('meteoia_intro_visto') === '1'; } catch (e) {}
-  if (visto || new URLSearchParams(location.search).has('sinvideo')) return;
   const caja = document.getElementById('vIntro'), v = document.getElementById('vIntroVid'), bs = caja.querySelector('.vi-sonido');
-  try { sessionStorage.setItem('meteoia_intro_visto', '1'); } catch (e) {}
-  const cerrar = () => { try { v.pause(); } catch (e) {} caja.hidden = true; document.removeEventListener('keydown', tecla); };
-  const tecla = e => { if (e.key === 'Escape') cerrar(); };
-  caja.hidden = false; document.addEventListener('keydown', tecla);
   const rotulo = () => { bs.textContent = v.muted ? '🔊 Activar sonido' : '🔇 Silenciar'; };
-  v.preload = 'auto'; v.load(); v.muted = false;
-  // Con sonido por defecto; los navegadores pueden impedirlo sin una interacción previa: entonces parte silenciado
-  // y el sonido se activa solo con el primer clic, toque o tecla del usuario (salvo que haya elegido silenciar).
-  let elegido = false;
-  const activar = () => { if (elegido || caja.hidden) return; v.muted = false; v.play().catch(() => {}); rotulo(); quitar(); };
-  const quitar = () => ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.removeEventListener(ev, activar, true));
-  v.play().then(rotulo).catch(() => { v.muted = true; rotulo(); v.play().catch(() => {}); ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, activar, true)); });
+  const tecla = e => { if (e.key === 'Escape') cerrar(); };
+  const cerrar = () => { try { v.pause(); } catch (e) {} caja.hidden = true; document.removeEventListener('keydown', tecla); };
+  function abrir() {
+    caja.hidden = false; document.addEventListener('keydown', tecla);
+    v.preload = 'auto'; v.currentTime = 0; v.muted = false;
+    v.play().then(rotulo).catch(() => { v.muted = true; rotulo(); v.play().catch(() => {}); });
+    try { window.mnEvento && mnEvento('video'); } catch (e) {}
+  }
   caja.querySelector('.vi-cerrar').onclick = cerrar; caja.querySelector('.vi-saltar').onclick = cerrar;
   caja.addEventListener('click', e => { if (e.target === caja) cerrar(); });
-  bs.onclick = e => { e.stopPropagation(); elegido = true; quitar(); v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } rotulo(); };
+  bs.onclick = e => { e.stopPropagation(); v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } rotulo(); };
   v.addEventListener('ended', () => setTimeout(cerrar, 1200));
+  // Botón en la cabecera, junto a «Instalar app gratis»
+  const cab = document.querySelector('.reloj');
+  if (cab) { const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btnVideo'; btn.innerHTML = '▶ Ver video';
+    btn.title = 'Video de presentación de MeteoIA (50 s)'; btn.onclick = abrir; cab.appendChild(btn); }
+  if (new URLSearchParams(location.search).has('video')) abrir();
 })();
 </script>
 </body>
