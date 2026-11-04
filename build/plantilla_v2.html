@@ -13,7 +13,7 @@
 <meta name="application-name" content="MeteoIA">
 
 <style>/*LEAFLET_CSS*//*AVISOS_MAPA_CSS*//*CAPAS_MODELO_CSS*/
-</style>
+.puertoViejo{color:#b35c00!important;font-weight:600}</style>
 <style>
 :root{--bg:#06121f;--bg2:#0a1a2c;--card:#0e2136;--card2:#12294292;--line:#1d3a58;--ink:#e8f1fa;--muted:#8fa7bf;--acc:#2f8cff;--acc2:#5fb0ff;--am:#f2c230;--rj:#e53935;--ok:#34c26b;--ret:#f0a030;--no:#e5534b}
 *{box-sizing:border-box}
@@ -390,6 +390,7 @@ async function leerRestricciones() {
   catch (e) { try { const d = await leerJSON('data/restricciones.json'); return { ...d, vivo: false }; } catch (e2) { return null; } }
 }
 const fechaSitport = s => { const m = String(s || '').match(/^(\d{1,2}) (\w{3}) (\d{4}) (\d{2}):(\d{2})/); return m ? `${m[1]} ${m[2].toLowerCase()} ${m[3]}, ${m[4]}:${m[5]}` : (s || ''); };
+const sitportViejo = d => !d.vivo && (isNaN(new Date(d.actualizado)) || Date.now() - new Date(d.actualizado) > 2 * 3600e3);
 const txtSitport = s => String(s ?? '').replace(/&GT;/gi, '>').replace(/&LT;/gi, '<').replace(/&AMP;/gi, '&').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim();
 function popupPuerto(nombre, lista, d) {
   const filas = lista.map(r => {
@@ -399,7 +400,7 @@ function popupPuerto(nombre, lista, d) {
       <div>${escH(inst)}</div>${det && det !== '-' ? `<div><b>Condición:</b> ${escH(det)}</div>` : ''}${obs ? `<div class="prO">${escH(obs)}</div>` : ''}
       <div class="prF">${escH(txtSitport(r.NaveRecibe))}${r.AreaRestriccion ? ' · ' + escH(txtSitport(r.AreaRestriccion)) : ''} · desde ${escH(fechaSitport(r.FCinicio))}${r.FCTermino ? ' hasta ' + escH(fechaSitport(r.FCTermino)) : ''}</div></div>`;
   }).join('');
-  return `<div class="pp"><div class="ppT" >${escH(nombre)} · ${lista.length} restricci${lista.length === 1 ? 'ón' : 'ones'}</div><div class="prL">${filas}</div>
+  return `<div class="pp"><div class="ppT" >${escH(nombre)} · ${lista.length} restricci${lista.length === 1 ? 'ón' : 'ones'}</div><div class="prL">${filas}</div>${sitportViejo(d) ? `<div style="margin-top:6px;padding:5px 7px;border-radius:6px;background:#fff3e0;color:#8a4b00;font-size:11.5px;font-weight:600">⚠ SITPORT no responde desde el ${escH(fmtDM(new Date(d.actualizado)))}: estas restricciones pueden haber cambiado. Confirme en SITPORT o con la capitanía de puerto.</div>` : ''}
     <div style="margin-top:6px;font-size:11px;color:var(--muted)">Fuente: SITPORT${d.vivo ? ', consultado en vivo' : ', copia del ' + escH(fmtDM(new Date(d.actualizado)))}. Posición de la bahía aproximada.</div>
     <div style="margin-top:4px"><a href="${SITPORT_WEB}" target="_blank" rel="noopener">Ver en SITPORT ↗</a></div></div>`;
 }
@@ -412,7 +413,8 @@ function agruparPuertos(d) {
 }
 function pintarPuertos(d) {
   const grupos=agruparPuertos(d), total=grupos.reduce((n,g)=>n+g.lista.length,0), fecha=new Date(d.actualizado);
-  document.getElementById('puertosNota').textContent=`${grupos.length} bahías · ${total} restricciones publicadas. ${d.vivo?'Consulta en vivo':'Copia publicada'}${!isNaN(fecha)?' · '+fmtDM(fecha):' · fecha no disponible'}.`;
+  document.getElementById('puertosNota').textContent=`${grupos.length} bahías · ${total} restricciones publicadas. ${d.vivo?'Consulta en vivo':'Copia publicada'}${!isNaN(fecha)?' · '+fmtDM(fecha):' · fecha no disponible'}.${sitportViejo(d)?' ⚠ SITPORT no responde desde esa hora: las restricciones pueden haber cambiado.':''}`;
+  document.getElementById('puertosNota').classList.toggle('puertoViejo',sitportViejo(d));
   document.getElementById('listaPuertos').innerHTML=grupos.length?grupos.map(g=>{
     const motivos=[...new Set(g.lista.map(r=>txtSitport(r.MotivoRestriccion)).filter(Boolean))].join(' · ')||'Restricción informada';
     return `<details class="puerto-resumen"><summary><span class="puerto-cab"><b>${escH(g.nombre)}</b><span>${g.lista.length} restricci${g.lista.length===1?'ón':'ones'}</span></span><span class="puerto-motivos">${escH(motivos)} · Ver detalle</span></summary>${g.pos?`<button class="puerto-ver" type="button" data-bahia="${escH(g.id)}">Ver en el mapa</button>`:''}${popupPuerto(g.nombre,g.lista,d)}</details>`;
