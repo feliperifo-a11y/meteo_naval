@@ -54,9 +54,12 @@ function crearEvaluacionIA(L, map, h) {
     }
     t += '</tbody></table></div>';
     const vs = Object.entries(d.versiones || {});
-    t += '<h3 class="ev-h">Por versión de prompt</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Versión</th><th>Desde</th><th>Puntaje</th>' + d.bahias.map(b => `<th>${escH(b.id)}</th>`).join('') + '<th>Conformes</th></tr></thead><tbody>'
-      + vs.map(([k, v]) => `<tr><td><code>${escH(k)}</code></td><td>${escH(v.desde)}</td><td>${chip(v.puntaje, v.n)}</td>${d.bahias.map(b => `<td>${nf(v.bahias && v.bahias[b.id], 0)}</td>`).join('')}<td>${v.conformes ?? '–'} %</td></tr>`).join('')
-      + '</tbody></table></div><p class="mar-nota">Una versión nueva aparece cuando cambian las instrucciones del prompt del equipo local. Compara puntajes con al menos 10 a 15 días por versión.</p>';
+    const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const fdm = f => { const [a, m, dd] = String(f || '').split('-'); return dd ? `${+dd} ${MESES[+m - 1]}` : '–'; };
+    t += '<h3 class="ev-h">Acierto del WRF + IA por versión de las instrucciones</h3><div class="ev-tw"><table class="ev-tabla"><thead><tr><th>Versión</th><th>En uso desde</th><th title="Día-bahía evaluados contra las estaciones">Evaluaciones</th><th>Acierto promedio</th>'
+      + d.bahias.map(b => `<th>${escH(b.nombre || b.id)}</th>`).join('') + '<th title="Porcentaje de evaluaciones sobre 75 %">Días conformes</th></tr></thead><tbody>'
+      + vs.map(([k, v], i) => `<tr><th title="${escH(k)}">Versión ${i + 1}${i === vs.length - 1 ? ' <small>(actual)</small>' : ''}</th><td>${fdm(v.desde)}</td><td>${v.n ?? 0}</td><td><b>${nf(v.puntaje, 0)} %</b></td>${d.bahias.map(b => `<td>${nf(v.bahias && v.bahias[b.id], 0)} %</td>`).join('')}<td>${v.conformes ?? '–'} %</td></tr>`).join('')
+      + '</tbody></table></div><p class="mar-nota">Las instrucciones son el texto fijo que recibe Claude junto con cada meteograma. Cuando se modifican, aparece una versión nueva y su acierto se mide por separado contra las estaciones, para saber si el cambio mejoró el pronóstico. Conviene comparar versiones con al menos 10 a 15 días cada una.</p>';
     t += `<h3 class="ev-h">Detalle diario</h3><div class="ev-tabs" role="tablist">${d.bahias.map(b => `<button type="button" role="tab" data-b="${b.id}" aria-selected="${b.id === bahia}">${escH(b.nombre)}</button>`).join('')}</div><div class="ev-dias"></div>`;
     cuerpo.innerHTML = t;
     cuerpo.querySelectorAll('.ev-tabs button').forEach(x => x.onclick = () => { bahia = x.dataset.b; cuerpo.querySelectorAll('.ev-tabs button').forEach(y => y.setAttribute('aria-selected', y.dataset.b === bahia)); pintarDias(); });
