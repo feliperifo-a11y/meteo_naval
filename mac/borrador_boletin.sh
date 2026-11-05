@@ -1,6 +1,6 @@
 #!/bin/bash
 # BORRADOR DE BOLETÍN DE BAHÍA «estilo especialista», desde este Mac con la suscripción de Claude (Claude Code), sin costo de API.
-# Lo llama pronostico_ia.sh cada hora; trabaja una sola vez al día, entre las 09:00 y las 15:59 (hora de Chile), cuando
+# Lo llama pronostico_ia.sh cada hora; trabaja una sola vez al día, entre las 09:00 y las 22:59 (hora de Chile), cuando
 # GitHub ya preparó las entradas con el WRF + IA de la corrida 12Z de hoy (data/evaluacion/entradas_borrador.json).
 #   1. descarga las entradas: por bahía, el WRF + IA, el oleaje WW3 por período y ejemplos de boletines del especialista;
 #   2. le pide a Claude Code que redacte el boletín de las 16:00 de cada bahía imitando a los ejemplos;
@@ -16,7 +16,7 @@ HOY=$(TZ=America/Santiago date +%Y-%m-%d)
 HORA=$(TZ=America/Santiago date +%H); HORA=${HORA#0}
 if [ -z "${MN_FORZAR_BORRADOR:-}" ]; then
   [ "$(cat "$B/hecho.txt" 2>/dev/null)" = "$HOY" ] && exit 0
-  [ "$HORA" -ge 9 ] && [ "$HORA" -lt 16 ] || exit 0
+  [ "$HORA" -ge 9 ] && [ "$HORA" -lt 23 ] || exit 0   # normalmente sale en la mañana; si falló, se reintenta hasta las 22:59
 fi
 
 # 1. Entradas preparadas por GitHub (se publican con el sitio)
