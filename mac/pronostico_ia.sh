@@ -140,7 +140,7 @@ for zona in "Zona Norte" "Zona Central" "Zona Central Sur" "Zona Sur" "Zona Aust
 
 Lee con la herramienta Read cada uno de estos archivos de imagen (están en la carpeta actual) y entrega el pronóstico de cada bahía:
 $LISTA" --allowedTools "Read" --output-format json --json-schema "$ESQUEMA" > "$TRAB/res_${slug}_$g.json" 2> "$TRAB/err_${slug}_$g.txt" ) \
-      && echo "$(ts) IA: $zona ($g) listo" || echo "$(ts) IA: $zona ($g) falló ($(head -c 200 "$TRAB/err_${slug}_$g.txt"))"
+      && echo "$(ts) IA: $zona ($g) listo" || echo "$(ts) IA: $zona ($g) falló ($(cat "$TRAB/err_${slug}_$g.txt" "$TRAB/res_${slug}_$g.json" 2>/dev/null | tr -d '\n' | head -c 300))"
   done
 done
 
