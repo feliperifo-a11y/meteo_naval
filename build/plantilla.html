@@ -1559,6 +1559,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*WW3_JS*/
 /*ECMWF_JS*/
 /*SST_JS*/
+/*HIELO_AMSR2_JS*/
 /*CASO_SAR_JS*/
 /*MAREJADAS_ALERTA_JS*/
 /*VIENTO_ALERTA_JS*/
@@ -1690,8 +1691,9 @@ function renderCapas() {
   addLayerRow(box, 'ecmwf', 'Viento ECMWF 9 km (costa)', '<span class="ecmwfSw"></span>', false, () => crearCapaECMWF(L, map, escH));
   addLayerRow(box, 'ww3', 'Oleaje WW3 (altura de ola, NOAA)', '<span class="ww3Sw"></span>', false, () => crearCapaWW3(L, map, escH));
   addLayerRow(box, 'sst', 'Temperatura del mar (MUR 1 km)', '<span class="sstSw"></span>', false, () => crearCapaSST(L, map, escH));
+  addLayerRow(box, 'hielo', 'Hielo marino AMSR2 (estimación, Bremen)', '<span class="hieloSw"></span>', false, () => crearCapaHieloAMSR2(L, map, escH));
   // Los campos de color no se superponen: activar uno apaga los otros.
-  const CAMPOS_COLOR = ['ecmwf', 'ww3', 'sst'];
+  const CAMPOS_COLOR = ['ecmwf', 'ww3', 'sst', 'hielo'];
   for (const a of CAMPOS_COLOR) document.getElementById('chk_' + a).addEventListener('change', e => {
     if (!e.target.checked) return;
     for (const b of CAMPOS_COLOR) { const otro = document.getElementById('chk_' + b); if (b !== a && otro.checked) { otro.checked = false; LAYERS[b].set(false); } }
