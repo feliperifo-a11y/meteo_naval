@@ -199,6 +199,19 @@ def main():
                        "zonas": [{"areas": zs, "north": h["norte"], "south": h["sur"], "desde": iso(d0), "hasta": iso(d1)}]})
     ahora = datetime.now(timezone.utc)
     cambios = False
+    # Avisos ya archivados que esperan la etapa "durante" aunque ya no figuren en data/avisos.json
+    vistos = set()
+    for a in avisos:
+        zs = a.get("zonas") or []
+        if zs:
+            d0 = min(datetime.fromisoformat(z["desde"].replace("Z", "+00:00")) for z in zs)
+            vistos.add(f"{a.get('codigo') or 'Prensa'} · {d0:%Y-%m-%dT%HZ}")
+    for clave, reg in arch["avisos"].items():
+        if clave not in vistos and reg.get("emision") and "durante" not in reg and reg.get("desde"):
+            zs = reg.get("zonas_aviso") or [{"areas": reg.get("zonas") or []}]
+            avisos.append({"codigo": reg.get("codigo"), "tipo": reg.get("tipo"), "sector": reg.get("sector"), "publicado": reg.get("publicado"),
+                           "resumen": reg.get("situacion", ""), "url": reg.get("url"),
+                           "zonas": [dict(z, desde=reg["desde"], hasta=reg["hasta"]) for z in zs]})
     for a in avisos:
         zonas = a.get("zonas") or []
         if not zonas:
@@ -215,6 +228,7 @@ def main():
         reg.update({"codigo": a.get("codigo"), "tipo": a.get("tipo"), "sector": a.get("sector"), "publicado": a.get("publicado"),
                     "situacion": (a.get("resumen") or "").replace("Situación sinóptica:", "").strip() or reg.get("situacion", ""), "url": a.get("url"),
                     "desde": iso(desde), "hasta": iso(hasta), "zonas": sorted({x for z in zonas for x in (z.get("areas") or [])})})
+        reg["zonas_aviso"] = [{k: z[k] for k in ("areas", "north", "south") if z.get(k) is not None} for z in zonas]
         try:
             g = area(a)
             if g is None or g.is_empty:
