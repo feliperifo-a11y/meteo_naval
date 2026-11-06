@@ -160,8 +160,8 @@ a{color:var(--acc2)}
   </section>
   <div class="col">
     <section class="card" id="alertas"><h2>Alertas y avisos <button type="button" class="lnkBtn" id="btnTodasAl">Ocultar todas del mapa</button></h2><div id="listaAlertas"><div class="vacioTxt">Cargando…</div></div></section>
-    <section class="card" id="estaciones"><h2><span id="tEst">Estaciones</span> <a href="dashboard.html">Desarrollo →</a></h2><div class="est" id="listaEst"></div></section>
     <section class="card" id="estadoPuertos"><h2>Estado de puerto <a href="https://sitport.directemar.cl/#/informacion" target="_blank" rel="noopener noreferrer">SITPORT ↗</a></h2><div class="vacioTxt" id="puertosNota" role="status">Consultando restricciones…</div><div class="puertos-lista" id="listaPuertos"></div></section>
+    <section class="card" id="estaciones"><h2><span id="tEst">Estaciones</span> <a href="dashboard.html">Desarrollo →</a></h2><div class="est" id="listaEst"></div></section>
     <section class="card"><h2>Condiciones actuales <select id="selEst" aria-label="Estación"></select></h2><div class="tiles" id="cond"></div><div class="vacioTxt" id="condNota" style="margin-top:8px"></div></section>
     <section class="card" id="pronostico"><h2>Pronóstico marítimo <a href="pronosticos.html">Ver todos →</a></h2>
       <div class="tabs" id="tabsPron"><button type="button" data-t="bahia" class="on">Bahías</button><button type="button" data-t="zona">Zonas costeras</button><button type="button" data-t="alta">Alta mar</button></div>
@@ -473,7 +473,7 @@ const capaCasoSAR = (() => {
       .bindPopup(`<b>${escH(c.nombre || 'Caso SAR')}</b> · <span style="color:${col};font-weight:700">${fn}</span><br>${dm(c.lat, 'N', 'S')} · ${dm(c.lon, 'E', 'W')}${c.hora ? '<br>Incidente: ' + escH(c.hora.replace('T', ' ')) : ''}${c.notas ? `<div style="margin-top:6px;max-width:260px;white-space:pre-wrap;font-size:12px">${escH(c.notas.length > 280 ? c.notas.slice(0, 280) + '…' : c.notas)}</div>` : ''}<br><a href="dashboard.html?caso=${encodeURIComponent(c.id || '')}">Abrir ficha en Desarrollo →</a>`);
   }));
 })();
-const CAPAS = [...(capaCasoSAR ? [['Casos SAR (marcados en Desarrollo)', capaCasoSAR, true]] : []), ['Viento GFS (color)', capaViento, false], ['Viento ECMWF 9 km (costa)', capaECMWF, false], ['Oleaje WW3', capaWW3, false], ['Temperatura del mar (MUR 1 km)', capaSST, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, true], ['Puertos con restricción (SITPORT)', capaPuertos, false]  /* SITPORT caído (503) desde 03-11-2026: volver a true cuando se normalice */, ['Boyas', capaBoyas, false]];
+const CAPAS = [...(capaCasoSAR ? [['Casos SAR (marcados en Desarrollo)', capaCasoSAR, true]] : []), ['Viento GFS (color)', capaViento, false], ['Viento ECMWF 9 km (costa)', capaECMWF, false], ['Oleaje WW3', capaWW3, false], ['Temperatura del mar (MUR 1 km)', capaSST, false], ['Viento GFS (flechas)', capaFlechas, false], ['Avisos vigentes y próximos', capaAv, true], ['METAREA XV', MET, true],  ['Estaciones', capaEst, false], ['Puertos con restricción (SITPORT)', capaPuertos, true], ['Boyas', capaBoyas, false]];
 (function () {
   const pop = document.getElementById('capasPop');
   pop.innerHTML = '<div class="t">Capas</div>' + CAPAS.map(([n], i) => `<label><input type="checkbox" data-i="${i}"${CAPAS[i][2] ? ' checked' : ''}> ${escH(n)}</label>`).join('') +
