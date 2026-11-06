@@ -155,9 +155,11 @@ function crearTrombas(L, map, h) {
     if (k === '__todos') {
       const lista = Object.values(avs.avisos).filter(a => a.emision || a.durante);
       const med = (arr) => { const x = arr.filter(v => v != null).sort((a, b) => a - b); return x.length ? x[Math.floor((x.length - 1) / 2)] : null; };
-      adet.innerHTML = `<p class="mar-ayuda">Mediana, entre ${lista.length} avisos, de la mediana de cada aviso (al emitir si se conoce la hora de emisión; si no, durante la vigencia); a su lado, la de los días de referencia.</p>
-        <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Avisos</th><th>Referencias</th></tr></thead><tbody>` +
-        VARS_AV.map(([v, t, u, d]) => `<tr><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${fmt(med(lista.map(a => (a.emision || a.durante).estad[v]?.[1])), d)}</td><td>${fmt(med(lista.filter(a => a.referencia).map(a => a.referencia.estad[v]?.[1])), d)}</td></tr>`).join('') +
+      const con = lista.filter(a => a.observadas && a.observadas.length), sin = lista.filter(a => !(a.observadas && a.observadas.length));
+      const val = a => (a.durante || a.emision);
+      adet.innerHTML = `<p class="mar-ayuda">Mediana, entre los avisos de cada grupo, de la mediana del área de cada aviso (durante la vigencia; si aún no termina, al emitir). "Con tromba" = avisos con al menos una tromba registrada en prensa o confirmada por la Armada; "sin registro" no significa que no hubo trombas.</p>
+        <div class="ev-tw"><table class="ev-tabla tr-at"><thead><tr><th>Parámetro</th><th>Con tromba <small>(${con.length})</small></th><th>Sin registro <small>(${sin.length})</small></th><th>Referencias</th></tr></thead><tbody>` +
+        VARS_AV.map(([v, t, u, d]) => `<tr><th>${t}${u ? ` <small>${u}</small>` : ''}</th><td>${fmt(med(con.map(a => val(a).estad[v]?.[1])), d)}</td><td>${fmt(med(sin.map(a => val(a).estad[v]?.[1])), d)}</td><td>${fmt(med(lista.filter(a => a.referencia).map(a => a.referencia.estad[v]?.[1])), d)}</td></tr>`).join('') +
         '</tbody></table></div>';
       return;
     }

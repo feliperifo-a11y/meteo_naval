@@ -195,7 +195,7 @@ def main():
         avisos.append({"codigo": h.get("codigo"), "tipo": "Aviso especial · trombas marinas", "sector": h.get("sector"),
                        "publicado": h.get("publicado"), "resumen": h.get("situacion", ""), "url": (h.get("urls") or [None])[0],
                        "fuente": h.get("fuente"), "centro": h.get("centro"), "urls": h.get("urls"), "nota_aviso": h.get("nota"),
-                       "observadas": h.get("observadas"), "historico": True,
+                       "observadas": h.get("observadas"), "busqueda_prensa": h.get("busqueda_prensa"), "historico": True,
                        "zonas": [{"areas": zs, "north": h["norte"], "south": h["sur"], "desde": iso(d0), "hasta": iso(d1)}]})
     ahora = datetime.now(timezone.utc)
     cambios = False
@@ -222,7 +222,7 @@ def main():
         reg = arch["avisos"].setdefault(clave, {})
         if a.get("historico") and reg.get("fuente") == "oficial" and not a.get("codigo"):
             continue
-        for k in ("fuente", "centro", "urls", "observadas", "nota_aviso"):
+        for k in ("fuente", "centro", "urls", "observadas", "nota_aviso", "busqueda_prensa"):
             if a.get(k) is not None:
                 reg[k] = a[k]
         reg.update({"codigo": a.get("codigo"), "tipo": a.get("tipo"), "sector": a.get("sector"), "publicado": a.get("publicado"),
