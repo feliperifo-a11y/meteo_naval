@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visor de hielo SHN y AMSR2</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--fondo:#0b1a2e;--panel:#10243d;--tinta:#e8f1fa;--tenue:#8fa7bf;--linea:#1d3a58;--acento:#2f8cff;--aviso:#f2a900}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fondo);color:var(--tinta);display:grid;grid-template-columns:360px 1fr;height:100vh}
+aside{overflow:auto;padding:14px 16px;border-right:1px solid var(--linea);background:var(--panel)}
+h1{font-size:17px;margin:0 0 2px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--tenue);margin:18px 0 6px}
+.sub{color:var(--tenue);font-size:12.5px}.aviso{color:var(--aviso);font-size:12px;margin:6px 0 0}
+label{display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer}
+.ley{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12px;margin:4px 0 2px 24px}.ley span{display:inline-flex;align-items:center;gap:5px}
+.ley i{width:13px;height:10px;border-radius:2px;display:inline-block}
+table{border-collapse:collapse;font-size:11.5px;width:100%;margin-top:6px}th,td{border:1px solid var(--linea);padding:3px 4px;text-align:right}
+th{color:var(--tenue);font-weight:600}td.d{background:rgba(47,140,255,.25);font-weight:700}th.f{text-align:left}
+.nota{font-size:11.5px;color:var(--tenue)}#map{height:100vh}
+.leaflet-popup-content{font-size:13px}
+@media(max-width:800px){body{grid-template-columns:1fr;grid-template-rows:auto 60vh}aside{max-height:40vh}#map{height:60vh}}
+</style>
+</head>
+<body>
+<aside>
+  <h1>Hielo: SHN frente a AMSR2</h1>
+  <div class="sub" id="cab">–</div>
+  <p class="aviso">Uso interno. Las cartas del SHN son producto de ese servicio (todos los derechos reservados); no publicar ni compartir.</p>
+  <h2>Carta del SHN (analista)</h2>
+  <div id="capasShn"></div>
+  <h2>AMSR2 · Universidad de Bremen (automático)</h2>
+  <div id="capasAmsr"></div>
+  <label>Opacidad <input type="range" id="opac" min="20" max="100" value="70"></label>
+  <h2>Concordancia de concentración</h2>
+  <div id="tabla" class="nota">–</div>
+</aside>
+<div id="map"></div>
+<script>
+const D = /*DATOS*/null;
+const map = L.map('map', { zoomSnap: 0.5 }).setView([-64, -55], 4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap, © CARTO', maxZoom: 10 }).addTo(map);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const fecha = f => f ? new Date(f + 'T12:00:00Z').toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '–';
+let opac = 0.7;
+const capas = [];
+
+function fila(box, nombre, capa, on, leyenda) {
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}> ${esc(nombre)}`;
+  box.appendChild(l);
+  let ley = null;
+  if (leyenda) { ley = document.createElement('div'); ley.className = 'ley'; ley.innerHTML = leyenda; ley.hidden = !on; box.appendChild(ley); }
+  l.querySelector('input').onchange = e => { e.target.checked ? capa.addTo(map) : map.removeLayer(capa); if (ley) ley.hidden = !e.target.checked; };
+  if (on) capa.addTo(map);
+  capas.push(capa);
+}
+const leyenda = pares => pares.map(([n, c]) => `<span><i style="background:${c}"></i>${esc(n)}</span>`).join('');
+const popupShn = (p, extra) => `<b>SHN</b>${p.sa_txt ? `<br>Estado: ${esc(p.sa_txt)} (SA ${esc(p.sa)})` : ''}${p.ct_txt ? `<br>Concentración: ${esc(p.ct_txt)} (CT ${esc(p.ct)})` : ''}${extra || ''}`;
+
+function iniciar() {
+  if (!D) { document.getElementById('cab').textContent = 'Sin datos.'; return; }
+  document.getElementById('cab').textContent = `Carta del ${fecha(D.fecha)} · generado ${D.generado}`;
+  const shnBox = document.getElementById('capasShn'), amBox = document.getElementById('capasAmsr');
+  const sd = D.shn.estados_desarrollo, co = D.shn.concentracion, bo = D.shn.borde;
+  if (sd) {
+    const usados = [...new Set(sd.geojson.features.map(f => f.properties.sa))].filter(k => D.sa[k]);
+    fila(shnBox, `Estado de desarrollo (${fecha(sd.fecha)})`,
+      L.geoJSON(sd.geojson, { style: f => ({ stroke: false, fillColor: f.properties.col_sa, fillOpacity: opac }), onEachFeature: (f, c) => c.bindPopup(popupShn(f.properties)) }),
+      true, leyenda(usados.map(k => D.sa[k])));
+    fila(shnBox, 'Concentración según la carta de estados',
+      L.geoJSON(sd.geojson, { style: f => ({ stroke: false, fillColor: f.properties.col_ct, fillOpacity: opac }), onEachFeature: (f, c) => c.bindPopup(popupShn(f.properties)) }),
+      false, leyenda(D.clases.slice(1).map(c => [c[1], c[2]])));
+  }
+  if (co) fila(shnBox, `Carta de concentración (${fecha(co.fecha)})`,
+    L.geoJSON(co.geojson, { style: f => ({ stroke: false, fillColor: f.properties.col_ct, fillOpacity: opac }), onEachFeature: (f, c) => c.bindPopup(popupShn(f.properties)) }), false);
+  if (bo) fila(shnBox, `Borde de hielo (${fecha(bo.fecha)})`,
+    L.geoJSON(bo.geojson, { style: { color: '#ffffff', weight: 2.2, dashArray: '6 4' }, interactive: false }), true, leyenda([['Borde SHN', '#ffffff']]));
+  if (!sd && !co && !bo) shnBox.innerHTML = '<p class="nota">No hay cartas del SHN archivadas.</p>';
+
+  const A = D.amsr2;
+  if (A) {
+    fila(amBox, `Concentración AMSR2 (${fecha(A.fecha)})`,
+      L.geoJSON(A.zonas, { style: f => ({ stroke: false, fillColor: f.properties.color, fillOpacity: opac }), onEachFeature: (f, c) => c.bindPopup(`<b>AMSR2</b><br>${esc(f.properties.nombre)} (${f.properties.min}–${f.properties.max} %)`) }),
+      false, leyenda(A.clases.map(c => [c.nombre, c.color])));
+    fila(amBox, 'Borde AMSR2 (15 %)', L.geoJSON(A.borde, { style: { color: '#ff3b30', weight: 2 }, interactive: false }), true, leyenda([['Borde AMSR2', '#ff3b30']]));
+  } else amBox.innerHTML = '<p class="nota">No hay AMSR2 archivado para la fecha de la carta.</p>';
+
+  const T = D.tabla;
+  if (T) {
+    let h = `<p>Acuerdo en la misma clase: <b>${T.acuerdo_pct} %</b> de ${T.total_km2.toLocaleString('es-CL')} km² de mar.</p><table><tr><th class="f">SHN ↓ · AMSR2 →</th>`;
+    h += T.nombres.map((n, j) => `<th title="${esc(n)}">${['Agua', '1–3', '4–6', '7–8', '9–10'][j]}</th>`).join('') + '</tr>';
+    T.matriz.forEach((r, i) => { h += `<tr><th class="f">${esc(T.nombres[i])}</th>` + r.map((v, j) => `<td class="${i === j ? 'd' : ''}">${v.toLocaleString('es-CL')}</td>`).join('') + '</tr>'; });
+    h += '</table><p class="nota">Superficie en km² (proyección de igual área), entre 85° W y 20° W y de 52° S a 78° S, sin tierra. Fila: clase de concentración de la carta del SHN; columna: clase AMSR2 en el mismo lugar. La diagonal es el acuerdo.</p>';
+    document.getElementById('tabla').innerHTML = h;
+  } else document.getElementById('tabla').textContent = 'Se calcula cuando hay carta de estados de desarrollo y AMSR2 del mismo día.';
+
+  document.getElementById('opac').oninput = e => {
+    opac = e.target.value / 100;
+    capas.forEach(c => c.setStyle && c.eachLayer(l => l.options.fillOpacity !== undefined && l.setStyle({ fillOpacity: opac })));
+  };
+}
+iniciar();
+</script>
+</body>
+</html>
