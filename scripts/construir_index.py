@@ -47,7 +47,7 @@ datos = "\n".join([
 ])
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
-version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "plantilla_monan.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "hielo_amsr2.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "") + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "") + leer(B / "viento_alerta.js", "") + leer(B / "viento_alerta.css", "") + leer(B / "evaluacion_ia.js", "") + leer(B / "evaluacion_ia.css", "") + leer(B / "borrador_boletin.js", "") + leer(B / "umbrales_viento.js", "") + leer(B / "trombas.js", "") + leer(B / "trombas.css", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
@@ -108,6 +108,12 @@ html_wrfia = (leer(B / "plantilla_wrfia.html").replace("/*LEAFLET_CSS*/", leer(B
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
 (R / "wrfia.html").write_text(preparar_app(html_wrfia), encoding="utf-8")
 print(f"wrfia.html: {len(html_wrfia) / 1024:.0f} KB")
+
+# Página MONAN 3 km: corrida propia (repositorio trombas_marinas), comparación con el pronóstico local y verificación.
+html_monan = (leer(B / "plantilla_monan.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
+              .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
+(R / "monan.html").write_text(preparar_app(html_monan), encoding="utf-8")
+print(f"monan.html: {len(html_monan) / 1024:.0f} KB")
 
 # Página de pronósticos marítimos publicados (bahías y áreas): misma estructura que la de WRF + IA.
 html_pron = (leer(B / "plantilla_pron.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))

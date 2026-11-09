@@ -183,6 +183,15 @@ jobs:
           python scripts/evaluacion_ia.py
           python scripts/comparar_borradores.py
 
+      - name: Verificación MONAN 3 km contra estaciones (corrida propia, repositorio trombas_marinas)
+        # Trae el historial de data/monan_campos.json de trombas_marinas y compara cada día con las estaciones de la malla.
+        continue-on-error: true
+        timeout-minutes: 6
+        run: |
+          rm -rf /tmp/trombas_marinas
+          git clone --quiet --filter=blob:none --shallow-since=2026-10-01 "https://github.com/${GITHUB_REPOSITORY%%/*}/trombas_marinas.git" /tmp/trombas_marinas || true
+          MONAN_REPO=/tmp/trombas_marinas python scripts/verificacion_monan.py
+
       - name: Control de calidad de estaciones (Isolation Forest, una vez por hora)
         # Usa el historial de git de data/estaciones.json (30 días) que trajo el paso anterior.
         continue-on-error: true
@@ -244,7 +253,7 @@ jobs:
         run: |
           python scripts/construir_index.py
           mkdir -p _site/data/geo
-          cp index.html dashboard.html carta.html ia.html wrfia.html pronosticos.html hielos.html nuevo.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
+          cp index.html dashboard.html carta.html ia.html wrfia.html monan.html pronosticos.html hielos.html nuevo.html version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
           cp -r app _site/
           mkdir -p _site/media && cp media/meteoia_intro.mp4 media/meteoia_intro.jpg _site/media/
           cp data/geo/talcahuano.geojson data/geo/talcahuano.kml _site/data/geo/
@@ -261,6 +270,7 @@ jobs:
           [ -f data/evaluacion/resumen.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/resumen.json _site/data/evaluacion/ || true
           [ -f data/evaluacion/entradas_borrador.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/entradas_borrador.json _site/data/evaluacion/ || true
           [ -f data/evaluacion/borradores_comparacion.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/borradores_comparacion.json _site/data/evaluacion/ || true
+          [ -f data/evaluacion/monan.json ] && mkdir -p _site/data/evaluacion && cp data/evaluacion/monan.json _site/data/evaluacion/ || true
           [ -f data/borradores.json ] && cp data/borradores.json _site/data/ || true
           for f in estaciones_qc.json viento_alerta.json marejadas_alerta.json hielo_amsr2.json marejadas_uv.json wrf_servimet.json marejadas_uv_valparaiso.json talcahuano_observaciones.json carta.json carta_isobaras.json carta_frentes.png carta_frentes_polar.png carta.jpg satelite.json satelite_ir.png satelite_polar.png satelite_vis.json satelite_vis.png satelite_vis_polar.png restricciones.json pronosticos.json hielo.json hielo_conc.png hielo_etapa.png hielo_bremen.png satelite_hielo.png satelite_vis_hielo.png boyas_estado.json viento_gfs.json trombas.json trombas_prob.json trombas_avisos.json fondo_polar.jpg fondo_polar.json fondo_hielo.jpg fondo_hielo.json; do [ -f data/$f ] && cp data/$f _site/data/ || true; done
 
