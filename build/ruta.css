@@ -1,0 +1,11 @@
+/* Ruta de navegación (página Desarrollo) */
+#mapWrap .ruta-card{border-top:4px solid #ff6a00}
+#mapWrap .ruta-card .sar-form input[name=a],#mapWrap .ruta-card .sar-form input[name=b]{width:190px}
+#mapWrap .ruta-card .sar-form input[name=hora]{width:185px}
+.ruta-pto{width:22px;height:22px;border-radius:50%;background:#ff6a00;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px #0007;font:700 11px/18px system-ui,sans-serif;text-align:center;box-sizing:border-box;cursor:grab}
+.ruta-pto.ini{background:#1f6fb2}.ruta-pto.fin{background:#0f3b66}
+.ruta-resumen p{margin:4px 0}
+.ruta-perfil{width:100%;height:auto;margin-top:8px;color:var(--muted,#5a6b7c);background:var(--bg,transparent);border-radius:6px}
+.ruta-tabla td,.ruta-tabla th{white-space:nowrap}
+.ruta-tabla small{opacity:.75}
+.ruta-sem{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}

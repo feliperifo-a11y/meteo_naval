@@ -34,6 +34,7 @@
 /*MAREJADAS_ALERTA_CSS*/
 /*VIENTO_ALERTA_CSS*/
 /*EVALUACION_IA_CSS*/
+/*RUTA_CSS*/
 /*TROMBAS_CSS*/
 </style>
 <style>
@@ -330,7 +331,7 @@ dialog button{border-color:var(--line)}
     <button type="button" class="btnCarta btnBorr" id="btnBorrador" title="Borrador del boletín de bahía de las 16:00 redactado por IA a partir del WRF + IA y el oleaje WW3, imitando al especialista">BORRADOR BOLETÍN</button>
     <button type="button" class="btnCarta btnBorr" id="btnQC" title="Control de calidad de las estaciones con aprendizaje automático (Isolation Forest): lecturas sospechosas y sensores pegados en las últimas 72 h">CONTROL DE CALIDAD</button>
     <button type="button" class="btnCarta btnTromba" id="btnTrombas" hidden title="Perspectiva experimental de ambientes favorables a trombas marinas a 72 h (STP, SHERBE y NST sobre el GFS) y ficha técnica con umbrales y referencias">TROMBAS</button>
-    <button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
+    <button type="button" class="btnCarta btnSAR" id="btnRuta" title="Condiciones meteorológicas y oceanográficas a lo largo de una ruta: zarpe, puntos intermedios y destino, a la velocidad de la embarcación">RUTA</button><button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
   </div>
@@ -1566,6 +1567,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*EVALUACION_IA_JS*/
 /*BORRADOR_BOLETIN_JS*/
 /*QC_ESTACIONES_JS*/
+/*RUTA_JS*/
 /*TROMBAS_JS*/
 
 // ============================ Panel de capas ============================
@@ -1810,6 +1812,7 @@ const evalIA = crearEvaluacionIA(L, map, { escH });
 const borrador = crearBorradorBoletin(L, map, { escH });
 const trombas = crearTrombas(L, map, { escH });
 const qcEst = crearQCEstaciones(L, map, { escH });
+const ruta = crearRuta(L, map, { escH, nf, estaciones: () => ESTACIONES, evaluar, nombreEst, avisos: () => AV_ORD, estadoAviso, sitport: async () => PUERTO_DATOS || (PUERTO_DATOS = await leerRestricciones()), bahiaPos: () => BAHIA_POS, txtSitport });
 function cerrarPaneles(salvo) {
   if (salvo !== 'sar') { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } }
   if (salvo !== 'mar' && alertaMar.abierto) alertaMar.cerrar();
@@ -1818,12 +1821,14 @@ function cerrarPaneles(salvo) {
   if (salvo !== 'borr' && borrador.abierto) borrador.cerrar();
   if (salvo !== 'tromba' && trombas.abierto) trombas.cerrar();
   if (salvo !== 'qc' && qcEst.abierto) qcEst.cerrar();
+  if (salvo !== 'ruta' && ruta.abierto) ruta.cerrar();
 }
 document.getElementById('btnCasoSAR').onclick = () => { cerrarPaneles('sar'); casoSAR.abrir(); };
 document.getElementById('btnAlertaMar').onclick = () => { cerrarPaneles('mar'); alertaMar.abrir(); };
 document.getElementById('btnAlertaViento').onclick = () => { cerrarPaneles('vto'); alertaVto.abrir(); };
 document.getElementById('btnEvaluacionIA').onclick = () => { cerrarPaneles('eval'); evalIA.abrir(); };
 document.getElementById('btnBorrador').onclick = () => { cerrarPaneles('borr'); borrador.abrir(); };
+document.getElementById('btnRuta').onclick = () => { cerrarPaneles('ruta'); ruta.abrir(); };
 document.getElementById('btnQC').onclick = () => { cerrarPaneles('qc'); qcEst.abrir(); };
 document.getElementById('btnTrombas').onclick = () => { cerrarPaneles('tromba'); trombas.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
