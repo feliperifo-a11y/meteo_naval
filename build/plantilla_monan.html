@@ -208,7 +208,9 @@ function pintarComparacion() {
   const b = BAH.find(x => x.codigo === SELB) || BAH[0]; SELB = b.codigo;
   const wrf = WRF && (WRF.bahias || []).find(x => x.nombre === b.nombre);
   const bor = BOR && BOR.fecha_base && (BOR.bahias || []).find(x => x.codigo === b.codigo);
-  const fechas = [...new Set(M.plazos.map(p => diaCL(new Date(p.valida.replace('Z', ':00Z')))))].filter(f => resumenDia(b.celda, f));
+  const hoy = diaCL(new Date());
+  // Los días anteriores a hoy ya no están en el boletín vigente ni en la corrida WRF actual: no se comparan
+  const fechas = [...new Set(M.plazos.map(p => diaCL(new Date(p.valida.replace('Z', ':00Z')))))].filter(f => f >= hoy && resumenDia(b.celda, f));
   const dias = fechas.map(f => {
     const r = resumenDia(b.celda, f);
     const of = (b.periodos || []).find(q => q.fecha === f && (q.tipo === 'dia' || (q.horario || '').startsWith('08')));
@@ -222,7 +224,7 @@ function pintarComparacion() {
       + '</div>';
   }).join('');
   el.innerHTML = `<h3>Comparación con el pronóstico local</h3><div class="tabs" role="tablist">${BAH.map(x => `<button type="button" role="tab" data-c="${escH(x.codigo)}" aria-selected="${x.codigo === SELB}">${escH(x.nombre)}</button>`).join('')}</div>`
-    + `<p class="nota">MONAN en la celda más cercana al punto de la bahía (${nf(b.km, 1)} km), entre las 08:00 y las 20:00. Boletín oficial emitido ${escH(b.emitido || '–')}.</p>${dias || '<div class="vac">La corrida no cubre días completos.</div>'}`;
+    + `<p class="nota">MONAN en la celda más cercana al punto de la bahía (${nf(b.km, 1)} km), entre las 08:00 y las 20:00. Boletín oficial emitido ${escH(b.emitido || '–')}.</p>${dias || '<div class="vac">La corrida de MONAN publicada no cubre días desde hoy en adelante; la comparación aparece con la próxima corrida.</div>'}`;
   el.querySelectorAll('.tabs button').forEach(x => x.onclick = () => { SELB = x.dataset.c; pintarComparacion(); const bb = BAH.find(y => y.codigo === SELB); if (bb) map.panTo(bb.pos); });
 }
 
@@ -242,7 +244,8 @@ function pintarVerificacion(v) {
 async function cargar() {
   try { M = await leerJSON(FUENTE_MONAN); } catch (e) { document.getElementById('sub').textContent = 'No se pudo leer la corrida de MONAN.'; return; }
   const ini = new Date(M.corrida.replace(/T(\d\d)Z$/, 'T$1:00:00Z')), ult = M.plazos[M.plazos.length - 1];
-  document.getElementById('sub').textContent = `Corrida ${M.corrida.replace('T', ' ')} · ${M.plazos.length} plazos cada 3 h hasta +${ult.fhr} h · ${M.fuente}`;
+  const edadH = (Date.now() - ini) / 3600e3;
+  document.getElementById('sub').innerHTML = (edadH > 30 ? `<b style="color:#ffb35c">⚠ Corrida de hace ${Math.round(edadH)} h, aún no llega una más reciente.</b> ` : '') + escH(`Corrida ${M.corrida.replace('T', ' ')} · ${M.plazos.length} plazos cada 3 h hasta +${ult.fhr} h · ${M.fuente}`);
   construirMalla();
   map.fitBounds(LIM, { padding: [20, 20] });
   const sel = document.getElementById('tSel'); sel.max = M.plazos.length - 1;
