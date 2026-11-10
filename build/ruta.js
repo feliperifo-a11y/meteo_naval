@@ -5,6 +5,8 @@
 // de viento 5 días y marejadas 10 días de MeteoIA), restricciones SITPORT en el puerto de zarpe y de llegada y estaciones
 // cercanas. Semáforo por tramo con umbrales editables (iguales para toda embarcación: solo importa la velocidad).
 // Usa funciones del módulo CASO SAR (sarMillas, sarRumbo, sarMover, sarDM, sarLeerCoord, sarCercaGeom, sarCompas, sarFmt…).
+// Puertos y bahías de SITPORT (sin lagos ni ríos), de norte a sur: [ID de bahía SITPORT, nombre]. La posición es BAHIA_POS.
+const RUTA_PUERTOS = [[71,"Bahía de Arica"],[204,"Pisagua"],[72,"Bahía de Iquique"],[196,"Borde Costero Norte Patache"],[195,"Patillo"],[73,"Patache"],[197,"Borde Costero Sur Patache"],[74,"Bahía Algodonales"],[236,"Caleta Viuda"],[76,"Caleta Michilla"],[75,"Bahía Mejillones del Sur"],[77,"Bahía Moreno (Antofagasta)"],[78,"Caleta Coloso"],[79,"Taltal"],[172,"Bahía Pan de Azúcar"],[80,"Bahía Chañaral"],[83,"Sector Punta Totoralillo"],[81,"Bahía Caldera"],[82,"Bahía Calderilla"],[89,"Isla de Pascua"],[157,"Puerto Carrizal Bajo"],[84,"Bahía Puerto Huasco"],[158,"Caleta Chañaral y Ensenada Gaviota"],[202,"Cruz Grande"],[206,"La Higuera"],[85,"Bahía Coquimbo"],[86,"Bahía Herradura de Guayacán"],[150,"Guanaqueros"],[87,"Tongoy"],[151,"Barnes"],[88,"Bahía Conchalí"],[180,"Bahía Pichidangui"],[219,"Sector Norte Quintero"],[91,"Bahía de Quintero"],[173,"Bahía Concón"],[92,"Bahía de Valparaíso"],[174,"Bahía Rada Quintay"],[94,"Bahía Algarrobo"],[215,"El Quisco"],[93,"Puerto de San Antonio"],[90,"Isla Robinson Crusoe"],[95,"Pichilemu"],[103,"Bahía Constitución"],[97,"Bahía Concepción - Lirquén"],[98,"Bahía Concepción - Talcahuano"],[99,"Bahía San Vicente"],[198,"Sector Costero Península de Hualpen"],[100,"Bahía Coronel"],[102,"Lota"],[101,"Lebu"],[143,"Carahue - Borde Costero"],[208,"Borde Costero-Valdivia"],[107,"Bahía Corral"],[170,"Sector Chaihuín"],[148,"Ensenada Estaquilla"],[109,"Puerto Montt"],[152,"Cochamo"],[216,"Canal Tenglo"],[110,"Bahía Chincui"],[112,"Bahía Maullín"],[233,"Seno Reloncavi"],[147,"Rada Manzano"],[149,"Rada de Carelmapu"],[113,"Bahía de Calbuco"],[114,"Canal Chacao Sector Pargua y Punta Coronel"],[213,"Canal Chacao"],[232,"San José-Caicaen"],[118,"Bahía Ancud y Canal Chacao"],[214,"Bahía Ancud"],[185,"Ensenada Rolecha"],[115,"Canal Hornopirén"],[183,"Estero Pichicolo"],[184,"Ensenada Hualaihué"],[120,"Puerto Quemchi"],[181,"Canal Cholgo"],[182,"Estero Comau"],[186,"Sector Ayacara"],[163,"Canal Dalcahue"],[187,"Sector Buill"],[122,"Achao"],[116,"Castro"],[235,"Chequian"],[205,"Puqueldón (Isla Lemuy)"],[119,"Chonchi"],[155,"Queilen"],[121,"Chaitén"],[117,"Bahía Quellón"],[251,"Canal Golfo Corcovado (Norte)"],[175,"Sector Repolla Alto"],[124,"Melinka"],[176,"Sector Repolla Bajo"],[252,"Canal Moraleda (Este)"],[253,"Canal Chaffers Norte"],[255,"Canal Pérez Norte"],[254,"Canal Chaffers Sur"],[123,"Puerto Cisnes"],[238,"Sector Canal Moraleda"],[256,"Canal Pérez Sur"],[241,"Sector Canal Goñi y Canal Ninualac"],[244,"Sector Canal Tránsito"],[125,"Sector Bahía de Puerto Aguirre"],[239,"Sector Canal Ferronave y Canal Devia"],[240,"Sector Canal Pilcomayo y Canal Rodriguez"],[228,"Canal Vicuña"],[242,"Sector Canal Carrera del Chivato y Canal Cuchi"],[220,"Fiordo Aysen"],[227,"Canal Williams"],[243,"Sector Canal Darwin"],[225,"Canal Utarupa"],[126,"Bahía Chacabuco"],[224,"Canal Errázuriz"],[223,"Canal Costa y Elefantes"],[221,"Estero Quitralco"],[226,"Boca Wickham"],[222,"Estero Cupquelan"],[127,"Baker"],[129,"Puerto Edén"],[154,"Isla Guarello"],[130,"Puerto Natales"],[156,"Primera Angostura"],[165,"Skyring"],[131,"Bahía Gregorio"],[132,"Bahía Clarencia"],[135,"Cabo Negro"],[200,"Laredo"],[136,"Seno Otway"],[133,"Bahía Catalina"],[134,"Punta Arenas"],[137,"Bahía Chilota"],[259,"Bahía Caleta 2 de Mayo Yendegaia"],[138,"Puerto Williams"],[260,"Bahía Puerto Toro"],[199,"Cabo de Hornos"],[139,"Bahía Fildes"],[231,"Bahía Chile"],[140,"Bahía Paraíso"]];
 const RUTA_UMBRALES_BASE = { vientoA: 22, vientoR: 34, olaA: 2.5, olaR: 4, visA: 2, visR: 0.5 };   // kt · m · mn (Beaufort 6 y 8)
 function crearRuta(L, map, ctx) {
   const { escH, nf } = ctx;
@@ -12,21 +14,28 @@ function crearRuta(L, map, ctx) {
   try { const g = JSON.parse(localStorage.getItem('meteoia_ruta_umbrales') || 'null'); if (g) umb = { ...umb, ...g }; } catch (e) { /* sin almacenamiento */ }
   const guardarUmb = () => { try { localStorage.setItem('meteoia_ruta_umbrales', JSON.stringify(umb)); } catch (e) { /* sin almacenamiento */ } };
   let pts = [], modo = null, token = 0, ultimo = null;
-  try { const g = JSON.parse(localStorage.getItem('meteoia_ruta') || 'null'); if (g && Array.isArray(g.pts)) pts = g.pts; } catch (e) { /* sin almacenamiento */ }
+  // Puertos SITPORT: se eligen por nombre en los campos de zarpe y recalada
+  const normP = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const POS_B = ctx.bahiaPos() || {};
+  const PUERTOS = RUTA_PUERTOS.filter(([id]) => POS_B[id]).map(([id, n]) => ({ id, n, p: POS_B[id], k: normP(n) }));
+  const puertoPorId = id => PUERTOS.find(x => x.id === id) || null;
+  let sel = { a: null, b: null };   // puerto elegido para zarpe (a) y recalada (b)
+  try { const g = JSON.parse(localStorage.getItem('meteoia_ruta') || 'null'); if (g && Array.isArray(g.pts)) { pts = g.pts; sel = { a: puertoPorId(g.za), b: puertoPorId(g.re) }; } } catch (e) { /* sin almacenamiento */ }
 
   const card = document.createElement('section');
   card.className = 'card sar-card ruta-card'; card.id = 'rutaNav'; card.hidden = true;
   card.innerHTML = `<div class="sar-cab"><h2>Ruta de navegación</h2><span class="sar-etq">Herramienta de apoyo en validación</span><button type="button" class="sar-min" aria-label="Minimizar ficha" title="Minimizar / ampliar">▾</button><button type="button" class="sar-cerrar" aria-label="Cerrar ficha">✕</button></div>
     <form class="sar-form ruta-form">
-      <label>Zarpe (lat, lon)<input name="a" placeholder="33 01,5 S  71 38,0 W" autocomplete="off"></label>
-      <label>Destino (lat, lon)<input name="b" placeholder="36 42,0 S  73 07,0 W" autocomplete="off"></label>
+      <label>Zarpe (puerto o lat, lon)<input name="a" list="rutaPuertos" placeholder="Puerto o 33 01,5 S  71 38,0 W" autocomplete="off"></label>
+      <label>Recalada (puerto o lat, lon)<input name="b" list="rutaPuertos" placeholder="Puerto o 36 42,0 S  73 07,0 W" autocomplete="off"></label>
+      <datalist id="rutaPuertos"></datalist>
       <label>Zarpe (hora Chile)<input name="hora" type="datetime-local"></label>
       <label>Velocidad (kt)<input name="vel" inputmode="decimal" value="10" style="width:80px;min-width:80px"></label>
       <button type="submit">Calcular</button>
       <button type="button" class="sar-elegir ruta-elegir">Marcar en el mapa</button>
       <button type="button" class="sar-borrar ruta-borrar">Limpiar</button>
     </form>
-    <p class="sar-ayuda ruta-ayuda">"Marcar en el mapa": primer clic = zarpe, cada clic siguiente agrega un punto de la ruta; el último es el destino. Termina con <b>Enter</b>, doble clic o el botón "Terminar ruta" (Esc cancela). Los puntos se pueden arrastrar. También puedes escribir zarpe y destino (grados y minutos o decimales; S y W por defecto).</p>
+    <p class="sar-ayuda ruta-ayuda">"Marcar en el mapa": primer clic = zarpe, cada clic siguiente agrega un punto de la ruta; el último es la recalada. Termina con <b>Enter</b>, doble clic o el botón "Terminar ruta" (Esc cancela). Los puntos se pueden arrastrar. También puedes elegir un puerto de SITPORT (escribe parte del nombre: Valparaíso, Fildes, Paraíso…) o escribir coordenadas (grados y minutos o decimales; S y W por defecto).</p>
     <div class="sar-res ruta-res" aria-live="polite"></div>`;
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
@@ -40,7 +49,7 @@ function crearRuta(L, map, ctx) {
   aviso.querySelector('.ruta-fin').onclick = e => { e.stopPropagation(); terminarMarcar(); };
   aviso.querySelector('.ruta-cancelar').onclick = e => { e.stopPropagation(); modoMarcar(false); pts = []; guardar(); sincForm(); dibujarPuntos(); };
   const avisoTxt = aviso.querySelector('.ruta-aviso-txt');
-  const textoAviso = () => { avisoTxt.textContent = !pts.length ? 'Clic en el mapa: zarpe' : pts.length === 1 ? 'Clic: siguiente punto o destino' : `${pts.length} puntos · clic: otro punto · Enter, doble clic o "Terminar ruta": el último es el destino`; };
+  const textoAviso = () => { avisoTxt.textContent = !pts.length ? 'Clic en el mapa: zarpe' : pts.length === 1 ? 'Clic: siguiente punto o recalada' : `${pts.length} puntos · clic: otro punto · Enter, doble clic o "Terminar ruta": el último es la recalada`; };
   // Coordenadas junto al cursor mientras se marca
   const cursor = document.createElement('div'); cursor.className = 'sar-cursor'; cursor.hidden = true; wrap.appendChild(cursor);
   map.getContainer().addEventListener('mousemove', e => {
@@ -52,7 +61,16 @@ function crearRuta(L, map, ctx) {
   map.getContainer().addEventListener('mouseleave', () => { cursor.hidden = true; });
   card.querySelector('.sar-cerrar').onclick = () => cerrar();
   card.querySelector('.sar-min').onclick = e => { card.classList.toggle('sar-minimizada'); e.currentTarget.textContent = card.classList.contains('sar-minimizada') ? '▴' : '▾'; };
-  const guardar = () => { try { localStorage.setItem('meteoia_ruta', JSON.stringify({ pts })); } catch (e) { /* sin almacenamiento */ } };
+  const guardar = () => { try { localStorage.setItem('meteoia_ruta', JSON.stringify({ pts, za: sel.a && sel.a.id, re: sel.b && sel.b.id })); } catch (e) { /* sin almacenamiento */ } };
+  card.querySelector('#rutaPuertos').innerHTML = PUERTOS.map(x => `<option value="${escH(x.n)}"></option>`).join('');
+  // Busca un puerto por nombre: coincidencia exacta, o única que empiece o contenga el texto
+  function buscarPuerto(t) {
+    const q = normP(t); if (q.length < 3) return null;
+    const unico = c => c.length === 1 ? c[0] : null;
+    return PUERTOS.find(x => x.k === q) || unico(PUERTOS.filter(x => x.k.startsWith(q)))
+      || unico(PUERTOS.filter(x => (' ' + x.k).includes(' ' + q)))   // alguna palabra del nombre empieza así ("paraiso" no confunde con Valparaíso)
+      || unico(PUERTOS.filter(x => x.k.includes(q)));
+  }
   const fmtPos = p => `${sarDM(p[0], 'N', 'S')} ${sarDM(p[1], 'E', 'W')}`;
   form.hora.value = sarHoraLocal(new Date(Date.now() + 3600e3)).slice(0, 16);
 
@@ -66,15 +84,15 @@ function crearRuta(L, map, ctx) {
     dibujarMarcadores();
   }
   function sincForm() {
-    form.a.value = pts[0] ? fmtPos(pts[0]) : '';
-    form.b.value = pts.length > 1 ? fmtPos(pts[pts.length - 1]) : '';
+    form.a.value = sel.a ? sel.a.n : pts[0] ? fmtPos(pts[0]) : '';
+    form.b.value = sel.b ? sel.b.n : pts.length > 1 ? fmtPos(pts[pts.length - 1]) : '';
   }
   function modoMarcar(on) {
     modo = on ? 'marcar' : null; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : ''; if (!on) cursor.hidden = true;
     map.getContainer().classList.toggle('ruta-marcando', on);
     // Pantallas angostas: mientras se marca, la ficha se pliega para dejar libre el mapa
     if (innerWidth <= 1050) { card.classList.toggle('sar-minimizada', on); card.querySelector('.sar-min').textContent = on ? '▴' : '▾'; if (on) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    if (on) { pts = []; ultimo = null; res.innerHTML = ''; dibujarPuntos(); textoAviso(); map.doubleClickZoom.disable(); } else map.doubleClickZoom.enable();
+    if (on) { pts = []; sel = { a: null, b: null }; ultimo = null; res.innerHTML = ''; dibujarPuntos(); textoAviso(); map.doubleClickZoom.disable(); } else map.doubleClickZoom.enable();
   }
   // El clic se captura antes que cualquier capa (costa, zonas, Marejadas UV, WRF, ECMWF y WW3 interceptan los clics del mapa).
   map.getContainer().addEventListener('click', e => {
@@ -100,6 +118,11 @@ function crearRuta(L, map, ctx) {
   }
   card.querySelector('.ruta-elegir').onclick = () => modoMarcar(true);
   card.querySelector('.ruta-borrar').onclick = () => { modoMarcar(false); pts = []; ultimo = null; guardar(); sincForm(); res.innerHTML = ''; grupo.clearLayers(); };
+  // Al elegir un puerto de la lista (o escribir uno completo) se calcula de inmediato si el otro extremo ya está
+  for (const inp of [form.a, form.b]) inp.addEventListener('change', () => {
+    const otro = inp === form.a ? form.b : form.a;
+    if (buscarPuerto(inp.value) && otro.value.trim() && modo !== 'marcar') form.requestSubmit();
+  });
   form.onsubmit = e => {
     e.preventDefault();
     const leer = s => {
@@ -108,8 +131,10 @@ function crearRuta(L, map, ctx) {
       let la, lo; const h = t.match(/^(.*?[NS])\s*,?\s*(.+)$/);
       if (h) { la = h[1]; lo = h[2]; } else { const q = t.split(/\s+|,\s+/).filter(Boolean); if (q.length !== 2) return null; [la, lo] = q; }
       const a = sarLeerCoord(la, true), b = sarLeerCoord(lo, false); return isFinite(a) && isFinite(b) ? [a, b] : null; };
-    const a = leer(form.a.value), b = leer(form.b.value);
-    if (!a || !b) { res.innerHTML = '<p class="sar-error">Revisa las coordenadas de zarpe y destino.</p>'; return; }
+    const pa = buscarPuerto(form.a.value), pb = buscarPuerto(form.b.value);
+    const a = pa ? pa.p : leer(form.a.value), b = pb ? pb.p : leer(form.b.value);
+    if (!a || !b) { ++token; res.innerHTML = `<p class="sar-error">Revisa ${!a && !b ? 'el zarpe y la recalada' : !a ? 'el zarpe' : 'la recalada'}: elige un puerto de la lista o escribe coordenadas.</p>`; return; }
+    sel = { a: pa, b: pb };
     // si las coordenadas escritas cambian, se conservan los puntos intermedios
     const medios = pts.length > 2 ? pts.slice(1, -1) : [];
     pts = [rutaAlMar(a), ...medios, rutaAlMar(b)]; sincForm(); guardar(); calcular();
@@ -222,8 +247,8 @@ function crearRuta(L, map, ctx) {
     const nombres = Object.fromEntries((d.bahias || []).map(b => [String(b.IDBahia), String(b.NMBahia || '').trim()]));
     const por = {}; for (const r of d.restricciones || []) (por[r.bahia] = por[r.bahia] || []).push(r);
     const cerca = p => Object.entries(ctx.bahiaPos()).map(([id, q]) => ({ id, q, mn: sarMillas(p, q) })).filter(x => x.mn <= 12).sort((x, y) => x.mn - y.mn)[0];
-    const uno = p => { const c = cerca(p); if (!c) return null; const lista = por[c.id] || []; return { nombre: nombres[c.id] || (lista[0] && ctx.txtSitport(lista[0].GLBahia)) || 'Bahía N° ' + c.id, mn: c.mn, lista }; };
-    return { zarpe: uno(pts[0]), destino: uno(pts[pts.length - 1]), vivo: d.vivo, actualizado: d.actualizado };
+    const uno = (p, pp) => { const c = pp ? { id: String(pp.id), mn: 0 } : cerca(p); if (!c) return null; const lista = por[c.id] || []; return { nombre: (pp && pp.n) || nombres[c.id] || (lista[0] && ctx.txtSitport(lista[0].GLBahia)) || 'Bahía N° ' + c.id, mn: c.mn, lista }; };
+    return { zarpe: uno(pts[0], sel.a), destino: uno(pts[pts.length - 1], sel.b), vivo: d.vivo, actualizado: d.actualizado };
   }
   function estacionesCerca(muestras) {
     const ahora = Date.now(), out = [];
@@ -273,9 +298,9 @@ function crearRuta(L, map, ctx) {
   function dibujarMarcadores() {
     pts.forEach((p, i) => {
       const fin = i === pts.length - 1 && pts.length > 1, ini = i === 0;
-      const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: '', html: `<div class="ruta-pto ${ini ? 'ini' : fin ? 'fin' : ''}">${ini ? 'Z' : fin ? 'D' : i}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }) })
-        .bindTooltip(ini ? 'Zarpe' : fin ? 'Destino' : 'Punto ' + i).addTo(grupo);
-      m.on('dragend', () => { const q = m.getLatLng(); pts[i] = rutaAlMar([+q.lat.toFixed(4), +q.lng.toFixed(4)]); guardar(); sincForm(); calcular(); });
+      const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: '', html: `<div class="ruta-pto ${ini ? 'ini' : fin ? 'fin' : ''}">${ini ? 'Z' : fin ? 'R' : i}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }) })
+        .bindTooltip(ini ? 'Zarpe' + (sel.a ? ': ' + escH(sel.a.n) : '') : fin ? 'Recalada' + (sel.b ? ': ' + escH(sel.b.n) : '') : 'Punto ' + i).addTo(grupo);
+      m.on('dragend', () => { const q = m.getLatLng(); pts[i] = rutaAlMar([+q.lat.toFixed(4), +q.lng.toFixed(4)]); if (ini) sel.a = null; if (fin) sel.b = null; guardar(); sincForm(); calcular(); });
     });
   }
   function perfil(M) {
@@ -299,7 +324,7 @@ function crearRuta(L, map, ctx) {
       <p>Zarpe ${hf(R.t0)} → llegada estimada <b>${hf(R.eta)}</b></p>
       <p>Condición más exigente en la ruta: <b style="color:${COL[peor]}">${TXT[peor]}</b> · avisos vigentes cruzados: <b>${avisos.length}</b> · avisos probables: <b>${prob.length}</b></p>
       ${R.total > R.recta + 0.5 ? `<p>La ruta bordea la costa para no pasar sobre tierra: ${nf(R.total, 0)} mn por mar (${nf(R.recta, 0)} mn en línea recta entre los puntos marcados).</p>` : ''}
-      ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y el destino' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
+      ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y la recalada' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
       ${perfil(M)}</div>`;
@@ -320,7 +345,7 @@ function crearRuta(L, map, ctx) {
       '<p class="sar-nota">Estimación automática de MeteoIA con los criterios de la PD OPE-07 (viento) y la O.P.I. N° 1107 (marejadas); no son avisos oficiales.</p></div>';
     // Puertos
     const pblq = (t, x) => !x ? `<p><b>${t}:</b> sin bahía SITPORT a menos de 12 mn.</p>` : `<p><b>${t}:</b> ${escH(x.nombre)} · ${x.lista.length ? `<span class="sar-pill sar-V">${x.lista.length} restricci${x.lista.length === 1 ? 'ón' : 'ones'}</span><br><small>${x.lista.map(r => escH(ctx.txtSitport(r.MotivoRestriccion) + (r.NaveRecibe ? ' · ' + ctx.txtSitport(r.NaveRecibe) : ''))).join('<br>')}</small>` : '<span class="sar-pill" style="background:#2e9d57">sin restricciones</span>'}</p>`;
-    h += `<div class="sar-blq"><h3>Puertos (SITPORT)</h3>${pu ? pblq('Zarpe', pu.zarpe) + pblq('Destino', pu.destino) + `<p class="sar-nota">${pu.vivo ? 'Consultado en vivo.' : 'Copia publicada del ' + hf(new Date(pu.actualizado)) + '.'} Restricciones actuales: pueden cambiar antes del zarpe o de la llegada.</p>` : '<p>SITPORT no disponible.</p>'}</div>`;
+    h += `<div class="sar-blq"><h3>Puertos (SITPORT)</h3>${pu ? pblq('Zarpe', pu.zarpe) + pblq('Recalada', pu.destino) + `<p class="sar-nota">${pu.vivo ? 'Consultado en vivo.' : 'Copia publicada del ' + hf(new Date(pu.actualizado)) + '.'} Restricciones actuales: pueden cambiar antes del zarpe o de la llegada.</p>` : '<p>SITPORT no disponible.</p>'}</div>`;
     // Estaciones
     h += `<div class="sar-blq"><h3>Estaciones cercanas a la ruta (≤ 15 mn)</h3>` + (est.length ? est.map(({ s, d, mn }) =>
       `<p><b>${escH(ctx.nombreEst(s))}</b> · milla ${nf(mn, 0)} · a ${nf(d, 0)} mn<br>${s.vel != null ? nf(s.vel, 0) + ' kt' : '–'} ${s.dirG != null ? sarCompas(s.dirG) : ''}${s.temp != null ? ' · ' + nf(s.temp, 1) + ' °C' : ''}</p>`).join('')
