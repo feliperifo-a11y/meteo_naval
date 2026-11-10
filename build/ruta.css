@@ -9,3 +9,6 @@
 .ruta-tabla td,.ruta-tabla th{white-space:nowrap}
 .ruta-tabla small{opacity:.75}
 .ruta-sem{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}
+.ruta-marcando .leaflet-interactive{cursor:crosshair!important}
+.sar-aviso-mapa .ruta-fin,.sar-aviso-mapa .ruta-cancelar{margin-left:8px;padding:3px 10px;border-radius:5px;border:1px solid #fff;background:#ff6a00;color:#fff;font-weight:700;cursor:pointer}
+.sar-aviso-mapa .ruta-cancelar{background:transparent}

@@ -26,7 +26,7 @@ function crearRuta(L, map, ctx) {
       <button type="button" class="sar-elegir ruta-elegir">Marcar en el mapa</button>
       <button type="button" class="sar-borrar ruta-borrar">Limpiar</button>
     </form>
-    <p class="sar-ayuda ruta-ayuda">"Marcar en el mapa": primer clic = zarpe, cada clic siguiente agrega un punto de la ruta; el último es el destino. Termina con <b>Enter</b> o doble clic (Esc cancela). Los puntos se pueden arrastrar. También puedes escribir zarpe y destino (grados y minutos o decimales; S y W por defecto).</p>
+    <p class="sar-ayuda ruta-ayuda">"Marcar en el mapa": primer clic = zarpe, cada clic siguiente agrega un punto de la ruta; el último es el destino. Termina con <b>Enter</b>, doble clic o el botón "Terminar ruta" (Esc cancela). Los puntos se pueden arrastrar. También puedes escribir zarpe y destino (grados y minutos o decimales; S y W por defecto).</p>
     <div class="sar-res ruta-res" aria-live="polite"></div>`;
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
@@ -34,8 +34,22 @@ function crearRuta(L, map, ctx) {
   const form = card.querySelector('.ruta-form'), res = card.querySelector('.ruta-res');
   const grupo = L.layerGroup();
   const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true;
-  aviso.textContent = 'Clic: zarpe y puntos de la ruta · Enter o doble clic: terminar · Esc: cancelar';
+  aviso.innerHTML = '<span class="ruta-aviso-txt">Clic en el mapa: zarpe</span> <button type="button" class="ruta-fin">Terminar ruta</button> <button type="button" class="ruta-cancelar">Cancelar</button>';
   wrap.appendChild(aviso);
+  L.DomEvent.disableClickPropagation(aviso);
+  aviso.querySelector('.ruta-fin').onclick = e => { e.stopPropagation(); terminarMarcar(); };
+  aviso.querySelector('.ruta-cancelar').onclick = e => { e.stopPropagation(); modoMarcar(false); pts = []; guardar(); sincForm(); dibujarPuntos(); };
+  const avisoTxt = aviso.querySelector('.ruta-aviso-txt');
+  const textoAviso = () => { avisoTxt.textContent = !pts.length ? 'Clic en el mapa: zarpe' : pts.length === 1 ? 'Clic: siguiente punto o destino' : `${pts.length} puntos · clic: otro punto · Enter, doble clic o "Terminar ruta": el último es el destino`; };
+  // Coordenadas junto al cursor mientras se marca
+  const cursor = document.createElement('div'); cursor.className = 'sar-cursor'; cursor.hidden = true; wrap.appendChild(cursor);
+  map.getContainer().addEventListener('mousemove', e => {
+    if (modo !== 'marcar') return;
+    const ll = map.mouseEventToLatLng(e), r = wrap.getBoundingClientRect();
+    cursor.textContent = `${sarDM(ll.lat, 'N', 'S')} · ${sarDM(ll.lng, 'E', 'W')}`;
+    cursor.style.left = (e.clientX - r.left + 16) + 'px'; cursor.style.top = (e.clientY - r.top + 18) + 'px'; cursor.hidden = false;
+  });
+  map.getContainer().addEventListener('mouseleave', () => { cursor.hidden = true; });
   card.querySelector('.sar-cerrar').onclick = () => cerrar();
   card.querySelector('.sar-min').onclick = e => { card.classList.toggle('sar-minimizada'); e.currentTarget.textContent = card.classList.contains('sar-minimizada') ? '▴' : '▾'; };
   const guardar = () => { try { localStorage.setItem('meteoia_ruta', JSON.stringify({ pts })); } catch (e) { /* sin almacenamiento */ } };
@@ -70,14 +84,23 @@ function crearRuta(L, map, ctx) {
     form.b.value = pts.length > 1 ? fmtPos(pts[pts.length - 1]) : '';
   }
   function modoMarcar(on) {
-    modo = on ? 'marcar' : null; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : '';
-    if (on) { pts = []; ultimo = null; res.innerHTML = ''; dibujarPuntos(); map.doubleClickZoom.disable(); } else map.doubleClickZoom.enable();
+    modo = on ? 'marcar' : null; aviso.hidden = !on; map.getContainer().style.cursor = on ? 'crosshair' : ''; if (!on) cursor.hidden = true;
+    map.getContainer().classList.toggle('ruta-marcando', on);
+    // Pantallas angostas: mientras se marca, la ficha se pliega para dejar libre el mapa
+    if (innerWidth <= 1050) { card.classList.toggle('sar-minimizada', on); card.querySelector('.sar-min').textContent = on ? '▴' : '▾'; if (on) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    if (on) { pts = []; ultimo = null; res.innerHTML = ''; dibujarPuntos(); textoAviso(); map.doubleClickZoom.disable(); } else map.doubleClickZoom.enable();
   }
-  map.on('click', e => {
-    if (modo !== 'marcar' || card.hidden) return;
-    pts.push([+e.latlng.lat.toFixed(4), +e.latlng.lng.toFixed(4)]); sincForm(); dibujarPuntos();
-  });
-  map.on('dblclick', () => { if (modo === 'marcar') terminarMarcar(); });
+  // El clic se captura antes que cualquier capa (costa, zonas, Marejadas UV, WRF, ECMWF y WW3 interceptan los clics del mapa).
+  map.getContainer().addEventListener('click', e => {
+    if (modo !== 'marcar' || card.hidden || e.target.closest('.leaflet-control')) return;
+    e.stopPropagation(); e.preventDefault();
+    const ll = map.mouseEventToLatLng(e);
+    pts.push([+ll.lat.toFixed(4), +ll.lng.toFixed(4)]); sincForm(); dibujarPuntos(); textoAviso();
+  }, true);
+  map.getContainer().addEventListener('dblclick', e => {
+    if (modo !== 'marcar' || e.target.closest('.leaflet-control')) return;
+    e.stopPropagation(); e.preventDefault(); terminarMarcar();
+  }, true);
   document.addEventListener('keydown', e => {
     if (modo !== 'marcar') return;
     if (e.key === 'Escape') { modoMarcar(false); pts = []; dibujarPuntos(); }
