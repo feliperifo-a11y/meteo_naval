@@ -29,3 +29,13 @@
 .ruta-export{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .ruta-export button{padding:7px 12px;border-radius:6px;border:1px solid #0f3b66;background:#0f3b66;color:#fff;font-weight:700;cursor:pointer}
 .ruta-export .ruta-pdf{background:transparent;color:inherit}
+.ruta-recs{display:flex;flex-direction:column;gap:6px;width:100%}
+.ruta-rec{display:flex;align-items:flex-end;gap:8px;flex-wrap:nowrap}
+#mapWrap .ruta-card .ruta-rec>label:first-child{flex:1 1 auto;min-width:0}
+#mapWrap .ruta-card .ruta-rec select{width:100%;min-width:0}
+#mapWrap .ruta-card .ruta-rec .ruta-est{flex:0 0 auto}
+#mapWrap .ruta-card .ruta-rec .ruta-est input{width:70px;min-width:70px}
+#mapWrap .ruta-card .sar-form .ruta-quitar{flex:0 0 auto;min-width:0;height:32px;border:1px solid #c0392b;background:transparent;color:#c0392b;border-radius:6px;padding:4px 9px;cursor:pointer;font-weight:700}
+#mapWrap .ruta-card .sar-form .ruta-masrec{border:1px dashed #ff6a00;background:transparent;color:#ff6a00;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:700;align-self:flex-start}
+#mapWrap .ruta-card .sar-form input[name=buque]{width:260px}
+.ruta-form .ruta-buque{width:100%}
