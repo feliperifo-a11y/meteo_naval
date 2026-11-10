@@ -56,22 +56,8 @@ function crearRuta(L, map, ctx) {
   const fmtPos = p => `${sarDM(p[0], 'N', 'S')} ${sarDM(p[1], 'E', 'W')}`;
   form.hora.value = sarHoraLocal(new Date(Date.now() + 3600e3)).slice(0, 16);
 
-  // ---------------- Tierra: puntos de la traza sobre tierra (anillos exteriores de la costa, área de Chile)
-  let anillos = null;
-  function enTierra(la, lo) {
-    if (!anillos) {
-      anillos = [];
-      try { for (const c of LAND) for (const poly of c.p) { const r = decodePolyline6(poly[0]); if (r.length < 4) continue;
-        let a = 90, b = -90, cc = 180, d = -180; for (const [y, x] of r) { a = Math.min(a, y); b = Math.max(b, y); cc = Math.min(cc, x); d = Math.max(d, x); }
-        if (b < -60 || a > -15 || d < -115 || cc > -60) continue; anillos.push({ r, a, b, cc, d }); } } catch (e) { /* sin costa */ }
-    }
-    return anillos.some(({ r, a, b, cc, d }) => {
-      if (la < a || la > b || lo < cc || lo > d) return false;
-      let dentro = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [ai, oi] = r[i], [aj, oj] = r[j];
-        if ((ai > la) !== (aj > la) && lo < (oj - oi) * (la - ai) / (aj - ai) + oi) dentro = !dentro; }
-      return dentro;
-    });
-  }
+  // La tierra y la ruta por mar están en ruta_mar.js (rutaEnTierra, rutaAlMar, rutaPorMar).
+  let trazaCache = { clave: '', traza: null };
 
   // ---------------- Mapa: marcadores y traza
   function dibujarPuntos() {
@@ -95,7 +81,7 @@ function crearRuta(L, map, ctx) {
     if (modo !== 'marcar' || card.hidden || e.target.closest('.leaflet-control')) return;
     e.stopPropagation(); e.preventDefault();
     const ll = map.mouseEventToLatLng(e);
-    pts.push([+ll.lat.toFixed(4), +ll.lng.toFixed(4)]); sincForm(); dibujarPuntos(); textoAviso();
+    pts.push(rutaAlMar([+ll.lat.toFixed(4), +ll.lng.toFixed(4)])); sincForm(); dibujarPuntos(); textoAviso();   // sobre tierra: se lleva a la orilla
   }, true);
   map.getContainer().addEventListener('dblclick', e => {
     if (modo !== 'marcar' || e.target.closest('.leaflet-control')) return;
@@ -126,7 +112,7 @@ function crearRuta(L, map, ctx) {
     if (!a || !b) { res.innerHTML = '<p class="sar-error">Revisa las coordenadas de zarpe y destino.</p>'; return; }
     // si las coordenadas escritas cambian, se conservan los puntos intermedios
     const medios = pts.length > 2 ? pts.slice(1, -1) : [];
-    pts = [a, ...medios, b]; guardar(); calcular();
+    pts = [rutaAlMar(a), ...medios, rutaAlMar(b)]; sincForm(); guardar(); calcular();
   };
 
   // ---------------- Cálculo
@@ -137,20 +123,36 @@ function crearRuta(L, map, ctx) {
     const l = Date.parse(new Date(g).toLocaleString('sv-SE', { timeZone: 'America/Santiago' }).replace(' ', 'T') + 'Z');
     return new Date(g - (l - g));
   }
-  function muestrear() {
+  // Traza por mar entre los puntos del usuario: cada tramo que cruza tierra se reemplaza por el camino más corto por mar.
+  function trazar() {
+    const clave = JSON.stringify(pts);
+    if (trazaCache.clave === clave) return trazaCache.traza;
+    const tz = [{ p: pts[0] }], sinPaso = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const c = rutaPorMar(pts[i], pts[i + 1]);
+      if (c) c.slice(1).forEach(p => tz.push({ p }));
+      else { tz[tz.length - 1].malo = true; tz.push({ p: pts[i + 1] }); sinPaso.push(i + 1); }   // sin paso por mar: tramo recto marcado
+    }
+    const recta = pts.slice(1).reduce((s, p, i) => s + sarMillas(pts[i], p), 0);
+    trazaCache = { clave, traza: { tz, sinPaso, recta } };
+    return trazaCache.traza;
+  }
+  function muestrear(T) {
     const v = Math.max(0.5, parseFloat(String(form.vel.value).replace(',', '.')) || 10);
     const t0 = horaChile(form.hora.value) || new Date();
-    const total = pts.slice(1).reduce((s, p, i) => s + sarMillas(pts[i], p), 0);
+    const P = T.tz.map(x => x.p);
+    const total = P.slice(1).reduce((s, p, i) => s + sarMillas(P[i], p), 0);
     const paso = Math.max(3, Math.ceil(total / 40));     // ≤ ~40 puntos para la consulta
     const out = []; let acum = 0;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const a = pts[i], b = pts[i + 1], d = sarMillas(a, b), rv = sarRumbo(a, b), n = Math.max(1, Math.round(d / paso));
-      for (let k = 0; k < n; k++) { const p = k === 0 ? a : sarMover(a[0], a[1], rv, d * k / n); out.push({ p, mn: acum + d * k / n, rumbo: rv, tramo: i + 1 }); }
+    for (let i = 0; i < P.length - 1; i++) {
+      // puntos interpolados en línea recta (la misma geometría con que se verificó que el tramo no cruza tierra)
+      const a = P[i], b = P[i + 1], d = sarMillas(a, b), rv = sarRumbo(a, b), n = Math.max(1, Math.round(d / paso));
+      for (let k = 0; k < n; k++) { const f = k / n, p = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]; out.push({ p, mn: acum + d * f, rumbo: rv, malo: !!T.tz[i].malo }); }
       acum += d;
     }
-    out.push({ p: pts[pts.length - 1], mn: total, rumbo: out.length ? out[out.length - 1].rumbo : 0, tramo: pts.length - 1, llegada: true });
-    out.forEach(s => { s.eta = new Date(t0.getTime() + s.mn / v * 3600e3); s.tierra = s.mn > 3 && total - s.mn > 3 && enTierra(s.p[0], s.p[1]); });   // a menos de 3 mn de los extremos no se marca: puertos y costa simplificada
-    return { muestras: out, total, v, t0, eta: new Date(t0.getTime() + total / v * 3600e3) };
+    out.push({ p: P[P.length - 1], mn: total, rumbo: out.length ? out[out.length - 1].rumbo : 0, llegada: true });
+    out.forEach(s => { s.eta = new Date(t0.getTime() + s.mn / v * 3600e3); s.tierra = s.malo && rutaEnTierra(s.p[0], s.p[1]); });
+    return { muestras: out, traza: P, total, recta: T.recta, sinPaso: T.sinPaso, v, t0, eta: new Date(t0.getTime() + total / v * 3600e3) };
   }
   async function pronostico(muestras, dias) {
     const la = muestras.map(s => s.p[0].toFixed(3)).join(','), lo = muestras.map(s => s.p[1].toFixed(3)).join(',');
@@ -236,7 +238,8 @@ function crearRuta(L, map, ctx) {
   async function calcular() {
     if (pts.length < 2) return;
     const yo = ++token;
-    const R = muestrear();
+    if (trazaCache.clave !== JSON.stringify(pts)) { res.innerHTML = '<p class="sar-cargando">Trazando la ruta por mar…</p>'; await new Promise(r => setTimeout(r, 30)); if (yo !== token) return; }
+    const R = muestrear(trazar());
     res.innerHTML = `<p class="sar-cargando">Consultando el pronóstico en ${R.muestras.length} puntos de la ruta…</p>`;
     const dias = Math.min(10, Math.max(2, Math.ceil((R.eta - Date.now()) / 864e5) + 1));
     let F = null, err = null;
@@ -272,7 +275,7 @@ function crearRuta(L, map, ctx) {
       const fin = i === pts.length - 1 && pts.length > 1, ini = i === 0;
       const m = L.marker(p, { draggable: true, icon: L.divIcon({ className: '', html: `<div class="ruta-pto ${ini ? 'ini' : fin ? 'fin' : ''}">${ini ? 'Z' : fin ? 'D' : i}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }) })
         .bindTooltip(ini ? 'Zarpe' : fin ? 'Destino' : 'Punto ' + i).addTo(grupo);
-      m.on('dragend', () => { const q = m.getLatLng(); pts[i] = [+q.lat.toFixed(4), +q.lng.toFixed(4)]; guardar(); sincForm(); calcular(); });
+      m.on('dragend', () => { const q = m.getLatLng(); pts[i] = rutaAlMar([+q.lat.toFixed(4), +q.lng.toFixed(4)]); guardar(); sincForm(); calcular(); });
     });
   }
   function perfil(M) {
@@ -295,7 +298,8 @@ function crearRuta(L, map, ctx) {
       <p><b>${nf(R.total, 1)} mn</b> a ${nf(R.v, 1)} kt · <b>${nf(R.total / R.v, 1)} h</b> de navegación</p>
       <p>Zarpe ${hf(R.t0)} → llegada estimada <b>${hf(R.eta)}</b></p>
       <p>Condición más exigente en la ruta: <b style="color:${COL[peor]}">${TXT[peor]}</b> · avisos vigentes cruzados: <b>${avisos.length}</b> · avisos probables: <b>${prob.length}</b></p>
-      ${tierra ? '<p class="sar-error">La traza cruza tierra: agrega puntos intermedios para bordear la costa (los tramos sobre tierra se marcan en café).</p>' : ''}
+      ${R.total > R.recta + 0.5 ? `<p>La ruta bordea la costa para no pasar sobre tierra: ${nf(R.total, 0)} mn por mar (${nf(R.recta, 0)} mn en línea recta entre los puntos marcados).</p>` : ''}
+      ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y el destino' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
       ${perfil(M)}</div>`;
@@ -328,7 +332,7 @@ function crearRuta(L, map, ctx) {
       <tr><td>Ola (m)</td><td><input class="sar-umbral" data-k="olaA" value="${String(umb.olaA).replace('.', ',')}"></td><td><input class="sar-umbral" data-k="olaR" value="${String(umb.olaR).replace('.', ',')}"></td></tr>
       <tr><td>Visibilidad menor a (mn)</td><td><input class="sar-umbral" data-k="visA" value="${String(umb.visA).replace('.', ',')}"></td><td><input class="sar-umbral" data-k="visR" value="${String(umb.visR).replace('.', ',')}"></td></tr>
       </tbody></table><button type="button" class="sar-restablecer">Restablecer valores iniciales</button></details>
-      <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza es la que marca el usuario (no evalúa profundidades ni obstáculos).</p>`;
+      <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza evita la tierra según la costa incorporada, de escala aproximada: no evalúa profundidades, bajos, obstáculos ni dispositivos de tráfico; verifícala en la carta náutica.</p>`;
     res.innerHTML = h;
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => { const v = parseFloat(inp.value.replace(',', '.')); if (isFinite(v)) { umb[inp.dataset.k] = v; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); } });
     const rb = res.querySelector('.sar-restablecer'); if (rb) rb.onclick = () => { umb = { ...RUTA_UMBRALES_BASE }; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); };
