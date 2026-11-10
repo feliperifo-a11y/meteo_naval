@@ -12,3 +12,17 @@
 .ruta-marcando .leaflet-interactive{cursor:crosshair!important}
 .sar-aviso-mapa .ruta-fin,.sar-aviso-mapa .ruta-cancelar{margin-left:8px;padding:3px 10px;border-radius:5px;border:1px solid #fff;background:#ff6a00;color:#fff;font-weight:700;cursor:pointer}
 .sar-aviso-mapa .ruta-cancelar{background:transparent}
+.ruta-tipo{display:flex;gap:0;margin:2px 0 10px;border:1px solid #ff6a00;border-radius:8px;overflow:hidden}
+.ruta-tipo button{flex:1;padding:8px 10px;border:0;background:transparent;color:inherit;font-weight:700;cursor:pointer;font-size:13px}
+.ruta-tipo button small{font-weight:400;opacity:.8}
+.ruta-tipo button.on{background:#ff6a00;color:#fff}
+.ruta-tipo button+button{border-left:1px solid #ff6a00}
+#mapWrap .ruta-card .sar-form select{min-width:230px;max-width:100%}
+#mapWrap .ruta-card .sar-form input[name=filtro]{width:250px}
+.ruta-cond summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ruta-cond summary::-webkit-details-marker{display:none}
+.ruta-cond summary::before{content:'▸';color:#ff6a00;font-weight:700}
+.ruta-cond[open] summary::before{content:'▾'}
+.ruta-cond summary h3{display:inline;margin:0}
+.ruta-cond-n{font-size:12px;opacity:.75}
+.ruta-card [hidden]{display:none!important}
