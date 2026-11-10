@@ -26,3 +26,6 @@
 .ruta-cond summary h3{display:inline;margin:0}
 .ruta-cond-n{font-size:12px;opacity:.75}
 .ruta-card [hidden]{display:none!important}
+.ruta-export{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ruta-export button{padding:7px 12px;border-radius:6px;border:1px solid #0f3b66;background:#0f3b66;color:#fff;font-weight:700;cursor:pointer}
+.ruta-export .ruta-pdf{background:transparent;color:inherit}

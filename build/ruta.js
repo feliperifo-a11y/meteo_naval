@@ -367,7 +367,8 @@ function crearRuta(L, map, ctx) {
       ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y la recalada' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
-      ${perfil(M)}</div>`;
+      ${perfil(M)}
+      <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
     // Tabla por punto de la ruta
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
       M.map(s => `<tr><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
@@ -399,9 +400,53 @@ function crearRuta(L, map, ctx) {
       </tbody></table><button type="button" class="sar-restablecer">Restablecer valores iniciales</button></details>
       <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza evita la tierra según la costa incorporada, de escala aproximada: no evalúa profundidades, bajos, obstáculos ni dispositivos de tráfico; verifícala en la carta náutica.</p>`;
     res.innerHTML = h;
+    res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
+    res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
     const cd = res.querySelector('.ruta-cond'); if (cd) cd.addEventListener('toggle', () => { condAbierta = cd.open; cd.querySelector('.ruta-cond-n').textContent = `${M.length} puntos de la ruta · ${cd.open ? 'ocultar' : 'desplegar'}`; });
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => { const v = parseFloat(inp.value.replace(',', '.')); if (isFinite(v)) { umb[inp.dataset.k] = v; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); } });
     const rb = res.querySelector('.sar-restablecer'); if (rb) rb.onclick = () => { umb = { ...RUTA_UMBRALES_BASE }; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); };
+  }
+
+  // ---------------- Informe (Word o impresión): mismos datos de la ficha
+  const extremo = fin => { const p = fin ? pts[pts.length - 1] : pts[0], pp = fin ? sel.b : sel.a; return pp ? `${pp.n} (${fmtPos(p)})` : fmtPos(p); };
+  const corto = fin => { const pp = fin ? sel.b : sel.a, p = fin ? pts[pts.length - 1] : pts[0]; return pp ? pp.n : fmtPos(p); };
+  function nombreInforme() {
+    const sl = t => normP(t).replace(/ /g, '_').slice(0, 30) || 'punto';
+    return `ruta_${sl(corto(false))}_a_${sl(corto(true))}_${sarHoraLocal(new Date()).slice(0, 10)}`;
+  }
+  function informe() {
+    const { R, avisos, prob, pu, est, err } = ultimo, M = R.muestras;
+    const peor = ['tierra', 'no', 'lim', 'ok', 'sd'].find(k => M.some(s => s.nivel === k)) || 'sd';
+    const n0 = v => v == null ? '–' : nf(v, 0), n1 = v => v == null ? '–' : nf(v, 1);
+    const datos = [['Zarpe', extremo(false)], ['Recalada', extremo(true)]];
+    if (pts.length > 2) datos.push(['Puntos intermedios', pts.slice(1, -1).map((p, i) => `${i + 1}: ${fmtPos(p)}`).join(' · ')]);
+    datos.push(['Hora de zarpe', hf(R.t0) + ' (hora Chile)'], ['Velocidad', nf(R.v, 1) + ' kt'],
+      ['Distancia', `${nf(R.total, 1)} mn por mar` + (R.total > R.recta + 0.5 ? ` (${nf(R.recta, 1)} mn en línea recta entre los puntos marcados)` : '')],
+      ['Duración estimada', nf(R.total / R.v, 1) + ' h'], ['Llegada estimada', hf(R.eta) + ' (hora Chile)'],
+      ['Condición más exigente', TXT[peor]], ['Avisos vigentes cruzados', String(avisos.length)], ['Avisos probables', String(prob.length)],
+      ['Pronóstico', err ? 'No disponible al generar el informe' : 'Open-Meteo: viento ECMWF IFS (respaldo GFS), oleaje Météo-France']);
+    if (R.sinPaso.length) datos.push(['Advertencia', 'Hay tramos sin paso por mar en la costa incorporada; revisar la traza.']);
+    const sec = [];
+    sec.push({ titulo: 'Condiciones a la hora de paso', tabla: { cab: ['Hora', 'mn', 'Posición', 'Viento', 'Ráfaga (kt)', 'Ola (m)', 'Período (s)', 'Dir. ola', 'Visibilidad (mn)', 'Estado'], anchos: [1.3, .5, 2, 1, .8, .7, .8, .7, 1, 1],
+      filas: M.map(s => [hf(s.eta), n0(s.mn), fmtPos(s.p), s.viento == null ? '–' : `${sarCompas(s.dir)} ${n0(s.viento)} kt`, n0(s.rafaga), n1(s.ola), n0(s.tp), s.dola == null ? '–' : sarCompas(s.dola), s.vis == null ? '–' : nf(Math.min(s.vis / 1852, 10), 1) + (s.vis / 1852 >= 10 ? '+' : ''), TXT[s.nivel]]) },
+      nota: 'Viento a 10 m; dirección de procedencia. Ola: altura significativa, período y dirección de procedencia. Hora de Chile.' });
+    sec.push(avisos.length ? { titulo: 'Avisos vigentes a la hora de paso', tabla: { cab: ['Aviso', 'Zona', 'Millas de la ruta', 'Paso por la zona', 'Vigente hasta'], anchos: [1.4, 1.6, .9, 1.6, 1],
+      filas: avisos.map(v => [v.a.tipo, v.z.nombre, `${n0(v.desde)} a ${n0(v.hasta)}`, `${hf(v.t1)} a ${hf(v.t2)}`, hf(v.e.fin)]) } }
+      : { titulo: 'Avisos vigentes a la hora de paso', parrafos: ['La ruta no cruza avisos vigentes a la hora de paso (radio de 3 mn).'] });
+    sec.push({ titulo: 'Avisos probables (alertas preventivas)', parrafos: prob.length ? [] : ['Sin alertas preventivas de viento (5 días) ni de marejadas (10 días) en la ruta para las fechas de paso.'],
+      tabla: { cab: ['Tipo', 'Categoría', 'Zona', 'Fecha', 'Millas de la ruta', 'Rango'], anchos: [.8, 1.2, 1.6, 1, .9, 1],
+        filas: prob.map(v => [v.tipo === 'v' ? 'Viento' : 'Marejadas', v.nom, v.zona, sarFmtDia(v.fecha + 'T12:00'), `${n0(v.desde)} a ${n0(v.hasta)}`, v.rango ? `${nf(v.rango[0], v.tipo === 'v' ? 0 : 1)} a ${nf(v.rango[1], v.tipo === 'v' ? 0 : 1)} ${v.tipo === 'v' ? 'kt' : 'm'}` : '–']) },
+      nota: 'Estimación automática de MeteoIA con los criterios de la PD OPE-07 (viento) y la O.P.I. N° 1107 (marejadas); no son avisos oficiales.' });
+    const fp = (t, v) => !v ? [t, 'Sin bahía SITPORT a menos de 12 mn', '–'] : [t, v.nombre, v.lista.length ? v.lista.map(r => ctx.txtSitport(r.MotivoRestriccion) + (r.NaveRecibe ? ' · ' + ctx.txtSitport(r.NaveRecibe) : '')).join(' / ') : 'Sin restricciones'];
+    sec.push(pu ? { titulo: 'Puertos (SITPORT)', tabla: { cab: ['', 'Bahía', 'Restricciones'], anchos: [.6, 1.4, 4], filas: [fp('Zarpe', pu.zarpe), fp('Recalada', pu.destino)] },
+      nota: (pu.vivo ? 'Consultado en vivo.' : 'Copia publicada del ' + hf(new Date(pu.actualizado)) + '.') + ' Restricciones vigentes al generar el informe: pueden cambiar antes del zarpe o de la llegada.' }
+      : { titulo: 'Puertos (SITPORT)', parrafos: ['SITPORT no disponible al generar el informe.'] });
+    sec.push(est.length ? { titulo: 'Estaciones cercanas a la ruta (15 mn o menos)', tabla: { cab: ['Estación', 'Milla de la ruta', 'Distancia (mn)', 'Viento observado', 'Temperatura'], anchos: [1.6, .8, .8, 1, .8],
+      filas: est.map(({ s, d, mn }) => [ctx.nombreEst(s), n0(mn), n0(d), s.vel != null ? `${n0(s.vel)} kt ${s.dirG != null ? sarCompas(s.dirG) : ''}`.trim() : '–', s.temp != null ? nf(s.temp, 1) + ' °C' : '–']) },
+      nota: 'Última observación disponible al generar el informe.' } : { titulo: 'Estaciones cercanas a la ruta (15 mn o menos)', parrafos: ['Sin estaciones operativas a menos de 15 mn de la ruta.'] });
+    sec.push({ titulo: 'Umbrales del semáforo', tabla: { cab: ['Variable', 'Precaución (amarillo)', 'Desfavorable (rojo)'], filas: [['Viento', `≥ ${nf(umb.vientoA, 0)} kt`, `≥ ${nf(umb.vientoR, 0)} kt`], ['Ola', `≥ ${nf(umb.olaA, 1)} m`, `≥ ${nf(umb.olaR, 1)} m`], ['Visibilidad', `< ${nf(umb.visA, 1)} mn`, `< ${nf(umb.visR, 1)} mn`]] } });
+    sec.push({ titulo: 'Advertencia', parrafos: ['Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza evita la tierra según una costa de escala aproximada; no evalúa profundidades, bajos, obstáculos ni dispositivos de tráfico.'] });
+    return { titulo: 'Ruta de navegación', subtitulo: `${corto(false)} → ${corto(true)} · MeteoIA · generado el ${hf(new Date())} (hora Chile)`, datos, secciones: sec };
   }
 
   function abrir() {
