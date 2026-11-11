@@ -1,0 +1,7 @@
+{"pan":{"nombre":"Estrecho de Magallanes y canal Smyth","margen":0.5,"via":[
+["Punta Arenas",-53.17,-70.88],["Paso del Hambre",-53.60,-70.80],["Cabo Froward",-53.93,-71.30],["Paso Inglés",-53.70,-72.20],["Paso Tortuoso",-53.55,-72.50],["Paso Tamar",-52.92,-73.85],
+["Paso Shoal",-52.55,-73.65],["Canal Smyth",-52.30,-73.62],["Canal Unión (entrada W)",-51.98,-73.62],["Paso Morla Vicuña",-52.12,-73.18],["Golfo Almirante Montt",-51.88,-72.75],["Puerto Natales",-51.73,-72.51]]},
+"dalcahue":{"nombre":"Canal Dalcahue","margen":0.5,"via":[
+["Puerto Montt",-41.49,-72.95],["Paso Queullín",-41.88,-72.93],["Golfo de Ancud",-42.20,-72.95],["Paso Tenaún",-42.36,-73.40],["Canal Dalcahue",-42.40,-73.68],["Castro",-42.48,-73.76]]},
+"quinchao":{"nombre":"Canal Quinchao y canal Lemuy","margen":0.5,"via":[
+["Puerto Montt",-41.49,-72.95],["Paso Queullín",-41.88,-72.93],["Golfo de Ancud",-42.20,-72.95],["Canal Quinchao",-42.47,-73.40],["Canal Lemuy",-42.53,-73.62],["Castro",-42.48,-73.76]]}}

@@ -43,6 +43,8 @@ PASOS.update({
  'timbales': {'n': 'Paso Timbales', 'carta': '12720', 'p': [-54.88, -70.35], 'ref': 'Pub. SHOA N° 3005, cap. XII, tercera parte',
    'nota': 'Informar ETA a la baliza luminosa Islote Cóndor o a la boya luminosa Bajo Walton. Preferencia de paso al buque que navega de W a E; la nave que viene del E puede optar por el paso Occidental para evitar el cruce.'},
 })
+PASOS['dalcahue'] = {'n': 'Canal Dalcahue', 'carta': '7371', 'p': [-42.40, -73.67], 'aereo': 44.3, 'ref': 'Pub. SHOA N° 3002, cap. VII, segunda parte',
+   'nota': 'Instrucciones obligatorias: ninguna nave debe adelantar ni cruzarse con otra entre la punta Balseo (N) y la punta Chulequehue (S). Una hora antes, alerta de seguridad DSC por canal 70 VHF y SECURITE por canal 16 VHF (nombre, posición, sentido del cruce y hora frente a los bancos del Astillero y del Pasaje), repetida cada 15 minutos. Preferencia de paso a la nave que navega de N a S; la que viene del S espera al S de la punta Chulequehue. Cables de alta tensión con elevación mínima de 44,34 m sobre las más altas pleamares.'}
 PM_INT = 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier, angostura Inglesa, canales Wide, Concepción'
 PM_MIX = 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
 PM_OCE = 'Salida al océano por el canal Chacao, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
@@ -67,6 +69,11 @@ PARES = [
  {'archivo': 'vias_fildes_out.json', 'puertos': [134, 139], 'nombre': 'Punta Arenas – Bahía Fildes', 'alts': [
    ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos']),
    ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', [], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
+ {'archivo': 'vias_pan_cas_out.json', 'puertos': [134, 130], 'nombre': 'Punta Arenas – Puerto Natales', 'alts': [
+   ('pan', 'Estrecho de Magallanes y canal Smyth', 'Estrecho de Magallanes al W por los pasos del Hambre, Inglés y Tortuoso hasta el paso Tamar; al N por el paso Shoal y el canal Smyth, canal Unión, paso Morla Vicuña, angostura Kirke o White, golfo Almirante Montt y canal Señoret. Es la única ruta por mar entre ambos puertos.', ['shoal', 'smyth', 'kirke'], ['Estrecho de Magallanes, sector occidental'])]},
+ {'archivo': 'vias_pan_cas_out.json', 'puertos': [109, 116], 'nombre': 'Puerto Montt – Castro', 'alts': [
+   ('dalcahue', 'Canal Dalcahue', 'Seno Reloncaví, golfo de Ancud, paso Tenaún y canal Dalcahue hasta la boca del estero Castro.', ['dalcahue'], ['Golfo de Ancud']),
+   ('quinchao', 'Canal Quinchao y canal Lemuy', 'Seno Reloncaví, golfo de Ancud, canal Quinchao ("la más franca y expedita" según el Derrotero), canal Lemuy y boca del estero Castro.', [], ['Golfo de Ancud'])]},
 ]
 FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002 a 3006 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
 T = []

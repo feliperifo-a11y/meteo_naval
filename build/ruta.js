@@ -481,9 +481,9 @@ function crearRuta(L, map, ctx) {
     const alts = ultimo.alts, selA = alts && alts.find(x => x.sel);
     if (alts) {
       const sem = x => `<span class="ruta-sem" style="background:${COL[x.rojo ? 'no' : x.amar ? 'lim' : x.sd === x.R.muestras.length ? 'sd' : 'ok']}"></span>`;
-      h += `<div class="sar-blq ruta-alts"><h3>Alternativas de ruta · ${escH(ultimo.par.d.nombre)}</h3>
+      h += `<div class="sar-blq ruta-alts"><h3>${alts.length > 1 ? 'Alternativas de ruta' : 'Ruta tipo'} · ${escH(ultimo.par.d.nombre)}</h3>
         <div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla-alt"><thead><tr><th></th><th>Alternativa</th><th>mn</th><th>Horas</th><th>Llegada</th><th>Viento máx.</th><th>Ola máx.</th><th>Tramos</th><th>Avisos</th></tr></thead><tbody>` +
-        alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td>${sem(x)}</td><td><b>${escH(x.a.nombre)}</b>${x.recomendada ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
+        alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td>${sem(x)}</td><td><b>${escH(x.a.nombre)}</b>${x.recomendada && alts.length > 1 ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
           `<td>${nf(x.R.total, 0)}</td><td>${nf(x.R.total / x.R.v, 0)}</td><td>${hf(x.R.eta)}</td><td>${x.vmax < 0 ? '–' : nf(x.vmax, 0) + ' kt'}</td><td>${x.omax < 0 ? '–' : nf(x.omax, 1) + ' m'}</td>` +
           `<td>${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}</td><td>${x.avisos}</td></tr>`).join('') +
         `</tbody></table></div>
@@ -573,9 +573,9 @@ function crearRuta(L, map, ctx) {
     if (R.sinPaso.length) datos.push(['Advertencia', 'Hay tramos sin paso por mar en la costa incorporada; revisar la traza.']);
     const sec = [], alts = ultimo.alts, selA = alts && alts.find(x => x.sel);
     if (alts) {
-      datos.splice(buque ? 1 : 0, 0, ['Alternativa elegida', selA.a.nombre + (selA.recomendada ? ' (la más favorable)' : '')]);
+      datos.splice(buque ? 1 : 0, 0, ['Alternativa elegida', selA.a.nombre + (selA.recomendada && alts.length > 1 ? ' (la más favorable)' : '')]);
       sec.push({ titulo: 'Alternativas de ruta · ' + ultimo.par.d.nombre, tabla: { cab: ['Alternativa', 'mn', 'Horas', 'Llegada', 'Viento máx.', 'Ola máx.', 'Tramos en rojo', 'Tramos en amarillo', 'Avisos cruzados', 'Observación'], anchos: [1.8, .5, .5, 1.1, .7, .7, .6, .7, .6, 1.4],
-        filas: alts.map(x => [x.a.nombre, n0(x.R.total), n0(x.R.total / x.R.v), hf(x.R.eta), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m', String(x.rojo), String(x.amar), String(x.avisos), [x.sel ? 'elegida' : '', x.recomendada ? 'más favorable' : '', x.noApta ? 'excede eslora o calado' : ''].filter(Boolean).join('; ')]) },
+        filas: alts.map(x => [x.a.nombre, n0(x.R.total), n0(x.R.total / x.R.v), hf(x.R.eta), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m', String(x.rojo), String(x.amar), String(x.avisos), [x.sel ? 'elegida' : '', x.recomendada && alts.length > 1 ? 'más favorable' : '', x.noApta ? 'excede eslora o calado' : ''].filter(Boolean).join('; ')]) },
         parrafos: alts.map(x => `${x.a.nombre}: ${x.a.resumen} Tramo expuesto: ${x.a.expuesto.map(e => e[0]).join('; ')}.`), nota: 'Fuente: ' + ultimo.par.d.fuente });
       if (selA.pasos.length) sec.push({ titulo: 'Canales, pasos y angosturas con restricción', tabla: { cab: ['Paso', 'Carta', 'Milla', 'Paso estimado', 'Luz', 'Atención', 'Restricción (Derrotero)'], anchos: [1.2, .5, .4, 1, .5, 1.4, 3.4],
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
