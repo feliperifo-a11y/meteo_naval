@@ -45,6 +45,8 @@ PASOS.update({
 })
 PASOS['dalcahue'] = {'n': 'Canal Dalcahue', 'carta': '7371', 'p': [-42.40, -73.67], 'aereo': 44.3, 'ref': 'Pub. SHOA N° 3002, cap. VII, segunda parte',
    'nota': 'Instrucciones obligatorias: ninguna nave debe adelantar ni cruzarse con otra entre la punta Balseo (N) y la punta Chulequehue (S). Una hora antes, alerta de seguridad DSC por canal 70 VHF y SECURITE por canal 16 VHF (nombre, posición, sentido del cruce y hora frente a los bancos del Astillero y del Pasaje), repetida cada 15 minutos. Preferencia de paso a la nave que navega de N a S; la que viene del S espera al S de la punta Chulequehue. Cables de alta tensión con elevación mínima de 44,34 m sobre las más altas pleamares.'}
+PASOS['mackinlay'] = {'n': 'Paso Mackinlay', 'carta': '13100', 'p': [-54.915, -67.40], 'ref': 'Pub. SHOA N° 3005, cap. XIII, tercera parte',
+   'nota': 'Informar la hora de tránsito y la ETA a la punta Espora a la Estación de Control de Tráfico Marítimo de Puerto Williams. Preferencia de paso al buque que navega de W a E.'}
 PM_INT = 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier, angostura Inglesa, canales Wide, Concepción'
 PM_MIX = 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
 PM_OCE = 'Salida al océano por el canal Chacao, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
@@ -91,6 +93,21 @@ PARES = [
    ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrechos de Bransfield y de Gerlache.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)']),
    ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrechos de Bransfield y de Gerlache.', [], ['Atlántico, estrecho de Le Maire y paso Drake', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)'])]},
 
+ {'archivo': 'par_melinka.json', 'puertos': [109, 124], 'nombre': 'Puerto Montt – Melinka', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado hasta las islas Guaitecas.', [], ['Golfo Corcovado']),
+   ('exterior', 'Exterior de Chiloé: canal Chacao y boca del Guafo', 'Salida al océano por el canal Chacao, costa oceánica de Chiloé a 10 millas y boca del Guafo.', ['chacao'], ['Océano, del canal Chacao a la boca del Guafo'])]},
+ {'archivo': 'par_aguirre.json', 'puertos': [109, 125], 'nombre': 'Puerto Montt – Puerto Aguirre', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado y canal Moraleda hasta las islas Huichas.', [], ['Golfo Corcovado']),
+   ('exterior', 'Exterior de Chiloé: canal Chacao y boca del Guafo', 'Salida al océano por el canal Chacao, costa oceánica de Chiloé a 10 millas, boca del Guafo y canal Moraleda.', ['chacao'], ['Océano, del canal Chacao a la boca del Guafo'])]},
+ {'archivo': 'par_cisnes.json', 'puertos': [109, 123], 'nombre': 'Puerto Montt – Puerto Cisnes', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda y canal Puyuhuapi.', [], ['Golfo Corcovado']),
+   ('exterior', 'Exterior de Chiloé: canal Chacao y boca del Guafo', 'Salida al océano por el canal Chacao, costa oceánica de Chiloé a 10 millas, boca del Guafo, canal Moraleda y canal Puyuhuapi.', ['chacao'], ['Océano, del canal Chacao a la boca del Guafo'])]},
+ {'archivo': 'par_chaiten.json', 'puertos': [109, 121], 'nombre': 'Puerto Montt – Chaitén', 'alts': [
+   ('unica', 'Seno Reloncaví y golfo de Ancud', 'Seno Reloncaví y golfo de Ancud hasta la bahía Chaitén. Es la ruta directa por aguas interiores.', [], ['Golfo de Ancud'])]},
+ {'archivo': 'par_porvenir.json', 'puertos': [134, 137], 'nombre': 'Punta Arenas – Porvenir', 'alts': [
+   ('unica', 'Cruce del Estrecho de Magallanes', 'Cruce del Estrecho de Magallanes hasta la bahía Porvenir y la bahía Chilota.', [], ['Estrecho de Magallanes'])]},
+ {'archivo': 'par_toro.json', 'puertos': [138, 260], 'nombre': 'Puerto Williams – Puerto Toro', 'alts': [
+   ('unica', 'Canal Beagle y paso Picton', 'Canal Beagle al E por el paso Mackinlay y al S por el oeste de la isla Picton hasta Puerto Toro.', ['mackinlay'], ['Canal Beagle'])]},
 ]
 FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002 a 3006 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
 T = []
