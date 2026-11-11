@@ -417,6 +417,8 @@ function crearCasoSAR(L, map, ctx) {
     html += `<div class="sar-blq"><h3>Observaciones cercanas</h3>` +
       (env.estaciones.length ? env.estaciones.map(({ s, mn }) => `<p><b>${escH(ctx.nombreEst(s))}</b> · ${Math.round(mn)} mn<br>${s.vel != null ? nf(s.vel, 0) + ' kt' : '–'} ${s.dirG != null ? sarCompas(s.dirG) : ''}${s.temp != null ? ' · ' + nf(s.temp, 1) + ' °C' : ''} · ${(t => t ? t.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hour12: false }) + ' h' : '')(ctx.evaluar(s, Date.now()).t)}</p>`).join('') : '<p>Sin estaciones operativas cercanas.</p>') +
       env.boyas.map(({ b, mn }) => `<p><b>Boya ${escH(b.nombre)}</b> · ${Math.round(mn)} mn<br>${b.ultimo.hsig != null ? 'Hs ' + nf(b.ultimo.hsig, 1) + ' m' : ''}${b.ultimo.tp != null ? ' · Tp ' + nf(b.ultimo.tp, 0) + ' s' : ''}${b.ultimo.tw != null ? ' · agua ' + nf(b.ultimo.tw, 1) + ' °C' : ''}</p>`).join('') + '</div>';
+    // 4b. Abrigos del Derrotero (se completa al cargar los lugares)
+    html += `<div class="sar-blq sar-abrigos"><h3>Abrigos cercanos (Derrotero)</h3><p class="sar-cargando">Buscando caletas y fondeaderos…</p></div>`;
     // 5. Avisos
     html += `<div class="sar-blq"><h3>Avisos en la posición</h3>` + (env.avisos.length ? env.avisos.map(({ a, z, e }) =>
       `<p><span class="sar-pill sar-${e.k}">${e.txt}</span> <b>${escH(a.tipo)}</b><br>${escH(z.nombre)}<br><small>${e.ini.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} → ${e.fin.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</small></p>`).join('')
@@ -430,6 +432,13 @@ function crearCasoSAR(L, map, ctx) {
     html += `<p class="sar-nota">Fuentes: pronóstico puntual Open-Meteo (ECMWF IFS 9 km y NOAA GFS para viento, ráfaga y visibilidad; Météo-France para oleaje, temperatura del agua y corriente), observaciones y avisos de MeteoIA.
       Herramienta de apoyo en validación: no reemplaza los procedimientos SAR, los avisos oficiales ni las herramientas de planificación de búsqueda.</p>`;
     res.innerHTML = html;
+    derroteroCargar().then(() => {
+      const b = res.querySelector('.sar-abrigos'); if (!b || ultimo?.lat !== lat || ultimo?.lon !== lon) return;
+      const A = derroteroCerca([lat, lon], 30, true, 6);
+      b.innerHTML = `<h3>Abrigos cercanos (Derrotero)</h3>` + (A.length ? A.map(o => `<p class="der-item" data-la="${o.x.la}" data-lo="${o.x.lo}"><b>${escH(o.x.n)}</b> · ${nf(o.mn, 1)} mn al ${String(Math.round(o.rumbo)).padStart(3, '0')}°${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></p>`).join('')
+        : '<p>No hay caletas ni fondeaderos del Derrotero a 30 mn o menos de la posición.</p>') + '<p class="sar-nota">Distancia y rumbo verdadero desde la posición del caso. Texto extraído automáticamente del Derrotero de la Costa de Chile (Pub. SHOA 3001 a 3006); verificar en la carta.</p>';
+      b.querySelectorAll('.der-item').forEach(d => d.onclick = () => map.flyTo([+d.dataset.la, +d.dataset.lo], Math.max(map.getZoom(), 10), { duration: .6 }));
+    });
     if (deriva && deriva.ok) {
       const cir = dibujarDeriva(lat, lon, deriva);
       // Encuadre: última posición conocida, trayectoria y círculo del error, sin quedar bajo la ficha.

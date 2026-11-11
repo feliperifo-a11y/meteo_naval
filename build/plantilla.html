@@ -1896,6 +1896,8 @@ document.getElementById('btnAlertaViento').onclick = () => { cerrarPaneles('vto'
 document.getElementById('btnEvaluacionIA').onclick = () => { cerrarPaneles('eval'); evalIA.abrir(); };
 document.getElementById('btnBorrador').onclick = () => { cerrarPaneles('borr'); borrador.abrir(); };
 document.getElementById('btnRuta').onclick = () => { cerrarPaneles('ruta'); ruta.abrir(); };
+// Buscador de lugares del Derrotero (caletas, bahías, puertos, fondeaderos) con opción de usarlos en la ruta
+const buscadorDerrotero = crearBuscadorDerrotero(L, map, { escH, usar: (x, rol) => { cerrarPaneles('ruta'); ruta.usarLugar(x, rol); } });
 // Página pública de rutas: la ficha se abre sola y el botón del encabezado la vuelve a mostrar
 if (document.documentElement.classList.contains('soloRuta')) {
   document.title = 'Rutas de navegación · MeteoIA';

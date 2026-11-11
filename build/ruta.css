@@ -57,3 +57,23 @@
   .ruta-tabla-alt td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;opacity:.65;margin-bottom:1px}
   .ruta-tabla-alt td[data-l="Tramos"]{grid-column:span 2}
 }
+/* Lugares del Derrotero */
+.der-busca{background:var(--panel,#fff);color:var(--ink,#18212b);position:relative;width:250px;border-radius:6px}
+.der-busca input{width:100%;border:0;padding:8px 10px;font:13px system-ui,sans-serif;background:transparent;color:inherit;border-radius:6px}
+.der-res{position:absolute;left:0;right:0;top:100%;margin-top:4px;max-height:320px;overflow:auto;background:var(--panel,#fff);border:1px solid var(--line,#ccc);border-radius:6px;box-shadow:0 4px 14px #0004;z-index:1000}
+.der-res button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line,#ddd);background:transparent;color:inherit;padding:7px 10px;cursor:pointer;font:13px system-ui,sans-serif}
+.der-res button small{display:block;opacity:.7;font-size:11px}
+.der-res button:hover,.der-res button.on{background:rgba(47,140,255,.15)}
+.der-res p{margin:0;padding:8px 10px;font-size:12.5px}
+.der-pin{width:26px;height:26px;border-radius:50%;background:#0f3b66;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px #0007;font:14px/22px system-ui;text-align:center;box-sizing:border-box}
+.der-pin.ab{background:#16a085}.der-pin.mini{width:18px;height:18px;font-size:10px;line-height:14px;border-width:1.5px}
+.der-ficha .der-sub{font-size:11.5px;opacity:.75;margin:2px 0 6px}
+.der-ficha .der-tx{font-size:12.5px;line-height:1.4;max-height:180px;overflow:auto}
+.der-tag{background:#16a085;color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px;font-weight:700}
+.der-tag.der-men{background:#e08a00}
+.der-usar{margin-top:8px;font-size:12px}
+.der-usar button{margin:4px 4px 0 0;padding:4px 9px;border-radius:5px;border:1px solid #ff6a00;background:#ff6a00;color:#fff;font-weight:700;cursor:pointer}
+.der-item{cursor:pointer;margin:6px 0;padding:4px 0;border-bottom:1px dotted rgba(127,140,160,.4)}
+.der-item small{opacity:.8}
+.ruta-abrigos details summary{cursor:pointer;margin:6px 0;font-weight:700}
+@media (max-width:600px){.der-busca{width:190px}}
