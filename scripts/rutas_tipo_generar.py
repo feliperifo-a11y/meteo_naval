@@ -37,30 +37,45 @@ PASOS = {
    'opciones': [{'n': 'angostura Kirke', 'eslora': 150, 'calado': 6.3, 'manga': 23}, {'n': 'angostura White (canal Santa María)', 'eslora': 140, 'calado': 7.0}],
    'nota': 'Acceso al golfo Almirante Montt y a Puerto Natales. Angostura Kirke: eslora máxima 150 m, calado 6,3 m y manga 23 m. Angostura White: eslora máxima 140 m y calado 7,0 m. En ambas: tránsito en estoa o con corriente débil y con luz diurna, hasta el crepúsculo civil; las naves de más de 120 m de eslora deben tener una embarcación menor de asistencia para observar la corriente; preferencia de paso a los buques de más de 100 m de eslora.'},
 }
-DESC = {
- 'interior': 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier, angostura Inglesa, canales Wide, Concepción{x}.',
- 'mixta': 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes{x}.',
- 'oceanica': 'Salida al océano por el canal Chacao, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes{x}.'}
-EXP = {'interior': [['Golfo de Penas (mar abierto)', -46.0, -47.7]], 'mixta': [['Océano, de la boca del Guafo a los Evangelistas', -43.7, -52.6]], 'oceanica': [['Océano, del canal Chacao a los Evangelistas', -41.8, -52.6]]}
+PASOS.update({
+ 'obrien': {'n': "Canal O'Brien", 'carta': '12720', 'p': [-54.90, -70.62], 'ref': 'Pub. SHOA N° 3005, cap. XII, tercera parte',
+   'nota': "Informar ETA al islote Redondo y a la punta Acevedo. Preferencia de paso al buque que navega de E a W."},
+ 'timbales': {'n': 'Paso Timbales', 'carta': '12720', 'p': [-54.88, -70.35], 'ref': 'Pub. SHOA N° 3005, cap. XII, tercera parte',
+   'nota': 'Informar ETA a la baliza luminosa Islote Cóndor o a la boya luminosa Bajo Walton. Preferencia de paso al buque que navega de W a E; la nave que viene del E puede optar por el paso Occidental para evitar el cruce.'},
+})
+PM_INT = 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier, angostura Inglesa, canales Wide, Concepción'
+PM_MIX = 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
+PM_OCE = 'Salida al océano por el canal Chacao, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
+SUBE = '; desde el paso Tamar al N por el paso Shoal y el canal Smyth, canal Unión, paso Morla Vicuña, angostura Kirke o White y golfo Almirante Montt'
+FUEG = 'Estrecho de Magallanes al S, canales Magdalena y Cockburn, acceso oceánico SW del Cockburn, bahía Desolada, canales Ballenero y O\'Brien, paso Timbales y brazo Noroeste del canal Beagle'
+ATL = 'Estrecho de Magallanes al NE por las angosturas Segunda y Primera, boca oriental, costa atlántica de Tierra del Fuego a 10 millas y estrecho de Le Maire (aguas argentinas)'
 PARES = [
- {'archivo': 'vias_out.json', 'puertos': [109, 134], 'nombre': 'Puerto Montt – Punta Arenas',
-  'x': {'interior': ', Sarmiento y Smyth, y Estrecho de Magallanes', 'mixta': '', 'oceanica': ''},
-  'pasos': {'interior': ['pulluche', 'inglesa', 'escape', 'guia', 'smyth', 'shoal'], 'mixta': [], 'oceanica': ['chacao']}},
- {'archivo': 'vias_natales_out.json', 'puertos': [109, 130], 'nombre': 'Puerto Montt – Puerto Natales',
-  'x': {'interior': ' y Sarmiento, canal Unión, paso Morla Vicuña, angostura Kirke o White, golfo Almirante Montt y canal Señoret',
-        'mixta': '; desde el paso Tamar al N por los pasos Shoal y canal Smyth, canal Unión, paso Morla Vicuña, angostura Kirke o White y golfo Almirante Montt',
-        'oceanica': '; desde el paso Tamar al N por los pasos Shoal y canal Smyth, canal Unión, paso Morla Vicuña, angostura Kirke o White y golfo Almirante Montt'},
-  'pasos': {'interior': ['pulluche', 'inglesa', 'escape', 'guia', 'kirke'], 'mixta': ['shoal', 'smyth', 'kirke'], 'oceanica': ['chacao', 'shoal', 'smyth', 'kirke']}},
+ {'archivo': 'vias_out.json', 'puertos': [109, 134], 'nombre': 'Puerto Montt – Punta Arenas', 'alts': [
+   ('interior', 'Aguas interiores', PM_INT + ', Sarmiento y Smyth, y Estrecho de Magallanes.', ['pulluche', 'inglesa', 'escape', 'guia', 'smyth', 'shoal'], ['Golfo de Penas (mar abierto)']),
+   ('mixta', 'Mixta: boca del Guafo y océano', PM_MIX + '.', [], ['Océano, de la boca del Guafo a los Evangelistas']),
+   ('oceanica', 'Oceánica: canal Chacao y océano', PM_OCE + '.', ['chacao'], ['Océano, del canal Chacao a los Evangelistas'])]},
+ {'archivo': 'vias_natales_out.json', 'puertos': [109, 130], 'nombre': 'Puerto Montt – Puerto Natales', 'alts': [
+   ('interior', 'Aguas interiores', PM_INT + ' y Sarmiento, canal Unión, paso Morla Vicuña, angostura Kirke o White, golfo Almirante Montt y canal Señoret.', ['pulluche', 'inglesa', 'escape', 'guia', 'kirke'], ['Golfo de Penas (mar abierto)']),
+   ('mixta', 'Mixta: boca del Guafo y océano', PM_MIX + SUBE + '.', ['shoal', 'smyth', 'kirke'], ['Océano, de la boca del Guafo a los Evangelistas']),
+   ('oceanica', 'Oceánica: canal Chacao y océano', PM_OCE + SUBE + '.', ['chacao', 'shoal', 'smyth', 'kirke'], ['Océano, del canal Chacao a los Evangelistas'])]},
+ {'archivo': 'vias_chacabuco_out.json', 'puertos': [109, 126], 'nombre': 'Puerto Montt – Puerto Chacabuco', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda y estero Aysén.', [], ['Golfo Corcovado']),
+   ('exterior', 'Exterior de Chiloé: canal Chacao y boca del Guafo', 'Salida al océano por el canal Chacao, costa oceánica de Chiloé a 10 millas, entrada por la boca del Guafo, canal Moraleda y estero Aysén.', ['chacao'], ['Océano, del canal Chacao a la boca del Guafo'])]},
+ {'archivo': 'vias_pw_out.json', 'puertos': [134, 138], 'nombre': 'Punta Arenas – Puerto Williams', 'alts': [
+   ('fueguinos', 'Canales fueguinos', FUEG + ' y canal Beagle.', ['obrien', 'timbales'], ['Acceso oceánico SW del canal Cockburn']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', y canal Beagle desde el E.', [], ['Atlántico, de la boca oriental del Estrecho al estrecho de Le Maire'])]},
+ {'archivo': 'vias_fildes_out.json', 'puertos': [134, 139], 'nombre': 'Punta Arenas – Bahía Fildes', 'alts': [
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', [], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
 ]
-NOMBRES = {'interior': 'Aguas interiores', 'mixta': 'Mixta: boca del Guafo y océano', 'oceanica': 'Oceánica: canal Chacao y océano'}
-FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002, 3003 y 3004 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
+FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002 a 3006 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
 T = []
 for P in PARES:
     R = json.load(open(P['archivo'])); alts = []
-    for k in ['interior', 'mixta', 'oceanica']:
+    for k, nom, res, pasos, exp in P['alts']:
         v = R[k]; t = dp(v['traza'], 0.03); L = sum(mn(t[i], t[i + 1]) for i in range(len(t) - 1))
         print(P['nombre'], k, len(v['traza']), '→', len(t), round(L, 1), 'mn')
-        alts.append({'id': k, 'nombre': NOMBRES[k], 'resumen': DESC[k].format(x=P['x'][k]), 'pasos': P['pasos'][k], 'expuesto': EXP[k],
+        alts.append({'id': k, 'nombre': nom, 'resumen': res, 'pasos': pasos, 'expuesto': [[e] for e in exp],
                      'hitos': [[n, round(a, 3), round(o, 3)] for n, a, o in v['via'][1:-1]], 'traza': [[round(a, 4), round(o, 4)] for a, o in t]})
     T.append({'puertos': P['puertos'], 'nombre': P['nombre'], 'fuente': FUENTE, 'alternativas': alts})
 js = ('// ============================ Rutas tipo con alternativas (módulo Ruta de navegación) ============================\n'

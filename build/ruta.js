@@ -433,7 +433,7 @@ function crearRuta(L, map, ctx) {
     grupo.clearLayers();
     const M = ultimo.R.muestras;
     // alternativas no elegidas: línea delgada punteada
-    const COLALT = { interior: '#8e44ad', mixta: '#16a085', oceanica: '#2c6fbb' };
+    const COLALT = { interior: '#8e44ad', mixta: '#16a085', oceanica: '#2c6fbb', exterior: '#2c6fbb', fueguinos: '#8e44ad', atlantico: '#2c6fbb' };
     if (ultimo.alts) ultimo.alts.filter(x => !x.sel).forEach(x => L.polyline(x.R.traza, { color: COLALT[x.a.id] || '#888', weight: 3, opacity: .75, dashArray: '6 7' })
       .bindTooltip(`${escH(x.a.nombre)} · ${nf(x.R.total, 0)} mn · clic para elegirla`, { sticky: true }).on('click', () => { altSel = x.a.id; calcular(); }).addTo(grupo));
     // la ruta se dibuja siguiendo la traza (no en línea recta entre muestras), con el color del tramo

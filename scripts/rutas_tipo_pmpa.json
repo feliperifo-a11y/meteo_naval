@@ -1,0 +1,18 @@
+{"interior":{"nombre":"Aguas interiores","margen":1.0,"via":[
+["Puerto Montt",-41.49,-72.95],["Paso Queullín",-41.88,-72.93],["Golfo de Ancud",-42.20,-72.95],["Canal Apiao",-42.62,-73.13],["Golfo Corcovado",-43.30,-73.30],
+["Canal Moraleda (entrada N)",-43.95,-73.75],["Canal Moraleda",-44.60,-73.52],["Canal Moraleda (S)",-45.25,-73.68],
+["Canal Pulluche",-45.80,-74.45],["Bahía Anna Pink",-45.85,-74.90],["Frente a península Taitao",-46.30,-75.80,5],["Frente a cabo Raper",-46.85,-75.95,5],["Golfo de Penas",-47.30,-75.20,5],
+["Bahía Tarn",-47.75,-74.75],["Canal Messier",-48.30,-74.55],["Canal Messier (S)",-48.75,-74.42],["Angostura Inglesa",-48.97,-74.42],["Paso del Indio",-49.13,-74.42],
+["Canal Escape",-49.60,-74.45],["Canal Concepción",-50.40,-74.85],["Canal Inocentes",-50.60,-74.80],["Angostura Guía",-50.73,-74.47],
+["Canal Smyth",-52.30,-73.62],["Paso Shoal",-52.55,-73.65],
+["Paso Tamar",-52.92,-73.85],["Paso Tortuoso",-53.55,-72.50],["Paso Inglés",-53.70,-72.20],["Cabo Froward",-53.93,-71.30],["Paso del Hambre",-53.60,-70.80],["Punta Arenas",-53.17,-70.88]]},
+"mixta":{"nombre":"Mixta: boca del Guafo y océano","margen":1.0,"via":[
+["Puerto Montt",-41.49,-72.95],["Paso Queullín",-41.88,-72.93],["Golfo de Ancud",-42.20,-72.95],["Canal Apiao",-42.62,-73.13],["Golfo Corcovado",-43.30,-73.30],
+["Boca del Guafo",-43.65,-74.30,3],["Frente a isla Guamblín",-44.80,-75.90,10],["Frente a cabo Raper",-46.85,-76.30,10],["Frente a isla Campana",-48.50,-76.50,10],["Frente a isla Duque de York",-50.60,-76.20,10],
+["Islotes Evangelistas",-52.40,-75.40,5],["Boca occidental del Estrecho",-52.63,-74.80,3],["Paso del Mar",-52.82,-74.20,2],
+["Paso Tamar",-52.92,-73.85],["Paso Tortuoso",-53.55,-72.50],["Paso Inglés",-53.70,-72.20],["Cabo Froward",-53.93,-71.30],["Paso del Hambre",-53.60,-70.80],["Punta Arenas",-53.17,-70.88]]},
+"oceanica":{"nombre":"Oceánica: canal Chacao y océano","margen":1.0,"via":[
+["Puerto Montt",-41.49,-72.95],["Paso Queullín",-41.88,-72.93],["Canal Chacao (E)",-41.80,-73.42],["Canal Chacao (W)",-41.77,-73.95],["Frente a Chiloé",-42.60,-74.70,10],
+["Frente a isla Guamblín",-44.80,-75.90,10],["Frente a cabo Raper",-46.85,-76.30,10],["Frente a isla Campana",-48.50,-76.50,10],["Frente a isla Duque de York",-50.60,-76.20,10],
+["Islotes Evangelistas",-52.40,-75.40,5],["Boca occidental del Estrecho",-52.63,-74.80,3],["Paso del Mar",-52.82,-74.20,2],
+["Paso Tamar",-52.92,-73.85],["Paso Tortuoso",-53.55,-72.50],["Paso Inglés",-53.70,-72.20],["Cabo Froward",-53.93,-71.30],["Paso del Hambre",-53.60,-70.80],["Punta Arenas",-53.17,-70.88]]}}
