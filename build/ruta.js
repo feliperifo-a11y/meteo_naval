@@ -73,7 +73,7 @@ function crearRuta(L, map, ctx) {
   if (!opc.inf || typeof opc.inf !== 'object') opc.inf = {};
   if (opc.infAbr === false) opc.inf.abrigos = false; if (opc.infClima === false) opc.inf.clima = false; delete opc.infAbr; delete opc.infClima;
   // Secciones del informe que el usuario puede incluir o quitar (clave, rótulo, comienzo del título de la sección)
-  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'],
+  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'], ['nonav', 'Pasos no navegables', 'Pasos no navegables'], ['recalada', 'Recalada (Derrotero)', 'Recalada ·'],
     ['abrigos', 'Abrigos del Derrotero', 'Abrigos y fondeaderos'], ['clima', 'Clima regional (Derrotero)', 'Clima regional'],
     ['condiciones', 'Condiciones a la hora de paso', 'Condiciones a la hora'], ['avisos', 'Avisos vigentes', 'Avisos vigentes'],
     ['probables', 'Avisos probables', 'Avisos probables'], ['sitport', 'Puertos (SITPORT)', 'Puertos (SITPORT)'],
@@ -294,6 +294,31 @@ function crearRuta(L, map, ctx) {
       return { id, q, mn, eta, dia, prob, ruta };
     }).sort((x, y) => x.mn - y.mn);
   }
+  // Pasos que el Derrotero declara no navegables (Antártica): la traza pasa a menos del radio indicado
+  function noNavRuta(Rr) {
+    if (typeof RUTA_NO_NAV === 'undefined') return [];
+    const tr = Rr.traza, out = [];
+    const dSeg = (p, a, b) => { const c = Math.cos(p[0] * Math.PI / 180), ax = (a[1] - p[1]) * c * 60, ay = (a[0] - p[0]) * 60, bx = (b[1] - p[1]) * c * 60, by = (b[0] - p[0]) * 60, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+      const t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0; return Math.hypot(ax + t * dx, ay + t * dy); };
+    for (const q of RUTA_NO_NAV) {
+      let bd = 1e9, acum = 0, mn = 0;
+      for (let i = 0; i < tr.length - 1; i++) { const d = dSeg(q.p, tr[i], tr[i + 1]); if (d < bd) { bd = d; mn = acum; } acum += sarMillas(tr[i], tr[i + 1]); }
+      if (bd <= q.r) { const m = Rr.muestras.find(s => s.mn >= mn) || Rr.muestras[Rr.muestras.length - 1]; out.push({ q, mn, eta: m.eta }); }
+    }
+    return out;
+  }
+  // Instrucciones de recalada del Derrotero para los puertos de recalada de la ruta (por puerto SITPORT o por cercanía de un punto marcado)
+  function recaladasRuta() {
+    if (typeof RUTA_RECALADAS === 'undefined') return [];
+    const out = [], vistos = new Set();
+    pts.forEach((p, i) => {
+      if (i === 0) return;
+      let id = pp[i] && pp[i].id;
+      if (!id || !RUTA_RECALADAS[id]) { id = null; for (const k of Object.keys(RUTA_RECALADAS)) if (POS_B[k] && sarMillas(p, POS_B[k]) <= 5) id = k; }
+      if (id && RUTA_RECALADAS[id] && !vistos.has(String(id))) { vistos.add(String(id)); out.push(RUTA_RECALADAS[id]); }
+    });
+    return out;
+  }
   // Clima regional del Derrotero: zonas que cruza la ruta, con sus millas, horas de paso y meses
   function climaRuta(Rr) {
     if (typeof climaZona !== 'function') return [];
@@ -492,7 +517,7 @@ function crearRuta(L, map, ctx) {
     }
     const Rr = elegido.R;
     await derroteroCargar(); if (yo !== token) return;
-    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr), clima: climaRuta(Rr) };
+    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr), clima: climaRuta(Rr), noNav: noNavRuta(Rr), recal: recaladasRuta() };
     pintar(); dibujarRuta();
   }
 
@@ -586,6 +611,12 @@ function crearRuta(L, map, ctx) {
       `<p><b>${escH(x.q.n)}</b> · carta ${escH(x.q.carta)} · milla ${nf(x.mn, 0)} · paso estimado <b>${hf(x.eta)}</b> ${x.q.luz ? `<span class="sar-pill" style="background:${x.dia ? '#2e9d57' : '#d32f2f'}">${x.dia ? 'de día' : 'de noche'}</span>` : ''}` +
       `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}${x.ruta ? `<br><b>Con este buque: ${escH(x.ruta)}.</b>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small></p>`).join('') +
       `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora y el calado del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
+    // Pasos no navegables y recalada (Derrotero)
+    if (ultimo.noNav && ultimo.noNav.length) h += `<div class="sar-blq ruta-nonav"><h3>Pasos no navegables en la ruta</h3>` + ultimo.noNav.map(x =>
+      `<p><span class="sar-pill" style="background:#d32f2f">No navegar</span> <b>${escH(x.q.n)}</b> · milla ${nf(x.mn, 0)} · paso estimado ${hf(x.eta)}<br>${escH(x.q.nota)} <small>(${escH(x.q.ref)})</small></p>`).join('') +
+      '<p class="sar-nota">La ruta pasa por un paso que el Derrotero de la Costa de Chile declara no navegable (posición aproximada). Corrige la ruta con puntos intermedios por un paso apto.</p></div>';
+    if (ultimo.recal && ultimo.recal.length) h += `<div class="sar-blq ruta-recal"><h3>Recalada (Derrotero)</h3>` + ultimo.recal.map(r =>
+      `<div class="recal-item"><p><b>${escH(r.n)}</b> · carta ${escH(r.carta)}</p><ul>${r.textos.map(t => `<li>${escH(t)}</li>`).join('')}</ul><p class="sar-nota">${escH(r.ref)}. Verificar en la carta y en el Derrotero vigente.</p></div>`).join('') + '</div>';
     // Abrigos del Derrotero
     if (ultimo.abr) {
       const A = ultimo.abr, rot = A.nivelT === 'no' ? 'desfavorable' : 'de precaución';
@@ -696,6 +727,9 @@ function crearRuta(L, map, ctx) {
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
     }
+    if (ultimo.noNav && ultimo.noNav.length) sec.push({ titulo: 'Pasos no navegables en la ruta', tabla: { cab: ['Paso', 'Milla', 'Paso estimado', 'Derrotero'], anchos: [1.4, .4, 1, 4],
+      filas: ultimo.noNav.map(x => [x.q.n, n0(x.mn), hf(x.eta), x.q.nota + ' (' + x.q.ref + ')']) }, nota: 'Posición aproximada del paso. La ruta debe corregirse por un paso apto.' });
+    for (const r of ultimo.recal || []) sec.push({ titulo: 'Recalada · ' + r.n, parrafos: ['Carta ' + r.carta + '.', ...r.textos], nota: r.ref + '. Verificar en la carta y en el Derrotero vigente.' });
     if (ultimo.abr) {
       const A = ultimo.abr;
       sec.push({ titulo: 'Abrigos y fondeaderos del Derrotero', parrafos: A.tramos.length ? A.tramos.map(t => `Tramo ${A.nivelT === 'no' ? 'desfavorable' : 'de precaución'}, millas ${n0(t.ini)} a ${n0(t.fin)} desde ${hf(t.t1)}: ` +

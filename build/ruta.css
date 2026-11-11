@@ -92,3 +92,6 @@
 .ruta-inf-lista label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .ruta-inf-acc{display:flex;gap:8px;margin:4px 0}
 .ruta-inf-acc button{font:inherit;font-size:12px;padding:3px 10px;border-radius:6px;border:1px solid rgba(127,140,160,.5);background:transparent;color:inherit;cursor:pointer}
+.ruta-nonav{border-left:4px solid #d32f2f}
+.ruta-recal ul{margin:4px 0 6px;padding-left:18px}.ruta-recal li{margin:3px 0}
+.ruta-recal .recal-item+.recal-item{border-top:1px dotted rgba(127,140,160,.4);padding-top:6px}

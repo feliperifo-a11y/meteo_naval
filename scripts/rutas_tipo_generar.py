@@ -47,6 +47,37 @@ PASOS['dalcahue'] = {'n': 'Canal Dalcahue', 'carta': '7371', 'p': [-42.40, -73.6
    'nota': 'Instrucciones obligatorias: ninguna nave debe adelantar ni cruzarse con otra entre la punta Balseo (N) y la punta Chulequehue (S). Una hora antes, alerta de seguridad DSC por canal 70 VHF y SECURITE por canal 16 VHF (nombre, posición, sentido del cruce y hora frente a los bancos del Astillero y del Pasaje), repetida cada 15 minutos. Preferencia de paso a la nave que navega de N a S; la que viene del S espera al S de la punta Chulequehue. Cables de alta tensión con elevación mínima de 44,34 m sobre las más altas pleamares.'}
 PASOS['mackinlay'] = {'n': 'Paso Mackinlay', 'carta': '13100', 'p': [-54.915, -67.40], 'ref': 'Pub. SHOA N° 3005, cap. XIII, tercera parte',
    'nota': 'Informar la hora de tránsito y la ETA a la punta Espora a la Estación de Control de Tráfico Marítimo de Puerto Williams. Preferencia de paso al buque que navega de W a E.'}
+# Antártica (Pub. SHOA N° 3006): pasos de las rutas tipo, pasos que el Derrotero declara no navegables e instrucciones de recalada
+PASOS.update({
+ 'nelson': {'n': 'Estrecho Nelson', 'carta': '14220 (INT 9133)', 'p': [-62.38, -59.25], 'ref': 'Pub. SHOA N° 3006, cap. XIV, primera parte',
+   'nota': 'Paso amplio y profundo, apto para naves de cualquier tamaño y en cualquier condición de tiempo, con limitaciones con mala visibilidad; es la alternativa más apropiada para recalar a la costa S de las Shetland del Sur. En la boca N, bajos fondos al W con témpanos varados dejan un paso utilizable de 1,4 millas. Corriente de flujo hacia el SE de hasta 5 nudos en sicigias y escarceos frente a la punta Armonía. Neblina frecuente: navegar con radar. Pueden encontrarse tempanitos y escombros de hielo a la deriva.'},
+ 'ingles': {'n': 'Estrecho Inglés (parte S)', 'carta': '14230', 'p': [-62.47, -59.6], 'ref': 'Pub. SHOA N° 3006, cap. XIV, primera parte',
+   'nota': 'La parte S, entre la punta Prat y la punta Tac, es ancha, limpia y muy profunda. El acceso N (paso Lautaro, de casi 4 cables) solo con buen tiempo y visibilidad; si faltan, preferir el estrecho Nelson. Corrientes de 2 a 3 nudos en el acceso N. Se congela de abril a octubre; la parte ancha queda libre de hielo a mediados de diciembre y la boca N, a mediados de enero.'},
+ 'aguirrecerda': {'n': 'Canal Aguirre Cerda', 'carta': '15350 (INT 9104)', 'p': [-64.826, -62.852], 'ref': 'Pub. SHOA N° 3006, cap. XV, segunda parte',
+   'nota': 'El más estrecho de los accesos a la bahía Paraíso (5 cables frente a la caleta Gloria); profundo y limpio, salvo dos pequeños bancos de piedra en la punta Molina. Corrientes de marea de hasta 5 nudos (flujo al SSW, reflujo al NNE). Los témpanos de los glaciares pueden obstruir por completo su boca N; alternativas: canales Lientur y Lautaro, aptos para toda clase de buques.'},
+})
+NO_NAV = [
+ {'n': 'Estrecho Fildes', 'p': [-62.205, -59.02], 'r': 0.8, 'ref': 'Pub. SHOA N° 3006, cap. XIV, primera parte',
+  'nota': 'Pasaje somero y sucio, obstruido por islotes, rocas y bajos fondos, con fuertes corrientes de marea: el Derrotero recomienda no intentar su navegación, ni siquiera con embarcaciones menores.'},
+ {'n': 'Estrecho Morton y paso Puertas del Infierno', 'p': [-62.70, -61.20], 'r': 3.0, 'ref': 'Pub. SHOA N° 3006, cap. XIV',
+  'nota': 'Aunque comunica el paso Drake con el estrecho Bransfield, el Derrotero lo declara del todo inútil para la navegación; no debe intentarse la navegación del paso Puertas del Infierno.'},
+ {'n': 'Brazo S del estrecho Bismarck (al S de las islas Wauwermans)', 'p': [-64.98, -63.90], 'r': 2.5, 'ref': 'Pub. SHOA N° 3006, cap. XV',
+  'nota': 'No es navegable: no ha sido hidrografiado y está obstruido por rocas y bajos fondos entre las islas Wauwermans y Dannebrog. La derrota del estrecho Bismarck cruza solo por el N de las islas Wauwermans.'},
+]
+RECALADAS = {
+ 139: {'n': 'Bahía Fildes', 'carta': '14212 (INT 9124)', 'ref': 'Pub. SHOA N° 3006, cap. XIV, segunda parte', 'textos': [
+   'Entrada entre el cabo Ibarra y la punta Duthoit (5,5 millas), con un freo navegable de algo más de 2,5 millas: ambas puntas despiden rocas y bajos fondos (la punta Duthoit hasta 1,5 millas; las rocas Pig, a casi 1 milla al E de ella).',
+   'Bahía profunda y de fondo irregular, con peligros que exigen una navegación cuidadosa. Fondeaderos ocasionales en la bahía Edgell, la caleta Ardley, la bahía Collins y las caletas Marian y Potter; el Derrotero no los recomienda, salvo la caleta Potter, "un magnífico puerto".',
+   'Está bien protegida de los vientos reinantes. En verano los glaciares descargan hielos flotantes, en general pequeños. No intentar el estrecho Fildes, en su extremo NW.']},
+ 231: {'n': 'Bahía Chile (puerto Soberanía)', 'carta': '14231 (INT 9122)', 'ref': 'Pub. SHOA N° 3006, cap. XIV, primera parte', 'textos': [
+   'Acceso desde el estrecho Inglés, entre la punta Fort William y la punta Bascopé. A comienzos del verano, con campos de hielo, la nieve impide apreciar distancias, sobre todo con mala visibilidad.',
+   'Reconocer las balizas ciegas Punta Bascopé y cerro Poisson, luego las torres e instalaciones de la base "Capitán Arturo Prat" en la península Guesalaga y, al S, el islote De la Fuente, buena referencia para el fondeo.',
+   'Fondeadero recomendado para buques medianos en el puerto Soberanía: 30 a 40 m sobre fango, buen tenedero, al 245° y a 3,3 cables de la baliza ciega Isla González (ha aguantado vientos de hasta 75 nudos). Dar resguardo al bajo Toro, visible solo en bajamar, y aproximar al rumbo 065° hacia esa baliza para evitar el bajo Maipo. Es el de más abrigo de los vientos del 1.er y 2.º cuadrantes, los más frecuentes en verano.']},
+ 140: {'n': 'Bahía Paraíso', 'carta': '15350 (INT 9104)', 'ref': 'Pub. SHOA N° 3006, cap. XV, segunda parte', 'textos': [
+   'Tres accesos desde el estrecho De Gerlache: canal Aguirre Cerda (el más estrecho, con corrientes de hasta 5 nudos y témpanos que pueden obstruir su boca N), canal Lientur y canal Lautaro (limpios y profundos, aptos para toda clase de buques). No navegar el canalizo al S de la isla Lautaro.',
+   'Fondeaderos escasos y malos tenederos por la gran profundidad, el fondo de piedra y los témpanos a la deriva. Posiblemente el mejor, al 025° y a 1,08 cables de la punta Guzmán, más protegido de los témpanos; también en 36 m sobre fango al 292° y a 1,15 cables de la punta Araos, cerca del desembarcadero.',
+   'Con viento fuerte o con el fondeadero invadido por hielos, es preferible mantenerse sobre las máquinas.']},
+}
 PM_INT = 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier, angostura Inglesa, canales Wide, Concepción'
 PM_MIX = 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
 PM_OCE = 'Salida al océano por el canal Chacao, navegación oceánica hasta los islotes Evangelistas y entrada por la boca occidental del Estrecho de Magallanes'
@@ -69,8 +100,8 @@ PARES = [
    ('fueguinos', 'Canales fueguinos', FUEG + ' y canal Beagle.', ['obrien', 'timbales'], ['Acceso oceánico SW del canal Cockburn']),
    ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', y canal Beagle desde el E.', [], ['Atlántico, de la boca oriental del Estrecho al estrecho de Le Maire'])]},
  {'archivo': 'vias_fildes_out.json', 'puertos': [134, 139], 'nombre': 'Punta Arenas – Bahía Fildes', 'alts': [
-   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos']),
-   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', [], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales', 'nelson'], ['Paso Drake, desde el cabo de Hornos']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', ['nelson'], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
  {'archivo': 'vias_pan_cas_out.json', 'puertos': [134, 130], 'nombre': 'Punta Arenas – Puerto Natales', 'alts': [
    ('pan', 'Estrecho de Magallanes y canal Smyth', 'Estrecho de Magallanes al W por los pasos del Hambre, Inglés y Tortuoso hasta el paso Tamar; al N por el paso Shoal y el canal Smyth, canal Unión, paso Morla Vicuña, angostura Kirke o White, golfo Almirante Montt y canal Señoret. Es la única ruta por mar entre ambos puertos.', ['shoal', 'smyth', 'kirke'], ['Estrecho de Magallanes, sector occidental'])]},
  {'archivo': 'vias_pan_cas_out.json', 'puertos': [109, 116], 'nombre': 'Puerto Montt – Castro', 'alts': [
@@ -84,14 +115,14 @@ PARES = [
    ('mixta', 'Mixta: boca del Guafo y océano', 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta el golfo de Penas, canal Messier y angostura Inglesa.', ['inglesa'], ['Océano, de la boca del Guafo al golfo de Penas']),
    ('oceanica', 'Oceánica: canal Chacao y océano', 'Salida al océano por el canal Chacao, navegación oceánica hasta el golfo de Penas, canal Messier y angostura Inglesa.', ['chacao', 'inglesa'], ['Océano, del canal Chacao al golfo de Penas'])]},
  {'archivo': 'par_wf.json', 'puertos': [138, 139], 'nombre': 'Puerto Williams – Bahía Fildes', 'alts': [
-   ('hornos', 'Canal Murray y cabo de Hornos', 'Canal Beagle al W, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', [], ['Paso Drake, desde el cabo de Hornos']),
-   ('nueva', 'Canal Beagle al E e isla Nueva', 'Canal Beagle al E, por fuera de la isla Nueva, paso Drake y estrecho de Bransfield.', [], ['Paso Drake, desde la isla Nueva'])]},
+   ('hornos', 'Canal Murray y cabo de Hornos', 'Canal Beagle al W, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['nelson'], ['Paso Drake, desde el cabo de Hornos']),
+   ('nueva', 'Canal Beagle al E e isla Nueva', 'Canal Beagle al E, por fuera de la isla Nueva, paso Drake y estrecho de Bransfield.', ['nelson'], ['Paso Drake, desde la isla Nueva'])]},
  {'archivo': 'par_chile.json', 'puertos': [134, 231], 'nombre': 'Punta Arenas – Bahía Chile', 'alts': [
-   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos']),
-   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', [], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales', 'nelson', 'ingles'], ['Paso Drake, desde el cabo de Hornos']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', ['nelson', 'ingles'], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
  {'archivo': 'par_paraiso.json', 'puertos': [134, 140], 'nombre': 'Punta Arenas – Bahía Paraíso', 'alts': [
-   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrechos de Bransfield y de Gerlache.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)']),
-   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrechos de Bransfield y de Gerlache.', [], ['Atlántico, estrecho de Le Maire y paso Drake', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)'])]},
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrechos de Bransfield y de Gerlache.', ['obrien', 'timbales', 'nelson', 'aguirrecerda'], ['Paso Drake, desde el cabo de Hornos', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrechos de Bransfield y de Gerlache.', ['nelson', 'aguirrecerda'], ['Atlántico, estrecho de Le Maire y paso Drake', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)'])]},
 
  {'archivo': 'par_melinka.json', 'puertos': [109, 124], 'nombre': 'Puerto Montt – Melinka', 'alts': [
    ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado hasta las islas Guaitecas.', [], ['Golfo Corcovado']),
@@ -110,12 +141,53 @@ PARES = [
    ('unica', 'Canal Beagle y paso Picton', 'Canal Beagle al E por el paso Mackinlay y al S por el oeste de la isla Picton hasta Puerto Toro.', ['mackinlay'], ['Canal Beagle'])]},
 ]
 FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002 a 3006 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
+# ---- Quitar desvíos innecesarios: los puntos de paso obligan a la traza a tocarlos y a veces dejan "espigas" de ida y vuelta.
+# Se recorre la traza y, donde hace un desvío marcado (el camino es al menos 1 mn y un 25 % más largo que la recta), se une con
+# el punto más lejano visible en línea recta, siempre que el tramo directo no quede más cerca de la costa que la traza original
+# en ese mismo tramo (nunca reduce el resguardo) ni la cruce.
+import math, os
+from shapely.geometry import Polygon, LineString, Point
+from shapely.strtree import STRtree
+def _proj(la, lo): return (lo * 60 * math.cos(math.radians(la)), la * 60)
+_TIERRA = []
+for f in os.environ.get('COSTAS', 'costa/costa_sur.json,costa/costa_austral.json').split(','):
+    if os.path.exists(f):
+        for r in json.load(open(f)):
+            if len(r) >= 4:
+                g = Polygon([_proj(a_, o_) for a_, o_ in r])
+                if not g.is_valid: g = g.buffer(0)
+                _TIERRA.append(g)
+_ARBOL = STRtree(_TIERRA) if _TIERRA else None
+def _dist_tierra(geom, tope=6.0):
+    if _ARBOL is None: return tope
+    idx = _ARBOL.query(geom.buffer(tope))
+    return min([tope] + [_TIERRA[k].distance(geom) for k in idx])
+def despicar(tr, ventana_mn=40.0):
+    if _ARBOL is None or len(tr) < 3: return tr
+    P = [_proj(a_, o_) for a_, o_ in tr]
+    cum = [0.0]
+    for i in range(1, len(P)): cum.append(cum[-1] + math.dist(P[i - 1], P[i]))
+    cl = [_dist_tierra(Point(q)) for q in P]
+    out, i = [0], 0
+    while i < len(P) - 1:
+        mejor = i + 1
+        j = i + 2
+        cand = []
+        while j < len(P) and cum[j] - cum[i] <= ventana_mn: cand.append(j); j += 1
+        for j in reversed(cand):
+            d, c = math.dist(P[i], P[j]), cum[j] - cum[i]
+            if c - d < 1.0 or d > 0.8 * c: continue   # solo desvíos marcados (ida y vuelta o entradas), no curvas suaves
+            req = max(0.05, min(cl[i:j + 1]) - 0.05)
+            if _dist_tierra(LineString([P[i], P[j]]), req + 0.01) >= req: mejor = j; break
+        out.append(mejor); i = mejor
+    return [tr[k] for k in out]
+
 T = []
 for P in PARES:
     R = json.load(open(P['archivo'])); alts = []
     for k, nom, res, pasos, exp in P['alts']:
-        v = R[k]; t = dp(v['traza'], 0.03); L = sum(mn(t[i], t[i + 1]) for i in range(len(t) - 1))
-        print(P['nombre'], k, len(v['traza']), '→', len(t), round(L, 1), 'mn')
+        v = R[k]; L0 = sum(mn(v['traza'][i], v['traza'][i + 1]) for i in range(len(v['traza']) - 1)); t = dp(despicar(v['traza']), 0.03); L = sum(mn(t[i], t[i + 1]) for i in range(len(t) - 1))
+        print(P['nombre'], k, len(v['traza']), '→', len(t), round(L0, 1), '→', round(L, 1), 'mn')
         alts.append({'id': k, 'nombre': nom, 'resumen': res, 'pasos': pasos, 'expuesto': [[e] for e in exp],
                      'hitos': [[n, round(a, 3), round(o, 3)] for n, a, o in v['via'][1:-1]], 'traza': [[round(a, 4), round(o, 4)] for a, o in t]})
     T.append({'puertos': P['puertos'], 'nombre': P['nombre'], 'fuente': FUENTE, 'alternativas': alts})
@@ -125,5 +197,7 @@ js = ('// ============================ Rutas tipo con alternativas (módulo Ruta
       '// tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile (Pub. SHOA 3002 a 3004).\n'
       '// Trazas referenciales: no reemplazan la carta náutica ni el Derrotero.\n')
 js += 'const RUTA_PASOS = ' + json.dumps(PASOS, ensure_ascii=False, separators=(',', ':')) + ';\n'
+js += 'const RUTA_NO_NAV = ' + json.dumps(NO_NAV, ensure_ascii=False, separators=(',', ':')) + ';\n'
+js += 'const RUTA_RECALADAS = ' + json.dumps(RECALADAS, ensure_ascii=False, separators=(',', ':')) + ';\n'
 js += 'const RUTAS_TIPO = ' + json.dumps(T, ensure_ascii=False, separators=(',', ':')) + ';\n'
 open(sys.argv[1], 'w').write(js); print(len(js) // 1024, 'KB')
