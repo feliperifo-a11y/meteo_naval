@@ -639,11 +639,37 @@ async function miniCarta() {
   } catch (e) { document.getElementById('leyCarta').textContent = 'Isobaras no disponibles por ahora.'; }
   setTimeout(() => miniC.invalidateSize(), 100);
 }
+// Miniatura de hielo: la carta publicada si está al día; si tiene más de 7 días, la concentración satelital diaria AMSR2
+function svgHieloAmsr2(a, pr) {
+  const PR = pr || { px: 1499.02, py: 3154.59, L0: -72.01, S: 8460 };
+  const P = (la, lo) => { const t = Math.tan(Math.PI / 4 + la * Math.PI / 360), d = (lo - PR.L0) * Math.PI / 180; return [PR.px + PR.S * t * Math.sin(d), PR.py - PR.S * t * Math.cos(d)]; };
+  // encuadre centrado en la Península Antártica (65° S, 62° W), de 82° a 44° W
+  const cen = P(-65, -62), an = Math.abs(P(-65, -44)[0] - P(-65, -82)[0]), al = an * 0.45;
+  const x0 = cen[0] - an / 2, x1 = cen[0] + an / 2, y0 = cen[1] - al / 2, y1 = cen[1] + al / 2;
+  const ruta = anillos => anillos.map(r => 'M' + r.map(([lo, la]) => P(Math.max(la, -89.9), lo).map(v => v.toFixed(0)).join(',')).join('L') + 'Z').join('');
+  const geo = g => g.type === 'Polygon' ? ruta(g.coordinates) : g.type === 'MultiPolygon' ? g.coordinates.map(ruta).join('') : '';
+  const lin = g => (g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : []).map(r => 'M' + r.map(([lo, la]) => P(la, lo).map(v => v.toFixed(0)).join(',')).join('L')).join('');
+  let tierra = '';
+  for (const c of LAND) for (const poly of c.p) { const an = poly.map(decodePolyline6).filter(r => r.some(([la]) => la < -54)); if (an.length) tierra += an.map(r => 'M' + r.map(([la, lo]) => P(Math.max(la, -89.9), lo).map(v => v.toFixed(0)).join(',')).join('L') + 'Z').join(''); }
+  const hielo = (a.zonas.features || []).map(f => `<path d="${geo(f.geometry)}" fill="${f.properties.color}" stroke="none"/>`).join('');
+  const borde = a.borde && a.borde.geometry ? lin(a.borde.geometry) : '';
+  return `<svg viewBox="${x0.toFixed(0)} ${y0.toFixed(0)} ${(x1 - x0).toFixed(0)} ${(y1 - y0).toFixed(0)}" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" role="img" aria-label="Concentración satelital de hielo marino" style="display:block;background:#0064ff">` +
+    `${hielo}<path d="${tierra}" fill="#d8d4ca" stroke="#5b6673" stroke-width="4" fill-rule="evenodd"/>${borde ? `<path d="${borde}" fill="none" stroke="#fff" stroke-width="14" opacity=".85"/><path d="${borde}" fill="none" stroke="#0d2b6b" stroke-width="6"/>` : ''}</svg>`;
+}
 async function miniHielo() {
-  try { const h = await leerJSON('data/hielo.json'); const c = (h.capas || {}).conc;
-    if (c) { document.getElementById('miniHielo').innerHTML = `<img src="data/hielo_conc.png?v=${encodeURIComponent(c.last_modified || '')}" alt="Concentración de hielo marino" style="object-fit:cover;object-position:50% 30%;background:#1d3a55">`;
-      const d = new Date(c.last_modified); document.getElementById('fechaHielo').textContent = 'Concentración de hielo marino, Península Antártica' + (isNaN(d) ? '' : ' · ' + d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })); }
-  } catch (e) { document.getElementById('miniHielo').innerHTML = '<div class="vacioTxt" style="padding:12px">Sin datos de hielo por ahora.</div>'; }
+  const el = document.getElementById('miniHielo'), pie = document.getElementById('fechaHielo');
+  let h = null, a = null;
+  try { h = await leerJSON('data/hielo.json'); } catch (e) {}
+  const c = h && (h.capas || {}).conc, dC = c ? new Date(c.last_modified) : null, vieja = !dC || isNaN(dC) || Date.now() - dC > 7 * 864e5;
+  if (vieja) { try { a = await leerJSON('data/hielo_amsr2.json'); } catch (e) {} }
+  if (a && a.zonas) {
+    try { el.innerHTML = svgHieloAmsr2(a, h && h.proyeccion);
+      pie.textContent = 'Concentración de hielo marino (satélite AMSR2) · ' + new Date(a.fecha + 'T12:00:00Z').toLocaleDateString('es-CL', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+      return; } catch (e) {}
+  }
+  if (c) { el.innerHTML = `<img src="data/hielo_conc.png?v=${encodeURIComponent(c.last_modified || '')}" alt="Concentración de hielo marino" style="object-fit:cover;object-position:50% 30%;background:#1d3a55">`;
+    pie.textContent = 'Concentración de hielo marino, Península Antártica' + (isNaN(dC) ? '' : ' · ' + dC.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })); return; }
+  el.innerHTML = '<div class="vacioTxt" style="padding:12px">Sin datos de hielo por ahora.</div>';
 }
 async function miniWrf() {
   try { const w = await leerJSON('data/wrf_ia.json'), hoy = hoyChile(), quiero = ['ARICA', 'ANTOFAGASTA', 'VALPARAISO', 'TALCAHUANO', 'PUERTOMONTT', 'PUNTAARENAS'];
@@ -701,7 +727,7 @@ async function contarVisita(nueva) {
   contarVisita(nueva); setInterval(() => contarVisita(false), 5 * 60000); })();
 </script>
 <script>/*INSTALAR*/</script>
-<div id="firmaAutor">Felipe Rifo Espósito™</div>
+<div id="firmaAutor">Desarrollado por Felipe Rifo Espósito</div>
 <!-- Video de presentación: ya no se abre solo; se abre con el botón «Ver video» de la cabecera (o con ?video en la dirección). -->
 <style>
 #vIntro{position:fixed;inset:0;z-index:5000;background:rgba(3,10,20,.82);display:flex;align-items:center;justify-content:center;padding:16px}

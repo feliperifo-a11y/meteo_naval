@@ -104,6 +104,8 @@ ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
   #panel{position:absolute;z-index:1200;top:0;bottom:0;left:0;width:min(320px,88vw);transform:translateX(-102%);transition:transform .2s;box-shadow:8px 0 24px rgba(0,0,0,.45)}
   #panel.on{transform:none}.pie{display:none}
 }
+#avisoCarta{position:absolute;left:50%;transform:translateX(-50%);top:10px;z-index:900;width:max-content;max-width:min(560px,calc(100% - 90px));background:rgba(15,42,68,.93);color:#fff;border:1px solid #f2b705;border-radius:8px;padding:7px 12px;font:13px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#avisoCarta b{color:#ffd54a}#avisoCarta button{font:inherit;color:#9fd0ff;background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
 #firmaAutor{position:fixed;right:10px;bottom:6px;z-index:4000;font:500 10.5px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:rgba(15,42,68,.72);padding:3px 8px;border-radius:5px;letter-spacing:.2px;pointer-events:none;white-space:nowrap}
 @media print{#firmaAutor{display:none}}
 </style>
@@ -112,13 +114,14 @@ ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
 <header>
   <a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a>
   <div class="tit"><h1>Monitoreo de hielos</h1><div class="sub2">Península Antártica y Paso Drake</div></div>
-  <div class="tabs" id="tabs" role="tablist" aria-label="Carta de hielo"><button type="button" data-k="conc" class="on">Concentración</button><button type="button" data-k="bremen">% concentración (AMSR2)</button><button type="button" data-k="etapa">Etapa de desarrollo</button></div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Carta de hielo"><button type="button" data-k="amsr2">Satélite diario</button><button type="button" data-k="conc" class="on">Concentración</button><button type="button" data-k="bremen">% concentración (AMSR2)</button><button type="button" data-k="etapa">Etapa de desarrollo</button></div>
   <div class="fechaH" id="fechaH"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><div><b id="fechaHT">–</b><small id="sub">Cargando…</small></div></div>
   <div class="hBtns"><button type="button" id="btnPanel">Capas</button><a href="pronosticos.html?lugar=pen_drake">Pronóstico Antártica</a><a class="prim" href="./">‹ Volver</a></div>
 </header>
 <main>
   <aside id="panel">
     <div class="pSec"><h2>Carta de hielo marino</h2>
+      <label class="opc"><input type="radio" name="carta" value="amsr2"> Concentración satelital diaria (AMSR2)</label>
       <label class="opc"><input type="radio" name="carta" value="conc" checked> Concentración (décimos)</label>
       <label class="opc"><input type="radio" name="carta" value="bremen"> % de concentración (AMSR2)</label>
       <label class="opc"><input type="radio" name="carta" value="etapa"> Etapa de desarrollo</label>
@@ -142,7 +145,7 @@ ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
       <div class="nota">Cartas de hielo y productos publicados en la sección «Monitoreo de hielos» del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de meteorología marítima</a>. Se usa solo el área del mapa de cada carta, georreferenciada en la misma proyección.</div></div>
   </aside>
   <div id="mapCol">
-    <section id="mapWrap"><div id="map" role="application" aria-label="Mapa de hielos"></div></section>
+    <section id="mapWrap"><div id="map" role="application" aria-label="Mapa de hielos"></div><div id="avisoCarta" role="status" hidden></div></section>
     <div class="pie"><div class="caja info" id="info"></div></div>
   </div>
 </main>
@@ -240,6 +243,8 @@ function ponerCarta() {
   if (capaCarta) { map.removeLayer(capaCarta); capaCarta = null; }
   const k = document.querySelector('input[name=carta]:checked').value, c = H && H.capas[k];
   document.getElementById('leyCarta').innerHTML = ''; document.getElementById('fechaCarta').textContent = '';
+  if (k !== 'amsr2') { const av = document.getElementById('avisoCarta'); if (av) av.hidden = true; }
+  if (k === 'amsr2') return ponerAmsr2();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
   document.getElementById('leyTit').textContent = k === 'etapa' ? 'Leyenda · etapa de desarrollo' : k === 'bremen' ? 'Leyenda · % de concentración' : k ? 'Leyenda · concentración' : 'Leyenda';
   pintarInfo();
@@ -256,6 +261,40 @@ document.querySelectorAll('input[name=carta]').forEach(r => r.onchange = ponerCa
 document.getElementById('opac').oninput = e => { document.getElementById('opacV').textContent = e.target.value + ' %'; if (capaCarta) capaCarta.setOpacity(e.target.value / 100); };
 document.getElementById('chkMar').onchange = ponerCarta;
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { const r = document.querySelector(`input[name=carta][value="${b.dataset.k}"]`); r.checked = true; ponerCarta(); });
+// ---------- Concentración satelital diaria AMSR2 (Universidad de Bremen, procesada en MeteoIA: data/hielo_amsr2.json)
+let A2 = null;
+const DIAS_CARTA_VIEJA = 7;
+const fmtDia = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-CL', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+const diasDesde = lm => { const d = new Date(lm); return isNaN(d) ? Infinity : (Date.now() - d) / 864e5; };
+async function leerAmsr2() { if (!A2) { try { A2 = await leerJSON('data/hielo_amsr2.json'); } catch (e) { A2 = false; } } return A2; }
+async function ponerAmsr2() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === 'amsr2'));
+  document.getElementById('leyTit').textContent = 'Leyenda · concentración satelital';
+  const a = await leerAmsr2();
+  if (document.querySelector('input[name=carta]:checked').value !== 'amsr2') return;
+  if (capaCarta) { map.removeLayer(capaCarta); capaCarta = null; }
+  pintarInfo();
+  if (!a || !a.zonas) { document.getElementById('leyCarta').innerHTML = '<div class="nota">El análisis satelital diario no está disponible por ahora.</div>'; return; }
+  const op = document.getElementById('opac').value / 100, c2l = c => aH(Math.max(c[1], -89.9), c[0]);
+  capaCarta = L.layerGroup().addTo(map);
+  L.geoJSON(a.zonas, { pane: 'hielo', coordsToLatLng: c2l, style: f => ({ stroke: false, fillColor: f.properties.color, fillOpacity: op }),
+    onEachFeature: (f, l) => l.bindPopup(`<div class="pop"><b class="t">Hielo marino ${escH(f.properties.nombre)}</b><table><tr><td>Concentración</td><td>${String(f.properties.min).replace('.', ',')}–${String(f.properties.max).replace('.', ',')} %</td></tr><tr><td>Análisis</td><td>AMSR2 · ${escH(fmtDia(a.fecha))}</td></tr></table></div>`) }).addTo(capaCarta);
+  if (a.borde && a.borde.geometry && (a.borde.geometry.coordinates || []).length) {
+    L.geoJSON(a.borde, { pane: 'hielo', coordsToLatLng: c2l, interactive: false, style: { color: '#ffffff', weight: 4, opacity: 0.85 } }).addTo(capaCarta);
+    L.geoJSON(a.borde, { pane: 'hielo', coordsToLatLng: c2l, interactive: false, style: { color: '#0d2b6b', weight: 1.8, opacity: 1 } }).addTo(capaCarta);
+  }
+  capaCarta.setOpacity = v => capaCarta.eachLayer(g => g.setStyle && g.setStyle(f => f && f.properties && f.properties.color ? { fillOpacity: v } : {}));
+  document.getElementById('leyCarta').innerHTML = `<div class="leyenda">${a.clases.map(c => `<i style="background:${c.color}"></i><span>${escH(c.nombre)}</span>`).join('')}<i style="background:#fff;border:2px solid #0d2b6b;height:4px"></i><span>Borde de hielo (${String(a.umbral_borde).replace('.', ',')} %)</span></div>`;
+  document.getElementById('fechaCarta').innerHTML = `Análisis satelital del ${escH(fmtDia(a.fecha))} · ASI AMSR2, Universidad de Bremen, grilla de ${String(a.resolucion_km).replace('.', ',')} km · <a href="https://seaice.uni-bremen.de/sea-ice-concentration/" target="_blank" rel="noopener">fuente ↗</a><br>Estimación automática: subestima el hielo delgado y nuevo y pierde exactitud cerca de la costa. No reemplaza la carta de hielo oficial.`;
+}
+function avisoCartaVieja() {
+  const el = document.getElementById('avisoCarta'); if (!el) return;
+  const c = H && H.capas && H.capas.conc, dias = c ? diasDesde(c.last_modified) : Infinity;
+  if (!(dias > DIAS_CARTA_VIEJA) || !A2) { el.hidden = true; return; }
+  el.innerHTML = `La carta de hielo publicada es del <b>${escH(c ? fmtLM(c.last_modified) : '–')}</b>${isFinite(dias) ? ` (hace ${Math.floor(dias)} días)` : ''}. Se muestra la concentración satelital diaria AMSR2 del <b>${escH(fmtDia(A2.fecha))}</b>. <button type="button" id="verOficial">Ver la carta publicada</button>`;
+  el.hidden = false;
+  document.getElementById('verOficial').onclick = () => { document.querySelector('input[name=carta][value=conc]').checked = true; el.hidden = true; ponerCarta(); };
+}
 function ponerCub() {
   if (capaCub) { map.removeLayer(capaCub); capaCub = null; }
   if (!document.getElementById('chkCub').checked || !H || !H.cubierta) return;
@@ -348,8 +387,8 @@ const ICI = {
 function pintarInfo() {
   const el = document.getElementById('info'); if (!el) return;
   const k = (document.querySelector('input[name=carta]:checked') || {}).value, c = H && H.capas && H.capas[k];
-  const fd = c ? fmtLM(c.last_modified) : '–';
-  const fuente = k === 'bremen' ? 'Satélite AMSR2 (Universidad de Bremen)' : k ? 'Carta de hielo publicada' : '–';
+  const fd = k === 'amsr2' ? (A2 ? fmtDia(A2.fecha) : '–') : c ? fmtLM(c.last_modified) : '–';
+  const fuente = k === 'amsr2' ? 'Satélite AMSR2 diario (Bremen, procesado en MeteoIA)' : k === 'bremen' ? 'Satélite AMSR2 (Universidad de Bremen)' : k ? 'Carta de hielo publicada' : '–';
   const nT = H && H.tempanos ? H.tempanos.length : 0, cub = document.getElementById('chkCub').checked;
   el.innerHTML = `<h4 style="width:100%;margin:0">Información del mapa</h4>
     <div>${ICI.cal}<div>${escH(fd)}<small>Fecha de la carta</small></div></div>
@@ -364,8 +403,13 @@ async function cargar() {
   document.getElementById('lnkFuente').href = H.fuente || '#';
   const fc = Object.values(H.capas || {}).map(c => new Date(c.last_modified)).filter(d => !isNaN(d)).sort((a, b) => b - a)[0];
   document.getElementById('fechaHT').textContent = fc ? fmtLM(fc) : '–';
+  leerAmsr2().then(a => { if (a && a.fecha) { const da = new Date(a.fecha + 'T12:00:00Z'); if (!fc || da > fc) document.getElementById('fechaHT').textContent = fmtDia(a.fecha) + ' (satélite)'; } });
   document.getElementById('sub').textContent = `Revisado ${new Date(H.actualizado).toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (hora Chile)`;
-  ponerCarta();
+  await leerAmsr2();
+  const cc = H.capas && H.capas.conc;
+  if (A2 && A2.zonas && (!cc || diasDesde(cc.last_modified) > DIAS_CARTA_VIEJA) && !cargar.yaElegido) { document.querySelector('input[name=carta][value=amsr2]').checked = true; }
+  cargar.yaElegido = true;
+  ponerCarta(); avisoCartaVieja();
   if (H.cubierta) {
     const selH = document.getElementById('selHora'), prev = selH.value;
     selH.innerHTML = H.cubierta.horas.map(x => `<option value="${x.h}">+${x.h} h${x.pixeles ? '' : ' (sin acumulación)'}</option>`).join('');
@@ -409,6 +453,6 @@ setInterval(async () => { try { const v = (await (await fetch('version.txt?t=' +
 window.addEventListener('load', () => { try { window.mnEvento && mnEvento('hielos'); } catch (e) {} });
 </script>
 <script>/*INSTALAR*/</script>
-<div id="firmaAutor">Felipe Rifo Espósito™</div>
+<div id="firmaAutor">Desarrollado por Felipe Rifo Espósito</div>
 </body>
 </html>
