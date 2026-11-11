@@ -274,6 +274,26 @@ function crearRuta(L, map, ctx) {
       return { id, q, mn, eta, dia, prob, ruta };
     }).sort((x, y) => x.mn - y.mn);
   }
+  // Clima regional del Derrotero: zonas que cruza la ruta, con sus millas, horas de paso y meses
+  function climaRuta(Rr) {
+    if (typeof climaZona !== 'function') return [];
+    const out = [], mes = d => +sarHoraLocal(d).slice(5, 7);
+    for (const s of Rr.muestras) {
+      const id = climaZona(s.p[0], s.p[1]); if (!id) continue;
+      let u = out[out.length - 1];
+      if (!u || u.id !== id) { u = { id, desde: s.mn, hasta: s.mn, t1: s.eta, t2: s.eta, meses: [], laMin: s.p[0] }; out.push(u); }
+      u.hasta = s.mn; u.t2 = s.eta; u.laMin = Math.min(u.laMin, s.p[0]);
+      const m = mes(s.eta); if (!u.meses.includes(m)) u.meses.push(m);
+    }
+    const fil = [];
+    for (const [i, u] of out.entries()) {
+      if (!(u.hasta - u.desde >= 3 || out.length === 1 || i === 0 || i === out.length - 1)) continue;
+      const v = fil[fil.length - 1];
+      if (v && v.id === u.id) { v.hasta = u.hasta; v.t2 = u.t2; v.laMin = Math.min(v.laMin, u.laMin); u.meses.forEach(m => v.meses.includes(m) || v.meses.push(m)); }
+      else fil.push(u);
+    }
+    return fil.map(u => ({ ...u, z: CLIMA_DERROTERO[u.id], obs: climaMeses(u.id, u.meses, u.laMin) }));
+  }
   // Abrigos del Derrotero a 5 mn o menos de la traza, con su milla y hora de paso, y el abrigo previo a cada tramo desfavorable
   function abrigosRuta(Rr) {
     if (!DERROTERO.datos) return null;
@@ -452,7 +472,7 @@ function crearRuta(L, map, ctx) {
     }
     const Rr = elegido.R;
     await derroteroCargar(); if (yo !== token) return;
-    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr) };
+    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr), clima: climaRuta(Rr) };
     pintar(); dibujarRuta();
   }
 
@@ -550,6 +570,16 @@ function crearRuta(L, map, ctx) {
         (A.lista.length ? `<details><summary>${A.lista.length} abrigos a 5 mn o menos de la ruta</summary>${A.lista.map(o => `<div class="der-item" data-la="${o.x.la}" data-lo="${o.x.lo}"><b>${escH(o.x.n)}</b> · milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn · paso ${hf(o.eta)}${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></div>`).join('')}</details>` : '<p>No hay abrigos del Derrotero a 5 mn o menos de la ruta.</p>') +
         `<p class="sar-nota">Caletas, bahías y fondeaderos que el Derrotero de la Costa de Chile describe como abrigo o fondeadero (texto extraído automáticamente, Pub. SHOA 3001 a 3006). No se proponen los aptos solo para embarcaciones menores. Verificar en la carta y el Derrotero antes de usarlos.</p></div>`;
     }
+    // Clima regional del Derrotero
+    if (ultimo.clima && ultimo.clima.length) {
+      const MESN = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      h += `<div class="sar-blq ruta-clima"><h3>Clima regional (Derrotero)</h3>` + ultimo.clima.map(u => `<div class="clima-zona"><p><b>${escH(u.z.nombre)}</b><br><small>Millas ${nf(u.desde, 0)} a ${nf(u.hasta, 0)} · ${hf(u.t1)} a ${hf(u.t2)} · Vol. ${escH(u.z.vol)}</small></p>` +
+        `<p>${escH(u.z.resumen)}</p>` +
+        (u.obs.length ? `<ul class="clima-mes">${u.obs.map(t => `<li>${escH(t)}</li>`).join('')}</ul>` : '') +
+        `<details><summary>Vientos, temporales, señales y visibilidad</summary>` +
+        [['Vientos', u.z.vientos], ['Temporales', u.z.temporales], ['Señales de mal tiempo', u.z.senales], ['Visibilidad', u.z.visibilidad], ['Corrientes', u.z.corrientes]].filter(x => x[1]).map(x => `<p><b>${x[0]}:</b> ${escH(x[1])}</p>`).join('') + '</details></div>').join('') +
+        `<p class="sar-nota">Climatología general del ${escH(CLIMA_FUENTE)} Las observaciones destacadas corresponden a ${[...new Set(ultimo.clima.flatMap(u => u.meses))].map(m => MESN[m - 1]).join(' y ')}, mes de paso estimado. Complementa, no reemplaza, el pronóstico y los avisos vigentes.</p></div>`;
+    }
     // Tabla por punto de la ruta
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
       M.map(s => `<tr><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${s.puerto ? `<b>${escH(s.puerto)}</b><br>` : ''}${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
@@ -642,6 +672,17 @@ function crearRuta(L, map, ctx) {
         tabla: { cab: ['Abrigo', 'Milla', 'A la ruta', 'Paso estimado', 'Derrotero', 'Descripción'], anchos: [1.2, .45, .5, 1, .8, 4],
           filas: A.lista.map(o => [o.x.n + (o.x.me ? ' (solo embarcaciones menores)' : ''), n0(o.mn), nf(o.d, 1) + ' mn', hf(o.eta), 'Vol. ' + o.x.v + (o.x.c ? ', carta ' + o.x.c : ''), o.x.tx]) },
         nota: 'Caletas, bahías y fondeaderos que el Derrotero de la Costa de Chile describe como abrigo o fondeadero, a 5 mn o menos de la ruta. Texto extraído automáticamente; verificar en la carta y el Derrotero.' });
+    }
+    if (ultimo.clima && ultimo.clima.length) {
+      const par = [];
+      for (const u of ultimo.clima) {
+        par.push(`${u.z.nombre} (millas ${n0(u.desde)} a ${n0(u.hasta)}, ${hf(u.t1)} a ${hf(u.t2)}; Derrotero Vol. ${u.z.vol}). ${u.z.resumen}`);
+        for (const t of u.obs) par.push('• ' + t);
+        par.push(`Vientos: ${u.z.vientos}`); par.push(`Temporales: ${u.z.temporales}`);
+        if (u.z.senales) par.push(`Señales de mal tiempo: ${u.z.senales}`);
+        par.push(`Visibilidad: ${u.z.visibilidad}`);
+      }
+      sec.push({ titulo: 'Clima regional (Derrotero)', parrafos: par, nota: 'Climatología general del ' + CLIMA_FUENTE + ' Complementa, no reemplaza, el pronóstico y los avisos vigentes.' });
     }
     sec.push({ titulo: 'Condiciones a la hora de paso', tabla: { cab: ['Hora', 'mn', 'Posición', 'Viento', 'Ráfaga (kt)', 'Ola (m)', 'Período (s)', 'Dir. ola', 'Visibilidad (mn)', 'Estado'], anchos: [1.3, .5, 2, 1, .8, .7, .8, .7, 1, 1],
       filas: M.map(s => [hf(s.eta), n0(s.mn), (s.puerto ? s.puerto + ' · ' : '') + fmtPos(s.p), s.viento == null ? '–' : `${sarCompas(s.dir)} ${n0(s.viento)} kt`, n0(s.rafaga), n1(s.ola), n0(s.tp), s.dola == null ? '–' : sarCompas(s.dola), s.vis == null ? '–' : nf(Math.min(s.vis / 1852, 10), 1) + (s.vis / 1852 >= 10 ? '+' : ''), TXT[s.nivel]]) },

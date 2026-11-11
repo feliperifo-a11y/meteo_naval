@@ -77,3 +77,10 @@
 .der-item small{opacity:.8}
 .ruta-abrigos details summary{cursor:pointer;margin:6px 0;font-weight:700}
 @media (max-width:600px){.der-busca{width:190px}}
+.ruta-clima .clima-zona{margin:8px 0;padding:6px 0 4px;border-top:1px dotted rgba(127,140,160,.4)}
+.ruta-clima .clima-zona:first-of-type{border-top:0}
+.ruta-clima .clima-zona p{margin:3px 0}
+.ruta-clima .clima-mes{margin:4px 0 6px;padding-left:18px}
+.ruta-clima .clima-mes li{margin:2px 0;color:#c2410c;font-weight:600}
+[data-theme=dark] .ruta-clima .clima-mes li{color:#fdba74}
+.ruta-clima details summary{cursor:pointer;font-size:12.5px;opacity:.85}
