@@ -97,6 +97,12 @@ assert MARCA_CARTA in html_dash, "falta la marca del modo solo carta"
 (R / "carta.html").write_text(html_dash.replace(MARCA_CARTA, "document.documentElement.classList.add('soloCarta');")
                               .replace("<title>", "<meta name=\"robots\" content=\"noindex\"><title>", 1), encoding="utf-8")
 
+# Rutas de navegación públicas (rutas.html): la página Desarrollo en modo «solo ruta», con los colores de la portada.
+MARCA_RUTA = "try { if (new URLSearchParams(location.search).has('rutas')) {"
+assert MARCA_RUTA in html_dash, "falta la marca del modo solo ruta"
+(R / "rutas.html").write_text(html_dash.replace(MARCA_RUTA, "try { if (true) {", 1)
+                              .replace("<title>", "<meta name=\"description\" content=\"Rutas de navegación: condiciones meteorológicas y oceanográficas a lo largo de la ruta, avisos y estado de puerto.\"><title>", 1), encoding="utf-8")
+
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
                       "const VERSION_PAGINA = " + json.dumps(version) + ";"])

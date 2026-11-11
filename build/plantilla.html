@@ -316,9 +316,37 @@ dialog button{border-color:var(--line)}
 @media print{#firmaAutor{display:none}}
 </style>
 <script>try { if (new URLSearchParams(location.search).has('carta')) document.documentElement.classList.add('soloCarta'); } catch (e) {}</script>
+<script>try { if (new URLSearchParams(location.search).has('rutas')) { document.documentElement.classList.add('soloRuta'); document.documentElement.dataset.theme = 'dark'; } } catch (e) {}</script>
+<style>
+/* Página pública Rutas de navegación (rutas.html): solo el mapa y la ficha de ruta, con los colores de la portada */
+.rutaHdr{display:none}
+html.soloRuta{--bg:#06121f;--panel:#0e2136;--ink:#e8f1fa;--muted:#8fa7bf;--line:#1d3a58;--head:#0a1a2c;--headInk:#e8f1fa;--chip:#12294a}
+html.soloRuta body{background:radial-gradient(1200px 600px at 20% -10%,#123056 0%,#06121f 55%) fixed,#06121f;font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+html.soloRuta body>header:not(.rutaHdr),html.soloRuta #alertasRT,html.soloRuta main>.left,html.soloRuta #visitas,html.soloRuta #rutaNav .sar-cerrar{display:none!important}
+html.soloRuta .rutaHdr{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:calc(env(safe-area-inset-top,0px) + 12px) 22px 10px;background:transparent;color:var(--ink)}
+.rutaHdr .marca{background:#fff;border-radius:10px;padding:3px 8px;display:flex}.rutaHdr .marca img{height:44px;display:block}
+.rutaHdr .tit{flex:1 1 320px;min-width:0}.rutaHdr h1{margin:0;font-size:22px;letter-spacing:.2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rutaHdr .nuevo{font-size:11px;font-weight:800;letter-spacing:.6px;background:#f2c230;color:#0a1a2c;border-radius:999px;padding:2px 9px}
+.rutaHdr .sub{font-size:13px;color:#c9d9ea;margin-top:2px}
+.rutaHdr .hDer{display:flex;gap:8px;flex-wrap:wrap}
+.rutaHdr .btnV{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1px solid #1d3a58;background:linear-gradient(180deg,#112a45,#0b1d31);color:#e8f1fa;text-decoration:none;font-weight:600;font-size:13.5px;cursor:pointer}
+.rutaHdr .btnV:hover{border-color:#2f8cff}.rutaHdr .btnV.az{background:#2f8cff;border-color:#2f8cff;color:#fff}
+html.soloRuta main{padding:0 22px 16px}
+html.soloRuta #mapWrap{position:relative;top:auto;height:calc(100vh - 92px);border:1px solid #1d3a58;border-radius:14px;overflow:hidden;background:#081626}
+html.soloRuta #map{background:#0b2238}
+html.soloRuta #rutaNav{background:#0e2136f2;border:1px solid #1d3a58;color:#e8f1fa}
+html.soloRuta #layerBox{background:#0e2136f0;color:#e8f1fa;border-color:#1d3a58}
+@media (max-width:1050px){html.soloRuta #mapWrap{height:78vh}}
+@media (max-width:600px){html.soloRuta main{padding:0 8px 10px}.rutaHdr h1{font-size:18px}.rutaHdr .marca img{height:36px}}
+</style>
 </head>
 <body>
 <div id="guiaInst" role="dialog" aria-label="Instalar en el celular" hidden><div class="gi" id="giCaja"></div><div class="flecha" id="giFlecha" aria-hidden="true">⬇</div></div>
+<header class="rutaHdr">
+  <a class="marca" href="./" title="MeteoIA · volver al inicio"><img src="app/logo-meteoia.png" alt="MeteoIA"></a>
+  <div class="tit"><h1>Rutas de navegación <span class="nuevo">NUEVO</span></h1><div class="sub">Viento, oleaje, visibilidad, avisos y estado de puerto a la hora en que la nave pasa por cada punto de su ruta</div></div>
+  <div class="hDer"><button type="button" class="btnV" id="btnRutaAbrir">⚓ Planificar ruta</button><a class="btnV az" href="./">← Volver al inicio</a></div>
+</header>
 <header>
   <div class="hIzq"><a class="marca" href="./" title="MeteoIA"><img src="app/logo-meteoia.png" alt="MeteoIA"></a><div>
     <h1>Desarrollo · Inteligencia artificial para decisiones marítimas más seguras</h1>
@@ -1829,6 +1857,12 @@ document.getElementById('btnAlertaViento').onclick = () => { cerrarPaneles('vto'
 document.getElementById('btnEvaluacionIA').onclick = () => { cerrarPaneles('eval'); evalIA.abrir(); };
 document.getElementById('btnBorrador').onclick = () => { cerrarPaneles('borr'); borrador.abrir(); };
 document.getElementById('btnRuta').onclick = () => { cerrarPaneles('ruta'); ruta.abrir(); };
+// Página pública de rutas: la ficha se abre sola y el botón del encabezado la vuelve a mostrar
+if (document.documentElement.classList.contains('soloRuta')) {
+  document.title = 'Rutas de navegación · MeteoIA';
+  document.getElementById('btnRutaAbrir').onclick = () => { cerrarPaneles('ruta'); ruta.abrir(); document.getElementById('rutaNav').classList.remove('sar-minimizada'); };
+  setTimeout(() => { map.invalidateSize(); ruta.abrir(); }, 300);
+}
 document.getElementById('btnQC').onclick = () => { cerrarPaneles('qc'); qcEst.abrir(); };
 document.getElementById('btnTrombas').onclick = () => { cerrarPaneles('tromba'); trombas.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
