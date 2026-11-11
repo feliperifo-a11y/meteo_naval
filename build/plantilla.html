@@ -336,6 +336,40 @@ html.soloRuta #mapWrap{position:relative;top:auto;height:calc(100vh - 92px);bord
 html.soloRuta #map{background:#0b2238}
 html.soloRuta #rutaNav{background:#0e2136f2;border:1px solid #1d3a58;color:#e8f1fa}
 html.soloRuta #layerBox{background:#0e2136f0;color:#e8f1fa;border-color:#1d3a58}
+/* Ficha de ruta y controles con la paleta de la portada (azul #2f8cff en lugar del naranjo de Desarrollo) */
+html.soloRuta #mapWrap .ruta-card{background:linear-gradient(180deg,#0f243bf7,#0b1c30f7);border:1px solid #1d3a58;border-top:3px solid #2f8cff;border-radius:14px;box-shadow:0 8px 28px #0008;color:#e8f1fa}
+html.soloRuta #mapWrap .ruta-card h2,html.soloRuta #mapWrap .ruta-card .sar-cab h2{color:#e8f1fa;font-size:14px;font-weight:800;letter-spacing:.7px;text-transform:uppercase}
+html.soloRuta #mapWrap .ruta-card h3{color:#e8f1fa}
+html.soloRuta #mapWrap .ruta-card label,html.soloRuta #mapWrap .ruta-card small,html.soloRuta #mapWrap .ruta-card .sar-nota,html.soloRuta #mapWrap .ruta-card p{color:#c9d9ea}
+html.soloRuta #mapWrap .ruta-card input,html.soloRuta #mapWrap .ruta-card select,html.soloRuta #mapWrap .ruta-card textarea{background:#0b1d31;color:#e8f1fa;border:1px solid #1d3a58;border-radius:7px;color-scheme:dark}
+html.soloRuta #mapWrap .ruta-card input::placeholder{color:#6f87a0}
+html.soloRuta #mapWrap .ruta-card input:focus,html.soloRuta #mapWrap .ruta-card select:focus{outline:none;border-color:#2f8cff;box-shadow:0 0 0 2px #2f8cff40}
+html.soloRuta #mapWrap .ruta-card button{border-radius:9px}
+html.soloRuta #mapWrap .ruta-card .sar-form button[type=submit],html.soloRuta #mapWrap .ruta-card .sar-form button[type=submit]:focus,html.soloRuta #mapWrap .ruta-card .sar-form button[type=submit]:active{background:#2f8cff!important;border-color:#2f8cff!important;color:#fff!important}
+html.soloRuta #mapWrap .ruta-card .ruta-elegir{background:transparent;border:1px solid #2f8cff;color:#5fb0ff}
+html.soloRuta #mapWrap .ruta-card .ruta-borrar{background:transparent;border:1px solid #e5534b;color:#ff8a84}
+html.soloRuta .ruta-tipo{border-color:#1d3a58;background:#0b1d31}
+html.soloRuta #mapWrap .ruta-card .sar-etq{background:#f2c2301f;border:1px solid #f2c23066;color:#f2c230}
+html.soloRuta #mapWrap .ruta-card .sar-min{background:#0b1d31;border:1px solid #1d3a58;color:#e8f1fa}
+html.soloRuta #mapWrap .ruta-card table th{background:#0a1a2c;color:#c9d9ea;border-color:#1d3a58}html.soloRuta #mapWrap .ruta-card table td{border-color:#1d3a58}
+html.soloRuta .ruta-tipo button{color:#c9d9ea}
+html.soloRuta .ruta-tipo button.on{background:#2f8cff;color:#fff}
+html.soloRuta .ruta-tipo button+button{border-left-color:#1d3a58}
+html.soloRuta .ruta-cond summary::before{color:#5fb0ff}
+html.soloRuta #mapWrap .ruta-card .sar-form .ruta-masrec{border-color:#2f8cff;color:#5fb0ff}
+html.soloRuta .ruta-export button{background:#2f8cff;border-color:#2f8cff;border-radius:9px}
+html.soloRuta .ruta-export .ruta-pdf{background:transparent;border-color:#1d3a58;color:#e8f1fa}
+html.soloRuta .ruta-pto{background:#2f8cff}html.soloRuta .ruta-pto.ini{background:#34c26b}html.soloRuta .ruta-pto.fin{background:#e5534b}
+html.soloRuta .sar-aviso-mapa{background:#0e2136f2;border:1px solid #2f8cff;color:#e8f1fa;box-shadow:0 4px 16px #0008;border-radius:10px}
+html.soloRuta .sar-aviso-mapa .ruta-fin{background:#2f8cff;border-color:#2f8cff}
+html.soloRuta .sar-aviso-mapa .ruta-cancelar{border-color:#1d3a58}
+html.soloRuta .mLbl span{background:none;border:0;padding:0;color:#fff;font:800 15px system-ui,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7);letter-spacing:.5px}
+html.soloRuta .leaflet-bar a,html.soloRuta .leaflet-control-layers{background:#0e2136;color:#e8f1fa;border-color:#1d3a58}
+html.soloRuta .leaflet-bar{border:1px solid #1d3a58;border-radius:10px;overflow:hidden}
+html.soloRuta .leaflet-control-layers-toggle{filter:invert(1) brightness(1.4)}
+html.soloRuta .leaflet-control-scale-line{background:#0e2136cc;color:#e8f1fa;border-color:#8fa7bf}
+html.soloRuta .leaflet-control-attribution{background:#06121fcc;color:#8fa7bf}html.soloRuta .leaflet-control-attribution a{color:#5fb0ff}
+html.soloRuta #baseStatus{background:#0e2136f2;color:#e8f1fa;border:1px solid #1d3a58}
 @media (max-width:1050px){html.soloRuta #mapWrap{height:78vh}}
 @media (max-width:600px){html.soloRuta main{padding:0 8px 10px}.rutaHdr h1{font-size:18px}.rutaHdr .marca img{height:36px}}
 </style>
@@ -579,8 +613,11 @@ const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
 const ocean = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri — GEBCO, NOAA', maxZoom: 16, maxNativeZoom: 13 });
 const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 18 });
 const offline = L.layerGroup();
+// rutas.html usa la costa oscura de la portada; Desarrollo, la costa clara.
+const SOLO_RUTA = document.documentElement.classList.contains('soloRuta');
 for (const c of LAND) for (const poly of c.p)
-  L.polygon(poly.map(decodePolyline6), { pane: 'landPane', color: '#9aa6b2', weight: 0.8, fillColor: '#eceee6', fillOpacity: 1, interactive: false }).addTo(offline);
+  L.polygon(poly.map(decodePolyline6), SOLO_RUTA ? { pane: 'landPane', color: '#3c6e8f', weight: 0.8, fillColor: '#1a3550', fillOpacity: 1, interactive: false }
+    : { pane: 'landPane', color: '#9aa6b2', weight: 0.8, fillColor: '#eceee6', fillOpacity: 1, interactive: false }).addTo(offline);
 offline.getAttribution = () => 'Costa: Natural Earth';
 (function baseMaps() {
   const NAMES = new Map([[ocean, 'Esri Océano'], [osm, 'OpenStreetMap'], [sat, 'Esri Satélite'], [offline, 'Sin conexión (costa incorporada)']]);
@@ -603,7 +640,7 @@ offline.getAttribution = () => 'Costa: Natural Earth';
     l.on('tileerror', () => { if (l !== cur) return; err++; if (ok === 0 && err >= 6) { clearTimeout(timer); fallback(); } });
   }
   L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, { 'Límite Puerto Valparaíso (referencial)': limitePuertoValparaiso }, { position: 'topright' }).addTo(map);
-  if (navigator.onLine === false) goOffline('Equipo sin conexión: se usa la costa incorporada.'); else useBase(ocean);
+  if (navigator.onLine === false) goOffline('Equipo sin conexión: se usa la costa incorporada.'); else useBase(SOLO_RUTA ? sat : ocean);
   const cb = document.getElementById('coordBox');
   map.on('mousemove', e => { cb.style.display = 'block'; cb.textContent = `${fmtPos(e.latlng.lat, e.latlng.lng)}  ·  ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`; });
   map.on('mouseout', () => { cb.style.display = 'none'; });
@@ -655,6 +692,8 @@ function avisosEnArea(id, ahora) {
 // Colores de la carta METAREA XV publicada: costeras en verde, área X en amarillo, área IX en lila.
 const MET_COL = { costera: { line: '#2f6b2f', fill: '#7fbf7f' }, oceanica: { line: '#8a6d00', fill: '#f2df6b' }, antartica: { line: '#6b4a7a', fill: '#c9b3d6' } };
 function styleMet(f) {
+  // rutas.html: contornos claros sin relleno, como en la portada
+  if (document.documentElement.classList.contains('soloRuta')) return { color: f.properties.tipo === 'costera' ? '#ffffff' : '#e7eef6', weight: f.properties.tipo === 'costera' ? 1.4 : 1.6, opacity: 0.85, dashArray: f.properties.tipo === 'costera' ? null : '7 6', fill: true, fillOpacity: 0 };
   const c = MET_COL[f.properties.tipo];
   return { color: c.line, weight: 1.6, opacity: 0.95, dashArray: f.properties.tipo === 'costera' ? null : '6 4', fillColor: c.fill, fillOpacity: 0.22 };
 }
