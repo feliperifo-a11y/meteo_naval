@@ -164,8 +164,9 @@ function pintarPanel() {
   const o = OFI[b.codigo], oDeHoy = o && (o.emitido || '').slice(0, 10) === BOR.fecha_base;
   const per = p => {
     const op = oDeHoy ? (o.periodos || []).find(q => q.fecha === p.fecha && ((q.horario || '').startsWith('20:00') ? 'noche' : (q.horario ? 'dia' : q.tipo)) === p.tipo) : null;
-    const t = `${p.situacion ? p.situacion + ', ' : ''}${p.texto}${p.tmin != null || p.tmax != null ? ` · T ${p.tmin ?? '–'}/${p.tmax ?? '–'} °C` : ''}`;
-    const to = op ? `${op.situacion ? op.situacion + ', ' : ''}${op.texto || ''}${op.tmin != null || op.tmax != null ? ` · T ${op.tmin ?? '–'}/${op.tmax ?? '–'} °C` : ''}` : null;
+    const pref = (x) => x.situacion && !(x.texto || '').startsWith(x.situacion) ? x.situacion + ', ' : '';
+    const t = `${pref(p)}${p.texto}${p.tmin != null || p.tmax != null ? ` · T ${p.tmin ?? '–'}/${p.tmax ?? '–'} °C` : ''}`;
+    const to = op ? `${pref(op)}${op.texto || ''}${op.tmin != null || op.tmax != null ? ` · T ${op.tmin ?? '–'}/${op.tmax ?? '–'} °C` : ''}` : null;
     return `<div class="per"><h4>${escH(fecha(p.fecha))} · ${p.tipo === 'noche' ? 'noche 20:00–08:00' : 'día 08:00–20:00'}</h4>`
       + `<div class="f"><span class="et ia">WRF + IA</span><p>${escH(t)}</p></div>`
       + `<div class="f"><span class="et of">Boletín oficial</span><p>${to ? escH(to) : `<span class="vac">${oDeHoy ? 'sin este período' : 'se publica a las 16:00'}</span>`}</p></div></div>`;
