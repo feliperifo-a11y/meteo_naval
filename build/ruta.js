@@ -68,8 +68,17 @@ function crearRuta(L, map, ctx) {
   const form = card.querySelector('.ruta-form'), res = card.querySelector('.ruta-res');
   const grupo = L.layerGroup(), grupoAbr = L.layerGroup();
   // Opciones del usuario: abrigos del Derrotero en el mapa (capa aparte) y secciones opcionales del informe
-  const OPC_KEY = 'meteoia_ruta_opciones', opc = { abrMapa: false, infAbr: true, infClima: true };
+  const OPC_KEY = 'meteoia_ruta_opciones', opc = { abrMapa: false, inf: {} };
   try { Object.assign(opc, JSON.parse(localStorage.getItem(OPC_KEY) || '{}')); } catch (e) {}
+  if (!opc.inf || typeof opc.inf !== 'object') opc.inf = {};
+  if (opc.infAbr === false) opc.inf.abrigos = false; if (opc.infClima === false) opc.inf.clima = false; delete opc.infAbr; delete opc.infClima;
+  // Secciones del informe que el usuario puede incluir o quitar (clave, rótulo, comienzo del título de la sección)
+  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'],
+    ['abrigos', 'Abrigos del Derrotero', 'Abrigos y fondeaderos'], ['clima', 'Clima regional (Derrotero)', 'Clima regional'],
+    ['condiciones', 'Condiciones a la hora de paso', 'Condiciones a la hora'], ['avisos', 'Avisos vigentes', 'Avisos vigentes'],
+    ['probables', 'Avisos probables', 'Avisos probables'], ['sitport', 'Puertos (SITPORT)', 'Puertos (SITPORT)'],
+    ['estaciones', 'Estaciones cercanas', 'Estaciones cercanas'], ['umbrales', 'Umbrales del semáforo', 'Umbrales del semáforo']];
+  const infIncluye = k => opc.inf[k] !== false;
   const guardarOpc = () => { try { localStorage.setItem(OPC_KEY, JSON.stringify(opc)); } catch (e) {} };
   function verAbrigos(v) {
     opc.abrMapa = !!v; guardarOpc();
@@ -567,7 +576,10 @@ function crearRuta(L, map, ctx) {
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
       ${perfil(M)}
-      <div class="ruta-inf-opc">Incluir en el informe: <label><input type="checkbox" data-o="infAbr"${opc.infAbr ? ' checked' : ''}> Abrigos del Derrotero</label><label><input type="checkbox" data-o="infClima"${opc.infClima ? ' checked' : ''}> Clima regional (Derrotero)</label></div>
+      <details class="ruta-inf-opc"><summary>Contenido del informe <span class="ruta-inf-n">${INF_SECC.filter(x => infIncluye(x[0])).length} de ${INF_SECC.length} secciones</span></summary>
+        <div class="ruta-inf-lista">${INF_SECC.map(x => `<label><input type="checkbox" data-k="${x[0]}"${infIncluye(x[0]) ? ' checked' : ''}> ${x[1]}</label>`).join('')}</div>
+        <div class="ruta-inf-acc"><button type="button" data-todo="1">Marcar todo</button><button type="button" data-todo="0">Quitar todo</button></div>
+        <p class="sar-nota">El resumen de la ruta y la advertencia van siempre. La selección se recuerda en este equipo.</p></details>
       <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
     // Pasos con restricción de la alternativa elegida (Derrotero)
     if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
@@ -631,7 +643,10 @@ function crearRuta(L, map, ctx) {
     res.querySelectorAll('.der-item').forEach(d => d.onclick = () => { const o = ultimo.abr.lista[+d.dataset.i]; map.flyTo([o.x.la, o.x.lo], Math.max(map.getZoom(), 10), { duration: .6 });
       map.once('moveend', () => L.popup({ maxWidth: 340 }).setLatLng([o.x.la, o.x.lo]).setContent(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`)).openOn(map)); });
     res.querySelectorAll('.ruta-abr-mapa').forEach(c => c.onchange = () => verAbrigos(c.checked));
-    res.querySelectorAll('.ruta-inf-opc input').forEach(c => c.onchange = () => { opc[c.dataset.o] = c.checked; guardarOpc(); });
+    const infN = () => { const n = res.querySelector('.ruta-inf-n'); if (n) n.textContent = `${INF_SECC.filter(x => infIncluye(x[0])).length} de ${INF_SECC.length} secciones`; };
+    res.querySelectorAll('.ruta-inf-opc input[data-k]').forEach(c => c.onchange = () => { opc.inf[c.dataset.k] = c.checked; guardarOpc(); infN(); });
+    res.querySelectorAll('.ruta-inf-acc button').forEach(b => b.onclick = () => { const v = b.dataset.todo === '1'; INF_SECC.forEach(x => opc.inf[x[0]] = v); guardarOpc();
+      res.querySelectorAll('.ruta-inf-opc input[data-k]').forEach(c => c.checked = v); infN(); });
     res.querySelectorAll('.ruta-tabla-alt tr[data-alt]').forEach(tr => {
       let p0 = null;
       tr.addEventListener('pointerdown', e => { p0 = [e.clientX, e.clientY]; });
@@ -681,7 +696,7 @@ function crearRuta(L, map, ctx) {
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
     }
-    if (ultimo.abr && opc.infAbr) {
+    if (ultimo.abr) {
       const A = ultimo.abr;
       sec.push({ titulo: 'Abrigos y fondeaderos del Derrotero', parrafos: A.tramos.length ? A.tramos.map(t => `Tramo ${A.nivelT === 'no' ? 'desfavorable' : 'de precaución'}, millas ${n0(t.ini)} a ${n0(t.fin)} desde ${hf(t.t1)}: ` +
           (t.ini < 1 ? 'comienza en el zarpe.' : t.abr ? `último abrigo antes del tramo, ${t.abr.x.n} (milla ${n0(t.abr.mn)}, a ${nf(t.abr.d, 1)} mn de la ruta, paso ${hf(t.abr.eta)}).` : 'sin abrigos a 5 mn o menos en las 80 millas previas.'))
@@ -690,7 +705,7 @@ function crearRuta(L, map, ctx) {
           filas: A.lista.map(o => [o.x.n + (o.x.me ? ' (solo embarcaciones menores)' : ''), n0(o.mn), nf(o.d, 1) + ' mn', hf(o.eta), 'Vol. ' + o.x.v + (o.x.c ? ', carta ' + o.x.c : ''), o.x.tx]) },
         nota: 'Caletas, bahías y fondeaderos que el Derrotero de la Costa de Chile describe como abrigo o fondeadero, a 5 mn o menos de la ruta. Texto extraído automáticamente; verificar en la carta y el Derrotero.' });
     }
-    if (ultimo.clima && ultimo.clima.length && opc.infClima) {
+    if (ultimo.clima && ultimo.clima.length) {
       const par = [];
       for (const u of ultimo.clima) {
         par.push(`${u.z.nombre} (millas ${n0(u.desde)} a ${n0(u.hasta)}, ${hf(u.t1)} a ${hf(u.t2)}; Derrotero Vol. ${u.z.vol}). ${u.z.resumen}`);
@@ -720,7 +735,9 @@ function crearRuta(L, map, ctx) {
       nota: 'Última observación disponible al generar el informe.' } : { titulo: 'Estaciones cercanas a la ruta (15 mn o menos)', parrafos: ['Sin estaciones operativas a menos de 15 mn de la ruta.'] });
     sec.push({ titulo: 'Umbrales del semáforo', tabla: { cab: ['Variable', 'Precaución (amarillo)', 'Desfavorable (rojo)'], filas: [['Viento', `≥ ${nf(umb.vientoA, 0)} kt`, `≥ ${nf(umb.vientoR, 0)} kt`], ['Ola', `≥ ${nf(umb.olaA, 1)} m`, `≥ ${nf(umb.olaR, 1)} m`], ['Visibilidad', `< ${nf(umb.visA, 1)} mn`, `< ${nf(umb.visR, 1)} mn`]] } });
     sec.push({ titulo: 'Advertencia', parrafos: ['Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza evita la tierra según una costa de escala aproximada; no evalúa profundidades, bajos, obstáculos ni dispositivos de tráfico.'] });
-    return { titulo: 'Ruta de navegación' + (buque ? ' · ' + buque : ''), subtitulo: `${[corto(false), ...esc.map(e => e.nombre), corto(true)].join(' → ')} · MeteoIA · generado el ${hf(new Date())} (hora Chile)`, datos, secciones: sec };
+    const quitar = INF_SECC.filter(x => !infIncluye(x[0])).map(x => x[2]);
+    const secF = sec.filter(x => !quitar.some(q => x.titulo.startsWith(q)));
+    return { titulo: 'Ruta de navegación' + (buque ? ' · ' + buque : ''), subtitulo: `${[corto(false), ...esc.map(e => e.nombre), corto(true)].join(' → ')} · MeteoIA · generado el ${hf(new Date())} (hora Chile)`, datos, secciones: secF };
   }
 
   // Lugar del Derrotero elegido en el buscador como zarpe, punto intermedio o recalada (pestaña de coordenadas)
