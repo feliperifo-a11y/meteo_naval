@@ -66,7 +66,18 @@ function crearRuta(L, map, ctx) {
   wrap.appendChild(card);
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const form = card.querySelector('.ruta-form'), res = card.querySelector('.ruta-res');
-  const grupo = L.layerGroup();
+  const grupo = L.layerGroup(), grupoAbr = L.layerGroup();
+  // Opciones del usuario: abrigos del Derrotero en el mapa (capa aparte) y secciones opcionales del informe
+  const OPC_KEY = 'meteoia_ruta_opciones', opc = { abrMapa: false, infAbr: true, infClima: true };
+  try { Object.assign(opc, JSON.parse(localStorage.getItem(OPC_KEY) || '{}')); } catch (e) {}
+  const guardarOpc = () => { try { localStorage.setItem(OPC_KEY, JSON.stringify(opc)); } catch (e) {} };
+  function verAbrigos(v) {
+    opc.abrMapa = !!v; guardarOpc();
+    if (opc.abrMapa && !card.hidden) { if (!map.hasLayer(grupoAbr)) grupoAbr.addTo(map); } else if (map.hasLayer(grupoAbr)) map.removeLayer(grupoAbr);
+    res.querySelectorAll('.ruta-abr-mapa').forEach(c => c.checked = opc.abrMapa);
+  }
+  if (ctx.capas) ctx.capas.addOverlay(grupoAbr, 'Abrigos del Derrotero en la ruta');
+  map.on('overlayadd overlayremove', e => { if (e.layer === grupoAbr && opc.abrMapa !== (e.type === 'overlayadd')) { opc.abrMapa = e.type === 'overlayadd'; guardarOpc(); res.querySelectorAll('.ruta-abr-mapa').forEach(c => c.checked = opc.abrMapa); } });
   const aviso = document.createElement('div'); aviso.className = 'sar-aviso-mapa'; aviso.hidden = true;
   aviso.innerHTML = '<span class="ruta-aviso-txt">Clic en el mapa: zarpe</span> <button type="button" class="ruta-fin">Terminar ruta</button> <button type="button" class="ruta-cancelar">Cancelar</button>';
   wrap.appendChild(aviso);
@@ -180,7 +191,7 @@ function crearRuta(L, map, ctx) {
     if (pts.length >= 2) calcular(); else { res.innerHTML = '<p class="sar-error">Marca al menos el zarpe y el destino.</p>'; dibujarPuntos(); }
   }
   card.querySelector('.ruta-elegir').onclick = () => modoMarcar(true);
-  card.querySelector('.ruta-borrar').onclick = () => { modoMarcar(false); pts = []; ultimo = null; guardar(); sincForm(); res.innerHTML = ''; grupo.clearLayers(); };
+  card.querySelector('.ruta-borrar').onclick = () => { modoMarcar(false); pts = []; ultimo = null; guardar(); sincForm(); res.innerHTML = ''; grupo.clearLayers(); grupoAbr.clearLayers(); };
   // Al elegir un puerto de la lista (o escribir uno completo) se calcula de inmediato si el otro extremo ya está
   form.onsubmit = e => {
     e.preventDefault();
@@ -499,8 +510,10 @@ function crearRuta(L, map, ctx) {
     }
     M.forEach(s => L.circleMarker(s.p, { radius: 4, color: '#fff', weight: 1, fillColor: COL[s.nivel], fillOpacity: 1 })
       .bindTooltip(`${hf(s.eta)} · ${nf(s.mn, 0)} mn<br>Viento ${s.viento == null ? '–' : nf(s.viento, 0) + ' kt ' + sarCompas(s.dir)}${s.rafaga != null ? ' (ráfaga ' + nf(s.rafaga, 0) + ')' : ''}<br>Ola ${s.ola == null ? '–' : nf(s.ola, 1) + ' m · ' + nf(s.tp, 0) + ' s ' + sarCompas(s.dola)}<br>${TXT[s.nivel]}`).addTo(grupo));
+    grupoAbr.clearLayers();
     if (ultimo.abr) ultimo.abr.lista.forEach(o => L.marker([o.x.la, o.x.lo], { icon: L.divIcon({ className: '', html: '<div class="der-pin ab mini">⚓</div>', iconSize: [18, 18], iconAnchor: [9, 9] }) })
-      .bindTooltip(`${escH(o.x.n)} · milla ${nf(o.mn, 0)}`).bindPopup(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`), { maxWidth: 340 }).addTo(grupo));
+      .bindTooltip(`${escH(o.x.n)} · milla ${nf(o.mn, 0)}`).bindPopup(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`), { maxWidth: 340 }).addTo(grupoAbr));
+    verAbrigos(opc.abrMapa);
     dibujarMarcadores();
     const ancho = innerWidth > 1050;   // la ficha tapa la derecha del mapa (o la parte baja en pantallas angostas)
     map.fitBounds(L.latLngBounds([...M.map(s => s.p), ...(ultimo.alts ? ultimo.alts.flatMap(x => x.R.traza.filter((_, i) => i % 10 === 0)) : [])]).pad(0.1), { animate: false, paddingTopLeft: [20, 20], paddingBottomRight: [ancho ? card.offsetWidth + 20 : 20, ancho ? 20 : card.offsetHeight + 20] });
@@ -554,6 +567,7 @@ function crearRuta(L, map, ctx) {
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
       ${perfil(M)}
+      <div class="ruta-inf-opc">Incluir en el informe: <label><input type="checkbox" data-o="infAbr"${opc.infAbr ? ' checked' : ''}> Abrigos del Derrotero</label><label><input type="checkbox" data-o="infClima"${opc.infClima ? ' checked' : ''}> Clima regional (Derrotero)</label></div>
       <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
     // Pasos con restricción de la alternativa elegida (Derrotero)
     if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
@@ -563,11 +577,11 @@ function crearRuta(L, map, ctx) {
     // Abrigos del Derrotero
     if (ultimo.abr) {
       const A = ultimo.abr, rot = A.nivelT === 'no' ? 'desfavorable' : 'de precaución';
-      h += `<div class="sar-blq ruta-abrigos"><h3>Abrigos y fondeaderos del Derrotero</h3>` +
+      h += `<div class="sar-blq ruta-abrigos"><h3>Abrigos y fondeaderos del Derrotero</h3><label class="ruta-opc"><input type="checkbox" class="ruta-abr-mapa"${opc.abrMapa ? ' checked' : ''}> Mostrar en el mapa</label>` +
         (A.tramos.length ? A.tramos.slice(0, 6).map(t => `<p><span class="sar-pill" style="background:${COL[A.nivelT]}">Tramo ${rot}</span> millas ${nf(t.ini, 0)} a ${nf(t.fin, 0)} · desde ${hf(t.t1)}<br>` +
           (t.ini < 1 ? 'Comienza en el zarpe: conviene evaluar postergar la salida.' : t.abr ? `Último abrigo antes del tramo: <b>${escH(t.abr.x.n)}</b> · milla ${nf(t.abr.mn, 0)} · a ${nf(t.abr.d, 1)} mn de la ruta · paso ${hf(t.abr.eta)}` : 'Sin abrigos del Derrotero a 5 mn o menos de la ruta en las 80 millas previas.') + '</p>').join('') + (A.tramos.length > 6 ? `<p class="sar-nota">Y ${A.tramos.length - 6} tramos más; el informe Word los incluye todos.</p>` : '')
           : '<p>La ruta no tiene tramos en rojo ni amarillo con el pronóstico actual.</p>') +
-        (A.lista.length ? `<details><summary>${A.lista.length} abrigos a 5 mn o menos de la ruta</summary>${A.lista.map(o => `<div class="der-item" data-la="${o.x.la}" data-lo="${o.x.lo}"><b>${escH(o.x.n)}</b> · milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn · paso ${hf(o.eta)}${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></div>`).join('')}</details>` : '<p>No hay abrigos del Derrotero a 5 mn o menos de la ruta.</p>') +
+        (A.lista.length ? `<details><summary>${A.lista.length} abrigos a 5 mn o menos de la ruta</summary>${A.lista.map((o, i) => `<div class="der-item" data-i="${i}"><b>${escH(o.x.n)}</b> · milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn · paso ${hf(o.eta)}${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></div>`).join('')}</details>` : '<p>No hay abrigos del Derrotero a 5 mn o menos de la ruta.</p>') +
         `<p class="sar-nota">Caletas, bahías y fondeaderos que el Derrotero de la Costa de Chile describe como abrigo o fondeadero (texto extraído automáticamente, Pub. SHOA 3001 a 3006). No se proponen los aptos solo para embarcaciones menores. Verificar en la carta y el Derrotero antes de usarlos.</p></div>`;
     }
     // Clima regional del Derrotero
@@ -614,7 +628,10 @@ function crearRuta(L, map, ctx) {
     res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
     res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
     // Elegir alternativa: con puntero (mouse o dedo) y sin arrastre; en celular el clic sintético no siempre llega a la fila
-    res.querySelectorAll('.der-item').forEach(d => d.onclick = () => map.flyTo([+d.dataset.la, +d.dataset.lo], Math.max(map.getZoom(), 10), { duration: .6 }));
+    res.querySelectorAll('.der-item').forEach(d => d.onclick = () => { const o = ultimo.abr.lista[+d.dataset.i]; map.flyTo([o.x.la, o.x.lo], Math.max(map.getZoom(), 10), { duration: .6 });
+      map.once('moveend', () => L.popup({ maxWidth: 340 }).setLatLng([o.x.la, o.x.lo]).setContent(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`)).openOn(map)); });
+    res.querySelectorAll('.ruta-abr-mapa').forEach(c => c.onchange = () => verAbrigos(c.checked));
+    res.querySelectorAll('.ruta-inf-opc input').forEach(c => c.onchange = () => { opc[c.dataset.o] = c.checked; guardarOpc(); });
     res.querySelectorAll('.ruta-tabla-alt tr[data-alt]').forEach(tr => {
       let p0 = null;
       tr.addEventListener('pointerdown', e => { p0 = [e.clientX, e.clientY]; });
@@ -664,7 +681,7 @@ function crearRuta(L, map, ctx) {
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
     }
-    if (ultimo.abr) {
+    if (ultimo.abr && opc.infAbr) {
       const A = ultimo.abr;
       sec.push({ titulo: 'Abrigos y fondeaderos del Derrotero', parrafos: A.tramos.length ? A.tramos.map(t => `Tramo ${A.nivelT === 'no' ? 'desfavorable' : 'de precaución'}, millas ${n0(t.ini)} a ${n0(t.fin)} desde ${hf(t.t1)}: ` +
           (t.ini < 1 ? 'comienza en el zarpe.' : t.abr ? `último abrigo antes del tramo, ${t.abr.x.n} (milla ${n0(t.abr.mn)}, a ${nf(t.abr.d, 1)} mn de la ruta, paso ${hf(t.abr.eta)}).` : 'sin abrigos a 5 mn o menos en las 80 millas previas.'))
@@ -673,7 +690,7 @@ function crearRuta(L, map, ctx) {
           filas: A.lista.map(o => [o.x.n + (o.x.me ? ' (solo embarcaciones menores)' : ''), n0(o.mn), nf(o.d, 1) + ' mn', hf(o.eta), 'Vol. ' + o.x.v + (o.x.c ? ', carta ' + o.x.c : ''), o.x.tx]) },
         nota: 'Caletas, bahías y fondeaderos que el Derrotero de la Costa de Chile describe como abrigo o fondeadero, a 5 mn o menos de la ruta. Texto extraído automáticamente; verificar en la carta y el Derrotero.' });
     }
-    if (ultimo.clima && ultimo.clima.length) {
+    if (ultimo.clima && ultimo.clima.length && opc.infClima) {
       const par = [];
       for (const u of ultimo.clima) {
         par.push(`${u.z.nombre} (millas ${n0(u.desde)} a ${n0(u.hasta)}, ${hf(u.t1)} a ${hf(u.t2)}; Derrotero Vol. ${u.z.vol}). ${u.z.resumen}`);
@@ -725,11 +742,11 @@ function crearRuta(L, map, ctx) {
     else res.innerHTML = `<p class="sar-nota">${pendiente ? `Recalada: <b>${escH(pendiente.pt.n)}</b>. Falta el zarpe: búscalo y elige "Zarpe", escríbelo o márcalo en el mapa.` : 'Zarpe listo. Falta la recalada: búscala y elige "Recalada", escríbela o márcala en el mapa.'}</p>`;
   }
   function abrir(sinMarcar) {
-    card.hidden = false; wrap.classList.add('sar-abierto'); grupo.addTo(map); card.classList.remove('sar-minimizada');
+    card.hidden = false; wrap.classList.add('sar-abierto'); grupo.addTo(map); if (opc.abrMapa) grupoAbr.addTo(map); card.classList.remove('sar-minimizada');
     const lb = document.getElementById('layerBox'); if (lb && !lb.classList.contains('min')) { lb.classList.add('min'); const bt = document.getElementById('lbBtn'); if (bt) bt.textContent = '▴'; }
     ponerTipo(tipo);
     if (pts.length >= 2) { if (!ultimo) calcular(); else { pintar(); dibujarRuta(); } } else { dibujarPuntos(); if (tipo === 'coord' && sinMarcar !== true) modoMarcar(true); }
   }
-  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoMarcar(false); map.removeLayer(grupo); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoMarcar(false); map.removeLayer(grupo); map.removeLayer(grupoAbr); }
   return { abrir, cerrar, usarLugar, get abierto() { return !card.hidden; } };
 }

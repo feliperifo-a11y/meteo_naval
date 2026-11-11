@@ -639,7 +639,7 @@ offline.getAttribution = () => 'Costa: Natural Earth';
     l.on('tileload', () => { if (l !== cur) return; ok++; if (ok === 1) { clearTimeout(timer); tried.clear(); setBS(`Mapa base: ${NAMES.get(l)}`, 2500); } });
     l.on('tileerror', () => { if (l !== cur) return; err++; if (ok === 0 && err >= 6) { clearTimeout(timer); fallback(); } });
   }
-  L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, { 'Límite Puerto Valparaíso (referencial)': limitePuertoValparaiso }, { position: 'topright' }).addTo(map);
+  const capasCtl = window.MAPA_CAPAS = L.control.layers({ 'Esri Océano': ocean, 'Esri Satélite': sat, 'OpenStreetMap': osm, 'Sin conexión (costa incorporada)': offline }, { 'Límite Puerto Valparaíso (referencial)': limitePuertoValparaiso }, { position: 'topright' }).addTo(map);
   if (navigator.onLine === false) goOffline('Equipo sin conexión: se usa la costa incorporada.'); else useBase(SOLO_RUTA ? sat : ocean);
   const cb = document.getElementById('coordBox');
   map.on('mousemove', e => { cb.style.display = 'block'; cb.textContent = `${fmtPos(e.latlng.lat, e.latlng.lng)}  ·  ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`; });
@@ -1879,7 +1879,7 @@ const evalIA = crearEvaluacionIA(L, map, { escH });
 const borrador = crearBorradorBoletin(L, map, { escH });
 const trombas = crearTrombas(L, map, { escH });
 const qcEst = crearQCEstaciones(L, map, { escH });
-const ruta = crearRuta(L, map, { escH, nf, estaciones: () => ESTACIONES, evaluar, nombreEst, avisos: () => AV_ORD, estadoAviso, sitport: async () => PUERTO_DATOS || (PUERTO_DATOS = await leerRestricciones()), bahiaPos: () => BAHIA_POS, txtSitport });
+const ruta = crearRuta(L, map, { capas: window.MAPA_CAPAS || null, escH, nf, estaciones: () => ESTACIONES, evaluar, nombreEst, avisos: () => AV_ORD, estadoAviso, sitport: async () => PUERTO_DATOS || (PUERTO_DATOS = await leerRestricciones()), bahiaPos: () => BAHIA_POS, txtSitport });
 function cerrarPaneles(salvo) {
   if (salvo !== 'sar') { const sar = document.getElementById('casoSAR'); if (sar && !sar.hidden) { const x = sar.querySelector('.sar-cerrar'); if (x) x.click(); } }
   if (salvo !== 'mar' && alertaMar.abierto) alertaMar.cerrar();
