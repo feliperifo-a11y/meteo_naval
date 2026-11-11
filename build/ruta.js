@@ -73,7 +73,7 @@ function crearRuta(L, map, ctx) {
   if (!opc.inf || typeof opc.inf !== 'object') opc.inf = {};
   if (opc.infAbr === false) opc.inf.abrigos = false; if (opc.infClima === false) opc.inf.clima = false; delete opc.infAbr; delete opc.infClima;
   // Secciones del informe que el usuario puede incluir o quitar (clave, rótulo, comienzo del título de la sección)
-  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'], ['nonav', 'Pasos no navegables', 'Pasos no navegables'], ['recalada', 'Recalada (Derrotero)', 'Recalada ·'],
+  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['zarpe', 'Mejor hora de zarpe', 'Mejor hora de zarpe'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'], ['nonav', 'Pasos no navegables', 'Pasos no navegables'], ['recalada', 'Recalada (Derrotero)', 'Recalada ·'],
     ['abrigos', 'Abrigos del Derrotero', 'Abrigos y fondeaderos'], ['clima', 'Clima regional (Derrotero)', 'Clima regional'],
     ['condiciones', 'Condiciones a la hora de paso', 'Condiciones a la hora'], ['avisos', 'Avisos vigentes', 'Avisos vigentes'],
     ['probables', 'Avisos probables', 'Avisos probables'], ['sitport', 'Puertos (SITPORT)', 'Puertos (SITPORT)'],
@@ -497,9 +497,10 @@ function crearRuta(L, map, ctx) {
     const [al, pu] = await Promise.all([alertasPreventivas(), puertos()]);
     let err = null;
     await Promise.all(cand.map(async c => {
-      const dias = Math.min(10, Math.max(2, Math.ceil((c.R.eta - Date.now()) / 864e5) + 1)); let F = null;
+      // 5 días extra para poder buscar la mejor hora de zarpe sin otra consulta
+      const dias = Math.min(10, Math.max(2, Math.ceil((c.R.eta - Date.now()) / 864e5) + 6)); let F = null;
       try { F = await pronostico(c.R.muestras, dias); } catch (e) { err = e; }
-      aplicarPronostico(c.R, F);
+      c.F = F; aplicarPronostico(c.R, F);
     }));
     if (yo !== token) return;
     let alts = null, elegido = cand[0];
@@ -517,8 +518,66 @@ function crearRuta(L, map, ctx) {
     }
     const Rr = elegido.R;
     await derroteroCargar(); if (yo !== token) return;
-    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr), clima: climaRuta(Rr), noNav: noNavRuta(Rr), recal: recaladasRuta() };
+    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par, abr: abrigosRuta(Rr), clima: climaRuta(Rr), noNav: noNavRuta(Rr), recal: recaladasRuta(), cand, ventanas: null };
     pintar(); dibujarRuta();
+  }
+
+
+  // ---------------- Mejor hora de zarpe: misma ruta (y sus alternativas), zarpe cada 3 h durante 5 días, con el pronóstico ya consultado
+  function ventanasZarpe() {
+    const cands = (ultimo.cand || []).filter(c => c.F);
+    if (!cands.length) return null;
+    const ahora = new Date(), ini = new Date(Math.ceil(ahora.getTime() / 3600e3) * 3600e3), PASO = 3, N = Math.floor(120 / PASO) + 1;
+    const pasosBase = new Map(cands.map(c => [c, c.a ? pasosDe(c.a, c.R) : []]));
+    const out = [];
+    for (let k = 0; k < N; k++) {
+      const t0 = new Date(ini.getTime() + k * PASO * 3600e3); let mejor = null;
+      for (const c of cands) {
+        const dt = t0 - c.R.t0, M = c.R.muestras, F = c.F;
+        let rojo = 0, amar = 0, sd = 0, vmax = -1, omax = -1;
+        const Ms = M.map((s, j) => {
+          const eta = new Date(s.eta.getTime() + dt), x = { p: s.p, mn: s.mn, eta, tierra: s.tierra };
+          const h = F.A[j] && F.A[j].hourly, mh = F.M[j] && F.M[j].hourly;
+          if (h) { const i = idxHora(h, eta); if (i >= 0) { x.viento = pick(h, 'wind_speed_10m', i); x.rafaga = pick(h, 'wind_gusts_10m', i); x.vis = pick(h, 'visibility', i); } }
+          if (mh) { const i = idxHora(mh, eta); if (i >= 0) x.ola = mh.wave_height[i]; }
+          x.nivel = nivel(x);
+          if (x.nivel === 'no') rojo++; else if (x.nivel === 'lim') amar++; else if (x.nivel === 'sd') sd++;
+          if (x.viento != null && x.viento > vmax) vmax = x.viento; if (x.ola != null && x.ola > omax) omax = x.ola;
+          return x;
+        });
+        if (sd > M.length * 0.1) continue;   // fuera del horizonte del pronóstico
+        const avisos = cruceAvisos(Ms).length;
+        const ps = pasosBase.get(c), noche = ps.filter(x => x.q.luz && solElev(new Date(x.eta.getTime() + dt), x.q.p[0], x.q.p[1]) <= -6).length;
+        const noApta = ps.some(x => x.prob.some(t => /eslora|calado/.test(t)));
+        const pts_ = (noApta ? 1e6 : 0) + rojo * 1000 + amar * 100 + avisos * 150 + noche * 300 + c.R.total / c.R.v + k * 0.01;
+        const r = { t0, c, rojo, amar, avisos, noche, vmax, omax, puntaje: pts_, llegada: new Date(c.R.eta.getTime() + dt), noApta };
+        if (!mejor || r.puntaje < mejor.puntaje) mejor = r;
+      }
+      out.push(mejor ? mejor : { t0, sinDatos: true });
+    }
+    const validas = out.filter(x => !x.sinDatos);
+    if (!validas.length) return { lista: out, top: [] };
+    const orden = validas.slice().sort((a, b) => a.puntaje - b.puntaje), top = [];
+    for (const v of orden) { if (top.every(t => Math.abs(t.t0 - v.t0) >= 6 * 3600e3)) top.push(v); if (top.length === 3) break; }
+    return { lista: out, top, actual: ultimo.R.t0 };
+  }
+  function pintarVentanas(caja) {
+    const V = ultimo.ventanas;
+    if (!V) { caja.innerHTML = '<p class="sar-error">No hay pronóstico disponible para buscar la mejor hora de zarpe.</p>'; return; }
+    const cls = x => x.sinDatos ? 'sd' : x.noApta || x.rojo ? 'no' : x.amar || x.noche || x.avisos ? 'lim' : 'ok';
+    const hc = d => sarHoraLocal(d).slice(11, 16), dd = d => sarHoraLocal(d).slice(0, 10);
+    const dias = []; V.lista.forEach((x, i) => { const f = dd(x.t0); if (!dias.length || dias[dias.length - 1].f !== f) dias.push({ f, i, n: 0 }); dias[dias.length - 1].n++; });
+    const nomDia = f => new Date(f + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric' });
+    const multi = (ultimo.cand || []).length > 1;
+    const desc = x => x.sinDatos ? 'fuera del horizonte del pronóstico' : `${x.rojo} ${x.rojo === 1 ? 'punto' : 'puntos'} en rojo, ${x.amar} en amarillo${x.avisos ? `, ${x.avisos} ${x.avisos === 1 ? 'aviso' : 'avisos'}` : ''}${x.noche ? `, ${x.noche} ${x.noche === 1 ? 'paso con luz diurna obligatoria de noche' : 'pasos con luz diurna obligatoria de noche'}` : ''}${x.vmax >= 0 ? ` · viento máx. ${nf(x.vmax, 0)} kt` : ''}${x.omax >= 0 ? ` · ola máx. ${nf(x.omax, 1)} m` : ''}`;
+    caja.innerHTML = `<div class="zarpe-barra" role="img" aria-label="Condición de la ruta según la hora de zarpe, cada 3 horas durante 5 días">${V.lista.map((x, i) =>
+      `<i class="z-${cls(x)}${V.top.includes(x) ? ' z-top' : ''}" style="flex:1" title="Zarpe ${escH(nomDia(dd(x.t0)))} ${hc(x.t0)}: ${escH(desc(x))}${multi && x.c && x.c.a ? ' · ' + escH(x.c.a.nombre) : ''}"></i>`).join('')}</div>` +
+      `<div class="zarpe-dias">${dias.map(d => `<span style="flex:${d.n}">${escH(nomDia(d.f))}</span>`).join('')}</div>` +
+      (V.top.length ? `<ol class="zarpe-top">${V.top.map(x => `<li><b>Zarpe ${escH(nomDia(dd(x.t0)))} ${hc(x.t0)}</b> → llegada ${hf(x.llegada)}${multi ? ` · ${escH(x.c.a.nombre)}` : ''}<br><small>${escH(desc(x))}</small> <button type="button" class="zarpe-usar" data-t="${x.t0.getTime()}"${x.c.a ? ` data-alt="${escH(x.c.a.id)}"` : ''}>Usar este zarpe</button></li>`).join('')}</ol>` : '<p>Ninguna hora de zarpe tiene pronóstico completo para toda la ruta.</p>') +
+      `<p class="sar-nota">Se prueba la misma ruta${multi ? ' y cada alternativa' : ''} con zarpe cada 3 horas desde ahora y durante 5 días, con el pronóstico ya consultado (ECMWF y GFS; oleaje Open-Meteo) y los umbrales del semáforo. Se ordena por tramos en rojo y amarillo, avisos vigentes a la hora de paso y pasos que exigen luz diurna. Verde: sin tramos en rojo ni amarillo · amarillo: precaución · rojo: desfavorable · gris: sin pronóstico.</p>`;
+    caja.querySelectorAll('.zarpe-usar').forEach(b => b.onclick = () => {
+      form.hora.value = sarHoraLocal(new Date(+b.dataset.t)).slice(0, 16); if (b.dataset.alt) altSel = b.dataset.alt; guardar(); calcular();
+    });
   }
 
   // ---------------- Presentación
@@ -605,6 +664,7 @@ function crearRuta(L, map, ctx) {
         <div class="ruta-inf-lista">${INF_SECC.map(x => `<label><input type="checkbox" data-k="${x[0]}"${infIncluye(x[0]) ? ' checked' : ''}> ${x[1]}</label>`).join('')}</div>
         <div class="ruta-inf-acc"><button type="button" data-todo="1">Marcar todo</button><button type="button" data-todo="0">Quitar todo</button></div>
         <p class="sar-nota">El resumen de la ruta y la advertencia van siempre. La selección se recuerda en este equipo.</p></details>
+      <div class="ruta-zarpe"><button type="button" class="ruta-mejorzarpe">¿Cuál es la mejor hora de zarpe?</button><div class="ruta-zarpe-res"></div></div>
       <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
     // Pasos con restricción de la alternativa elegida (Derrotero)
     if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
@@ -668,6 +728,7 @@ function crearRuta(L, map, ctx) {
       </tbody></table><button type="button" class="sar-restablecer">Restablecer valores iniciales</button></details>
       <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la carta náutica, los avisos oficiales ni el criterio del capitán. La traza evita la tierra según la costa incorporada, de escala aproximada: no evalúa profundidades, bajos, obstáculos ni dispositivos de tráfico; verifícala en la carta náutica.</p>`;
     res.innerHTML = h;
+    const bz = res.querySelector('.ruta-mejorzarpe'); if (bz) bz.onclick = () => { if (!ultimo.ventanas) ultimo.ventanas = ventanasZarpe(); pintarVentanas(res.querySelector('.ruta-zarpe-res')); bz.hidden = true; };
     res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
     res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
     // Elegir alternativa: con puntero (mouse o dedo) y sin arrastre; en celular el clic sintético no siempre llega a la fila
@@ -727,6 +788,9 @@ function crearRuta(L, map, ctx) {
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
     }
+    if (ultimo.ventanas && ultimo.ventanas.top && ultimo.ventanas.top.length) sec.push({ titulo: 'Mejor hora de zarpe', tabla: { cab: ['Zarpe', 'Llegada', 'Alternativa', 'Rojo', 'Amarillo', 'Avisos', 'Pasos de noche', 'Viento máx.', 'Ola máx.'], anchos: [1.2, 1.2, 1.8, .5, .6, .5, .7, .7, .6],
+      filas: ultimo.ventanas.top.map(x => [hf(x.t0), hf(x.llegada), x.c.a ? x.c.a.nombre : '–', String(x.rojo), String(x.amar), String(x.avisos), String(x.noche), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m']) },
+      nota: 'Zarpes probados cada 3 horas durante 5 días desde la hora de cálculo, con el mismo pronóstico y umbrales del semáforo.' });
     if (ultimo.noNav && ultimo.noNav.length) sec.push({ titulo: 'Pasos no navegables en la ruta', tabla: { cab: ['Paso', 'Milla', 'Paso estimado', 'Derrotero'], anchos: [1.4, .4, 1, 4],
       filas: ultimo.noNav.map(x => [x.q.n, n0(x.mn), hf(x.eta), x.q.nota + ' (' + x.q.ref + ')']) }, nota: 'Posición aproximada del paso. La ruta debe corregirse por un paso apto.' });
     for (const r of ultimo.recal || []) sec.push({ titulo: 'Recalada · ' + r.n, parrafos: ['Carta ' + r.carta + '.', ...r.textos], nota: r.ref + '. Verificar en la carta y en el Derrotero vigente.' });

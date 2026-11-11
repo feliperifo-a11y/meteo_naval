@@ -95,3 +95,11 @@
 .ruta-nonav{border-left:4px solid #d32f2f}
 .ruta-recal ul{margin:4px 0 6px;padding-left:18px}.ruta-recal li{margin:3px 0}
 .ruta-recal .recal-item+.recal-item{border-top:1px dotted rgba(127,140,160,.4);padding-top:6px}
+.ruta-zarpe{margin:10px 0 4px}
+.ruta-mejorzarpe{font:inherit;font-weight:600;padding:7px 12px;border-radius:7px;border:1px solid #f2b705;background:rgba(242,183,5,.12);color:inherit;cursor:pointer}
+.zarpe-barra{display:flex;gap:1px;height:22px;border-radius:5px;overflow:hidden;margin:8px 0 2px}
+.zarpe-barra i{display:block;min-width:2px}.zarpe-barra .z-ok{background:#2e9d57}.zarpe-barra .z-lim{background:#e0a100}.zarpe-barra .z-no{background:#d32f2f}.zarpe-barra .z-sd{background:#8a939e}
+.zarpe-barra .z-top{box-shadow:inset 0 0 0 2px #fff}
+.zarpe-dias{display:flex;font-size:10.5px;opacity:.8;margin-bottom:6px}.zarpe-dias span{overflow:hidden;white-space:nowrap;border-left:1px solid rgba(127,140,160,.5);padding-left:3px}
+.zarpe-top{margin:6px 0;padding-left:20px}.zarpe-top li{margin:6px 0}
+.zarpe-usar{font:inherit;font-size:12px;margin-left:6px;padding:2px 8px;border-radius:5px;border:1px solid rgba(127,140,160,.6);background:transparent;color:inherit;cursor:pointer}
