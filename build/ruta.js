@@ -23,7 +23,7 @@ function crearRuta(L, map, ctx) {
   let pp = [], est = [];
   // Pestaña Puertos: zarpe y lista de recaladas en orden, con estadía en cada recalada intermedia
   let pz = null, recs = [{ p: null, h: 0 }];
-  let tipo = 'coord', condAbierta = false, buque = '', margen = 5;   // tipo de entrada: 'coord' (mapa o grados) o 'puertos'
+  let tipo = 'coord', condAbierta = false, buque = '', margen = 5, eslora = null, calado = null, altSel = null;   // tipo de entrada: 'coord' (mapa o grados) o 'puertos'
   try {
     const g = JSON.parse(localStorage.getItem('meteoia_ruta') || 'null');
     if (g && Array.isArray(g.pts)) { pts = g.pts; pp = (g.pp || []).map(id => puertoPorId(id)); est = g.est || []; }
@@ -31,6 +31,7 @@ function crearRuta(L, map, ctx) {
     if (g && g.pz) pz = puertoPorId(g.pz);
     if (g && Array.isArray(g.recs) && g.recs.length) recs = g.recs.map(r => ({ p: puertoPorId(r.p), h: +r.h || 0 }));
     if (g && g.buque) buque = String(g.buque).slice(0, 80);
+    if (g && g.eslora > 0) eslora = +g.eslora; if (g && g.calado > 0) calado = +g.calado;
     if (g && g.margen != null && isFinite(g.margen)) margen = Math.min(50, Math.max(0, +g.margen));
   } catch (e) { /* sin almacenamiento */ }
   const pZ = () => pp[0] || null, pR = () => (pts.length > 1 && pp[pts.length - 1]) || null;
@@ -44,6 +45,8 @@ function crearRuta(L, map, ctx) {
     </div>
     <form class="sar-form ruta-form">
       <label class="ruta-buque">Buque o embarcación<input name="buque" placeholder="Nombre del buque (opcional)" autocomplete="off" maxlength="80"></label>
+      <label title="Opcional: se compara con la eslora máxima de canales y angosturas">Eslora (m)<input name="eslora" inputmode="decimal" placeholder="opcional" style="width:80px;min-width:80px"></label>
+      <label title="Opcional: se compara con el calado máximo de canales y angosturas">Calado (m)<input name="calado" inputmode="decimal" placeholder="opcional" style="width:80px;min-width:80px"></label>
       <label class="ruta-c">Zarpe (lat, lon)<input name="a" placeholder="33 01,5 S  71 38,0 W" autocomplete="off"></label>
       <label class="ruta-c">Recalada (lat, lon)<input name="b" placeholder="36 42,0 S  73 07,0 W" autocomplete="off"></label>
       <label class="ruta-p">Puerto de zarpe<select name="pa"></select></label>
@@ -83,7 +86,7 @@ function crearRuta(L, map, ctx) {
   map.getContainer().addEventListener('mouseleave', () => { cursor.hidden = true; });
   card.querySelector('.sar-cerrar').onclick = () => cerrar();
   card.querySelector('.sar-min').onclick = e => { card.classList.toggle('sar-minimizada'); e.currentTarget.textContent = card.classList.contains('sar-minimizada') ? '▴' : '▾'; };
-  const guardar = () => { try { localStorage.setItem('meteoia_ruta', JSON.stringify({ pts, tipo, pp: pp.map(x => x && x.id), est, pz: pz && pz.id, recs: recs.map(r => ({ p: r.p && r.p.id, h: r.h })), buque, margen })); } catch (e) { /* sin almacenamiento */ } };
+  const guardar = () => { try { localStorage.setItem('meteoia_ruta', JSON.stringify({ pts, tipo, pp: pp.map(x => x && x.id), est, pz: pz && pz.id, recs: recs.map(r => ({ p: r.p && r.p.id, h: r.h })), buque, margen, eslora, calado })); } catch (e) { /* sin almacenamiento */ } };
   // Listas de puertos agrupadas por zona (de norte a sur)
   const ZONAS = [['Islas oceánicas', x => x.p[1] < -76], ['Arica a Coquimbo', x => x.p[0] >= -32], ['Valparaíso a Biobío', x => x.p[0] >= -38], ['Araucanía a Los Lagos', x => x.p[0] >= -43.5],
     ['Aysén', x => x.p[0] >= -49], ['Magallanes', x => x.p[0] >= -60], ['Antártica', () => true]];
@@ -114,6 +117,10 @@ function crearRuta(L, map, ctx) {
   card.querySelectorAll('.ruta-tipo button').forEach(b => b.onclick = () => ponerTipo(b.dataset.t));
   form.pa.addEventListener('change', () => { pz = puertoPorId(+form.pa.value); guardar(); if (pz && recs.every(r => r.p)) form.requestSubmit(); });
   form.buque.value = buque;
+  for (const k of ['eslora', 'calado']) {
+    form[k].value = (k === 'eslora' ? eslora : calado) != null ? String(k === 'eslora' ? eslora : calado).replace('.', ',') : '';
+    form[k].addEventListener('change', () => { const v = parseFloat(form[k].value.replace(',', '.')); if (k === 'eslora') eslora = v > 0 ? v : null; else calado = v > 0 ? v : null; guardar(); if (ultimo) { pintar(); } });
+  }
   form.margen.value = String(margen).replace('.', ',');
   form.margen.addEventListener('change', () => { const v = parseFloat(form.margen.value.replace(',', '.')); margen = isFinite(v) ? Math.min(50, Math.max(0, v)) : 5; form.margen.value = String(margen).replace('.', ','); guardar(); if (pts.length >= 2) calcular(); });
   form.buque.addEventListener('input', () => { buque = form.buque.value.trim(); guardar(); const t = res.querySelector('.ruta-nombre-buque'); if (t) t.textContent = buque; });
@@ -225,6 +232,42 @@ function crearRuta(L, map, ctx) {
     trazaCache = { clave, traza: { tz, sinPaso, recta } };
     return trazaCache.traza;
   }
+  // Rutas tipo: par de puertos (en cualquier sentido) que tiene alternativas trazadas con el Derrotero
+  function parTipo() {
+    if (typeof RUTAS_TIPO === 'undefined' || pts.length !== 2 || !pp[0] || !pp[1]) return null;
+    for (const d of RUTAS_TIPO) { if (d.puertos[0] === pp[0].id && d.puertos[1] === pp[1].id) return { d, inv: false }; if (d.puertos[1] === pp[0].id && d.puertos[0] === pp[1].id) return { d, inv: true }; }
+    return null;
+  }
+  function trazaAlt(a, inv) {
+    const t = inv ? a.traza.slice().reverse() : a.traza, P = [];
+    if (sarMillas(pts[0], t[0]) > 0.3) P.push(pts[0]);
+    P.push(...t);
+    if (sarMillas(pts[1], t[t.length - 1]) > 0.3) P.push(pts[1]);
+    const tz = P.map(p => ({ p })); tz[0].ip = 0; tz[tz.length - 1].ip = 1;
+    return { tz, sinPaso: [], recta: sarMillas(pts[0], pts[1]) };
+  }
+  // Elevación del sol (grados) en un punto y hora: para los pasos que exigen luz diurna (crepúsculo civil: sobre -6°)
+  function solElev(d, la, lo) {
+    const rad = Math.PI / 180, n = d.getTime() / 864e5 - 10957.5, L = (280.46 + 0.9856474 * n) % 360, g = (357.528 + 0.9856003 * n) % 360;
+    const lam = L + 1.915 * Math.sin(g * rad) + 0.02 * Math.sin(2 * g * rad), eps = 23.439 - 4e-7 * n;
+    const dec = Math.asin(Math.sin(eps * rad) * Math.sin(lam * rad)), ra = Math.atan2(Math.cos(eps * rad) * Math.sin(lam * rad), Math.cos(lam * rad));
+    const gmst = (18.697374558 + 24.06570982441908 * n) % 24, H = (gmst * 15 + lo) * rad - ra;
+    return Math.asin(Math.sin(la * rad) * Math.sin(dec) + Math.cos(la * rad) * Math.cos(dec) * Math.cos(H)) / rad;
+  }
+  // Pasos con restricción de una alternativa: hora de paso, luz y comparación con eslora y calado del buque
+  function pasosDe(a, Rr) {
+    const tr = Rr.traza, cum = [0]; for (let i = 1; i < tr.length; i++) cum.push(cum[i - 1] + sarMillas(tr[i - 1], tr[i]));
+    return (a.pasos || []).map(id => {
+      const q = RUTA_PASOS[id]; let bi = 0, bd = 1e9; tr.forEach((p, i) => { const d = sarMillas(p, q.p); if (d < bd) { bd = d; bi = i; } });
+      const mn = cum[bi]; let esp = 0; for (const e of Rr.escalas) if (e.mn < mn - 0.01 && e.h) esp += e.h;
+      const eta = new Date(Rr.t0.getTime() + (mn / Rr.v + esp) * 3600e3), dia = solElev(eta, q.p[0], q.p[1]) > -6, prob = [];
+      if (q.eslora && eslora && eslora > q.eslora) prob.push(`eslora ${nf(eslora, 0)} m sobre el máximo de ${nf(q.eslora, 0)} m`);
+      if (q.calado && calado && calado > q.calado) prob.push(`calado ${nf(calado, 1)} m sobre el máximo de ${nf(q.calado, 1)} m`);
+      if (q.luz && !dia) prob.push('la hora de paso es de noche y exige luz diurna');
+      if (q.velMin && Rr.v < q.velMin) prob.push(`a menos de ${q.velMin} kt debe cruzarse con corriente a favor`);
+      return { id, q, mn, eta, dia, prob };
+    }).sort((x, y) => x.mn - y.mn);
+  }
   function muestrear(T) {
     const v = Math.max(0.5, parseFloat(String(form.vel.value).replace(',', '.')) || 10);
     const t0 = horaChile(form.hora.value) || new Date();
@@ -335,24 +378,44 @@ function crearRuta(L, map, ctx) {
     return out.sort((a, b) => a.mn - b.mn).slice(0, 12);
   }
 
-  async function calcular() {
-    if (pts.length < 2) return;
-    const yo = ++token;
-    if (trazaCache.clave !== JSON.stringify(pts) + '|' + margen) { res.innerHTML = '<p class="sar-cargando">Trazando la ruta por mar…</p>'; await new Promise(r => setTimeout(r, 30)); if (yo !== token) return; }
-    const R = muestrear(trazar());
-    res.innerHTML = `<p class="sar-cargando">Consultando el pronóstico en ${R.muestras.length} puntos de la ruta…</p>`;
-    const dias = Math.min(10, Math.max(2, Math.ceil((R.eta - Date.now()) / 864e5) + 1));
-    let F = null, err = null;
-    const [al, pu] = await Promise.all([alertasPreventivas(), puertos()]);
-    try { F = await pronostico(R.muestras, dias); } catch (e) { err = e; }
-    if (yo !== token) return;
-    R.muestras.forEach((s, j) => {
+  function aplicarPronostico(Rr, F) {
+    Rr.muestras.forEach((s, j) => {
       const h = F && F.A[j] && F.A[j].hourly, mh = F && F.M[j] && F.M[j].hourly;
       if (h) { const i = idxHora(h, s.eta); if (i >= 0) { s.viento = pick(h, 'wind_speed_10m', i); s.dir = pick(h, 'wind_direction_10m', i); s.rafaga = pick(h, 'wind_gusts_10m', i); s.vis = pick(h, 'visibility', i); s.pp = pick(h, 'precipitation', i); } else s.fuera = true; }
       if (mh) { const i = idxHora(mh, s.eta); if (i >= 0) { s.ola = mh.wave_height[i]; s.tp = mh.wave_period[i]; s.dola = mh.wave_direction[i]; } }
       s.nivel = nivel(s);
     });
-    ultimo = { R, avisos: cruceAvisos(R.muestras), prob: cruceProbables(R.muestras, al), pu, est: estacionesCerca(R.muestras), err, al };
+  }
+  async function calcular() {
+    if (pts.length < 2) return;
+    const yo = ++token, par = parTipo();
+    if (!par && trazaCache.clave !== JSON.stringify(pts) + '|' + margen) { res.innerHTML = '<p class="sar-cargando">Trazando la ruta por mar…</p>'; await new Promise(r => setTimeout(r, 30)); if (yo !== token) return; }
+    // Con rutas tipo se evalúan todas las alternativas; si no, la traza calculada entre los puntos
+    const cand = par ? par.d.alternativas.map(a => ({ a, R: muestrear(trazaAlt(a, par.inv)) })) : [{ a: null, R: muestrear(trazar()) }];
+    res.innerHTML = `<p class="sar-cargando">Consultando el pronóstico${par ? ` de ${cand.length} alternativas de ruta` : ` en ${cand[0].R.muestras.length} puntos de la ruta`}…</p>`;
+    const [al, pu] = await Promise.all([alertasPreventivas(), puertos()]);
+    let err = null;
+    await Promise.all(cand.map(async c => {
+      const dias = Math.min(10, Math.max(2, Math.ceil((c.R.eta - Date.now()) / 864e5) + 1)); let F = null;
+      try { F = await pronostico(c.R.muestras, dias); } catch (e) { err = e; }
+      aplicarPronostico(c.R, F);
+    }));
+    if (yo !== token) return;
+    let alts = null, elegido = cand[0];
+    if (par) {
+      alts = cand.map(c => {
+        const M = c.R.muestras, cnt = k => M.filter(s => s.nivel === k).length, mx = k => M.reduce((m, s) => s[k] != null && s[k] > m ? s[k] : m, -1);
+        const pasos = pasosDe(c.a, c.R), nav = pasos.filter(x => x.prob.some(t => /eslora|calado/.test(t))).length;
+        const x = { a: c.a, R: c.R, rojo: cnt('no'), amar: cnt('lim'), sd: cnt('sd'), vmax: mx('viento'), omax: mx('ola'), avisos: cruceAvisos(M).length, pasos, noApta: nav > 0 };
+        x.puntaje = (x.noApta ? 1e6 : 0) + x.rojo * 1000 + x.amar * 100 + x.avisos * 150 + c.R.total / c.R.v;   // menor es mejor
+        return x;
+      });
+      const rec = alts.slice().sort((x, y) => x.puntaje - y.puntaje)[0]; alts.forEach(x => { x.recomendada = x === rec; });
+      const sel = alts.find(x => x.a.id === altSel) || rec; alts.forEach(x => { x.sel = x === sel; });
+      elegido = sel;
+    }
+    const Rr = elegido.R;
+    ultimo = { R: Rr, avisos: cruceAvisos(Rr.muestras), prob: cruceProbables(Rr.muestras, al), pu, est: estacionesCerca(Rr.muestras), err, al, alts, par };
     pintar(); dibujarRuta();
   }
 
@@ -363,12 +426,25 @@ function crearRuta(L, map, ctx) {
   function dibujarRuta() {
     grupo.clearLayers();
     const M = ultimo.R.muestras;
-    for (let i = 0; i < M.length - 1; i++) L.polyline([M[i].p, M[i + 1].p], { color: COL[M[i].nivel], weight: 6, opacity: .9 }).addTo(grupo);
+    // alternativas no elegidas: línea delgada punteada
+    const COLALT = { interior: '#8e44ad', mixta: '#16a085', oceanica: '#2c6fbb' };
+    if (ultimo.alts) ultimo.alts.filter(x => !x.sel).forEach(x => L.polyline(x.R.traza, { color: COLALT[x.a.id] || '#888', weight: 3, opacity: .75, dashArray: '6 7' })
+      .bindTooltip(`${escH(x.a.nombre)} · ${nf(x.R.total, 0)} mn · clic para elegirla`, { sticky: true }).on('click', () => { altSel = x.a.id; calcular(); }).addTo(grupo));
+    // la ruta se dibuja siguiendo la traza (no en línea recta entre muestras), con el color del tramo
+    const tr = ultimo.R.traza, cum = [0]; for (let i = 1; i < tr.length; i++) cum.push(cum[i - 1] + sarMillas(tr[i - 1], tr[i]));
+    let k = 0;
+    for (let i = 0; i < M.length - 1; i++) {
+      if (M[i + 1].mn - M[i].mn < 0.01) continue;
+      const seg = [M[i].p]; while (k < tr.length && cum[k] <= M[i].mn + 0.01) k++;
+      let j = k; while (j < tr.length && cum[j] < M[i + 1].mn - 0.01) seg.push(tr[j++]);
+      seg.push(M[i + 1].p);
+      L.polyline(seg, { color: COL[M[i].nivel], weight: 6, opacity: .9 }).addTo(grupo);
+    }
     M.forEach(s => L.circleMarker(s.p, { radius: 4, color: '#fff', weight: 1, fillColor: COL[s.nivel], fillOpacity: 1 })
       .bindTooltip(`${hf(s.eta)} · ${nf(s.mn, 0)} mn<br>Viento ${s.viento == null ? '–' : nf(s.viento, 0) + ' kt ' + sarCompas(s.dir)}${s.rafaga != null ? ' (ráfaga ' + nf(s.rafaga, 0) + ')' : ''}<br>Ola ${s.ola == null ? '–' : nf(s.ola, 1) + ' m · ' + nf(s.tp, 0) + ' s ' + sarCompas(s.dola)}<br>${TXT[s.nivel]}`).addTo(grupo));
     dibujarMarcadores();
     const ancho = innerWidth > 1050;   // la ficha tapa la derecha del mapa (o la parte baja en pantallas angostas)
-    map.fitBounds(L.latLngBounds(M.map(s => s.p)).pad(0.15), { animate: false, paddingTopLeft: [20, 20], paddingBottomRight: [ancho ? card.offsetWidth + 20 : 20, ancho ? 20 : card.offsetHeight + 20] });
+    map.fitBounds(L.latLngBounds([...M.map(s => s.p), ...(ultimo.alts ? ultimo.alts.flatMap(x => x.R.traza.filter((_, i) => i % 10 === 0)) : [])]).pad(0.1), { animate: false, paddingTopLeft: [20, 20], paddingBottomRight: [ancho ? card.offsetWidth + 20 : 20, ancho ? 20 : card.offsetHeight + 20] });
   }
   function dibujarMarcadores() {
     pts.forEach((p, i) => {
@@ -395,18 +471,36 @@ function crearRuta(L, map, ctx) {
     const peor = ['tierra', 'no', 'lim', 'ok', 'sd'].find(k => M.some(s => s.nivel === k)) || 'sd';
     const tierra = M.some(s => s.tierra), fuera = M.some(s => s.fuera);
     const esc = R.escalas.filter(e => e.mn < R.total - 0.01);
-    let h = `<div class="sar-blq ruta-resumen" style="border-left:5px solid ${COL[peor]}"><h3>Resumen de la ruta</h3>
+    let h = '';
+    const alts = ultimo.alts, selA = alts && alts.find(x => x.sel);
+    if (alts) {
+      const sem = x => `<span class="ruta-sem" style="background:${COL[x.rojo ? 'no' : x.amar ? 'lim' : x.sd === x.R.muestras.length ? 'sd' : 'ok']}"></span>`;
+      h += `<div class="sar-blq ruta-alts"><h3>Alternativas de ruta · ${escH(ultimo.par.d.nombre)}</h3>
+        <div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla-alt"><thead><tr><th></th><th>Alternativa</th><th>mn</th><th>Horas</th><th>Llegada</th><th>Viento máx.</th><th>Ola máx.</th><th>Tramos</th><th>Avisos</th></tr></thead><tbody>` +
+        alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td>${sem(x)}</td><td><b>${escH(x.a.nombre)}</b>${x.recomendada ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
+          `<td>${nf(x.R.total, 0)}</td><td>${nf(x.R.total / x.R.v, 0)}</td><td>${hf(x.R.eta)}</td><td>${x.vmax < 0 ? '–' : nf(x.vmax, 0) + ' kt'}</td><td>${x.omax < 0 ? '–' : nf(x.omax, 1) + ' m'}</td>` +
+          `<td>${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}</td><td>${x.avisos}</td></tr>`).join('') +
+        `</tbody></table></div>
+        <p class="sar-nota"><b>${escH(selA.a.nombre)}:</b> ${escH(selA.a.resumen)} Tramo expuesto: ${selA.a.expuesto.map(e => escH(e[0])).join('; ')}.</p>
+        <p class="sar-nota">Clic en una fila (o en la línea punteada del mapa) para ver el detalle de esa alternativa. "Más favorable" pondera tramos en rojo y amarillo, avisos cruzados, restricciones del buque y horas de navegación; es una ayuda, la decisión es del capitán. Fuente: ${escH(ultimo.par.d.fuente)}</p></div>`;
+    }
+    h += `<div class="sar-blq ruta-resumen" style="border-left:5px solid ${COL[peor]}"><h3>Resumen de la ruta${selA ? ' · ' + escH(selA.a.nombre) : ''}</h3>
       ${buque ? `<p class="ruta-buque-res">Buque: <b class="ruta-nombre-buque">${escH(buque)}</b></p>` : ''}
       <p><b>${nf(R.total, 1)} mn</b> a ${nf(R.v, 1)} kt · <b>${nf(R.total / R.v, 1)} h</b> de navegación${R.espera ? ` + ${nf(R.espera, 1)} h de estadía en puerto` : ''}</p>
       <p>Zarpe ${pZ() ? escH(pZ().n) + ' ' : ''}${hf(R.t0)} → llegada estimada${pR() ? ' a ' + escH(pR().n) : ''} <b>${hf(R.eta)}</b></p>
       ${esc.length ? `<p>Recaladas intermedias: ${esc.map(e => `<b>${escH(e.nombre)}</b> (milla ${nf(e.mn, 0)}, llegada ${hf(e.llegada)}${e.h ? `, zarpe ${hf(e.zarpe)}` : ''})`).join(' · ')}</p>` : ''}
       <p>Condición más exigente en la ruta: <b style="color:${COL[peor]}">${TXT[peor]}</b> · avisos vigentes cruzados: <b>${avisos.length}</b> · avisos probables: <b>${prob.length}</b></p>
-      ${R.total > R.recta + 0.5 ? `<p>La ruta se mantiene${margen ? ` a ${nf(margen, margen % 1 ? 1 : 0)} mn o más de la costa (salvo al salir y llegar a puerto)` : ' por mar'}: ${nf(R.total, 0)} mn (${nf(R.recta, 0)} mn en línea recta entre los puntos marcados).</p>` : ''}
+      ${!alts && R.total > R.recta + 0.5 ? `<p>La ruta se mantiene${margen ? ` a ${nf(margen, margen % 1 ? 1 : 0)} mn o más de la costa (salvo al salir y llegar a puerto)` : ' por mar'}: ${nf(R.total, 0)} mn (${nf(R.recta, 0)} mn en línea recta entre los puntos marcados).</p>` : ''}
       ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y la recalada' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
       ${err ? '<p class="sar-error">No se pudo obtener el pronóstico en la ruta; se muestran solo avisos, puertos y estaciones.</p>' : ''}
       ${perfil(M)}
       <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
+    // Pasos con restricción de la alternativa elegida (Derrotero)
+    if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
+      `<p><b>${escH(x.q.n)}</b> · carta ${escH(x.q.carta)} · milla ${nf(x.mn, 0)} · paso estimado <b>${hf(x.eta)}</b> ${x.q.luz ? `<span class="sar-pill" style="background:${x.dia ? '#2e9d57' : '#d32f2f'}">${x.dia ? 'de día' : 'de noche'}</span>` : ''}` +
+      `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small></p>`).join('') +
+      `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora y el calado del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
     // Tabla por punto de la ruta
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
       M.map(s => `<tr><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${s.puerto ? `<b>${escH(s.puerto)}</b><br>` : ''}${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
@@ -440,6 +534,7 @@ function crearRuta(L, map, ctx) {
     res.innerHTML = h;
     res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
     res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
+    res.querySelectorAll('.ruta-tabla-alt tr[data-alt]').forEach(tr => tr.onclick = () => { if (altSel !== tr.dataset.alt || !tr.classList.contains('sel')) { altSel = tr.dataset.alt; calcular(); } });
     const cd = res.querySelector('.ruta-cond'); if (cd) cd.addEventListener('toggle', () => { condAbierta = cd.open; cd.querySelector('.ruta-cond-n').textContent = `${M.length} puntos de la ruta · ${cd.open ? 'ocultar' : 'desplegar'}`; });
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => { const v = parseFloat(inp.value.replace(',', '.')); if (isFinite(v)) { umb[inp.dataset.k] = v; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); } });
     const rb = res.querySelector('.sar-restablecer'); if (rb) rb.onclick = () => { umb = { ...RUTA_UMBRALES_BASE }; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); };
@@ -470,7 +565,16 @@ function crearRuta(L, map, ctx) {
       ['Condición más exigente', TXT[peor]], ['Avisos vigentes cruzados', String(avisos.length)], ['Avisos probables', String(prob.length)],
       ['Pronóstico', err ? 'No disponible al generar el informe' : 'Open-Meteo: viento ECMWF IFS (respaldo GFS), oleaje Météo-France']);
     if (R.sinPaso.length) datos.push(['Advertencia', 'Hay tramos sin paso por mar en la costa incorporada; revisar la traza.']);
-    const sec = [];
+    const sec = [], alts = ultimo.alts, selA = alts && alts.find(x => x.sel);
+    if (alts) {
+      datos.splice(buque ? 1 : 0, 0, ['Alternativa elegida', selA.a.nombre + (selA.recomendada ? ' (la más favorable)' : '')]);
+      sec.push({ titulo: 'Alternativas de ruta · ' + ultimo.par.d.nombre, tabla: { cab: ['Alternativa', 'mn', 'Horas', 'Llegada', 'Viento máx.', 'Ola máx.', 'Tramos en rojo', 'Tramos en amarillo', 'Avisos cruzados', 'Observación'], anchos: [1.8, .5, .5, 1.1, .7, .7, .6, .7, .6, 1.4],
+        filas: alts.map(x => [x.a.nombre, n0(x.R.total), n0(x.R.total / x.R.v), hf(x.R.eta), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m', String(x.rojo), String(x.amar), String(x.avisos), [x.sel ? 'elegida' : '', x.recomendada ? 'más favorable' : '', x.noApta ? 'excede eslora o calado' : ''].filter(Boolean).join('; ')]) },
+        parrafos: alts.map(x => `${x.a.nombre}: ${x.a.resumen} Tramo expuesto: ${x.a.expuesto.map(e => e[0]).join('; ')}.`), nota: 'Fuente: ' + ultimo.par.d.fuente });
+      if (selA.pasos.length) sec.push({ titulo: 'Canales, pasos y angosturas con restricción', tabla: { cab: ['Paso', 'Carta', 'Milla', 'Paso estimado', 'Luz', 'Atención', 'Restricción (Derrotero)'], anchos: [1.2, .5, .4, 1, .5, 1.4, 3.4],
+        filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', x.prob.join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
+        nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
+    }
     sec.push({ titulo: 'Condiciones a la hora de paso', tabla: { cab: ['Hora', 'mn', 'Posición', 'Viento', 'Ráfaga (kt)', 'Ola (m)', 'Período (s)', 'Dir. ola', 'Visibilidad (mn)', 'Estado'], anchos: [1.3, .5, 2, 1, .8, .7, .8, .7, 1, 1],
       filas: M.map(s => [hf(s.eta), n0(s.mn), (s.puerto ? s.puerto + ' · ' : '') + fmtPos(s.p), s.viento == null ? '–' : `${sarCompas(s.dir)} ${n0(s.viento)} kt`, n0(s.rafaga), n1(s.ola), n0(s.tp), s.dola == null ? '–' : sarCompas(s.dola), s.vis == null ? '–' : nf(Math.min(s.vis / 1852, 10), 1) + (s.vis / 1852 >= 10 ? '+' : ''), TXT[s.nivel]]) },
       nota: 'Viento a 10 m; dirección de procedencia. Ola: altura significativa, período y dirección de procedencia. Hora de Chile.' });
