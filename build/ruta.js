@@ -261,11 +261,17 @@ function crearRuta(L, map, ctx) {
       const q = RUTA_PASOS[id]; let bi = 0, bd = 1e9; tr.forEach((p, i) => { const d = sarMillas(p, q.p); if (d < bd) { bd = d; bi = i; } });
       const mn = cum[bi]; let esp = 0; for (const e of Rr.escalas) if (e.mn < mn - 0.01 && e.h) esp += e.h;
       const eta = new Date(Rr.t0.getTime() + (mn / Rr.v + esp) * 3600e3), dia = solElev(eta, q.p[0], q.p[1]) > -6, prob = [];
-      if (q.eslora && eslora && eslora > q.eslora) prob.push(`eslora ${nf(eslora, 0)} m sobre el máximo de ${nf(q.eslora, 0)} m`);
-      if (q.calado && calado && calado > q.calado) prob.push(`calado ${nf(calado, 1)} m sobre el máximo de ${nf(q.calado, 1)} m`);
+      const excede = o => [o.eslora && eslora && eslora > o.eslora ? `eslora ${nf(eslora, 0)} m sobre el máximo de ${nf(o.eslora, 0)} m` : null,
+        o.calado && calado && calado > o.calado ? `calado ${nf(calado, 1)} m sobre el máximo de ${nf(o.calado, 1)} m` : null].filter(Boolean);
+      let ruta = null;
+      if (q.opciones) {   // pasos con alternativas (angostura Kirke o White; canal Gray o paso Summer): basta que una sirva
+        const ok = q.opciones.filter(o => !excede(o).length);
+        if (!ok.length) prob.push(`${q.opciones.map(o => o.n + ': ' + excede(o).join(', ')).join('; ')}`);
+        else if ((eslora || calado) && ok.length < q.opciones.length) ruta = `solo apta por ${ok.map(o => o.n).join(' o ')}`;
+      } else prob.push(...excede(q));
       if (q.luz && !dia) prob.push('la hora de paso es de noche y exige luz diurna');
       if (q.velMin && Rr.v < q.velMin) prob.push(`a menos de ${q.velMin} kt debe cruzarse con corriente a favor`);
-      return { id, q, mn, eta, dia, prob };
+      return { id, q, mn, eta, dia, prob, ruta };
     }).sort((x, y) => x.mn - y.mn);
   }
   function muestrear(T) {
@@ -499,7 +505,7 @@ function crearRuta(L, map, ctx) {
     // Pasos con restricción de la alternativa elegida (Derrotero)
     if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
       `<p><b>${escH(x.q.n)}</b> · carta ${escH(x.q.carta)} · milla ${nf(x.mn, 0)} · paso estimado <b>${hf(x.eta)}</b> ${x.q.luz ? `<span class="sar-pill" style="background:${x.dia ? '#2e9d57' : '#d32f2f'}">${x.dia ? 'de día' : 'de noche'}</span>` : ''}` +
-      `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small></p>`).join('') +
+      `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}${x.ruta ? `<br><b>Con este buque: ${escH(x.ruta)}.</b>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small></p>`).join('') +
       `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora y el calado del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
     // Tabla por punto de la ruta
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
@@ -572,7 +578,7 @@ function crearRuta(L, map, ctx) {
         filas: alts.map(x => [x.a.nombre, n0(x.R.total), n0(x.R.total / x.R.v), hf(x.R.eta), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m', String(x.rojo), String(x.amar), String(x.avisos), [x.sel ? 'elegida' : '', x.recomendada ? 'más favorable' : '', x.noApta ? 'excede eslora o calado' : ''].filter(Boolean).join('; ')]) },
         parrafos: alts.map(x => `${x.a.nombre}: ${x.a.resumen} Tramo expuesto: ${x.a.expuesto.map(e => e[0]).join('; ')}.`), nota: 'Fuente: ' + ultimo.par.d.fuente });
       if (selA.pasos.length) sec.push({ titulo: 'Canales, pasos y angosturas con restricción', tabla: { cab: ['Paso', 'Carta', 'Milla', 'Paso estimado', 'Luz', 'Atención', 'Restricción (Derrotero)'], anchos: [1.2, .5, .4, 1, .5, 1.4, 3.4],
-        filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', x.prob.join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
+        filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–', [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado ? `Buque: ${eslora ? 'eslora ' + nf(eslora, 0) + ' m' : ''}${eslora && calado ? ', ' : ''}${calado ? 'calado ' + nf(calado, 1) + ' m' : ''}. ` : '') + 'La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
     }
     sec.push({ titulo: 'Condiciones a la hora de paso', tabla: { cab: ['Hora', 'mn', 'Posición', 'Viento', 'Ráfaga (kt)', 'Ola (m)', 'Período (s)', 'Dir. ola', 'Visibilidad (mn)', 'Estado'], anchos: [1.3, .5, 2, 1, .8, .7, .8, .7, 1, 1],
