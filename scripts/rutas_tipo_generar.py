@@ -74,6 +74,23 @@ PARES = [
  {'archivo': 'vias_pan_cas_out.json', 'puertos': [109, 116], 'nombre': 'Puerto Montt – Castro', 'alts': [
    ('dalcahue', 'Canal Dalcahue', 'Seno Reloncaví, golfo de Ancud, paso Tenaún y canal Dalcahue hasta la boca del estero Castro.', ['dalcahue'], ['Golfo de Ancud']),
    ('quinchao', 'Canal Quinchao y canal Lemuy', 'Seno Reloncaví, golfo de Ancud, canal Quinchao ("la más franca y expedita" según el Derrotero), canal Lemuy y boca del estero Castro.', [], ['Golfo de Ancud'])]},
+ {'archivo': 'par_quellon.json', 'puertos': [109, 117], 'nombre': 'Puerto Montt – Quellón', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfo de Ancud, canal Apiao y golfo Corcovado hasta la bahía Quellón.', [], ['Golfo Corcovado']),
+   ('exterior', 'Exterior de Chiloé: canal Chacao y boca del Guafo', 'Salida al océano por el canal Chacao, costa oceánica de Chiloé a 10 millas y entrada por la boca del Guafo a la bahía Quellón.', ['chacao'], ['Océano, del canal Chacao a la boca del Guafo'])]},
+ {'archivo': 'par_eden.json', 'puertos': [109, 129], 'nombre': 'Puerto Montt – Puerto Edén', 'alts': [
+   ('interior', 'Aguas interiores', 'Seno Reloncaví, golfos de Ancud y Corcovado, canal Moraleda, canal Pulluche, cruce del golfo de Penas, canal Messier y angostura Inglesa.', ['pulluche', 'inglesa'], ['Golfo de Penas (mar abierto)']),
+   ('mixta', 'Mixta: boca del Guafo y océano', 'Golfos de Ancud y Corcovado, salida al océano por la boca del Guafo, navegación oceánica hasta el golfo de Penas, canal Messier y angostura Inglesa.', ['inglesa'], ['Océano, de la boca del Guafo al golfo de Penas']),
+   ('oceanica', 'Oceánica: canal Chacao y océano', 'Salida al océano por el canal Chacao, navegación oceánica hasta el golfo de Penas, canal Messier y angostura Inglesa.', ['chacao', 'inglesa'], ['Océano, del canal Chacao al golfo de Penas'])]},
+ {'archivo': 'par_wf.json', 'puertos': [138, 139], 'nombre': 'Puerto Williams – Bahía Fildes', 'alts': [
+   ('hornos', 'Canal Murray y cabo de Hornos', 'Canal Beagle al W, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', [], ['Paso Drake, desde el cabo de Hornos']),
+   ('nueva', 'Canal Beagle al E e isla Nueva', 'Canal Beagle al E, por fuera de la isla Nueva, paso Drake y estrecho de Bransfield.', [], ['Paso Drake, desde la isla Nueva'])]},
+ {'archivo': 'par_chile.json', 'puertos': [134, 231], 'nombre': 'Punta Arenas – Bahía Chile', 'alts': [
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrecho de Bransfield.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrecho de Bransfield.', [], ['Atlántico, estrecho de Le Maire y paso Drake'])]},
+ {'archivo': 'par_paraiso.json', 'puertos': [134, 140], 'nombre': 'Punta Arenas – Bahía Paraíso', 'alts': [
+   ('fueguinos', 'Canales fueguinos y cabo de Hornos', FUEG + ', canal Beagle, canal Murray, bahía Nassau, cabo de Hornos, paso Drake y estrechos de Bransfield y de Gerlache.', ['obrien', 'timbales'], ['Paso Drake, desde el cabo de Hornos', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)']),
+   ('atlantico', 'Atlántico: boca oriental del Estrecho y estrecho de Le Maire', ATL + ', paso Drake y estrechos de Bransfield y de Gerlache.', [], ['Atlántico, estrecho de Le Maire y paso Drake', 'Estrechos de Bransfield y de Gerlache (hielo marino y témpanos)'])]},
+
 ]
 FUENTE = 'Derrotero de la Costa de Chile, Pub. SHOA N° 3002 a 3006 (corregido al Boletín de Noticias a los Navegantes de octubre de 2026). Trazas referenciales calculadas sobre la costa GSHHG de resolución completa.'
 T = []
