@@ -44,3 +44,16 @@
 .ruta-tabla-alt td,.ruta-tabla-alt th{white-space:nowrap}
 .ruta-rec-tag{background:#2e9d57;color:#fff;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700}
 .ruta-noapta{background:#d32f2f;color:#fff;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700}
+/* Celular: cada alternativa como tarjeta (sin deslizar la tabla) */
+@media (max-width:700px){
+  .ruta-tabla-alt thead{display:none}
+  .ruta-tabla-alt,.ruta-tabla-alt tbody{display:block;width:100%}
+  .ruta-alts .sar-tabla-scroll{overflow:visible}
+  .ruta-tabla-alt tbody tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;padding:10px 12px;margin:0 0 10px;border:1px solid rgba(127,140,160,.35);border-radius:10px}
+  .ruta-tabla-alt tbody tr.sel{outline:none;border:2px solid #ff6a00}
+  .ruta-tabla-alt td{display:block;border:0!important;padding:0!important;white-space:normal!important;font-size:13px}
+  .ruta-tabla-alt td.ruta-alt-sem{display:none}
+  .ruta-tabla-alt td.ruta-alt-nom{grid-column:1/-1;font-size:14.5px;line-height:1.5}
+  .ruta-tabla-alt td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;opacity:.65;margin-bottom:1px}
+  .ruta-tabla-alt td[data-l="Tramos"]{grid-column:span 2}
+}

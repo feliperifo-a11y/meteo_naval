@@ -483,9 +483,9 @@ function crearRuta(L, map, ctx) {
       const sem = x => `<span class="ruta-sem" style="background:${COL[x.rojo ? 'no' : x.amar ? 'lim' : x.sd === x.R.muestras.length ? 'sd' : 'ok']}"></span>`;
       h += `<div class="sar-blq ruta-alts"><h3>${alts.length > 1 ? 'Alternativas de ruta' : 'Ruta tipo'} · ${escH(ultimo.par.d.nombre)}</h3>
         <div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla-alt"><thead><tr><th></th><th>Alternativa</th><th>mn</th><th>Horas</th><th>Llegada</th><th>Viento máx.</th><th>Ola máx.</th><th>Tramos</th><th>Avisos</th></tr></thead><tbody>` +
-        alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td>${sem(x)}</td><td><b>${escH(x.a.nombre)}</b>${x.recomendada && alts.length > 1 ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
-          `<td>${nf(x.R.total, 0)}</td><td>${nf(x.R.total / x.R.v, 0)}</td><td>${hf(x.R.eta)}</td><td>${x.vmax < 0 ? '–' : nf(x.vmax, 0) + ' kt'}</td><td>${x.omax < 0 ? '–' : nf(x.omax, 1) + ' m'}</td>` +
-          `<td>${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}</td><td>${x.avisos}</td></tr>`).join('') +
+        alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td class="ruta-alt-sem">${sem(x)}</td><td class="ruta-alt-nom"><b>${escH(x.a.nombre)}</b>${x.recomendada && alts.length > 1 ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
+          `<td data-l="Distancia">${nf(x.R.total, 0)} <small>mn</small></td><td data-l="Navegación">${nf(x.R.total / x.R.v, 0)} <small>h</small></td><td data-l="Llegada">${hf(x.R.eta)}</td><td data-l="Viento máx.">${x.vmax < 0 ? '–' : nf(x.vmax, 0) + ' kt'}</td><td data-l="Ola máx.">${x.omax < 0 ? '–' : nf(x.omax, 1) + ' m'}</td>` +
+          `<td data-l="Tramos">${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}</td><td data-l="Avisos">${x.avisos}</td></tr>`).join('') +
         `</tbody></table></div>
         <p class="sar-nota"><b>${escH(selA.a.nombre)}:</b> ${escH(selA.a.resumen)} Tramo expuesto: ${selA.a.expuesto.map(e => escH(e[0])).join('; ')}.</p>
         <p class="sar-nota">Clic en una fila (o en la línea punteada del mapa) para ver el detalle de esa alternativa. "Más favorable" pondera tramos en rojo y amarillo, avisos cruzados, restricciones del buque y horas de navegación; es una ayuda, la decisión es del capitán. Fuente: ${escH(ultimo.par.d.fuente)}</p></div>`;
@@ -540,7 +540,16 @@ function crearRuta(L, map, ctx) {
     res.innerHTML = h;
     res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
     res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
-    res.querySelectorAll('.ruta-tabla-alt tr[data-alt]').forEach(tr => tr.onclick = () => { if (altSel !== tr.dataset.alt || !tr.classList.contains('sel')) { altSel = tr.dataset.alt; calcular(); } });
+    // Elegir alternativa: con puntero (mouse o dedo) y sin arrastre; en celular el clic sintético no siempre llega a la fila
+    res.querySelectorAll('.ruta-tabla-alt tr[data-alt]').forEach(tr => {
+      let p0 = null;
+      tr.addEventListener('pointerdown', e => { p0 = [e.clientX, e.clientY]; });
+      tr.addEventListener('pointerup', e => {
+        if (!p0 || Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10 || (e.pointerType === 'mouse' && e.button !== 0)) { p0 = null; return; }
+        p0 = null; if (altSel !== tr.dataset.alt || !tr.classList.contains('sel')) { altSel = tr.dataset.alt; calcular(); }
+      });
+      tr.tabIndex = 0; tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); altSel = tr.dataset.alt; calcular(); } });
+    });
     const cd = res.querySelector('.ruta-cond'); if (cd) cd.addEventListener('toggle', () => { condAbierta = cd.open; cd.querySelector('.ruta-cond-n').textContent = `${M.length} puntos de la ruta · ${cd.open ? 'ocultar' : 'desplegar'}`; });
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => { const v = parseFloat(inp.value.replace(',', '.')); if (isFinite(v)) { umb[inp.dataset.k] = v; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); } });
     const rb = res.querySelector('.sar-restablecer'); if (rb) rb.onclick = () => { umb = { ...RUTA_UMBRALES_BASE }; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); };
