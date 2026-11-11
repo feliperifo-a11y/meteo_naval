@@ -20,6 +20,10 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from archivo_pares import Oleaje, leer  # noqa: E402
 from evaluacion_ia import BAHIAS as BAHIAS_EVAL, leer_viento, observaciones, resumen_obs  # noqa: E402
+try:
+    from clima_derrotero import contexto as clima_contexto  # noqa: E402
+except Exception:
+    clima_contexto = None
 
 R = Path(__file__).resolve().parent.parent
 DATA = R / "data"
@@ -161,6 +165,7 @@ def main():
                                   "dias": pr.get("dias", [])},
                        "ww3_punto": None if celda is None else [round(celda[3], 2), round(celda[4], 2)],
                        "verificacion": verificacion(codigo),
+                       "clima_derrotero": clima_contexto(*pos, sorted({int(x["fecha"][5:7]) for x in obj})) if clima_contexto else None,
                        "ejemplos": ejemplos(pares, codigo, hoy_r, hoy, obs)})
     res = {"version": 1, "fecha_base": hoy.isoformat(), "generado": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
            "listo": listos >= 2, "wrf_inicializacion_esperada": init_hoy, "bahias_listas": listos,

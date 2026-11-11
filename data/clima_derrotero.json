@@ -1,0 +1,445 @@
+{
+ "fuente": "Derrotero de la Costa de Chile (Pub. SHOA 3001 a 3006), capítulo F: climatología.",
+ "eje_estrecho_occidental": [
+  [
+   -52.62,
+   -75
+  ],
+  [
+   -52.78,
+   -74.4
+  ],
+  [
+   -53,
+   -73.6
+  ],
+  [
+   -53.3,
+   -72.75
+  ],
+  [
+   -53.65,
+   -72.2
+  ],
+  [
+   -53.9,
+   -71.3
+  ]
+ ],
+ "zonas": {
+  "norte": {
+   "nombre": "Costa norte (Arica – Taltal)",
+   "vol": "3001",
+   "resumen": "Dominio del anticiclón del Pacífico: buen tiempo, lluvias casi nulas y vientos del S y SW que refrescan durante el día.",
+   "vientos": "S y SW durante casi todo el año. En la costa aumentan de día por efecto térmico (ocasionalmente 30 a 35 kt) y disminuyen tras la puesta del sol.",
+   "temporales": "Las depresiones migratorias rara vez alcanzan esta latitud.",
+   "visibilidad": "Nieblas muy esporádicas entre Arica y Taltal. Con baja térmica se forman mantos de stratus de la costa hasta unos 50 km mar afuera, con lloviznas (camanchaca), que pueden estacionarse largo tiempo.",
+   "corrientes": "Corriente de Humboldt hacia el N a lo largo de la costa.",
+   "meses": [
+    {
+     "m": [
+      12,
+      1,
+      2,
+      3
+     ],
+     "t": "Verano: vientos del S y SW más intensos en la tarde por efecto térmico."
+    }
+   ]
+  },
+  "centro": {
+   "nombre": "Costa central y sur (Taltal – canal Chacao)",
+   "vol": "3001",
+   "resumen": "Anticiclón del Pacífico en verano; en invierno el anticiclón y el frente polar se desplazan al N y las depresiones migratorias cruzan la costa entre Constitución y cabo Raper.",
+   "vientos": "Verano: S y SW en casi todo el litoral, reforzados de día (30 a 35 kt ocasionalmente). Invierno: 4.º cuadrante, N o NW de 15 a 20 kt de media, sobre 30 kt con temporal y rachas de 40 a 45 kt. El W es más moderado.",
+   "temporales": "Con el frente cálido el viento entra del N y aumenta de 10 a 20 o 30 kt, con lluvia y visibilidad moderada. Tras el frente frío rola casi de inmediato al W y luego al SW, con chubascos intensos. Una vez al año, en promedio, una depresión pasa por 33° a 34° S (1965: 56 kt del N en Valparaíso). Entre isla Mocha y Chacao las depresiones afectan casi todo el año.",
+   "visibilidad": "Litoral típico de nieblas de Taltal a Chacao, más frecuentes entre el golfo de Arauco y Corral. Cubren el mar hasta unas 50 mn de la costa y pueden persistir más de dos o tres días sin romper.",
+   "corrientes": "Corriente de Humboldt hacia el N, bien establecida desde la latitud de Chiloé.",
+   "meses": [
+    {
+     "m": [
+      5,
+      6,
+      7,
+      8
+     ],
+     "t": "Período lluvioso (mayo a agosto): frecuentes depresiones con N y NW."
+    },
+    {
+     "m": [
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "t": "Entre isla Mocha y Chacao las depresiones son más frecuentes de junio a octubre.",
+     "sur": -38.3
+    },
+    {
+     "m": [
+      9,
+      10,
+      11,
+      3,
+      4,
+      5
+     ],
+     "t": "Primavera y otoño: nieblas más frecuentes y de mayor duración."
+    },
+    {
+     "m": [
+      12,
+      1,
+      2
+     ],
+     "t": "Verano: S y SW reforzados en la tarde; nieblas posibles en la costa."
+    }
+   ]
+  },
+  "chiloe": {
+   "nombre": "Chacao – golfo de Penas (Chiloé, Aysén, Guaitecas y Chonos)",
+   "vol": "3002",
+   "resumen": "Dos estaciones marcadas. Al S de 40° S domina la componente W: NW en invierno y SW en verano. Se recomienda usar los datos de isla Guafo como referencia.",
+   "vientos": "Invierno (abril a septiembre) NW; verano (octubre a marzo) SW. Ocasionalmente E entre junio y agosto. Rachas de montaña en el estero Reloncaví y frente a Chiloé, Guaitecas y Chonos.",
+   "temporales": "Principalmente en invierno. Los del N duran unas 48 h y luego rolan NW, W y S. Más al S el barómetro acompaña al mal tiempo en vez de anunciarlo.",
+   "senales": "Caída rápida del barómetro; el cielo se cubre mientras la tierra lejana se ve anormalmente nítida; aumenta la resaca en los puertos; marejadilla del N.",
+   "visibilidad": "Nieblas frecuentes, sobre todo en otoño e invierno, traídas por el NW. La llovizna reduce la visibilidad en Aysén y los Chonos. En Guafo y cabo Raper las nieblas son aún más frecuentes en verano.",
+   "corrientes": "La rama costera de la corriente de Humboldt tiende a llevar los buques hacia el E, hacia la costa; corrientes costeras hacia el E cerca del golfo de Penas.",
+   "meses": [
+    {
+     "m": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "t": "Invierno: predominio del NW y temporales más frecuentes; nieblas de otoño e invierno."
+    },
+    {
+     "m": [
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "t": "Mayo a septiembre: los meses más lluviosos."
+    },
+    {
+     "m": [
+      6,
+      7,
+      8
+     ],
+     "t": "Junio a agosto: posibles vientos del E."
+    },
+    {
+     "m": [
+      10,
+      11,
+      12,
+      1,
+      2,
+      3
+     ],
+     "t": "Verano: predominio del SW; en Guafo y cabo Raper nieblas aún más frecuentes."
+    },
+    {
+     "m": [
+      1,
+      2
+     ],
+     "t": "Enero y febrero: los meses más secos."
+    }
+   ]
+  },
+  "patag": {
+   "nombre": "Golfo de Penas – Estrecho occidental (archipiélagos patagónicos)",
+   "vol": "3003",
+   "resumen": "El mal tiempo es el estado normal de la región. Verano de octubre a marzo, invierno de abril a septiembre. La frecuencia de temporales aumenta de N a S: en isla San Pedro unos 36 días al año; entre Nelson y Evangelistas, viento de fuerza 8 o más hasta 80 días al año.",
+   "vientos": "San Pedro: entre W y N. Canal Messier: N; canal Trinidad: WNW; canal Smyth: N. Al S del estrecho Nelson, W en verano y W y SW en invierno. En los canales el viento sopla a lo largo del eje y se acelera por efecto de embudo. El NW es el más peligroso: entra con fuerza, cerrazón y lluvia, dura 4 a 5 días y termina estableciéndose del W. Con viento del NE al SE se experimenta el mejor tiempo y la mar queda tranquila (hasta 6 días).",
+   "temporales": "Los más frecuentes y perniciosos son del NW y W. Del SW al NW se levantan olas de hasta 8 m que subsisten casi una semana, hasta que el N las aplaca. Con barómetro en 1.000 hPa o menos el tiempo se vuelve borrascoso del 4.º cuadrante; puede bajar hasta 976 hPa. En fondeaderos a sotavento de tierras altas bajan rachas violentas (williwaws).",
+   "senales": "Montes despejados de nubes: buen tiempo por unos dos días. Nubes adheridas a los montes: temporal seguro. Nubes negras o plomizas en el horizonte del NW anuncian el NW. Si el viento rola franco del N al NW, mal tiempo en unas dos horas. Rolada al SE: buen tiempo por algunos días.",
+   "visibilidad": "Bruma y llovizna de 30 a 60 días al año entre Penas y Nelson, y de 30 a 40 entre Nelson y Evangelistas. En parajes expuestos al NNW sobre tierras altas, escasa visibilidad 12 a 20 días al mes; mejora a cierta distancia de la costa. Neblinas de verano de pocas horas; en invierno pueden durar un día o más. Nevadas de invierno con visibilidad de unos 100 m.",
+   "corrientes": "Rama SE de la corriente del Pacífico austral a lo largo de los archipiélagos, más intensa cerca de cabos e islas destacadas y con vientos del W.",
+   "meses": [
+    {
+     "m": [
+      2,
+      3,
+      4
+     ],
+     "t": "Febrero a abril: la época más serena, con calmas que pueden durar 3 o 4 días."
+    },
+    {
+     "m": [
+      5
+     ],
+     "t": "Mayo: bravezas extraordinarias con mucha marejada, originadas por temporales en alta mar."
+    },
+    {
+     "m": [
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "t": "Desde mayo o junio, nevadas que pueden reducir la visibilidad a unos 100 m."
+    },
+    {
+     "m": [
+      6,
+      7
+     ],
+     "t": "Junio y julio: los peores meses del año, con grandes nevazones."
+    },
+    {
+     "m": [
+      9
+     ],
+     "t": "Septiembre: uno de los mejores meses, con calmas y vientos del E."
+    },
+    {
+     "m": [
+      9,
+      10,
+      11
+     ],
+     "t": "Septiembre a noviembre: entra el verano; el NW ronda al SW, los días se alargan y desde octubre despeja algunas horas, con chubascos fuertes y copiosos."
+    },
+    {
+     "m": [
+      12
+     ],
+     "t": "Diciembre: días largos con cielo comúnmente despejado."
+    },
+    {
+     "m": [
+      12,
+      1,
+      2
+     ],
+     "t": "Diciembre a febrero: dominan en absoluto los SW, que soplan con gran intensidad."
+    }
+   ]
+  },
+  "estrocc": {
+   "nombre": "Estrecho de Magallanes occidental (cabo Pilar – cabo Froward)",
+   "vol": "3004",
+   "resumen": "Zona abrupta y tormentosa, con mal tiempo casi constante y precipitación de 5.000 a 6.000 mm anuales en la entrada, que baja a unos 1.500 mm en Froward.",
+   "vientos": "N o NW, de 25 a 35 kt; con fuerte gradiente hasta 45 a 50 kt. Al alejarse la depresión rola al W y SW con 20 a 25 kt. Los NW y WNW se encajonan en el estrecho y canales adyacentes y aumentan su velocidad.",
+   "temporales": "Depresiones frecuentes todo el año: lluvias en verano y nevadas en invierno. Una calma o SW débil tras el paso de una depresión suele anunciar la siguiente. Los puertos sufren chubascos violentos y de direcciones cambiantes; los mejores fondeaderos para buques medianos son bahía Borja y bahía Fortescue.",
+   "visibilidad": "Lluvia, chubascos y nevadas de invierno reducen la visibilidad.",
+   "corrientes": "Corrientes de marea según la dirección, profundidad y ancho de los canales.",
+   "meses": [
+    {
+     "m": [
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "t": "Invierno: nevadas frecuentes (media de 4 °C) y unas 6 horas de luz."
+    },
+    {
+     "m": [
+      11,
+      12,
+      1,
+      2
+     ],
+     "t": "Verano: hasta 18 a 20 horas de luz (media de 12 °C)."
+    }
+   ]
+  },
+  "estrori": {
+   "nombre": "Estrecho de Magallanes oriental (cabo Froward – boca oriental)",
+   "vol": "3004",
+   "resumen": "Relieve plano y clima más favorable: las depresiones llegan sin humedad. Precipitación de 1.500 mm en Froward a 300 mm en la boca oriental (Punta Arenas, 430 mm).",
+   "vientos": "WSW o SW fuertes (el \"panteonero\" de Punta Arenas), que pueden pasar de 50 kt: comienzan temprano, alcanzan su máximo hacia las 14 a 16 h y declinan con la puesta del sol. Ocasionalmente NE, E o SE cuando una depresión cruza al N de la región.",
+   "temporales": "Peligros principales: fuertes corrientes de marea (Primera y Segunda Angostura), cerrazones de nieve, nieblas y turbonadas. Amplitud de marea de hasta 10,37 m en el banco Dirección.",
+   "visibilidad": "Nieblas y cerrazones de nieve; espejismos en días de calma con temperatura elevada.",
+   "corrientes": "Corrientes de marea intensas en las angosturas: conviene ajustar la hora de llegada a la Segunda Angostura (desde el Pacífico) o la recalada a Dungeness (desde el Atlántico).",
+   "meses": [
+    {
+     "m": [
+      9,
+      10,
+      11,
+      12,
+      1,
+      2,
+      3
+     ],
+     "t": "Mediados de septiembre a fines de marzo: temporada del panteonero (WSW–SW), con máximo en la tarde."
+    },
+    {
+     "m": [
+      10,
+      11
+     ],
+     "t": "Octubre y noviembre: los meses de panteonero más intenso."
+    },
+    {
+     "m": [
+      6,
+      7,
+      8
+     ],
+     "t": "Junio a agosto: nevadas frecuentes."
+    }
+   ]
+  },
+  "fueg": {
+   "nombre": "Tierra del Fuego, canales fueguinos y cabo de Hornos",
+   "vol": "3005",
+   "resumen": "Zona de vientos predominantes del W (cerca del 75 %). Las estaciones están invertidas respecto del mal tiempo: la primavera es la época más tempestuosa y el invierno la de calma relativa.",
+   "vientos": "Entre Cockburn y Hermite el N o NW sopla con 20 a 30 kt al socaire de la costa. En canales de costas altas el viento sigue el eje: en los de dirección E–W se encajona y a veces sopla con más violencia que en mar abierto; en los N–S disminuye. Refresca desde la salida del sol hasta media tarde y amaina hacia el anochecer.",
+   "temporales": "Nueve de cada diez temporales soplan entre el NW y el SSW. Rachas de montaña (williwaws) de 4 a 10 segundos, con mangas de agua o granizo, dentro de puertos y canales estrechos.",
+   "senales": "Cielo sombrío y nubes de bordes desgarrados en el sector de donde soplará el viento. Copos de nubes bajas y rápidas hacia el horizonte SE–NE, 2 a 3 h antes de la primera racha, con barómetro bajo: temporal casi sin transición.",
+   "visibilidad": "Nieblas más frecuentes a fines del verano y principios del otoño, con presión cerca de 1.013 hPa, NE suave y temperatura baja que sube de repente (permite anticiparla con una hora). En verano rara vez la visibilidad baja de 1 mn por más de unos minutos. Las cerrazones de nieve del invierno no dejan ver más allá de la eslora y pueden durar horas: conviene ganar puerto.",
+   "corrientes": "La rama SE de la corriente del Pacífico austral pasa al S de Tierra del Fuego hacia el Atlántico.",
+   "meses": [
+    {
+     "m": [
+      9
+     ],
+     "t": "Septiembre: el peor mes; los vientos duros rara vez dejan intervalos de más de 4 días."
+    },
+    {
+     "m": [
+      9,
+      10,
+      11,
+      12,
+      1,
+      2,
+      3
+     ],
+     "t": "Septiembre a marzo: la época más cruda del año."
+    },
+    {
+     "m": [
+      3
+     ],
+     "t": "Marzo: mes a menudo muy agitado."
+    },
+    {
+     "m": [
+      4,
+      5,
+      6,
+      7
+     ],
+     "t": "Abril a julio: el mejor tiempo, con brisas cálidas y secas del 1.er cuadrante; junio es el mes de menos viento."
+    },
+    {
+     "m": [
+      2,
+      3,
+      4
+     ],
+     "t": "Fines del verano y principios del otoño: nieblas más frecuentes."
+    },
+    {
+     "m": [
+      6,
+      7,
+      8
+     ],
+     "t": "Invierno: cerrazones de nieve densas y persistentes."
+    }
+   ]
+  },
+  "drake": {
+   "nombre": "Mar abierto al S del cabo de Hornos (paso Drake)",
+   "vol": "3005 y 3006",
+   "resumen": "Entre 55° y 60° S y 70° y 75° W se encuentra posiblemente la zona más tormentosa del planeta. Hacia los 60° S está la Convergencia Antártica, con un salto de 2 a 3 °C en la temperatura del mar.",
+   "vientos": "Predominio del W. Velocidad media máxima en septiembre (26 kt) y mínima en junio (18 kt).",
+   "temporales": "Máximo en primavera y otoño, en especial en septiembre; mínimo en verano e invierno. Los temporales vienen de los cuadrantes occidentales. Cumulonimbus frecuentes entre el cabo de Hornos y los 60° S.",
+   "senales": "Cerca del cabo de Hornos los vientos duros del 4.º cuadrante se anuncian por un descenso regular del barómetro con calma o brisas variables, de 4 a 15 horas antes del primer rafagal.",
+   "visibilidad": "Las nieblas de advección de los mares de Bellingshausen y Weddell pueden extenderse 100 mn o más dentro del paso Drake, de preferencia en verano.",
+   "corrientes": "Corriente circumpolar de W a E.",
+   "meses": [
+    {
+     "m": [
+      9
+     ],
+     "t": "Septiembre: mayor viento medio y mayor frecuencia de temporales."
+    },
+    {
+     "m": [
+      9,
+      10,
+      11,
+      3,
+      4,
+      5
+     ],
+     "t": "Primavera y otoño: máximo de temporales."
+    },
+    {
+     "m": [
+      6
+     ],
+     "t": "Junio: el mes de menos viento."
+    },
+    {
+     "m": [
+      12,
+      1,
+      2
+     ],
+     "t": "Verano: nieblas de advección pueden internarse 100 mn o más en el Drake."
+    }
+   ]
+  },
+  "ant": {
+   "nombre": "Antártica (Shetland del Sur y Tierra de O'Higgins)",
+   "vol": "3006",
+   "resumen": "Depresiones frecuentes en toda época, retenidas por el relieve, con efectos frontales más duraderos en el lado occidental. Presión media cercana a 990 hPa: alrededor de 1.015 hPa con régimen anticiclónico y 970 hPa al paso de depresiones.",
+   "vientos": "Predominio del 1.er y 2.º cuadrantes. En canales, hondonadas y glaciares el viento sigue el eje y se acelera.",
+   "temporales": "Ventiscas comunes, de algunas horas a varios días: asociadas a frentes, del NE y hasta 50 kt (fuerza 10). También pueden darse con alta presión, cuando una cuña del casquete polar invade la región.",
+   "senales": "Tras tiempo despejado, un velo de cirrus con descenso de la presión es el primer anuncio de ventisca. Los cielos despejados rara vez duran más de 24 horas.",
+   "visibilidad": "Lloviznas, lluvias, nevadas y ventiscas reducen la visibilidad. Nieblas de advección todo el año, de preferencia en verano (se pronostican con curvas de punto de rocío y temperatura anotadas cada media hora); de radiación en invierno, de corta duración; \"humo de mar\" con la entrada del otoño.",
+   "corrientes": "Convergencia Antártica cerca de 60° S. Témpanos en el sector occidental del mar de Weddell.",
+   "meses": [
+    {
+     "m": [
+      10,
+      11,
+      12,
+      1,
+      2,
+      3
+     ],
+     "t": "Octubre a marzo (temporada de verano del Código Polar): mayor luz natural; temperatura de servicio polar −11,5 °C; Shetland 0 a 2 °C de media."
+    },
+    {
+     "m": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "t": "Abril a septiembre (temporada de invierno del Código Polar): menos luz, más hielo; temperatura de servicio polar −19,15 °C; Shetland −7 a −10 °C."
+    },
+    {
+     "m": [
+      3,
+      4,
+      5
+     ],
+     "t": "Entrada del otoño: \"humo de mar\"."
+    }
+   ]
+  }
+ }
+}

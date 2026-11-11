@@ -128,6 +128,26 @@ No inventes datos que el gráfico no muestre. Español técnico y breve.'
 
 ESQUEMA='{"type":"object","properties":{"bahias":{"type":"array","items":{"type":"object","properties":{"codigo":{"type":"string"},"inicializacion_utc":{"type":"string"},"situacion_sinoptica":{"type":"string"},"dias":{"type":"array","items":{"type":"object","properties":{"fecha":{"type":"string"},"nubosidad":{"type":"string","enum":["Cubierto","Nublado","Parcial","Despejado"]},"nubosidad_detalle":{"type":"string"},"viento":{"type":"string"},"precipitacion":{"type":"string"},"temp_max":{"type":"number"},"temp_min":{"type":"number"}},"required":["fecha","nubosidad","viento","temp_max","temp_min"]}}},"required":["codigo","situacion_sinoptica","dias"]}}},"required":["bahias"]}'
 
+# Climatología del Derrotero por bahía (la publica GitHub con el sitio): contexto regional para la IA, no datos del modelo
+curl -fsS --max-time 30 "https://meteoia.cl/data/clima_derrotero_wrf.json?t=$(date +%s)" -o "$TRAB/clima_wrf.json" 2>/dev/null \
+  || curl -fsS --max-time 30 "https://feliperifo-a11y.github.io/meteo_naval/data/clima_derrotero_wrf.json" -o "$TRAB/clima_wrf.json" 2>/dev/null \
+  || rm -f "$TRAB/clima_wrf.json"
+clima_de() {   # códigos de las bahías del grupo → texto breve por zona del Derrotero
+  [ -s "$TRAB/clima_wrf.json" ] || return 0
+  osascript -l JavaScript - "$TRAB/clima_wrf.json" "$@" <<'JS' 2>/dev/null
+ObjC.import('Foundation');
+function run(argv) {
+  const s = $.NSString.stringWithContentsOfFileEncodingError(argv[0], 4, null); if (s.isNil()) return '';
+  const d = JSON.parse(s.js), grupos = [], idx = {};
+  argv.slice(1).forEach(c => { const z = (d.bahias || {})[c]; if (!z) return;
+    const k = z.zona + '|' + (z.observaciones_del_mes || []).join('|');
+    if (idx[k] == null) { idx[k] = grupos.length; grupos.push({ z, cods: [] }); } grupos[idx[k]].cods.push(c); });
+  return grupos.map(g => { const z = g.z; return '- ' + z.zona + ' (' + z.volumen + '; códigos ' + g.cods.join(', ') + '): ' + z.resumen + ' Vientos: ' + z.vientos + ' Temporales: ' + z.temporales +
+    (z.senales_de_mal_tiempo ? ' Señales: ' + z.senales_de_mal_tiempo : '') + ((z.observaciones_del_mes || []).length ? ' Para este mes: ' + z.observaciones_del_mes.join(' ') : ''); }).join('\n');
+}
+JS
+}
+
 # 3. Una consulta por zona, en grupos de hasta 6 imágenes (pocas consultas = menos uso del cupo)
 rm -f "$TRAB/res_"*.json
 for zona in "Zona Norte" "Zona Central" "Zona Central Sur" "Zona Sur" "Zona Austral" "Zona Antártica"; do
@@ -136,10 +156,15 @@ for zona in "Zona Norte" "Zona Central" "Zona Central Sur" "Zona Sur" "Zona Aust
   slug=$(echo "$zona" | tr ' ' '_' | iconv -f UTF-8 -t ASCII//TRANSLIT 2>/dev/null | tr -cd 'A-Za-z_'); g=0
   while [ -s "$TRAB/lista.txt" ]; do
     g=$((g+1)); LISTA=$(head -6 "$TRAB/lista.txt"); tail -n +7 "$TRAB/lista.txt" > "$TRAB/lista2.txt"; mv "$TRAB/lista2.txt" "$TRAB/lista.txt"
+    CLIMA=$(clima_de $(echo "$LISTA" | sed -nE 's/.*\(codigo ([^)]+)\).*/\1/p'))
+    [ -n "$CLIMA" ] && CLIMA="
+
+Contexto climatológico del Derrotero de la Costa de Chile para estas bahías (no son datos del meteograma). Úsalo solo para interpretar y redactar la situación sinóptica con criterio regional, por ejemplo la evolución típica de un temporal; no agregues viento, precipitación ni fenómenos que el meteograma no muestre:
+$CLIMA"
     ( cd "$TRAB/img" && "$CLAUDE" -p "$INSTR
 
 Lee con la herramienta Read cada uno de estos archivos de imagen (están en la carpeta actual) y entrega el pronóstico de cada bahía:
-$LISTA" --allowedTools "Read" --output-format json --json-schema "$ESQUEMA" > "$TRAB/res_${slug}_$g.json" 2> "$TRAB/err_${slug}_$g.txt" ) \
+$LISTA${CLIMA:-}" --allowedTools "Read" --output-format json --json-schema "$ESQUEMA" > "$TRAB/res_${slug}_$g.json" 2> "$TRAB/err_${slug}_$g.txt" ) \
       && echo "$(ts) IA: $zona ($g) listo" || echo "$(ts) IA: $zona ($g) falló ($(cat "$TRAB/err_${slug}_$g.txt" "$TRAB/res_${slug}_$g.json" 2>/dev/null | tr -d '\n' | head -c 300))"
   done
 done
