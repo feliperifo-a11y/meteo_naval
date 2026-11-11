@@ -90,15 +90,30 @@ function rutaGrilla(la1, la2, lo1, lo2, res) {
   }
   return { T, nx, ny, la1, lo1, dlat, dlon, res };
 }
-function rutaAstar(G, s, t) {
-  const { T, nx, ny } = G, N = nx * ny, SQ = Math.SQRT2;
-  const costa = new Uint8Array(N);
+// Distancia (mn) de cada celda a la celda de tierra más cercana (transformada de distancia en dos pasadas)
+function rutaDistCosta(G) {
+  const { T, nx, ny, res } = G, N = nx * ny, D = new Float32Array(N), SQ = Math.SQRT2, INF = 1e9;
+  for (let k = 0; k < N; k++) D[k] = T[k] ? 0 : INF;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    const k = j * nx + i; if (T[k]) continue;
-    for (let dj = -1; dj <= 1 && !costa[k]; dj++) for (let di = -1; di <= 1; di++) {
-      const x = i + di, y = j + dj; if (x >= 0 && y >= 0 && x < nx && y < ny && T[y * nx + x]) { costa[k] = 1; break; }
-    }
+    const k = j * nx + i; let v = D[k]; if (!v) continue;
+    if (i > 0) v = Math.min(v, D[k - 1] + 1);
+    if (j > 0) { v = Math.min(v, D[k - nx] + 1); if (i > 0) v = Math.min(v, D[k - nx - 1] + SQ); if (i < nx - 1) v = Math.min(v, D[k - nx + 1] + SQ); }
+    D[k] = v;
   }
+  for (let j = ny - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) {
+    const k = j * nx + i; let v = D[k]; if (!v) continue;
+    if (i < nx - 1) v = Math.min(v, D[k + 1] + 1);
+    if (j < ny - 1) { v = Math.min(v, D[k + nx] + 1); if (i < nx - 1) v = Math.min(v, D[k + nx + 1] + SQ); if (i > 0) v = Math.min(v, D[k + nx - 1] + SQ); }
+    D[k] = v;
+  }
+  for (let k = 0; k < N; k++) D[k] = D[k] >= INF ? 9999 : D[k] * res;
+  return D;
+}
+// Camino de menor costo; las celdas a menos de "margen" mn de la costa cuestan más (hasta 6 veces junto a la orilla)
+function rutaAstar(G, s, t, margen) {
+  const { T, nx, ny } = G, N = nx * ny, SQ = Math.SQRT2, D = G.D;
+  const m = margen ? margen + G.res : G.res * 1.5;   // la distancia de la grilla es entre centros de celda: se suma una celda
+  const pen = k => { const d = D[k]; return d >= m ? 1 : 1 + 8 * (1 - d / m); };
   const g = new Float32Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1), cerr = new Uint8Array(N);
   const tx = t % nx, ty = (t / nx) | 0;
   const h = k => { const dx = Math.abs(k % nx - tx), dy = Math.abs(((k / nx) | 0) - ty); return dx + dy + (SQ - 2) * Math.min(dx, dy); };
@@ -123,7 +138,7 @@ function rutaAstar(G, s, t) {
       const x = i + di, y = j + dj; if (x < 0 || y < 0 || x >= nx || y >= ny) continue;
       const q = y * nx + x; if (T[q] || cerr[q]) continue;
       if (di && dj && (T[j * nx + x] || T[y * nx + i])) continue;   // sin cortar esquinas de tierra
-      const v = g[k] + c * (costa[q] ? 1.6 : 1);
+      const v = g[k] + c * pen(q);
       if (v < g[q]) { g[q] = v; prev[q] = k; push(v + h(q), q); }
     }
   }
@@ -145,46 +160,66 @@ function rutaMarCercano(G, k0) {
   return -1;
 }
 // ¿El segmento p→q cruza celdas de tierra de la grilla? (fuera de la grilla se considera mar)
-function rutaVeGrilla(G, p, q) {
+// req(la, lo): despeje mínimo exigido en ese punto (mn); 0 = solo no cruzar tierra
+function rutaVeGrilla(G, p, q, req) {
   const n = Math.max(2, Math.ceil(rutaMn(p, q) / (G.res * 0.35)));
   for (let k = 0; k <= n; k++) {
     const f = k / n, la = p[0] + (q[0] - p[0]) * f, lo = p[1] + (q[1] - p[1]) * f;
     const i = Math.floor((lo - G.lo1) / G.dlon), j = Math.floor((la - G.la1) / G.dlat);
-    if (i >= 0 && j >= 0 && i < G.nx && j < G.ny && G.T[j * G.nx + i]) return false;
+    if (i < 0 || j < 0 || i >= G.nx || j >= G.ny) continue;
+    const c = j * G.nx + i;
+    if (G.T[c]) return false;
+    if (req && G.D[c] < req(la, lo) - G.res * 0.05) return false;
   }
   return true;
 }
-// Tramo a→b por mar: devuelve la lista de puntos (incluye a y b) o null si no hay paso por mar en la costa incorporada
-function rutaPorMar(a, b, prof = 0) {
-  if (!rutaCruzaTierra(a, b)) return [a, b];
+// Tramo a→b por mar, a "margen" mn o más de la costa salvo al acercarse al zarpe o a la recalada.
+// Devuelve la lista de puntos (incluye a y b) o null si no hay paso por mar en la costa incorporada.
+function rutaPorMar(a, b, margen = 0, prof = 0) {
+  const cruza = rutaCruzaTierra(a, b);
+  if (!cruza && !margen) return [a, b];
   const cLat = Math.cos((a[0] + b[0]) / 2 * RUTA_RAD);
   const sLat = Math.abs(a[0] - b[0]), sLon = Math.abs(a[1] - b[1]);
-  const mLat = Math.max(0.6, 0.35 * Math.max(sLat, sLon * cLat)), mLon = mLat / cLat;
+  const mLat = Math.max(0.6, 0.35 * Math.max(sLat, sLon * cLat)) + 2 * margen / 60, mLon = mLat / cLat;
   const la1 = Math.min(a[0], b[0]) - mLat, la2 = Math.max(a[0], b[0]) + mLat, lo1 = Math.min(a[1], b[1]) - mLon, lo2 = Math.max(a[1], b[1]) + mLon;
   const area = (la2 - la1) * 60 * (lo2 - lo1) * 60 * cLat;
-  // celdas de 0,25 a 3 mn, con un máximo de ~1,2 millones de celdas; si no hay paso, se intenta con celdas más finas
+  // celdas de 0,25 a 3 mn (y no más de un tercio del margen), con un máximo de ~2 millones de celdas
   let res = Math.min(3, Math.max(0.25, Math.sqrt(area / 1.2e6)));
+  if (margen) res = Math.max(Math.sqrt(area / 2e6), Math.min(res, Math.max(0.25, margen / 3)));
+  // despeje exigido: el margen, reducido cerca del zarpe y de la recalada (para poder entrar y salir del puerto)
+  const req = margen ? (la, lo) => Math.min(margen, rutaMn([la, lo], a), rutaMn([la, lo], b)) : null;
   for (let intento = 0; intento < 2; intento++, res = Math.max(0.2, res / 2)) {
     const G = rutaGrilla(la1, la2, lo1, lo2, res);
     if (G.nx * G.ny > 4e6) break;
+    G.D = rutaDistCosta(G);
+    // sin cruzar tierra y con despeje suficiente en todo el tramo: línea recta
+    const reqG = req ? (la, lo) => { const r = req(la, lo); return r > 0 ? r + 0.7 * G.res : 0; } : null;   // corrección por el tamaño de celda
+    if (!cruza && rutaVeGrilla(G, a, b, reqG)) return [a, b];
     const celda = p => Math.min(G.ny - 1, Math.max(0, Math.floor((p[0] - la1) / G.dlat))) * G.nx + Math.min(G.nx - 1, Math.max(0, Math.floor((p[1] - lo1) / G.dlon)));
     const s = rutaMarCercano(G, celda(a)), t = rutaMarCercano(G, celda(b));
     if (s < 0 || t < 0) continue;
-    const cam = rutaAstar(G, s, t); if (!cam) continue;
+    const cam = rutaAstar(G, s, t, margen); if (!cam) continue;
     const centro = k => [la1 + (((k / G.nx) | 0) + 0.5) * G.dlat, lo1 + (k % G.nx + 0.5) * G.dlon];
     const P = [a, ...cam.map(centro), b];
-    // enderezar: desde cada punto, saltar al punto más lejano del camino que se vea sin cruzar tierra
+    // déficit de despeje del propio camino en cada punto (canales angostos): un atajo puede tener a lo más ese déficit
+    const DEF = P.map((q, k) => k === 0 || k === P.length - 1 || !reqG ? 0 : Math.max(0, reqG(q[0], q[1]) - G.D[cam[k - 1]]));
+    // enderezar: desde cada punto se avanza mientras el atajo no cruce tierra ni quede más cerca de la costa que el camino
     const out = [a]; let i = 0;
     while (i < P.length - 1) {
-      let j = P.length - 1;
-      while (j > i + 1 && !rutaVeGrilla(G, P[i], P[j])) j--;
+      let j = i + 1, def = 0;
+      while (j + 1 < P.length) {
+        const d = Math.max(def, DEF[j], DEF[j + 1]);
+        const rq = reqG ? (la, lo) => reqG(la, lo) - d : null;
+        if (!rutaVeGrilla(G, P[i], P[j + 1], rq)) break;
+        def = d; j++;
+      }
       out.push(P[j]); i = j;
     }
     // revisión fina con la costa real: un tramo que todavía roza tierra se recalcula en una caja más chica (celdas más finas)
     const fin = [a];
     for (let k = 1; k < out.length; k++) {
       const p = fin[fin.length - 1], q = out[k];
-      const sub = prof < 2 && rutaCruzaTierra(p, q, 0.25) ? rutaPorMar(p, q, prof + 1) : null;
+      const sub = prof < 2 && rutaCruzaTierra(p, q, 0.25) ? rutaPorMar(p, q, 0, prof + 1) : null;
       if (sub) fin.push(...sub.slice(1)); else fin.push(q);
     }
     return fin.map(p => [+p[0].toFixed(4), +p[1].toFixed(4)]);
