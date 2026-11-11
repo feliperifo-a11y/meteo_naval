@@ -1,0 +1,12 @@
+<div id="dlgSug" hidden onclick="if(event.target===this)cerrarSug()"><div class="sugCaja" role="dialog" aria-modal="true" aria-labelledby="sugTit">
+  <button type="button" class="sugCerrar" onclick="cerrarSug()" aria-label="Cerrar">✕</button>
+  <h3 id="sugTit">Sugerencias</h3>
+  <p>MeteoIA es una página pública y <b>sin fines de lucro</b>, creada para apoyar la toma de decisiones y la seguridad en la navegación.</p>
+  <p>Cualquier sugerencia o comentario será bienvenido. Envíelo a:</p>
+  <a class="sugMail" href="mailto:meteoiachile@gmail.com?subject=Sugerencia%20MeteoIA">meteoiachile@gmail.com</a>
+</div></div>
+<script>
+function abrirSug() { document.getElementById('dlgSug').hidden = false; try { window.mnEvento && mnEvento('sugerencias'); } catch (e) {} }
+function cerrarSug() { document.getElementById('dlgSug').hidden = true; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSug(); });
+</script>

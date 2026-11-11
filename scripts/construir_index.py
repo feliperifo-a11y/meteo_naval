@@ -21,7 +21,18 @@ def preparar_avisos(html):
             .replace("/*AVISOS_MAPA_JS*/", leer(B / "avisos_mapa.js", "")))
 
 
+def _sug_css():
+    t = leer(B / "plantilla.html", "")
+    return "\n".join(l for l in t.splitlines() if l.startswith(("#dlgSug", ".sugCaja", ".sugCerrar")))
+
+
+SUG_CSS = None
+
+
 def preparar_app(html):
+    global SUG_CSS
+    if SUG_CSS is None:
+        SUG_CSS = _sug_css()
     """Ajustes compartidos de la app; se aplican a todas las páginas generadas."""
     html = html.replace('width=device-width, initial-scale=1.0',
                         'width=device-width, initial-scale=1.0, viewport-fit=cover')
@@ -30,7 +41,17 @@ def preparar_app(html):
         metas += '<meta name="apple-mobile-web-app-capable" content="yes">\n'
     if 'name="apple-mobile-web-app-status-bar-style"' not in html:
         metas += '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
-    return html.replace('</head>', metas + '<style>\n' + leer(B / 'movil.css', '') + '\n</style>\n</head>')
+    html = html.replace('</head>', metas + '<style>\n' + leer(B / 'movil.css', '') + '\n</style>\n</head>')
+    # Botón flotante de sugerencias en todas las páginas (el diálogo solo si la página no lo trae)
+    if 'id="sugFlot"' not in html:
+        sug = leer(B / 'sugerencias.html', '')
+        if 'id="dlgSug"' in html:
+            sug = sug.replace('<!--SUG_DLG-->', '').replace('/*SUG_DLG_CSS*/', '')
+        else:
+            sug = sug.replace('<!--SUG_DLG-->', leer(B / 'sugerencias_dlg.html', '')).replace('/*SUG_DLG_CSS*/', SUG_CSS)
+        i = html.rfind('</body>')
+        html = html[:i] + sug + html[i:] if i >= 0 else html + sug
+    return html
 
 
 respaldo = {"estaciones": json.loads(leer(D / "estaciones.json", "{}")), "avisos": json.loads(leer(D / "avisos.json", "{}"))}
@@ -47,7 +68,7 @@ datos = "\n".join([
 ])
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
-version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "plantilla_monan.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css")
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "plantilla_monan.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css") + leer(B / "sugerencias.html", "") + leer(B / "sugerencias_dlg.html", "")
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "hielo_amsr2.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "caso_sar.js", "") + leer(B / "derrotero_lugares.js", "") + leer(B / "clima_derrotero.js", "").replace("/*CLIMA_JSON*/{ fuente: '', eje_estrecho_occidental: [], zonas: {} }", leer(D / "clima_derrotero.json", "{}")) + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "") + leer(B / "viento_alerta.js", "") + leer(B / "viento_alerta.css", "") + leer(B / "evaluacion_ia.js", "") + leer(B / "evaluacion_ia.css", "") + leer(B / "borrador_boletin.js", "") + leer(B / "umbrales_viento.js", "") + leer(B / "trombas.js", "") + leer(B / "trombas.css", "") + leer(B / "ruta_mar.js", "") + leer(B / "ruta_informe.js", "") + leer(B / "rutas_tipo.js", "") + leer(B / "ruta.js", "") + leer(B / "ruta.css", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
