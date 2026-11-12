@@ -224,7 +224,7 @@ function crearCasoSAR(L, map, ctx) {
   function nuevoCaso() {
     const n = siguienteN();
     actual = null; borrador = { id: 'c' + Date.now().toString(36), n, nombre: 'Caso ' + n, fase: null };
-    marca = null; ultimo = null; grupoMapa.clearLayers(); res.innerHTML = '';
+    marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); ens = null; res.innerHTML = '';
     form.lat.value = ''; form.lon.value = ''; form.hora.value = sarHoraLocal(new Date()).slice(0, 16);
     casos.forEach(pintarMarca); mostrarFicha(); pintarCabecera(); modoElegir(true);
   }
@@ -264,14 +264,14 @@ function crearCasoSAR(L, map, ctx) {
     if (!map.hasLayer(capaCaso) && casos.length) { capaCaso.addTo(map); const ch = document.getElementById('chk_caso_sar'); if (ch) ch.checked = true; }
   }
   // Cerrar la ficha no borra los casos: los puntos quedan en el mapa como una capa más.
-  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); grupoEns.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
   const btnBorrar = card.querySelector('.sar-borrar');
   btnBorrar.onclick = () => {
     if (!caso()) { if (borrador) { borrador = null; modoElegir(false); abrir(); } return; }
     if (!btnBorrar.dataset.ok) { btnBorrar.dataset.ok = '1'; btnBorrar.textContent = '¿Borrar? Pulsa de nuevo'; setTimeout(() => { delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso'; }, 4000); return; }
     delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso';
     const m = marcas.get(actual); if (m) capaCaso.removeLayer(m); marcas.delete(actual);
-    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); res.innerHTML = '';
+    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); ens = null; res.innerHTML = '';
     if (casos.length) seleccionar(casos[casos.length - 1].id, true);
     else { form.lat.value = ''; form.lon.value = ''; pintarCabecera(); }
   };
@@ -426,7 +426,7 @@ function crearCasoSAR(L, map, ctx) {
     html += '</div>';
     // 6. Deriva y dátum
     let deriva = null;
-    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); }
+    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); html += bloqueEnsemble(lat, lon, deriva); }
     // 7. Ventanas de operación
     if (h) html += ventanas(h, mh, i0, d.a.daily || {});
     html += `<p class="sar-nota">Fuentes: pronóstico puntual Open-Meteo (ECMWF IFS 9 km y NOAA GFS para viento, ráfaga y visibilidad; Météo-France para oleaje, temperatura del agua y corriente), observaciones y avisos de MeteoIA.
@@ -458,6 +458,7 @@ function crearCasoSAR(L, map, ctx) {
       const m = medios.find(x => x.id === inp.dataset.id), v = parseFloat(String(inp.value).replace(',', '.'));
       m[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; guardarMedios(); pintar();
     });
+    enlazarEnsemble(lat, lon, deriva);
     const rest = res.querySelector('.sar-restablecer'); if (rest) rest.onclick = () => { medios = SAR_MEDIOS_BASE.map(m => ({ ...m })); guardarMedios(); pintar(); };
   }
 
@@ -518,7 +519,7 @@ function crearCasoSAR(L, map, ctx) {
   function bloqueDeriva(d) {
     const c = caso() || borrador || {};
     const opts = Object.entries(SAR_OBJETOS).map(([k, o]) => `<option value="${k}"${k === d.objeto ? ' selected' : ''}>${o.nombre}${o.k ? ` (≈${Math.round(o.k * 1000) / 10} % del viento)` : ''}</option>`).join('');
-    const plazos = [0, 3, 6, 12, 24].map(x => `<option value="${x}"${+d.plazo === x ? ' selected' : ''}>${x ? '+' + x + ' h (planificación)' : 'Ahora'}</option>`).join('');
+    const plazos = [0, 3, 6, 12, 24, 48, 72].map(x => `<option value="${x}"${+d.plazo === x ? ' selected' : ''}>${x ? '+' + x + ' h (planificación)' : 'Ahora'}</option>`).join('');
     const num = v => v == null ? '' : String(v).replace('.', ',');
     let html = `<div class="sar-blq sar-deriva"><h3>Deriva y dátum</h3>
       <div class="sar-der-form"><label>Objeto de la búsqueda<select class="sar-der-in" data-k="objeto">${opts}</select></label>
@@ -545,6 +546,143 @@ function crearCasoSAR(L, map, ctx) {
     L.marker(d.datum, { icon: L.divIcon({ className: 'sar-datum', html: '<svg width="26" height="24" viewBox="0 0 26 24"><path d="M13 2 24 22H2Z" fill="#7a3cff" stroke="#fff" stroke-width="2"/></svg>', iconSize: [26, 24], iconAnchor: [13, 16] }) })
       .bindTooltip(`<b>Dátum</b> ${sarFmtHora(d.hora)} h<br>${sarDM(d.datum[0], 'N', 'S')} · ${sarDM(d.datum[1], 'E', 'W')}`, { direction: 'bottom', offset: [0, 8] }).addTo(grupoMapa);
     return cir;
+  }
+
+  // ---- Área de búsqueda por deriva con ensemble (método Leeway; motor en deriva_sar.js)
+  const grupoEns = L.layerGroup().addTo(map), lienzoEns = L.canvas({ padding: 0.3 });
+  let ens = null;   // { clave, estado: 'calculando' | 'ok' | 'error', sim, k, msg, info }
+  const categoriaLeeway = c => (c.leeway && SAR_LEEWAY[c.leeway]) ? c.leeway : (SAR_LEEWAY_POR_OBJETO[c.objeto] || 'PIW-1');
+  const claveEns = (lat, lon, d, c) => [lat.toFixed(4), lon.toFixed(4), form.hora.value, d.hora, categoriaLeeway(c), d.X, c.errT ?? 0].join('|');
+  const grilla = (a, b, n) => Array.from({ length: n }, (_, i) => +(a + (b - a) * i / (n - 1)).toFixed(3));
+  const listaPuntos = (lats, lons) => { const la = [], lo = []; for (const y of lats) for (const x of lons) { la.push(y); lo.push(x); } return `latitude=${la.join(',')}&longitude=${lo.join(',')}`; };
+  const pedirJson = (url, ms) => fetch(url, { signal: AbortSignal.timeout(ms || 30000) }).then(r => r.json()).then(j => { if (j && j.error) throw Error(j.reason || 'sin datos'); return j; });
+  let mascaraCache = null;
+  function mascaraTierra(caja) {
+    const k = caja.join(','); if (mascaraCache && mascaraCache.k === k) return mascaraCache.f;
+    const costa = ctx.costa ? ctx.costa() : null; if (!costa || typeof decodePolyline6 !== 'function') return null;
+    const anillos = []; for (const c of costa) for (const poly of c.p) for (const r of poly) anillos.push(decodePolyline6(r));
+    const f = sarMascaraTierra(anillos, caja, 500, 500); mascaraCache = { k, f }; return f;
+  }
+  // Descarga los campos de viento (ECMWF y su ensemble) y de corriente en una grilla que cubre toda la deriva esperada.
+  async function camposDeriva(lat, lon, d, t0, t1) {
+    let s = lat, n = lat, w = lon, e = lon; for (const [la, lo] of d.tray) { s = Math.min(s, la); n = Math.max(n, la); w = Math.min(w, lo); e = Math.max(e, lo); }
+    const margen = Math.max(20, 0.6 * d.dist, 3 * d.E) / 60, cos = Math.cos(lat * Math.PI / 180);
+    s -= margen; n += margen; w -= margen / cos; e += margen / cos;
+    const caja = [s, w, n, e].map(v => +v.toFixed(3)), ahora = Date.now() / 1000;
+    const atras = Math.min(7, Math.max(1, Math.ceil((ahora - t0) / 86400) + 1)), adelante = Math.min(7, Math.max(2, Math.ceil((t1 - ahora) / 86400) + 2));
+    const gv = [grilla(caja[0], caja[2], 4), grilla(caja[1], caja[3], 4)], gc = [grilla(caja[0], caja[2], 5), grilla(caja[1], caja[3], 5)], ge = [grilla(caja[0], caja[2], 3), grilla(caja[1], caja[3], 3)];
+    const com = `&timeformat=unixtime&timezone=GMT&forecast_days=${adelante}`;
+    const [rv, rc, re] = await Promise.all([
+      pedirJson(`https://api.open-meteo.com/v1/forecast?${listaPuntos(...gv)}&hourly=wind_speed_10m,wind_direction_10m&models=ecmwf_ifs&wind_speed_unit=ms&past_days=${atras}${com}`),
+      pedirJson(`https://marine-api.open-meteo.com/v1/marine?${listaPuntos(...gc)}&hourly=ocean_current_velocity,ocean_current_direction&past_days=${atras}${com}`).catch(() => null),
+      pedirJson(`https://ensemble-api.open-meteo.com/v1/ensemble?${listaPuntos(...ge)}&hourly=wind_speed_10m,wind_direction_10m&models=ecmwf_ifs025&wind_speed_unit=ms&past_days=${Math.min(3, atras)}${com}`, 45000).catch(() => null)
+    ]);
+    const viento = sarCampoOpenMeteo(rv, gv[0], gv[1], 'viento'); if (!viento) throw Error('sin viento');
+    let corriente = rc ? sarCampoOpenMeteo(rc, gc[0], gc[1], 'corriente') : null; const sinCorriente = !corriente;
+    if (!corriente) corriente = { lats: [caja[0], caja[2]], lons: [caja[1], caja[3]], ts: [t0, t1], u: new Float32Array(8), v: new Float32Array(8), nm: 1 };
+    const miembros = re ? sarEnsembleOpenMeteo(re, ge[0], ge[1]) : null;
+    return { caja, viento, corriente, miembros, sinCorriente, puntosCorrienteSinDato: corriente.puntosSinDato || 0, puntosCorriente: gc[0].length * gc[1].length };
+  }
+  async function calcularEnsemble(lat, lon, d) {
+    const c = caso() || borrador || {}, clave = claveEns(lat, lon, d, c);
+    const t0 = new Date(form.hora.value) / 1000, t1 = new Date(d.hora) / 1000;
+    ens = { clave, estado: 'calculando' }; grupoEns.clearLayers(); pintar();
+    try {
+      if (!(t1 > t0)) throw Error('La hora del dátum debe ser posterior a la del incidente.');
+      const F = await camposDeriva(lat, lon, d, t0, t1);
+      if (!ens || ens.clave !== clave) return;
+      // X es el error probable (50 %) de la posición inicial: sigma = X / 1,1774 en una distribución normal circular.
+      const sim = sarDerivaSimular({ lat, lon, t0, t1, objeto: categoriaLeeway(c), sigmaPos: d.X * 1852 / 1.1774, errT: (c.errT || 0) * 3600,
+        viento: F.viento, corriente: F.corriente, miembros: F.miembros, esTierra: mascaraTierra(F.caja), semilla: 20261112 });
+      ens = { clave, estado: 'ok', sim, k: sim.nOut - 1, info: F, datum: d.datum, objetoIamsar: d.objeto, calculado: new Date() };
+    } catch (e) { if (ens && ens.clave === clave) ens = { clave, estado: 'error', msg: e && e.message && /hora del dátum/.test(e.message) ? e.message : 'No se pudieron obtener los campos de viento y corriente. Revisa la conexión e intenta de nuevo.' }; }
+    pintar();
+  }
+  const horaChile = t => new Date(t * 1000).toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  function bloqueEnsemble(lat, lon, d) {
+    const c = caso() || borrador || {}, cat = categoriaLeeway(c), num = v => v == null ? '' : String(v).replace('.', ',');
+    const opts = Object.entries(SAR_LEEWAY).map(([k, o]) => `<option value="${k}"${k === cat ? ' selected' : ''}>${escH(o.nombre)}</option>`).join('');
+    let html = `<div class="sar-blq sar-ens"><h3>Área de búsqueda probable · deriva por ensemble</h3>
+      <div class="sar-der-form"><label>Categoría del objeto (Leeway)<select class="sar-der-in sar-ens-cat" data-k="leeway">${opts}</select></label>
+      <label title="Si no se conoce la hora exacta del incidente, las partículas inician dentro de este margen">Incertidumbre de la hora (± h)<input class="sar-der-in" data-k="errT" inputmode="decimal" value="${num(c.errT ?? 0)}"></label></div>`;
+    if (!d || !d.ok) return html + `<p class="sar-nota">${d && d.motivo ? d.motivo : 'Completa los datos de la deriva para calcular el área de búsqueda.'}</p></div>`;
+    const vigente = ens && ens.clave === claveEns(lat, lon, d, c);
+    if (vigente && ens.estado === 'calculando') return html + '<p class="sar-cargando">Descargando viento, ensemble y corriente, y simulando 2.000 partículas…</p></div>';
+    html += `<p><button type="button" class="sar-ens-calc">${vigente && ens.estado === 'ok' ? 'Recalcular' : 'Calcular área de búsqueda'}</button>
+      <span class="sar-nota"> 2.000 partículas desde el incidente hasta la hora del dátum (${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h), con el error X de la posición inicial indicado arriba.</span></p>`;
+    if (vigente && ens.estado === 'error') html += `<p class="sar-error">${escH(ens.msg)}</p>`;
+    if (ens && !vigente && ens.estado === 'ok') html += '<p class="sar-nota">Los datos del caso cambiaron: vuelve a calcular para actualizar el área.</p>';
+    if (vigente && ens.estado === 'ok') html += `<div class="sar-ens-res">${textoEnsemble()}</div>` + supuestosEnsemble();
+    return html + '</div>';
+  }
+  function textoEnsemble() {
+    const { sim, k, info } = ens, r = sarDerivaResumen(sim, k, mascaraTierra(info.caja));
+    ens.resumen = r;
+    const deslizador = `<label class="sar-ens-t"><span>Hora mostrada: <b>${horaChile(sim.tiempos[k])}</b> (+${nf((sim.tiempos[k] - sim.tiempos[0]) / 3600, 0)} h desde el incidente)</span>
+        <input type="range" class="sar-ens-hora" min="0" max="${sim.nOut - 1}" step="1" value="${k}"></label>`;
+    if (!r) return deslizador + '<p class="sar-nota">A esta hora ninguna partícula ha iniciado la deriva.</p>';
+    const pos = p => `${sarDM(p[0], 'N', 'S')} · ${sarDM(p[1], 'E', 'W')}`, R = r.rect, pc = v => (100 * v / r.total < 1 ? 'Menos de 1' : nf(100 * v / r.total, 0)) + ' %';
+    const sep = k === sim.nOut - 1 && ens.datum ? sarMillas(ens.datum, r.masProbable) : null;
+    return `${deslizador}
+      <p><span class="sar-ens-sw" style="background:#e53935"></span> Zona con 50 % de probabilidad: <b>${nf(r.area50, 0)} mn²</b> ·
+         <span class="sar-ens-sw" style="background:#ff9800"></span> zona con 90 %: <b>${nf(r.area90, 0)} mn²</b></p>
+      <p>Posición más probable: <b>${pos(r.masProbable)}</b>${sep != null ? ` (a ${nf(sep, 1)} mn del dátum IAMSAR, calculado para «${escH(SAR_OBJETOS[ens.objetoIamsar]?.nombre || 'objeto indicado')}»)` : ''}<br>
+         Deriva desde la última posición conocida: mediana ${nf(r.distMediana, 1)} mn · 90 % de las partículas a menos de ${nf(r.dist90, 1)} mn</p>
+      <p><b>Rectángulo de búsqueda</b> (cubre la zona del 90 %): <b>${nf(R.largo, 1)} × ${nf(R.ancho, 1)} mn</b> · ${nf(R.area, 0)} mn² · eje mayor ${String(Math.round(R.rumbo)).padStart(3, '0')}°/${String(Math.round(R.rumbo + 180) % 360).padStart(3, '0')}°<br>
+         Centro: ${pos(R.centro)}<br>Vértices: ${R.esquinas.map(pos).join(' ; ')}</p>
+      ${r.varadas ? `<p class="sar-error">${pc(r.varadas)} de las partículas llegó a la costa: considerar búsqueda en el litoral (puntos rojos en el mapa).</p>` : ''}
+      ${r.sinIniciar ? `<p class="sar-nota">${pc(r.sinIniciar)} de las partículas aún no inicia la deriva a esta hora (incertidumbre de la hora).</p>` : ''}
+      <p class="sar-nota">Viento ECMWF 9 km${sim.miembros ? ` con las desviaciones de ${sim.miembros} miembros del ensemble ECMWF${sim.fraccionSinEnsemble > 0.02 ? ` (${nf(100 * (1 - sim.fraccionSinEnsemble), 0)} % del tiempo; el resto con error de viento de 1,5 m/s)` : ''}` : ' <b>sin ensemble disponible</b>: se aplicó un error de viento de 1,5 m/s por componente'}.
+        ${info.sinCorriente ? '<b>Sin dato de corriente</b>: solo abatimiento.' : `Corriente Météo-France${info.puntosCorrienteSinDato ? ` (${info.puntosCorrienteSinDato} de ${info.puntosCorriente} puntos de la grilla sin dato, completados con el vecino)` : ''}.`}
+        ${sim.fraccionFuera > 0.01 ? ` ${nf(100 * sim.fraccionFuera, 0)} % de los pasos quedó fuera de la grilla descargada (se usó el valor del borde).` : ''} Calculado a las ${ens.calculado.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })} h.</p>
+      <p><button type="button" class="sar-ens-copiar">Copiar área de búsqueda</button> <button type="button" class="sar-ens-ver">Ver en el mapa</button></p>`;
+  }
+  function supuestosEnsemble() {
+    return `<details class="sar-sup-info"><summary>Método y supuestos</summary>
+      <p>Cada partícula es una deriva posible. Parte de la última posición conocida con un error normal (X es el radio que contiene el 50 %), y en cada paso de 15 minutos se mueve con la corriente y con el abatimiento que corresponde al viento <b>en el lugar y la hora donde se encuentra</b>, no en la posición inicial.</p>
+      <p><b>Abatimiento:</b> método Leeway, con componente a favor del viento y componente transversal (a la derecha o a la izquierda, con cambio de banda de 4 % por hora) y el error propio de cada categoría de objeto. Formulación y coeficientes iguales a los del modelo Leeway de OpenDrift; esta implementación se contrastó con OpenDrift 1.14 con viento y corriente idénticos, con diferencias menores que 1,5 % en la deriva media.</p>
+      <p><b>Incertidumbre:</b> posición inicial (X), hora del incidente, coeficientes del objeto, viento (desviaciones de los miembros del ensemble ECMWF sobre el pronóstico de 9 km), corriente (error persistente de 0,10 m/s por componente, cerca de 0,3 kt, más difusión de 10 m²/s). No hay ensemble de corrientes.</p>
+      <p><b>Límites:</b> la corriente del modelo global no resuelve la marea local, canales ni bahías cerradas; la costa es simplificada, por lo que la varada es aproximada; el resultado depende de la categoría elegida. Con derivas de varios días la incertidumbre real puede ser mayor que la mostrada.</p>
+      <p class="sar-nota">Referencias: Allen y Plourde (1999), Review of Leeway, USCG R&D Center, informe CG-D-08-99; Allen (2005), Leeway Divergence, informe CG-D-05-05; Breivik y Allen (2008), J. Mar. Syst. 69, 99-113; Dagestad et al. (2018), OpenDrift v1.0, Geosci. Model Dev. 11, 1405-1420. Herramienta de apoyo: no reemplaza la planificación de búsqueda del MRCC.</p></details>`;
+  }
+  function dibujarEnsemble() {
+    grupoEns.clearLayers(); if (!ens || ens.estado !== 'ok' || !ens.resumen) return;
+    const { sim, k } = ens, r = ens.resumen, b = k * sim.n, o = { renderer: lienzoEns, interactive: false };
+    for (const c of r.celdas) L.rectangle([c.sw, c.ne], { ...o, stroke: false, fillColor: c.nivel === 50 ? '#e53935' : '#ff9800', fillOpacity: c.nivel === 50 ? .42 : .26 }).addTo(grupoEns);
+    for (let i = 0; i < sim.n; i += 2) { const e = sim.estado[b + i]; if (!e) continue; L.circleMarker([sim.lat[b + i], sim.lon[b + i]], { ...o, radius: e === 2 ? 2.4 : 1.3, stroke: false, fillColor: e === 2 ? '#b71c1c' : '#1b2a3a', fillOpacity: e === 2 ? .95 : .55 }).addTo(grupoEns); }
+    L.polygon(r.rect.esquinas, { color: '#0d47a1', weight: 2.5, dashArray: '8 5', fill: false })
+      .bindTooltip(`Rectángulo de búsqueda ${nf(r.rect.largo, 1)} × ${nf(r.rect.ancho, 1)} mn (${nf(r.rect.area, 0)} mn²)`, { sticky: true }).addTo(grupoEns);
+    L.circleMarker(r.masProbable, { radius: 6, color: '#fff', weight: 2, fillColor: '#e53935', fillOpacity: 1 }).bindTooltip(`Posición más probable · ${horaChile(r.t)}`).addTo(grupoEns);
+  }
+  function enlazarEnsemble(lat, lon, d) {
+    const c = caso() || borrador || {}, vigente = ens && d && d.ok && ens.clave === claveEns(lat, lon, d, c);
+    const bc = res.querySelector('.sar-ens-calc'); if (bc) bc.onclick = () => calcularEnsemble(lat, lon, d);
+    if (!vigente || ens.estado !== 'ok') { if (!vigente || ens.estado === 'error') grupoEns.clearLayers(); return; }
+    dibujarEnsemble();
+    const caja = res.querySelector('.sar-ens-res');
+    const enlazar = () => {
+      const sl = caja.querySelector('.sar-ens-hora');
+      // Al mover la hora se conserva el deslizador (para no cortar el arrastre) y se reemplaza el resto.
+      if (sl && !sl.oninput) sl.oninput = () => {
+        ens.k = +sl.value; const tmp = document.createElement('div'); tmp.innerHTML = textoEnsemble();
+        const et = caja.querySelector('.sar-ens-t'); et.querySelector('span').innerHTML = tmp.querySelector('.sar-ens-t span').innerHTML;
+        while (et.nextSibling) et.nextSibling.remove();
+        tmp.querySelector('.sar-ens-t').remove(); while (tmp.firstChild) caja.appendChild(tmp.firstChild);
+        dibujarEnsemble(); enlazar();
+      };
+      const ver = caja.querySelector('.sar-ens-ver');
+      if (ver) ver.onclick = () => { const lateral = window.innerWidth > 1050; map.fitBounds(L.latLngBounds(ens.resumen.rect.esquinas).extend([lat, lon]), { paddingTopLeft: [50, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 40], maxZoom: 12 }); };
+      const cp = caja.querySelector('.sar-ens-copiar');
+      if (cp) cp.onclick = () => {
+        const r = ens.resumen, R = r.rect, pos = p => `${sarDM(p[0], 'N', 'S')} ${sarDM(p[1], 'E', 'W')}`, cs = caso();
+        const txt = [`${cs ? cs.nombre : 'Caso SAR'} · área de búsqueda por deriva (MeteoIA, herramienta de apoyo)`, `Objeto: ${ens.sim.nombreObjeto}`, `Última posición conocida: ${pos([lat, lon])} · ${form.hora.value.replace('T', ' ')} h`,
+          `Válida para: ${horaChile(r.t)}`, `Posición más probable: ${pos(r.masProbable)}`, `Rectángulo ${nf(R.largo, 1)} x ${nf(R.ancho, 1)} mn (${nf(R.area, 0)} mn2), eje ${String(Math.round(R.rumbo)).padStart(3, '0')}°`,
+          `Centro: ${pos(R.centro)}`, ...R.esquinas.map((p, i) => `Vértice ${i + 1}: ${pos(p)}`), `Zona 50 %: ${nf(r.area50, 0)} mn2 · zona 90 %: ${nf(r.area90, 0)} mn2${r.varadas ? ` · ${nf(100 * r.varadas / r.total, 0)} % de partículas en la costa` : ''}`].join('\n');
+        (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { cp.textContent = 'Copiado'; }, () => { cp.textContent = 'No se pudo copiar'; });
+        setTimeout(() => { cp.textContent = 'Copiar área de búsqueda'; }, 2500);
+      };
+    };
+    enlazar();
   }
 
   // Tiempo de supervivencia de referencia (IAMSAR vol. II, fig. N-14) según la temperatura del agua y el tiempo transcurrido.

@@ -1871,7 +1871,7 @@ function refrescarTodo(rehacerEst) {
 function initAreas() { const sel = document.getElementById('fArea'); const pres = new Set(ESTACIONES.map(s => s.area)); AREA_ORD.filter(a => pres.has(a)).forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = nombreArea(a); sel.appendChild(o); }); }
 renderCapas();
 // Caso SAR (fase 1): se crea una vez; usa los datos ya cargados de estaciones, boyas y avisos.
-const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso, capas: () => LAYERS });
+const casoSAR = crearCasoSAR(L, map, { escH, nf, estaciones: () => ESTACIONES, boyas: () => BOYAS, evaluar, evaluarBoya, nombreEst, avisos: () => AV_ORD, estadoAviso, capas: () => LAYERS, costa: () => LAND });
 // Alertas preventivas de marejadas (10 días) y de viento (5 días): comparten el espacio de la ficha SAR, por eso se abre uno a la vez.
 const alertaMar = crearAlertaMarejadas(L, map, { escH });
 const alertaVto = crearAlertaViento(L, map, { escH });

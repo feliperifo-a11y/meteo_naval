@@ -99,3 +99,10 @@
 .hielo-ley i.hielo-borde{height:0;border-top:2px solid #0d2b6b;box-shadow:0 0 0 1.5px #fff;border-radius:0}
 .hielo-res{font-size:12.5px}
 .hielo-fuente p{font-size:11.5px;margin:5px 0}
+
+/* Caso SAR: área de búsqueda por deriva con ensemble */
+.sar-ens{margin-top:12px;border-color:#0d47a166}.sar-ens h3{color:#0d47a1!important}:root[data-theme=dark] .sar-ens h3{color:#7fb3ff!important}
+.sar-ens button{padding:6px 12px;border-radius:6px;border:1px solid #0d47a1;background:#0d47a1;color:#fff;font-weight:700;cursor:pointer;font-size:12.5px}.sar-ens .sar-ens-copiar,.sar-ens .sar-ens-ver{background:transparent;color:inherit;border-color:var(--line);font-weight:600}
+.sar-ens-t{display:flex;flex-direction:column;gap:4px;font-size:12.5px;margin:6px 0}.sar-ens-t input{width:100%}
+.sar-ens-sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;opacity:.75}
+.sar-ens .sar-der-form label:first-child{flex:1 1 100%;min-width:0}.sar-ens .sar-ens-cat{width:100%;min-width:0;box-sizing:border-box}
