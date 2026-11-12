@@ -127,34 +127,39 @@ assert MARCA_RUTA in html_dash, "falta la marca del modo solo ruta"
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
                       "const VERSION_PAGINA = " + json.dumps(version) + ";"])
+# Versión en inglés: el traductor de la interfaz (build/i18n.js) va al inicio del <head>, antes del código de la página.
+def con_idioma(h):
+    return h.replace("<head>", "<head>\n<script>" + leer(B / "i18n.js") + "</script>", 1)
+
+
 html_ia = (leer(B / "plantilla_ia.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
            .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "ia.html").write_text(preparar_app(html_ia), encoding="utf-8")
+(R / "ia.html").write_text(preparar_app(con_idioma(html_ia)), encoding="utf-8")
 print(f"ia.html: {len(html_ia) / 1024:.0f} KB")
 
 # Página WRF + IA: pronósticos de bahía redactados con IA sobre el mapa.
 html_wrfia = (leer(B / "plantilla_wrfia.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "wrfia.html").write_text(preparar_app(html_wrfia), encoding="utf-8")
+(R / "wrfia.html").write_text(preparar_app(con_idioma(html_wrfia)), encoding="utf-8")
 print(f"wrfia.html: {len(html_wrfia) / 1024:.0f} KB")
 
 # Página MONAN 3 km: corrida propia (repositorio trombas_marinas), comparación con el pronóstico local y verificación.
 html_monan = (leer(B / "plantilla_monan.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "monan.html").write_text(preparar_app(html_monan), encoding="utf-8")
+(R / "monan.html").write_text(preparar_app(con_idioma(html_monan)), encoding="utf-8")
 print(f"monan.html: {len(html_monan) / 1024:.0f} KB")
 
 # Página de pronósticos marítimos publicados (bahías y áreas): misma estructura que la de WRF + IA.
 html_pron = (leer(B / "plantilla_pron.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
              .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "pronosticos.html").write_text(preparar_app(html_pron), encoding="utf-8")
+(R / "pronosticos.html").write_text(preparar_app(con_idioma(html_pron)), encoding="utf-8")
 print(f"pronosticos.html: {len(html_pron) / 1024:.0f} KB")
 
 # Página de monitoreo de hielos (Península Antártica): misma presentación polar que la carta de superficie.
 datos_hielo = "\n".join(["const LIMITES = " + leer(D / "geo" / "limites.json") + ";", datos_ia])
 html_hielo = (leer(B / "plantilla_hielo.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_hielo).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "hielos.html").write_text(preparar_app(html_hielo), encoding="utf-8")
+(R / "hielos.html").write_text(preparar_app(con_idioma(html_hielo)), encoding="utf-8")
 print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
 
 # Página principal con el nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen); el dashboard clásico queda en dashboard.html
@@ -165,8 +170,7 @@ html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "le
         .replace("/*HIELO_AMSR2_JS*/", leer(B / "hielo_amsr2.js", ""))
            .replace("/*UMBRALES_VIENTO_JS*/", leer(B / "umbrales_viento.js", ""))
            .replace("/*CAPAS_MODELO_CSS*/", leer(B / "marejadas_uv.css", "") + leer(B / "capas_modelo_portada.css", "")))
-# Versión en inglés de la portada: el traductor de la interfaz va al inicio del <head>, antes del código de la página.
-html_v2 = html_v2.replace("<head>", "<head>\n<script>" + leer(B / "i18n.js") + "</script>", 1)
+html_v2 = con_idioma(html_v2)
 (R / "index.html").write_text(preparar_app(preparar_avisos(html_v2)), encoding="utf-8")
 print(f"index.html: {len(html_v2) / 1024:.0f} KB")
 # La dirección de la versión de prueba redirige a la portada.

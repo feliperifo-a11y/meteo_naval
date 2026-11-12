@@ -1,4 +1,4 @@
-// Versión en inglés de la portada. El idioma se elige con el botón «English / Español» (queda guardado en el navegador)
+// Versión en inglés de la portada y de las páginas públicas (Pronósticos Marítimos, WRF, WRF + IA, MONAN y Hielos). El idioma se elige con el botón «English / Español» (queda guardado en el navegador)
 // o con ?lang=en en la dirección. Con el inglés activo, este archivo traduce el texto de la interfaz a medida que la
 // página lo escribe; el código de la página no cambia. Terminología marítima según la versión en inglés del sitio
 // meteorológico de la autoridad marítima (Warnings, Gales, Swell-Surges, Coastal Areas, High Seas, Sea Ice…).
@@ -12,7 +12,7 @@
     if (document.getElementById('btnIdioma')) return;
     const b = document.createElement('button'); b.type = 'button'; b.id = 'btnIdioma'; b.className = 'btnVideo'; b.lang = lang === 'en' ? 'es' : 'en';
     b.textContent = lang === 'en' ? 'Español' : 'English'; b.title = lang === 'en' ? 'Ver la página en español' : 'View this page in English'; b.dataset.i18n = 'no'; b.onclick = cambiar;
-    const v = document.querySelector('.btnVideo'); if (v && v.parentNode) v.parentNode.insertBefore(b, v); else { b.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999'; document.body.appendChild(b); }
+    const v = document.querySelector('.btnVideo, a.btnV[href="./"], .hBtns a.prim'); if (v && v.parentNode) { b.className = v.classList.contains('btnVideo') ? 'btnVideo' : v.classList.contains('btnV') ? 'btnV' : ''; v.parentNode.insertBefore(b, v); } else { b.style.cssText = 'position:fixed;top:8px;right:8px;z-index:9999'; document.body.appendChild(b); }
   }
   if (lang !== 'en') { document.addEventListener('DOMContentLoaded', boton); return; }
   document.documentElement.lang = 'en';
@@ -126,6 +126,142 @@
     [/^(.+) · celda de 0[.,]1°\. Dirección de procedencia\.$/, (m, a) => `${a} · 0.1° cell. Direction the wind comes from.`],
     [/^(\S+) días$/, (m, v) => v + ' days'], [/^hace (.+)$/, (m, v) => tiempo(v) + ' ago'],
   ];
+  // ================= Páginas públicas: Pronósticos Marítimos, WRF, WRF + IA, MONAN y Hielos =================
+  Object.assign(EX, {
+    '← Volver al inicio': '← Back to home', '‹ Volver': '‹ Back', 'MeteoIA · volver al inicio': 'MeteoIA · back to home', 'Todos': 'All', 'Áreas': 'Areas', 'Favoritos': 'Favourites', 'Sin datos': 'No data', 'sin datos': 'no data',
+    'Viento (color)': 'Wind (colour)', 'Flechas de viento': 'Wind arrows', 'Etiquetas': 'Labels', 'Capas del mapa': 'Map layers', 'Vista': 'View', 'Buscar': 'Search', 'Océano': 'Ocean',
+    'mín / máx': 'min / max', 'Rachas': 'Gusts', 'Experimental': 'Experimental', 'Boletín oficial': 'Official bulletin', 'Día': 'Day', 'Días': 'Days', 'Noche': 'Night', 'Tipo': 'Type', 'Sector': 'Sector',
+    // Pronósticos marítimos
+    'Pronósticos marítimos': 'Marine weather forecasts', 'Pronósticos marítimos · Bahías y áreas': 'Marine weather forecasts · Bays and areas', 'Pronósticos por bahía y área': 'Forecasts by bay and area',
+    'Cargando pronósticos…': 'Loading forecasts…', 'Elige una bahía o un área en la lista o en el mapa.': 'Choose a bay or an area from the list or the map.',
+    'Elige una bahía o un área en la lista o en el mapa para ver su pronóstico.': 'Choose a bay or an area from the list or the map to see its forecast.',
+    'Pronósticos por bahía a partir del modelo WRF': 'Bay forecasts from the WRF model', 'Pronósticos de bahía redactados con IA': 'Bay forecasts written with AI',
+    'Buscar bahía, puerto o área…': 'Search bay, port or area…', 'Mapa de pronósticos': 'Forecast map', 'Área': 'Area', 'Sin pronóstico': 'No forecast', 'Pronósticos por bahía': 'Forecasts by bay', 'Pronósticos por área': 'Forecasts by area',
+    'Aún no tienes favoritos: marca la estrella de un lugar para agregarlo.': 'You have no favourites yet: tap the star of a place to add it.', 'No hay lugares que coincidan con la búsqueda.': 'No places match the search.',
+    'Todos los sectores': 'All sectors', 'Área o ruta marítima': 'Maritime area or route', 'Pronóstico': 'Forecast', 'Detalle': 'Details', 'Información': 'Information',
+    'Nubosidad': 'Cloud cover', 'Visibilidad': 'Visibility', 'Fenómenos': 'Weather', 'Mar': 'Sea', 'Índice UV': 'UV index', 'viento': 'wind',
+    'Sin pronóstico disponible': 'No forecast available', 'Pronóstico completo ·': 'Full forecast ·', 'Información del pronóstico': 'Forecast information', 'Zona marítima': 'Maritime area',
+    'Emitido': 'Issued', 'Emisión': 'Issue', 'Pronóstico general de 24 h': 'General 24 h forecast', 'Pronóstico publicado ↗': 'Published forecast ↗', 'Texto original ↗': 'Original text ↗', 'Carta de superficie →': 'Surface chart →',
+    'Transcrito automáticamente desde el texto publicado. Ante cualquier duda, prevalece el texto original. Producto referencial: no reemplaza los avisos oficiales.': 'Transcribed automatically from the published text. In case of doubt, the original text prevails. Reference product: it does not replace official warnings.',
+    'Pronóstico por día': 'Forecast by day', 'Situación sinóptica': 'Synoptic situation',
+    'Los pronósticos aún no están disponibles. Se actualizan con la próxima revisión automática.': 'Forecasts are not available yet. They are updated with the next automatic check.',
+    // Pronósticos WRF
+    'Pronósticos WRF': 'WRF forecasts', 'Pronósticos WRF · Bahías': 'WRF forecasts · Bays', 'Elige una bahía en la lista o en el mapa.': 'Choose a bay from the list or the map.',
+    'Elige una bahía en la lista o en el mapa para ver su pronóstico.': 'Choose a bay from the list or the map to see its forecast.', 'Modelo MONAN 3 km (corrida propia)': 'MONAN 3 km model (own run)',
+    'Buscar bahía, puerto o localidad…': 'Search bay, port or town…', 'Buscar bahía': 'Search bay', 'Pronóstico aún no generado': 'Forecast not generated yet', 'Bahías favoritas': 'Favourite bays',
+    'Aún no tienes favoritos: marca la estrella de una bahía para agregarla.': 'You have no favourites yet: tap the star of a bay to add it.', 'No hay bahías que coincidan con la búsqueda.': 'No bays match the search.',
+    'Sin pronóstico para graficar.': 'No forecast to plot.', 'Rango de viento sostenido del día (kt)': 'Daily sustained wind range (kt)', 'Altura significativa máxima del día (m)': 'Daily maximum significant wave height (m)',
+    'Temperatura mínima y máxima (°C)': 'Minimum and maximum temperature (°C)', 'Oleaje hoy (pronóstico)': 'Waves today (forecast)', 'Análisis IA': 'AI analysis', 'Detalle por día': 'Details by day',
+    'Oleaje: sin cobertura del modelo': 'Waves: outside model coverage', 'Pronóstico WRF + IA': 'WRF + AI forecast', 'Meteograma ↗': 'Meteogram ↗', 'Resumen próximos días': 'Summary of the next days', 'Ver más →': 'See more →',
+    'Pronósticos marítimos publicados': 'Published marine weather forecasts',
+    'Generado automáticamente por inteligencia artificial (Claude) a partir de los meteogramas del modelo WRF (3 km; 9 km donde no hay 3 km; 10 km en la Antártica; 27 km en Juan Fernández). Oleaje: altura significativa máxima del día del modelo marino de':
+      'Generated automatically by artificial intelligence (Claude) from WRF model meteograms (3 km; 9 km where 3 km is not available; 10 km in Antarctica; 27 km at Juan Fernández). Waves: daily maximum significant wave height from the marine model of',
+    ', en rangos de 1 m; no resuelve fiordos ni canales angostos. Producto': ', in 1 m ranges; it does not resolve fjords or narrow channels. This is a', 'referencial y experimental': 'reference, experimental product',
+    ': no reemplaza los pronósticos y avisos oficiales.': ': it does not replace official forecasts and warnings.',
+    'Los pronósticos aún no están disponibles. Se generan con la próxima corrida del modelo.': 'Forecasts are not available yet. They are generated with the next model run.',
+    // WRF + IA
+    'Pronósticos WRF + IA': 'WRF + AI forecasts', 'Pronósticos WRF + IA · Bahías': 'WRF + AI forecasts · Bays', 'WRF + IA': 'WRF + AI', 'Bahías WRF + IA': 'WRF + AI bays', 'Bahía con pronóstico WRF + IA': 'Bay with WRF + AI forecast',
+    'Mapa de pronósticos WRF + IA': 'WRF + AI forecast map', '¿Cómo mejora la IA el pronóstico del WRF?': 'How does AI improve the WRF forecast?', 'El punto de partida es el WRF.': 'The starting point is the WRF.',
+    'El modelo WRF (3 km) entrega un meteograma por bahía; una lectura automática lo transcribe a texto tal como viene, sin corregirlo: es el pronóstico «WRF». Es bueno en la tendencia, pero tiene errores que se repiten en cada lugar: por ejemplo, temperaturas máximas más bajas que las observadas o direcciones de viento que no calzan con la estación.':
+      'The WRF model (3 km) provides one meteogram per bay; an automatic reading transcribes it to text as it comes, without correcting it: that is the “WRF” forecast. It is good on the trend, but it has errors that repeat at each place: for example, maximum temperatures lower than observed, or wind directions that do not match the station.',
+    'Cada mañana, con la corrida 12Z, la IA recibe todo lo que usaría un pronosticador:': 'Every morning, with the 12Z run, the AI receives everything a forecaster would use:',
+    'el pronóstico WRF de la bahía, el oleaje del modelo WW3 en el punto de mar más cercano y boletines anteriores del especialista para esa bahía, elegidos entre los de situación más parecida y los más recientes. Cada ejemplo trae lo que decían el WRF y el WW3 cuando se escribió y lo que midió después la estación de capitanía de puerto. También recibe el acierto reciente y el sesgo del WRF, del especialista y del propio borrador.':
+      'the WRF forecast for the bay, WW3 model waves at the nearest sea point, and previous bulletins by the forecaster for that bay, chosen among those with the most similar situation and the most recent ones. Each example includes what the WRF and WW3 said when it was written and what the harbour master’s station measured afterwards. It also receives the recent score and bias of the WRF, of the forecaster and of its own draft.',
+    'Con eso redacta el pronóstico como lo haría el especialista:': 'With that it writes the forecast as the forecaster would:',
+    'usa su orden, sus términos y su escala de estado del mar, y corrige los errores que muestran los ejemplos y la verificación. No agrega fenómenos que las entradas no respalden.': 'it uses the same order, terms and sea state scale, and corrects the errors shown by the examples and the verification. It does not add weather phenomena that the inputs do not support.',
+    'Ejemplo real (Iquique): «El WRF sigue dando máximas de 19–21 °C y lo observado ha sido 24–25 °C todos los días, así que usé 23–24 °C». Cada pronóstico muestra abajo su «Criterio aplicado por la IA».':
+      'Real example (Iquique): “The WRF keeps giving maximums of 19–21 °C and the observed values have been 24–25 °C every day, so I used 23–24 °C”. Each forecast shows its “Criteria applied by the AI” below.',
+    'Todos los días se verifica contra lo observado.': 'It is verified against observations every day.',
+    'El pronóstico WRF + IA, el del especialista y el WRF se comparan con la estación según la pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, 08:00–20:00). Ese es el acierto que aparece más abajo y en el mapa.':
+      'The WRF + AI forecast, the forecaster’s and the WRF are compared with the station following guideline O.P.I. N° 1104 (direction, speed and maximum temperature, 08:00–20:00). That is the score shown below and on the map.',
+    'Mejora con el tiempo.': 'It improves over time.',
+    'La IA no se reentrena: aprende de los ejemplos. Cada boletín del especialista que se archiva, con su observación, se suma a los ejemplos del día siguiente, y cada error medido entra en la verificación que la IA lee antes de redactar.':
+      'The AI is not retrained: it learns from examples. Each archived forecaster bulletin, with its observation, is added to the next day’s examples, and each measured error enters the verification the AI reads before writing.',
+    'Es un producto experimental de apoyo al pronosticador: no reemplaza el pronóstico oficial.': 'This is an experimental product to support the forecaster: it does not replace the official forecast.',
+    'Acierto contra lo observado': 'Score against observations', 'Especialista': 'Forecaster', 'sin este período': 'no such period', 'se publica a las 16:00': 'published at 16:00', 'Criterio aplicado por la IA': 'Criteria applied by the AI',
+    'Redactado con Claude (Anthropic) a partir del WRF, el oleaje WW3 y los boletines archivados del especialista. Producto experimental de apoyo; no reemplaza el pronóstico oficial.': 'Written with Claude (Anthropic) from the WRF, WW3 waves and the forecaster’s archived bulletins. Experimental support product; it does not replace the official forecast.',
+    'Aún no hay pronósticos WRF + IA: el equipo local los genera una vez al día con la corrida 12Z del WRF.': 'There are no WRF + AI forecasts yet: the local computer generates them once a day with the WRF 12Z run.',
+    // MONAN
+    'Modelo MONAN 3 km': 'MONAN 3 km model', 'Cargando la corrida…': 'Loading the model run…', '⌖ Ir a la malla': '⌖ Go to the mesh', 'Campo': 'Field', 'Temperatura a 2 m (°C)': '2 m temperature (°C)',
+    'Precipitación acumulada (mm)': 'Accumulated precipitation (mm)', 'Corrida': 'Run', 'Comparación con el pronóstico local': 'Comparison with the local forecast', 'Verificación diaria contra estaciones': 'Daily verification against stations',
+    'Mapa del modelo MONAN': 'MONAN model map', 'Plazo anterior': 'Previous lead time', 'Plazo': 'Lead time', 'Plazo siguiente': 'Next lead time',
+    'No hay bahías con pronóstico oficial dentro de la malla de esta corrida.': 'There are no bays with an official forecast inside the mesh of this run.', 'sin este día': 'no such day',
+    'La corrida de MONAN publicada no cubre días desde hoy en adelante; la comparación aparece con la próxima corrida.': 'The published MONAN run does not cover days from today onwards; the comparison will appear with the next run.',
+    'La verificación se publica una vez al día.': 'The verification is published once a day.', 'sin días aún': 'no days yet', 'Celda': 'Cell', 'Distancia a la celda': 'Distance to the cell', 'Acierto': 'Score',
+    'Sesgo int.': 'Speed bias', 'Observado − pronosticado': 'Observed − forecast', '|Error Tmáx|': '|Tmax error|', 'Últimos días evaluados': 'Latest days evaluated', 'Viento MONAN / obs.': 'MONAN wind / obs.', 'Tmáx MONAN / obs.': 'MONAN Tmax / obs.',
+    'Aún no hay días completos para evaluar: se necesita una corrida que cubra el día completo (08:00 a 20:00) con 12 h de anticipación.': 'There are no complete days to evaluate yet: a run covering the whole day (08:00 to 20:00) with 12 h of lead time is needed.',
+    'No se pudo leer la corrida de MONAN.': 'The MONAN run could not be read.',
+    // Hielos
+    'Península Antártica y Paso Drake': 'Antarctic Peninsula and Drake Passage', 'Satélite diario': 'Daily satellite', 'Concentración': 'Concentration', '% concentración (AMSR2)': '% concentration (AMSR2)', 'Etapa de desarrollo': 'Stage of development',
+    'Pronóstico Antártica': 'Antarctic forecast', 'Carta de hielo marino': 'Sea ice chart', 'Concentración satelital diaria (AMSR2)': 'Daily satellite concentration (AMSR2)', 'Concentración (décimos)': 'Concentration (tenths)',
+    '% de concentración (AMSR2)': '% concentration (AMSR2)', 'Ninguna': 'None', 'Opacidad': 'Opacity', 'Mostrar en azul el mar sin hielo': 'Show ice-free sea in blue', 'Leyenda': 'Legend', 'Capas adicionales': 'Additional layers',
+    'Restablecer': 'Reset', 'Fondo del mapa': 'Map background', 'Hielo en cubierta (pronóstico)': 'Ice accretion on deck (forecast)', 'Posible acumulación en cubierta': 'Possible ice accretion on deck',
+    'Tasa de acumulación (cm/h) según el modelo GFS, de 45° a 75° S y de 90° a 50° W.': 'Accretion rate (cm/h) from the GFS model, from 45° to 75° S and from 90° to 50° W.', 'Témpanos informados': 'Reported icebergs',
+    'Informe glaciológico de las bases': 'Ice report from the bases', 'Cartas regionales y otros productos': 'Regional charts and other products',
+    'Cartas de hielo y productos publicados en la sección «Monitoreo de hielos» del': 'Ice charts and products published in the “Floating Ice” section of the', 'sitio público de meteorología marítima': 'public marine meteorology website',
+    '. Se usa solo el área del mapa de cada carta, georreferenciada en la misma proyección.': '. Only the map area of each chart is used, georeferenced in the same projection.',
+    'Carta de hielo': 'Ice chart', 'Opacidad de la carta': 'Chart opacity', 'Animar los plazos': 'Animate lead times', 'Plazo del pronóstico': 'Forecast lead time', 'Mapa de hielos': 'Ice map', 'Volver a la vista inicial': 'Back to the initial view',
+    'Leyenda · etapa de desarrollo': 'Legend · stage of development', 'Leyenda · % de concentración': 'Legend · % concentration', 'Leyenda · concentración': 'Legend · concentration', 'Leyenda · concentración satelital': 'Legend · satellite concentration',
+    'Sin carta de hielo seleccionada.': 'No ice chart selected.', 'carta original ↗': 'original chart ↗', 'El análisis satelital diario no está disponible por ahora.': 'The daily satellite analysis is not available for now.',
+    'Análisis': 'Analysis', 'Ver la carta publicada': 'View the published chart', 'Información del mapa': 'Map information', 'Fecha de la carta': 'Chart date', 'Fuente': 'Source', 'Estereográfica polar': 'Polar stereographic',
+    'Proyección de la carta': 'Chart projection', 'Témpanos': 'Icebergs', 'Capa apagada': 'Layer off', 'Hielo en cubierta': 'Ice accretion on deck', 'Sin datos de hielo por ahora': 'No ice data for now',
+    'Satélite AMSR2 diario (Bremen, procesado en MeteoIA)': 'Daily AMSR2 satellite (Bremen, processed in MeteoIA)', 'Satélite AMSR2 (Universidad de Bremen)': 'AMSR2 satellite (University of Bremen)', 'Carta de hielo publicada': 'Published ice chart',
+    'Témpano': 'Iceberg', 'Tamaño (MN)': 'Size (NM)', 'Tamaño': 'Size', 'Posición': 'Position', 'Informados en el pronóstico de la Zona IX. Clic para ubicarlos.': 'Reported in the Area IX forecast. Click to locate them.', 'Sin témpanos informados.': 'No icebergs reported.',
+    'texto original ↗': 'original text ↗', 'Cartas regionales (imagen original):': 'Regional charts (original image):', 'concentración': 'concentration', 'etapa': 'stage',
+    'Tierra (costa)': 'Land (coastline)', 'Grilla (cada 10° y 5°)': 'Graticule (every 10° and 5°)', 'METAREA XV (áreas VII a X)': 'METAREA XV (areas VII to X)', 'Límites marítimos': 'Maritime boundaries', 'Toponimia': 'Place names',
+    'Informe glaciológico (bases)': 'Ice report (bases)', 'Isobaras GFS': 'GFS isobars', 'Imagen satelital IR': 'IR satellite image', 'Imagen satelital visible': 'Visible satellite image',
+    'Relieve y batimetría': 'Relief and bathymetry', 'Oscuro': 'Dark', 'Claro (como la carta)': 'Light (like the chart)',
+    'Hielo nuevo': 'New ice', 'Hielo joven': 'Young ice', 'Hielo de primer año': 'First-year ice', 'Hielo viejo': 'Old ice', 'Hielo fijo': 'Fast ice', 'Agua libre': 'Open water', 'Aguas libres': 'Open water',
+    'Zona Norte': 'Northern Zone', 'Zona Central': 'Central Zone', 'Zona Central Sur': 'South-Central Zone', 'Zona Sur': 'Southern Zone', 'Zona Austral': 'Austral Zone', 'Zona Antártica': 'Antarctic Zone', 'Tierra del Fuego': 'Tierra del Fuego',
+    // Toponimia de la carta de hielos
+    'Paso Drake': 'Drake Passage', 'Mar de Weddell': 'Weddell Sea', 'Mar de Bellingshausen': 'Bellingshausen Sea', 'Mar de Amundsen': 'Amundsen Sea', 'Estrecho Bransfield': 'Bransfield Strait', 'Península Antártica': 'Antarctic Peninsula',
+    'Cabo de Hornos': 'Cape Horn', 'Islas Shetland del Sur': 'South Shetland Islands', 'Isla Rey Jorge': 'King George Island', 'Isla Livingston': 'Livingston Island', 'Isla Decepción': 'Deception Island', 'Isla Elefante': 'Elephant Island',
+    'Estrecho Gerlache': 'Gerlache Strait', 'Isla Adelaida': 'Adelaide Island', 'Bahía Margarita': 'Marguerite Bay', 'Isla Alejandro I': 'Alexander Island', 'Isla Pedro I': 'Peter I Island', 'Isla Thurston': 'Thurston Island',
+    'Barrera de hielo Larsen': 'Larsen Ice Shelf', 'Barrera de hielo Ronne': 'Ronne Ice Shelf', 'Islas Orcadas del Sur': 'South Orkney Islands', 'Islas Georgias del Sur': 'South Georgia', 'Islas Sandwich del Sur': 'South Sandwich Islands',
+    'Islas Diego Ramírez': 'Diego Ramírez Islands',
+  });
+  const hasta = s => s.replace(/viento hasta/g, 'wind up to').replace(/mar hasta/g, 'sea up to').replace(/y al mar \(hasta/, 'and sea (up to').replace(/\(hasta/g, '(up to').replace(/(\d),(\d)/g, '$1.$2');
+  RX.push(
+    // Pronósticos marítimos
+    [/^(Hoy|Mañana), (.+)$/, (m, a, f) => `${a === 'Hoy' ? 'Today' : 'Tomorrow'}, ${f}`], [/^(Noche|Día) · (.+)$/, (m, a, f) => `${a === 'Noche' ? 'Night' : 'Day'} · ${f}`],
+    [/^(.*?)Condiciones adversas: extreme las precauciones(.*)\.$/, (m, a, r) => `${a ? (EX[a.replace(/ · $/, '')] || a.replace(/ · $/, '')) + ' · ' : ''}Adverse conditions: take extreme precautions${hasta(r)}.`],
+    [/^Condiciones moderadas: atención al viento(.*)\.$/, (m, r) => `Moderate conditions: watch the wind${hasta(r)}.`],
+    [/^Sin viento ni mar relevantes en el pronóstico de este día(.*)\.$/, (m, r) => `No significant wind or sea in the forecast for this day${hasta(r)}.`],
+    [/^(.*?) · viento$/, (m, a) => `${a} · wind`], [/^Estación (.+) \(a (\d+) km\)\.$/, (m, n, k) => `Station ${n} (${k} km away).`], 
+    [/^(\d+) de (\d+) bahías y áreas con pronóstico · revisado (.+) \(hora Chile\)$/, (m, a, b, f) => `${a} of ${b} bays and areas with a forecast · checked ${f} (Chile time)`],
+    [/^(.+) \(pronóstico general marítimo\)$/, (m, a) => `${a} (general marine forecast)`], [/^(.+) \(general\)$/, (m, a) => `${a} (general)`],
+    // WRF
+    [/^(\d+) de (\d+) lugares con pronóstico · revisado (.+) \(hora Chile\)$/, (m, a, b, f) => `${a} of ${b} places with a forecast · checked ${f} (Chile time)`],
+    [/^Estación (.+?) · dato de las (\S*) \((\d+) min\)\.$/, (m, n, h, e) => `Station ${n} · observation at ${h} (${e} min ago).`],
+    [/^No hay una estación costera cercana con datos recientes\.(?: Pronóstico de hoy:)?$/, m => 'There is no nearby coastal station with recent data.' + (/hoy/.test(m) ? ' Today’s forecast:' : '')],
+    [/^Generado (.+) \(hora Chile\) · corrida WRF (.+)$/, (m, f, c) => `Generated ${f} (Chile time) · WRF run ${c}`], [/^Oleaje: (.+)$/, (m, r) => 'Waves: ' + r],
+    [/^, viento (.+)$/, (m, r) => ', wind ' + r], [/^, oleaje (.+)$/, (m, r) => ', waves ' + r],
+    // WRF + IA
+    [/^Pronóstico de bahía redactado con IA a partir del WRF (.+) UTC y el oleaje WW3 · generado (.+) \(hora Chile\)$/, (m, c, f) => `Bay forecast written with AI from the WRF ${c} UTC run and WW3 waves · generated ${f} (Chile time)`],
+    [/^Promedio de los días evaluados con la estación de capitanía de puerto \(pauta O\.P\.I\. N° 1104: dirección, intensidad y temperatura máxima, 08:00–20:00\)\.(?: Último día evaluado \((.+?)\): WRF \+ IA (\S+) %(?:, especialista (\S+) %)?(?:, WRF (\S+) %)?\.)?$/,
+      (m, f, a, b, c) => 'Average of the days evaluated with the harbour master’s station (guideline O.P.I. N° 1104: direction, speed and maximum temperature, 08:00–20:00).' + (f ? ` Latest day evaluated (${f}): WRF + AI ${a} %${b ? `, forecaster ${b} %` : ''}${c ? `, WRF ${c} %` : ''}.` : '')],
+    [/^(.+) · (noche 20:00–08:00|día 08:00–20:00)$/, (m, f, p) => `${f} · ${p.startsWith('noche') ? 'night 20:00–08:00' : 'day 08:00–20:00'}`], [/^Pronóstico de bahía · (.+)$/, (m, b) => `Bay forecast · ${b}`],
+    [/^(WRF \+ IA|Especialista|WRF) · (\d+) d$/, (m, n, d) => `${EX[n] || n} · ${d} d`],
+    // MONAN
+    [/^Temperatura a 2 m: (.+)$/, (m, r) => '2 m temperature: ' + r], [/^Precipitación acumulada: (.+)$/, (m, r) => 'Accumulated precipitation: ' + r], [/^Celda sobre (tierra|mar) · (.+)$/, (m, t, r) => `Cell over ${t === 'tierra' ? 'land' : 'sea'} · ${r}`],
+    [/^Viento (.+) kt · T máx\. (.+) °C$/, (m, v, t) => `Wind ${v.replace('calma', 'calm')} kt · Tmax ${t} °C`], [/^(.*) · T máx\. (.+) °C$/, (m, a, t) => `${a} · Tmax ${t} °C`],
+    [/^MONAN en la celda más cercana al punto de la bahía \((.+) km\), entre las 08:00 y las 20:00\. Boletín oficial emitido (.+)\.$/, (m, k, e) => `MONAN at the cell nearest to the bay point (${k} km), between 08:00 and 20:00. Official bulletin issued ${e}.`],
+    [/^Pauta O\.P\.I\. N° 1104 \(dirección, intensidad y temperatura máxima, 08:00–20:00\) con la corrida iniciada a lo menos 12 h antes del día\. Corridas archivadas: (\d+)\.$/, (m, n) => `Guideline O.P.I. N° 1104 (direction, speed and maximum temperature, 08:00–20:00) with the run started at least 12 h before the day. Archived runs: ${n}.`],
+    [/^⚠ Corrida de hace (\d+) h, aún no llega una más reciente\.$/, (m, h) => `⚠ Run from ${h} h ago; a more recent one has not arrived yet.`],
+    [/^Corrida (.+) · (\d+) plazos cada 3 h hasta \+(\d+) h · (.+)$/, (m, c, n, h, f) => `Run ${c} · ${n} lead times every 3 h to +${h} h · ${f}`],
+    [/^Inicio (.+) \(hora Chile\) · (.+) celdas · plazos cada 3 h hasta \+(\d+) h\.$/, (m, f, n, h) => `Start ${f} (Chile time) · ${n} cells · lead times every 3 h to +${h} h.`],
+    [/^(.+)\. Corrida experimental en un computador propio: no constituye pronóstico oficial\.$/, (m, f) => `${f}. Experimental run on a private computer: it is not an official forecast.`],
+    // Hielos
+    [/^Carta actualizada el (.+) ·$/, (m, f) => `Chart updated on ${f} ·`], [/^Hielo marino (.+)$/, (m, n) => `Sea ice ${n}`], [/^Borde de hielo \((.+) %\)$/, (m, v) => `Ice edge (${v.replace(',', '.')} %)`],
+    [/^Análisis satelital del (.+) · ASI AMSR2, Universidad de Bremen, grilla de (.+) km ·$/, (m, f, k) => `Satellite analysis of ${f} · ASI AMSR2, University of Bremen, ${k.replace(',', '.')} km grid ·`],
+    [/^La carta de hielo publicada es del$/, () => 'The published ice chart is dated'], [/^\(hace (\d+) días\)\. Se muestra la concentración satelital diaria AMSR2 del$/, (m, d) => `(${d} days ago). Showing the daily AMSR2 satellite concentration of`],
+    [/^\. Se muestra la concentración satelital diaria AMSR2 del$/, () => '. Showing the daily AMSR2 satellite concentration of'],
+    [/^(\d+) informados?$/, (m, n) => `${n} reported`], [/^Revisado (.+) \(hora Chile\)$/, (m, f) => `Checked ${f} (Chile time)`], [/^(.+) \(satélite\)$/, (m, f) => `${f} (satellite)`], [/^(\+\d+ h) \(sin acumulación\)$/, (m, h) => `${h} (no accretion)`],
+    [/^Témpano (.+) · (.+) MN$/, (m, n, t) => `Iceberg ${n} · ${t} NM`], [/^Témpano (.+)$/, (m, n) => `Iceberg ${n}`], [/^(.+) millas náuticas$/, (m, t) => `${t} nautical miles`],
+    [/^Informe glaciológico del (.+)$/, (m, f) => `Ice report of ${f}`], [/^Informe del (.+) ·$/, (m, f) => `Report of ${f} ·`], [/^(.+) \(sin color\)$/, (m, n) => `${EX[n] || n} (no colour)`], [/^(\d+)–(\d+) décimos$/, (m, a, b) => `${a}–${b} tenths`],
+      // Genéricas: siempre al final
+    [/^(.+) \(hora Chile\)$/, (m, f) => `${f} (Chile time)`], [/^(.+) \(hora local\)$/, (m, f) => `${f} (local time)`],
+  );
   const fallas = window.__i18nSinTraducir = new Set();
   function traducir(s) {
     const k = s.replace(/\s+/g, ' ').trim(); if (!k) return null;
@@ -162,8 +298,10 @@
     new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') nodoTexto(m.target); else if (m.type === 'attributes') elemento(m.target); else m.addedNodes.forEach(recorrer); } })
       .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATR });
     const nota = document.createElement('div'); nota.dataset.i18n = 'no'; nota.style.cssText = 'text-align:center;color:#8fa7bf;font-size:12px;padding:4px 16px 46px';
-    nota.textContent = 'English version of the interface. Official forecasts and warnings are shown in their original Spanish; the other pages of the site are in Spanish.';
-    document.body.appendChild(nota);
+    nota.textContent = 'English version of the interface. Official forecasts and warnings, and forecasts written in Spanish, are shown in their original language. The Surface Chart, Navigation Routes and Development pages are not translated yet.';
+    if (document.querySelector('nav.nav')) document.body.appendChild(nota); else { const bi = document.getElementById('btnIdioma'); if (bi) bi.title = 'Ver la página en español. ' + nota.textContent; }
+    // Rótulos escritos desde la hoja de estilos (WRF + IA).
+    const st = document.createElement('style'); st.textContent = "summary::after{content:'Show ▾'!important}details[open]>summary::after{content:'Hide ▴'!important}"; if (document.querySelector('details summary') && /wrfia/.test(location.pathname)) document.head.appendChild(st);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();
