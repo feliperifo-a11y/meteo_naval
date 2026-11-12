@@ -68,7 +68,7 @@ datos = "\n".join([
 ])
 # Versión de la página: cambia solo cuando cambian la plantilla o las capas (no con cada dato).
 # Las pestañas abiertas la comparan con version.txt y se recargan solas al publicarse una versión nueva.
-version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "plantilla_monan.html") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css") + leer(B / "sugerencias.html", "") + leer(B / "sugerencias_dlg.html", "")
+version = hashlib.sha1((leer(B / "plantilla.html") + leer(B / "plantilla_ia.html") + leer(B / "plantilla_pron.html") + leer(B / "plantilla_hielo.html") + leer(B / "plantilla_v2.html") + leer(B / "plantilla_wrfia.html") + leer(B / "plantilla_monan.html") + leer(B / "i18n.js", "") + leer(B / "ia_comun.js") + leer(B / "instalar.js") + leer(B / "estadisticas.js") + leer(B / "movil.css") + leer(B / "sugerencias.html", "") + leer(B / "sugerencias_dlg.html", "")
                         + leer(B / "sar.js", "") + leer(D / "geo" / "sar.json", "{}") + leer(B / "ww3.js", "") + leer(B / "ecmwf.js", "") + leer(B / "sst.js", "") + leer(B / "hielo_amsr2.js", "") + leer(B / "capas_modelo_portada.css", "") + leer(B / "deriva_sar.js", "") + leer(B / "caso_sar.js", "") + leer(B / "derrotero_lugares.js", "") + leer(B / "clima_derrotero.js", "").replace("/*CLIMA_JSON*/{ fuente: '', eje_estrecho_occidental: [], zonas: {} }", leer(D / "clima_derrotero.json", "{}")) + leer(B / "marejadas_alerta.js", "") + leer(B / "marejadas_alerta.css", "") + leer(B / "viento_alerta.js", "") + leer(B / "viento_alerta.css", "") + leer(B / "evaluacion_ia.js", "") + leer(B / "evaluacion_ia.css", "") + leer(B / "borrador_boletin.js", "") + leer(B / "umbrales_viento.js", "") + leer(B / "trombas.js", "") + leer(B / "trombas.css", "") + leer(B / "ruta_mar.js", "") + leer(B / "ruta_informe.js", "") + leer(B / "rutas_tipo.js", "") + leer(B / "ruta.js", "") + leer(B / "ruta.css", "")
                         + leer(B / "avisos_mapa.css", "") + leer(B / "avisos_mapa.js", "")
                         + leer(B / "wrf_servimet.js", "") + leer(B / "marejadas_uv.js", "") + leer(B / "marejadas_uv.css", "")
@@ -165,6 +165,8 @@ html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "le
         .replace("/*HIELO_AMSR2_JS*/", leer(B / "hielo_amsr2.js", ""))
            .replace("/*UMBRALES_VIENTO_JS*/", leer(B / "umbrales_viento.js", ""))
            .replace("/*CAPAS_MODELO_CSS*/", leer(B / "marejadas_uv.css", "") + leer(B / "capas_modelo_portada.css", "")))
+# Versión en inglés de la portada: el traductor de la interfaz va al inicio del <head>, antes del código de la página.
+html_v2 = html_v2.replace("<head>", "<head>\n<script>" + leer(B / "i18n.js") + "</script>", 1)
 (R / "index.html").write_text(preparar_app(preparar_avisos(html_v2)), encoding="utf-8")
 print(f"index.html: {len(html_v2) / 1024:.0f} KB")
 # La dirección de la versión de prueba redirige a la portada.
