@@ -143,7 +143,7 @@ function crearCasoSAR(L, map, ctx) {
     <details class="sar-fases-info"><summary>¿Qué significa cada fase?</summary>${Object.values(SAR_FASES).map(f => `<p><b style="color:${f.color}">${f.nombre}</b> (${f.sigla}): ${f.def}</p>`).join('')}<p class="sar-nota">El coordinador de la misión SAR clasifica el suceso y declara la fase en la etapa de acción inicial, según el grado de preocupación por las personas o la nave. Fuente: Directiva SAR 2021, anexo A, sección IV.</p></details>
     <label class="sar-notas-l">Descripción del caso y acciones adoptadas<textarea class="sar-notas" rows="4" maxlength="2000" placeholder="Ej.: embarcación pesquera con 4 tripulantes sin comunicación desde las 06:00; se alertó a la lancha de la capitanía de puerto y se solicitó apoyo aéreo…"></textarea></label><small class="sar-notas-estado" aria-live="polite"></small>
     <form class="sar-form"><label>Latitud<input name="lat" placeholder="36 30,0 S" autocomplete="off"></label><label>Longitud<input name="lon" placeholder="73 24,0 W" autocomplete="off"></label>
-    <label>Hora del incidente<input name="hora" type="datetime-local"></label><button type="submit">Analizar</button><button type="button" class="sar-elegir">Elegir en el mapa</button><button type="button" class="sar-borrar">Borrar caso</button></form>
+    <label>Hora del incidente (hora local)<input name="hora" type="datetime-local"></label><button type="submit">Analizar</button><button type="button" class="sar-elegir">Elegir en el mapa</button><button type="button" class="sar-borrar">Borrar caso</button></form>
     <p class="sar-ayuda">Pulsa «Elegir en el mapa» y luego la posición, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. Los casos quedan guardados en este navegador y se ven también en el mapa principal; los marcadores se pueden arrastrar.</p>
     <div class="sar-res" aria-live="polite"></div>`;
   // La ficha va sobre el mapa, como panel lateral (en pantallas angostas, como panel inferior).
@@ -551,6 +551,7 @@ function crearCasoSAR(L, map, ctx) {
   // ---- Área de búsqueda por deriva con ensemble (método Leeway; motor en deriva_sar.js)
   const grupoEns = L.layerGroup().addTo(map), lienzoEns = L.canvas({ padding: 0.3 });
   let ens = null;   // { clave, estado: 'calculando' | 'ok' | 'error', sim, k, msg, info }
+  let ayudaEns = false;   // panel de ayuda del bloque abierto o cerrado
   const categoriaLeeway = c => (c.leeway && SAR_LEEWAY[c.leeway]) ? c.leeway : (SAR_LEEWAY_POR_OBJETO[c.objeto] || 'PIW-1');
   const claveEns = (lat, lon, d, c) => [lat.toFixed(4), lon.toFixed(4), form.hora.value, d.hora, categoriaLeeway(c), d.X, c.errT ?? 0].join('|');
   const grilla = (a, b, n) => Array.from({ length: n }, (_, i) => +(a + (b - a) * i / (n - 1)).toFixed(3));
@@ -602,14 +603,23 @@ function crearCasoSAR(L, map, ctx) {
   function bloqueEnsemble(lat, lon, d) {
     const c = caso() || borrador || {}, cat = categoriaLeeway(c), num = v => v == null ? '' : String(v).replace('.', ',');
     const opts = Object.entries(SAR_LEEWAY).map(([k, o]) => `<option value="${k}"${k === cat ? ' selected' : ''}>${escH(o.nombre)}</option>`).join('');
-    let html = `<div class="sar-blq sar-ens"><h3>Área de búsqueda probable · deriva por ensemble</h3>
-      <div class="sar-der-form"><label>Categoría del objeto (Leeway)<select class="sar-der-in sar-ens-cat" data-k="leeway">${opts}</select></label>
-      <label title="Si no se conoce la hora exacta del incidente, las partículas inician dentro de este margen">Incertidumbre de la hora (± h)<input class="sar-der-in" data-k="errT" inputmode="decimal" value="${num(c.errT ?? 0)}"></label></div>`;
+    const errT = c.errT || 0, t0 = form.hora.value ? new Date(form.hora.value) / 1000 : null;
+    const fmtH = v => nf(v, v % 1 ? 1 : 0) + (v === 1 ? ' hora' : ' horas');
+    const ventana = t0 == null ? 'Indica primero la hora del incidente en el formulario de arriba.'
+      : errT > 0 ? `Las partículas parten en cualquier momento entre <b>${horaChile(t0 - errT * 3600)}</b> y <b>${horaChile(t0 + errT * 3600)}</b> h (hora del incidente ± ${fmtH(errT)}).`
+      : `Todas las partículas parten a la hora del incidente: <b>${horaChile(t0)}</b> h (hora exacta, margen 0).`;
+    let html = `<div class="sar-blq sar-ens"><div class="sar-ens-cab"><h3>Área de búsqueda probable · deriva por ensemble</h3>
+      <button type="button" class="sar-ens-ayuda-btn" aria-expanded="${ayudaEns}" aria-controls="sarEnsAyuda">${ayudaEns ? '✕ Cerrar ayuda' : '? Para qué sirve y cómo llenarlo'}</button></div>
+      ${ayudaEns ? ayudaEnsemble() : ''}
+      <p class="sar-ayuda">Calcula una zona de búsqueda a partir de 2.000 derivas posibles. La posición, la hora del incidente, la hora del dátum y el error X se toman de los bloques de arriba; aquí solo faltan dos datos.</p>
+      <div class="sar-der-form"><label>1. ¿Qué se busca? (categoría del objeto)<select class="sar-der-in sar-ens-cat" data-k="leeway">${opts}</select></label>
+      <label>2. Margen de duda de la hora del incidente (± horas)<input class="sar-der-in" data-k="errT" inputmode="decimal" placeholder="0" value="${num(c.errT ?? 0)}"></label></div>
+      <p class="sar-ayuda sar-ens-ventana">Es una <b>cantidad de horas</b>, no una hora del día. Escribe 0 si la hora es exacta; 2 si el incidente pudo ocurrir hasta 2 horas antes o después de la hora indicada; 0,5 para media hora. ${ventana}</p>`;
     if (!d || !d.ok) return html + `<p class="sar-nota">${d && d.motivo ? d.motivo : 'Completa los datos de la deriva para calcular el área de búsqueda.'}</p></div>`;
     const vigente = ens && ens.clave === claveEns(lat, lon, d, c);
     if (vigente && ens.estado === 'calculando') return html + '<p class="sar-cargando">Descargando viento, ensemble y corriente, y simulando 2.000 partículas…</p></div>';
-    html += `<p><button type="button" class="sar-ens-calc">${vigente && ens.estado === 'ok' ? 'Recalcular' : 'Calcular área de búsqueda'}</button>
-      <span class="sar-nota"> 2.000 partículas desde el incidente hasta la hora del dátum (${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h), con el error X de la posición inicial indicado arriba.</span></p>`;
+    html += `<p><button type="button" class="sar-ens-calc">3. ${vigente && ens.estado === 'ok' ? 'Recalcular' : 'Calcular área de búsqueda'}</button>
+      <span class="sar-nota"> Simula la deriva desde el incidente hasta la hora del dátum (<b>${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h</b>), con error de posición inicial X = ${nf(d.X, 1)} mn. Ambos se cambian en «Deriva y dátum».</span></p>`;
     if (vigente && ens.estado === 'error') html += `<p class="sar-error">${escH(ens.msg)}</p>`;
     if (ens && !vigente && ens.estado === 'ok') html += '<p class="sar-nota">Los datos del caso cambiaron: vuelve a calcular para actualizar el área.</p>';
     if (vigente && ens.estado === 'ok') html += `<div class="sar-ens-res">${textoEnsemble()}</div>` + supuestosEnsemble();
@@ -637,6 +647,24 @@ function crearCasoSAR(L, map, ctx) {
         ${sim.fraccionFuera > 0.01 ? ` ${nf(100 * sim.fraccionFuera, 0)} % de los pasos quedó fuera de la grilla descargada (se usó el valor del borde).` : ''} Calculado a las ${ens.calculado.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })} h.</p>
       <p><button type="button" class="sar-ens-copiar">Copiar área de búsqueda</button> <button type="button" class="sar-ens-ver">Ver en el mapa</button></p>`;
   }
+  // Panel de ayuda del bloque (se abre con el botón «Para qué sirve y cómo llenarlo»; queda abierto entre redibujos).
+  function ayudaEnsemble() {
+    return `<div class="sar-ens-ayuda" id="sarEnsAyuda">
+      <p><b>Para qué sirve.</b> El dátum IAMSAR de arriba entrega una sola trayectoria y un círculo de error. Este cálculo lanza 2.000 objetos virtuales (partículas); cada uno parte con una posición, una hora, un viento y una corriente un poco distintos, dentro de lo que no se sabe con certeza. Donde se juntan más partículas es donde es más probable encontrar el objeto. El resultado es una zona con 50 % y otra con 90 % de probabilidad, la posición más probable y un rectángulo de búsqueda orientado según la deriva.</p>
+      <p><b>Qué se toma de arriba (no se ingresa aquí):</b></p>
+      <ul><li><b>Posición</b> del caso: última posición conocida.</li>
+        <li><b>Hora del incidente</b>: fecha y hora local de Chile en que se perdió el contacto o cayó la persona al agua.</li>
+        <li><b>Dátum para</b> (en «Deriva y dátum»): hasta qué momento se calcula la deriva. «Ahora» da dónde estaría el objeto en este momento; +3 h a +72 h sirven para planificar la llegada de los medios.</li>
+        <li><b>Error X</b> (en «Deriva y dátum»): incertidumbre de la posición inicial, en millas náuticas. Ej.: 0,1 mn con GPS; 5 a 10 mn con una posición estimada.</li></ul>
+      <p><b>Qué se ingresa aquí:</b></p>
+      <ol><li><b>¿Qué se busca?</b> Elige lo que mejor describa el objeto en el agua. Cada tipo deriva distinto con el viento: una persona en el agua apenas se mueve con él (menos de 1 % de su velocidad), una balsa sin lastre puede derivar cerca de 4 % y una lancha sin toldo más de 6 %. Si no sabes el estado del objeto (por ejemplo, si la balsa pudo volcarse), calcula con más de una categoría y compara.</li>
+        <li><b>Margen de duda de la hora (± horas).</b> Es un número de horas, no una hora del reloj. Indica cuánto puede estar equivocada la hora del incidente que escribiste arriba.
+          <br>Ejemplo: hora del incidente 08:00 y margen 2 → el incidente pudo ocurrir entre las 06:00 y las 10:00; cada partícula parte en un momento al azar dentro de ese intervalo.
+          <br>Usa 0 si la hora es exacta (llamada de socorro, alarma de una baliza); 1 a 3 si se sabe aproximadamente; 6 o más si solo se sabe que estaba en el mar «durante la mañana». Acepta decimales: 0,5 = 30 minutos.</li>
+        <li><b>Calcular área de búsqueda.</b> Demora unos segundos y se hace en este navegador; la posición del caso no se publica.</li></ol>
+      <p><b>Cómo leer el resultado.</b> Rojo: zona con 50 % de probabilidad. Naranjo: 90 %. Puntos grises: partículas a la deriva; puntos rojo oscuro: partículas que llegaron a la costa (considerar búsqueda en el litoral). Línea azul segmentada: rectángulo de búsqueda que cubre la zona del 90 %. Con el deslizador se ve la nube hora a hora. «Copiar área de búsqueda» deja la posición más probable y los vértices listos para pegar en un mensaje.</p>
+      <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la planificación de búsqueda del MRCC.</p></div>`;
+  }
   function supuestosEnsemble() {
     return `<details class="sar-sup-info"><summary>Método y supuestos</summary>
       <p>Cada partícula es una deriva posible. Parte de la última posición conocida con un error normal (X es el radio que contiene el 50 %), y en cada paso de 15 minutos se mueve con la corriente y con el abatimiento que corresponde al viento <b>en el lugar y la hora donde se encuentra</b>, no en la posición inicial.</p>
@@ -657,6 +685,7 @@ function crearCasoSAR(L, map, ctx) {
   function enlazarEnsemble(lat, lon, d) {
     const c = caso() || borrador || {}, vigente = ens && d && d.ok && ens.clave === claveEns(lat, lon, d, c);
     const bc = res.querySelector('.sar-ens-calc'); if (bc) bc.onclick = () => calcularEnsemble(lat, lon, d);
+    const ba = res.querySelector('.sar-ens-ayuda-btn'); if (ba) ba.onclick = () => { ayudaEns = !ayudaEns; pintar(); const b = res.querySelector('.sar-ens-ayuda-btn'); if (b) b.focus(); };
     if (!vigente || ens.estado !== 'ok') { if (!vigente || ens.estado === 'error') grupoEns.clearLayers(); return; }
     dibujarEnsemble();
     const caja = res.querySelector('.sar-ens-res');

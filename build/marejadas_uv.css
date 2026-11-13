@@ -106,3 +106,7 @@
 .sar-ens-t{display:flex;flex-direction:column;gap:4px;font-size:12.5px;margin:6px 0}.sar-ens-t input{width:100%}
 .sar-ens-sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;opacity:.75}
 .sar-ens .sar-der-form label:first-child{flex:1 1 100%;min-width:0}.sar-ens .sar-ens-cat{width:100%;min-width:0;box-sizing:border-box}
+.sar-ens-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}.sar-ens-cab h3{margin:0}
+.sar-ens .sar-ens-ayuda-btn{background:transparent;color:#0d47a1;border:1px solid #0d47a1;font-weight:600;padding:4px 10px;font-size:12px;border-radius:14px}:root[data-theme=dark] .sar-ens .sar-ens-ayuda-btn{color:#7fb3ff;border-color:#7fb3ff}
+.sar-ens-ayuda{font-size:12.5px;line-height:1.45;margin:8px 0;padding:8px 10px;border-left:3px solid #0d47a1;background:#0d47a10f;border-radius:4px}.sar-ens-ayuda p{margin:5px 0}.sar-ens-ayuda ul,.sar-ens-ayuda ol{margin:4px 0;padding-left:20px}.sar-ens-ayuda li{margin:3px 0}
+.sar-ens .sar-der-form label{max-width:100%}.sar-ens-ventana{margin-top:-4px}
