@@ -94,6 +94,14 @@ if [ -z "${MN_PRUEBA:-}" ] && curl -fsS --max-time 20 "https://raw.githubusercon
   TRAB="$TRAB" CLAUDE="$CLAUDE" REPO="$REPO" /bin/bash "$DIR/borrador_boletin.sh" || echo "$(ts) Borrador: terminó con error (sin efecto en WRF + IA)"
 fi
 
+# 0c. Traducción al inglés de los textos publicados (paso aislado; trabaja solo si hay textos sin traducir)
+traducir_en() {
+  [ -z "${MN_PRUEBA:-}" ] || return 0
+  curl -fsS --max-time 20 "https://raw.githubusercontent.com/$REPO/main/mac/traducir_en.sh" -o "$DIR/traducir_en.sh" 2>/dev/null && bash -n "$DIR/traducir_en.sh" 2>/dev/null || return 0
+  TRAB="$TRAB" CLAUDE="$CLAUDE" REPO="$REPO" /bin/bash "$DIR/traducir_en.sh" || echo "$(ts) Inglés: terminó con error (sin efecto en WRF + IA)"
+}
+traducir_en
+
 # 1. ¿Qué meteogramas cambiaron? (consulta liviana de la fecha de modificación)
 MARCAS="$TRAB/marcas.txt"; touch "$MARCAS"
 : > "$TRAB/cambios.txt"
@@ -216,3 +224,4 @@ printf '{"message":"Pronósticos WRF + IA %s (equipo local)","branch":"main","co
   "$(base64 -i "$ACTUAL" | tr -d '\n')" "${SHA:+,\"sha\":\"$SHA\"}" > "$TRAB/cuerpo.json"
 COD=$(curl -sS --max-time 60 -o "$TRAB/respuesta.json" -w '%{http_code}' -X PUT -H "$H1" -H "$H2" --data-binary @"$TRAB/cuerpo.json" "$API")
 [ "$COD" = "200" ] || [ "$COD" = "201" ] && echo "$(ts) OK: pronósticos subidos" || echo "$(ts) ERROR: GitHub respondió $COD"
+traducir_en   # los textos de la corrida nueva

@@ -2,7 +2,7 @@
 // o con ?lang=en en la dirección. Con el inglés activo, este archivo traduce el texto de la interfaz a medida que la
 // página lo escribe; el código de la página no cambia. Terminología marítima según la versión en inglés del sitio
 // meteorológico de la autoridad marítima (Warnings, Gales, Swell-Surges, Coastal Areas, High Seas, Sea Ice…).
-// Los boletines y avisos oficiales, y los pronósticos redactados en español, se muestran en su idioma original.
+// Los boletines y avisos oficiales se muestran en su español original; los pronósticos WRF y WRF + IA, traducidos.
 (function () {
   let lang = 'es';
   try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'es') localStorage.setItem('meteoia_lang', q); lang = localStorage.getItem('meteoia_lang') === 'en' ? 'en' : 'es'; } catch (e) { /* sin almacenamiento */ }
@@ -262,6 +262,13 @@
       // Genéricas: siempre al final
     [/^(.+) \(hora Chile\)$/, (m, f) => `${f} (Chile time)`], [/^(.+) \(hora local\)$/, (m, f) => `${f} (local time)`],
   );
+  // Pronósticos redactados en español (análisis WRF y borradores WRF + IA): su traducción llega en data/traducciones_en.json,
+  // que prepara el equipo local (mac/traducir_en.sh). Se aplica al texto completo o a la parte de un texto que lo contiene.
+  let DIN = {}, DIN_K = [];
+  // Los textos cortos (menos de 12 letras) solo se reemplazan cuando son el texto completo, para no alterar otras frases.
+  const din = s => { if (Object.prototype.hasOwnProperty.call(DIN, s)) return DIN[s]; for (const k of DIN_K) if (s.includes(k)) s = s.split(k).join(DIN[k]); return s; };
+  Object.assign(EX, { 'Cubierto': 'Overcast', 'Nublado': 'Cloudy', 'Parcial': 'Partly cloudy', 'Despejado': 'Clear' });
+  RX.unshift([/^(Cubierto|Nublado|Parcial|Despejado) · (.+)$/, (m, a, b) => `${EX[a]} · ${b}`]);
   const fallas = window.__i18nSinTraducir = new Set();
   function traducir(s) {
     const k = s.replace(/\s+/g, ' ').trim(); if (!k) return null;
@@ -270,10 +277,11 @@
     if (!/[A-Za-zÁÉÍÓÚáéíóúñ]{2}/.test(k)) return null;
     let r = Object.prototype.hasOwnProperty.call(EX, k) ? EX[k] : null;
     if (r == null) for (const [re, f] of RX) { const m = k.match(re); if (m) { r = f(...m); break; } }
+    if (r != null) r = din(r); else { const d = din(k); if (d !== k) r = d; }
     if (r == null) { if (/[áéíóúñ¿¡]| (de|del|la|el|los|las|en|con|sin|por|para) /i.test(k)) fallas.add(k); return null; }
     return s.replace(/^(\s*)[\s\S]*?(\s*)$/, (m, a, b) => a + r + b);
   }
-  const hechos = new WeakMap(), ATR = ['title', 'placeholder', 'aria-label', 'alt'];
+  let hechos = new WeakMap(); const ATR = ['title', 'placeholder', 'aria-label', 'alt'];
   const omitir = e => !e || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/.test(e.tagName) || (e.closest && e.closest('[data-i18n="no"]'));
   function nodoTexto(n) {
     if (hechos.get(n) === n.nodeValue || omitir(n.parentElement)) return;
@@ -295,10 +303,11 @@
   function titulo() { const t = traducir(document.title); if (t != null && t !== document.title) document.title = t; }
   function iniciar() {
     boton(); recorrer(document.body); titulo();
+    fetch('data/traducciones_en.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => { if (!j || !j.t) return; DIN = j.t; DIN_K = Object.keys(DIN).filter(k => k.length >= 12).sort((a, b) => b.length - a.length); hechos = new WeakMap(); recorrer(document.body); }).catch(() => {});
     new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') nodoTexto(m.target); else if (m.type === 'attributes') elemento(m.target); else m.addedNodes.forEach(recorrer); } })
       .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATR });
     const nota = document.createElement('div'); nota.dataset.i18n = 'no'; nota.style.cssText = 'text-align:center;color:#8fa7bf;font-size:12px;padding:4px 16px 46px';
-    nota.textContent = 'English version of the interface. Official forecasts and warnings, and forecasts written in Spanish, are shown in their original language. The Surface Chart, Navigation Routes and Development pages are not translated yet.';
+    nota.textContent = 'English version of the interface. Official forecasts and warnings are shown in their original Spanish; WRF and WRF + AI forecast texts are machine-translated from the Spanish original. The Surface Chart, Navigation Routes and Development pages are not translated yet.';
     if (document.querySelector('nav.nav')) document.body.appendChild(nota); else { const bi = document.getElementById('btnIdioma'); if (bi) bi.title = 'Ver la página en español. ' + nota.textContent; }
     // Rótulos escritos desde la hoja de estilos (WRF + IA).
     const st = document.createElement('style'); st.textContent = "summary::after{content:'Show ▾'!important}details[open]>summary::after{content:'Hide ▴'!important}"; if (document.querySelector('details summary') && /wrfia/.test(location.pathname)) document.head.appendChild(st);
