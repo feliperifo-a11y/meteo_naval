@@ -495,7 +495,7 @@ function crearCasoSAR(L, map, ctx) {
     if (k == null) { out.motivo = 'Indica el abatimiento del objeto como porcentaje del viento (cartas de abatimiento del IAMSAR).'; return out; }
     const t = h.time, iIni = t.findIndex(x => x.slice(0, 13) >= hi.slice(0, 13));
     const iNow = Math.max(0, t.indexOf(horaAhora)), iFin = Math.min(t.length - 1, iNow + plazo);
-    if (iIni < 0 || iIni > iFin) { out.motivo = iIni > iFin ? 'La hora del incidente es posterior a la hora del dátum.' : 'La hora del incidente está fuera del rango de datos disponible.'; return out; }
+    if (iIni < 0 || iIni > iFin) { out.motivo = iIni > iFin ? 'La hora del incidente es posterior a la hora del dátum: escribe una hora del incidente anterior o elige en «Dátum para» un plazo de +3 h o más.' : 'La hora del incidente está fuera del rango de datos disponible.'; return out; }
     if (hi.slice(0, 13) < t[0].slice(0, 13)) { out.motivo = 'El incidente es anterior al período con datos (máximo 7 días).'; return out; }
     const sinCorriente = !mh.ocean_current_velocity;
     let p = [lat, lon]; const tray = [p.slice()]; let horas = 0;
@@ -616,6 +616,10 @@ function crearCasoSAR(L, map, ctx) {
       <label>2. Margen de duda de la hora del incidente (± horas)<input class="sar-der-in" data-k="errT" inputmode="decimal" placeholder="0" value="${num(c.errT ?? 0)}"></label></div>
       <p class="sar-ayuda sar-ens-ventana">Es una <b>cantidad de horas</b>, no una hora del día. Escribe 0 si la hora es exacta; 2 si el incidente pudo ocurrir hasta 2 horas antes o después de la hora indicada; 0,5 para media hora. ${ventana}</p>`;
     if (!d || !d.ok) return html + `<p class="sar-nota">${d && d.motivo ? d.motivo : 'Completa los datos de la deriva para calcular el área de búsqueda.'}</p></div>`;
+    if (errT > 24) html += `<p class="sar-error">Un margen de ${fmtH(errT)} es muy amplio: significa que no se sabe en qué día ocurrió el incidente. Lo habitual es entre 0 y 6 horas.</p>`;
+    const tDat = new Date(d.hora) / 1000;
+    if (t0 != null && !(tDat > t0)) return html + `<p class="sar-error">No hay tiempo de deriva: la hora del incidente (${horaChile(t0)} h) no es anterior a la hora del dátum (${horaChile(tDat)} h).</p>
+      <p class="sar-nota">Solución: en el formulario de arriba escribe la hora en que realmente ocurrió el incidente (por ejemplo, hace algunas horas), o en «Deriva y dátum» → «Dátum para» elige +3 h, +6 h o más para ver hacia dónde derivará el objeto.</p></div>`;
     const vigente = ens && ens.clave === claveEns(lat, lon, d, c);
     if (vigente && ens.estado === 'calculando') return html + '<p class="sar-cargando">Descargando viento, ensemble y corriente, y simulando 2.000 partículas…</p></div>';
     html += `<p><button type="button" class="sar-ens-calc">3. ${vigente && ens.estado === 'ok' ? 'Recalcular' : 'Calcular área de búsqueda'}</button>
