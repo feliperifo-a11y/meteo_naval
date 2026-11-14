@@ -523,7 +523,9 @@ document.getElementById('selEst').onchange = e => elegirEst(e.target.value);
 let PRON = null, TAB = 'bahia', LUGAR = {};
 try { LUGAR = JSON.parse(localStorage.getItem('v2_lugar') || '{}'); } catch (e) {}
 const tipoDe = it => it.codigo.startsWith('gen_') ? 'zona' : it.codigo.startsWith('zx_') ? 'alta' : it.tipo === 'bahia' ? 'bahia' : null;
-const vientoCorto = p => { const m = String(p && p.viento || '').match(/([NSEW]{1,3}(?:\/[NSEW]{1,3})?)[^\d]{0,25}?(\d+\/\d+)\s*kt/); return m ? `${m[1]} ${m[2]} kt` : /calma/i.test(p && p.viento || '') ? 'Calma' : '–'; };
+// Rango de viento del boletín: "20/15" significa que disminuye de 20 a 15 kt; se muestra con flecha para que no parezca un rango invertido
+const rangoKt = r => { const [a, b] = r.split('/').map(Number); return a > b ? `${a} → ${b}` : r; };
+const vientoCorto = p => { const m = String(p && p.viento || '').match(/([NSEW]{1,3}(?:\/[NSEW]{1,3})?)[^\d]{0,25}?(\d+\/\d+)\s*kt/); return m ? `${m[1]} ${rangoKt(m[2])} kt` : /calma/i.test(p && p.viento || '') ? 'Calma' : '–'; };
 const marCorto = p => { const m = String(p && p.mar || '').match(/\((\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\s*m\)/); if (m) return `${m[1].replace('.', ',')}–${m[2].replace('.', ',')} m`; const w = String(p && p.mar || '').split(/[,(]/)[0].trim(); return w ? w.toLowerCase() : '–'; };
 function pintarPron() {
   if (!PRON) return;

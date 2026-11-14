@@ -422,6 +422,27 @@ function crearRuta(L, map, ctx) {
     if (c.vis != null) { const mn = c.vis / 1852; n = Math.max(n, mn < umb.visR ? 2 : mn < umb.visA ? 1 : 0); }
     return c.viento == null && c.ola == null ? 'sd' : ['ok', 'lim', 'no'][n];
   }
+  // Variables que llevan un punto a su nivel (rojo o amarillo): para decir por qué, no solo cuánto
+  function causas(c) {
+    const k = c.nivel === 'no' ? 2 : c.nivel === 'lim' ? 1 : 0, o = []; if (!k) return o;
+    if (c.viento != null && (k === 2 ? c.viento >= umb.vientoR : c.viento >= umb.vientoA)) o.push('viento');
+    if (k === 2 && c.rafaga != null && c.rafaga >= umb.vientoR * 1.3) o.push('rachas');
+    if (c.ola != null && (k === 2 ? c.ola >= umb.olaR : c.ola >= umb.olaA)) o.push('ola');
+    if (c.vis != null && (k === 2 ? c.vis / 1852 < umb.visR : c.vis / 1852 < umb.visA)) o.push('visibilidad');
+    return o;
+  }
+  // "rojo por visibilidad (1 punto) · amarillo por viento y visibilidad (3 puntos)"
+  function motivos(M, corto) {
+    const de = k => { const P = M.filter(s => s.nivel === k); if (!P.length) return ''; const n = {}; P.forEach(s => causas(s).forEach(c => n[c] = (n[c] || 0) + 1));
+      const cs = Object.keys(n).sort((a, b) => n[b] - n[a]); if (!cs.length) return '';
+      const lista = cs.length > 1 ? cs.slice(0, -1).join(', ') + ' y ' + cs[cs.length - 1] : cs[0];
+      return corto ? lista : `${k === 'no' ? 'rojo' : 'amarillo'} por ${lista} (${P.length} ${P.length === 1 ? 'punto' : 'puntos'})`; };
+    if (!corto) return [de('no'), de('lim')].filter(Boolean).join(' · ');
+    const u = []; M.filter(s => s.nivel === 'no').concat(M.filter(s => s.nivel === 'lim')).forEach(s => causas(s).forEach(c => { if (!u.includes(c)) u.push(c); }));
+    return u.length > 1 ? u.slice(0, -1).join(', ') + ' y ' + u[u.length - 1] : (u[0] || '');
+  }
+  const porVis = M => M.some(s => causas(s).includes('visibilidad'));
+  const NOTA_VIS = 'La visibilidad proviene de modelos globales; en canales y fiordos es solo referencial.';
   async function alertasPreventivas() {
     const leer = u => fetch(u + '?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : null).catch(() => null);
     const [v, m] = await Promise.all([leer('data/viento_alerta.json'), leer('data/marejadas_alerta.json')]);
@@ -510,7 +531,7 @@ function crearRuta(L, map, ctx) {
       alts = cand.map(c => {
         const M = c.R.muestras, cnt = k => M.filter(s => s.nivel === k).length, mx = k => M.reduce((m, s) => s[k] != null && s[k] > m ? s[k] : m, -1);
         const pasos = pasosDe(c.a, c.R), nav = pasos.filter(x => x.prob.some(t => /eslora|calado/.test(t))).length;
-        const x = { a: c.a, R: c.R, rojo: cnt('no'), amar: cnt('lim'), sd: cnt('sd'), vmax: mx('viento'), omax: mx('ola'), avisos: cruceAvisos(M).length, pasos, noApta: nav > 0 };
+        const x = { a: c.a, R: c.R, rojo: cnt('no'), amar: cnt('lim'), sd: cnt('sd'), vmax: mx('viento'), omax: mx('ola'), avisos: cruceAvisos(M).length, pasos, noApta: nav > 0, motivo: motivos(M, true) };
         x.puntaje = (x.noApta ? 1e6 : 0) + x.rojo * 1000 + x.amar * 100 + x.avisos * 150 + c.R.total / c.R.v;   // menor es mejor
         return x;
       });
@@ -536,13 +557,14 @@ function crearRuta(L, map, ctx) {
       const t0 = new Date(ini.getTime() + k * PASO * 3600e3); let mejor = null;
       for (const c of cands) {
         const dt = t0 - c.R.t0, M = c.R.muestras, F = c.F;
-        let rojo = 0, amar = 0, sd = 0, vmax = -1, omax = -1;
+        let rojo = 0, amar = 0, sd = 0, vmax = -1, omax = -1, vmin = null;
         const Ms = M.map((s, j) => {
           const eta = new Date(s.eta.getTime() + dt), x = { p: s.p, mn: s.mn, eta, tierra: s.tierra };
           const h = F.A[j] && F.A[j].hourly, mh = F.M[j] && F.M[j].hourly;
           if (h) { const i = idxHora(h, eta); if (i >= 0) { x.viento = pick(h, 'wind_speed_10m', i); x.rafaga = pick(h, 'wind_gusts_10m', i); x.vis = pick(h, 'visibility', i); } }
           if (mh) { const i = idxHora(mh, eta); if (i >= 0) x.ola = mh.wave_height[i]; }
           x.nivel = nivel(x);
+          if (x.vis != null && (vmin == null || x.vis < vmin)) vmin = x.vis;
           if (x.nivel === 'no') rojo++; else if (x.nivel === 'lim') amar++; else if (x.nivel === 'sd') sd++;
           if (x.viento != null && x.viento > vmax) vmax = x.viento; if (x.ola != null && x.ola > omax) omax = x.ola;
           return x;
@@ -552,7 +574,7 @@ function crearRuta(L, map, ctx) {
         const ps = pasosBase.get(c), noche = ps.filter(x => x.q.luz && solElev(new Date(x.eta.getTime() + dt), x.q.p[0], x.q.p[1]) <= -6).length;
         const noApta = ps.some(x => x.prob.some(t => /eslora|calado/.test(t)));
         const pts_ = (noApta ? 1e6 : 0) + rojo * 1000 + amar * 100 + avisos * 150 + noche * 300 + c.R.total / c.R.v + k * 0.01;
-        const r = { t0, c, rojo, amar, avisos, noche, vmax, omax, puntaje: pts_, llegada: new Date(c.R.eta.getTime() + dt), noApta };
+        const r = { t0, c, rojo, amar, avisos, noche, vmax, omax, vmin, motivo: motivos(Ms, true), puntaje: pts_, llegada: new Date(c.R.eta.getTime() + dt), noApta };
         if (!mejor || r.puntaje < mejor.puntaje) mejor = r;
       }
       out.push(mejor ? mejor : { t0, sinDatos: true });
@@ -571,7 +593,7 @@ function crearRuta(L, map, ctx) {
     const dias = []; V.lista.forEach((x, i) => { const f = dd(x.t0); if (!dias.length || dias[dias.length - 1].f !== f) dias.push({ f, i, n: 0 }); dias[dias.length - 1].n++; });
     const nomDia = f => new Date(f + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric' });
     const multi = (ultimo.cand || []).length > 1;
-    const desc = x => x.sinDatos ? 'fuera del horizonte del pronóstico' : `${x.rojo} ${x.rojo === 1 ? 'punto' : 'puntos'} en rojo, ${x.amar} en amarillo${x.avisos ? `, ${x.avisos} ${x.avisos === 1 ? 'aviso' : 'avisos'}` : ''}${x.noche ? `, ${x.noche} ${x.noche === 1 ? 'paso con luz diurna obligatoria de noche' : 'pasos con luz diurna obligatoria de noche'}` : ''}${x.vmax >= 0 ? ` · viento máx. ${nf(x.vmax, 0)} kt` : ''}${x.omax >= 0 ? ` · ola máx. ${nf(x.omax, 1)} m` : ''}`;
+    const desc = x => x.sinDatos ? 'fuera del horizonte del pronóstico' : `${x.rojo} ${x.rojo === 1 ? 'punto' : 'puntos'} en rojo, ${x.amar} en amarillo${x.motivo ? ` (por ${x.motivo})` : ''}${x.avisos ? `, ${x.avisos} ${x.avisos === 1 ? 'aviso' : 'avisos'}` : ''}${x.noche ? `, ${x.noche} ${x.noche === 1 ? 'paso con luz diurna obligatoria de noche' : 'pasos con luz diurna obligatoria de noche'}` : ''}${x.vmax >= 0 ? ` · viento máx. ${nf(x.vmax, 0)} kt` : ''}${x.omax >= 0 ? ` · ola máx. ${nf(x.omax, 1)} m` : ''}${x.vmin != null && x.vmin / 1852 < umb.visA ? ` · vis. mín. ${nf(x.vmin / 1852, 1)} mn` : ''}`;
     caja.innerHTML = `<div class="zarpe-barra" role="img" aria-label="Condición de la ruta según la hora de zarpe, cada 3 horas durante 5 días">${V.lista.map((x, i) =>
       `<i class="z-${cls(x)}${V.top.includes(x) ? ' z-top' : ''}" style="flex:1" title="Zarpe ${escH(nomDia(dd(x.t0)))} ${hc(x.t0)}: ${escH(desc(x))}${multi && x.c && x.c.a ? ' · ' + escH(x.c.a.nombre) : ''}"></i>`).join('')}</div>` +
       `<div class="zarpe-dias">${dias.map(d => `<span style="flex:${d.n}">${escH(nomDia(d.f))}</span>`).join('')}</div>` +
@@ -646,7 +668,7 @@ function crearRuta(L, map, ctx) {
         <div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla-alt"><thead><tr><th></th><th>Alternativa</th><th>mn</th><th>Horas</th><th>Llegada</th><th>Viento máx.</th><th>Ola máx.</th><th>Tramos</th><th>Avisos</th></tr></thead><tbody>` +
         alts.map(x => `<tr class="${x.sel ? 'sel' : ''}" data-alt="${x.a.id}" title="${escH(x.a.resumen)}"><td class="ruta-alt-sem">${sem(x)}</td><td class="ruta-alt-nom"><b>${escH(x.a.nombre)}</b>${x.recomendada && alts.length > 1 ? ' <span class="ruta-rec-tag">más favorable</span>' : ''}${x.noApta ? ' <span class="ruta-noapta">excede eslora o calado</span>' : ''}</td>` +
           `<td data-l="Distancia">${nf(x.R.total, 0)} <small>mn</small></td><td data-l="Navegación">${nf(x.R.total / x.R.v, 0)} <small>h</small></td><td data-l="Llegada">${hf(x.R.eta)}</td><td data-l="Viento máx.">${x.vmax < 0 ? '–' : nf(x.vmax, 0) + ' kt'}</td><td data-l="Ola máx.">${x.omax < 0 ? '–' : nf(x.omax, 1) + ' m'}</td>` +
-          `<td data-l="Tramos">${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}</td><td data-l="Avisos">${x.avisos}</td></tr>`).join('') +
+          `<td data-l="Tramos">${x.rojo ? `<b style="color:${COL.no}">${x.rojo} rojo${x.rojo > 1 ? 's' : ''}</b> ` : ''}${x.amar ? `<span style="color:${COL.lim}">${x.amar} amarillo${x.amar > 1 ? 's' : ''}</span>` : ''}${!x.rojo && !x.amar ? (x.sd === x.R.muestras.length ? 'sin datos' : 'sin alertas') : ''}${x.motivo ? `<br><small class="ruta-causa">por ${x.motivo}</small>` : ''}</td><td data-l="Avisos">${x.avisos}</td></tr>`).join('') +
         `</tbody></table></div>
         <p class="sar-nota"><b>${escH(selA.a.nombre)}:</b> ${escH(selA.a.resumen)} Tramo expuesto: ${selA.a.expuesto.map(e => escH(e[0])).join('; ')}.</p>
         <p class="sar-nota">Clic en una fila (o en la línea punteada del mapa) para ver el detalle de esa alternativa. "Más favorable" pondera tramos en rojo y amarillo, avisos cruzados, restricciones del buque y horas de navegación; es una ayuda, la decisión es del capitán. Fuente: ${escH(ultimo.par.d.fuente)}</p></div>`;
@@ -657,6 +679,7 @@ function crearRuta(L, map, ctx) {
       <p>Zarpe ${pZ() ? escH(pZ().n) + ' ' : ''}${hf(R.t0)} → llegada estimada${pR() ? ' a ' + escH(pR().n) : ''} <b>${hf(R.eta)}</b></p>
       ${esc.length ? `<p>Recaladas intermedias: ${esc.map(e => `<b>${escH(e.nombre)}</b> (milla ${nf(e.mn, 0)}, llegada ${hf(e.llegada)}${e.h ? `, zarpe ${hf(e.zarpe)}` : ''})`).join(' · ')}</p>` : ''}
       <p>Condición más exigente en la ruta: <b style="color:${COL[peor]}">${TXT[peor]}</b> · avisos vigentes cruzados: <b>${avisos.length}</b> · avisos probables: <b>${prob.length}</b></p>
+      ${motivos(M) ? `<p class="ruta-motivo">Motivo: ${motivos(M)}.${porVis(M) ? ' <span class="sar-nota">' + NOTA_VIS + '</span>' : ''}</p>` : ''}
       ${!alts && R.total > R.recta + 0.5 ? `<p>La ruta se mantiene${margen ? ` a ${nf(margen, margen % 1 ? 1 : 0)} mn o más de la costa (salvo al salir y llegar a puerto)` : ' por mar'}: ${nf(R.total, 0)} mn (${nf(R.recta, 0)} mn en línea recta entre los puntos marcados).</p>` : ''}
       ${R.sinPaso.length ? `<p class="sar-error">No se encontró paso por mar ${R.sinPaso.length === 1 && pts.length === 2 ? 'entre el zarpe y la recalada' : 'en ' + (R.sinPaso.length === 1 ? 'el tramo ' : 'los tramos ') + R.sinPaso.join(', ')} con la costa incorporada${tierra ? ' (los puntos sobre tierra se marcan en café)' : ''}: agrega puntos intermedios por el paso que corresponda.</p>` : ''}
       ${fuera ? '<p class="sar-error">Parte de la ruta queda fuera del horizonte del pronóstico: esos tramos no tienen datos.</p>' : ''}
@@ -703,7 +726,7 @@ function crearRuta(L, map, ctx) {
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
       M.map(s => `<tr><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${s.puerto ? `<b>${escH(s.puerto)}</b><br>` : ''}${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
         `<td>${s.ola == null ? '–' : `${nf(s.ola, 1)} m<small> ${nf(s.tp, 0)} s ${sarCompas(s.dola)}</small>`}</td><td>${s.vis == null ? '–' : nf(Math.min(s.vis / 1852, 10), 1) + (s.vis / 1852 >= 10 ? '+' : '')} mn</td>` +
-        `<td><span class="ruta-sem" style="background:${COL[s.nivel]}" title="${TXT[s.nivel]}"></span></td></tr>`).join('') +
+        `<td><span class="ruta-sem" style="background:${COL[s.nivel]}" title="${TXT[s.nivel]}${causas(s).length ? ' por ' + causas(s).join(', ') : ''}"></span>${causas(s).length ? `<small class="ruta-causa"> ${causas(s).join(', ')}</small>` : ''}</td></tr>`).join('') +
       `</tbody></table></div><p class="sar-nota">Viento en kt con ráfaga entre paréntesis (ECMWF IFS; si falta, GFS). Ola: altura significativa, período y dirección de procedencia (Météo-France). Hora de Chile.</p></details>`;
     // Avisos vigentes
     h += `<div class="sar-blq"><h3>Avisos vigentes a la hora de paso</h3>` + (avisos.length ? avisos.map(x =>
@@ -777,7 +800,7 @@ function crearRuta(L, map, ctx) {
     datos.push(['Hora de zarpe', hf(R.t0) + ' (hora Chile)'], ['Velocidad', nf(R.v, 1) + ' kt'], ['Distancia mínima a la costa', margen ? nf(margen, margen % 1 ? 1 : 0) + ' mn (salvo al salir y llegar a puerto)' : 'sin margen (solo evita tierra)'],
       ['Distancia', `${nf(R.total, 1)} mn por mar` + (R.total > R.recta + 0.5 ? ` (${nf(R.recta, 1)} mn en línea recta entre los puntos marcados)` : '')],
       ['Duración estimada', nf(R.total / R.v, 1) + ' h de navegación' + (R.espera ? ` + ${nf(R.espera, 1)} h de estadía en puerto` : '')], ['Llegada estimada', hf(R.eta) + ' (hora Chile)'],
-      ['Condición más exigente', TXT[peor]], ['Avisos vigentes cruzados', String(avisos.length)], ['Avisos probables', String(prob.length)],
+      ['Condición más exigente', TXT[peor] + (motivos(M) ? ' · ' + motivos(M) : '')], ['Avisos vigentes cruzados', String(avisos.length)], ['Avisos probables', String(prob.length)],
       ['Pronóstico', err ? 'No disponible al generar el informe' : 'Open-Meteo: viento ECMWF IFS (respaldo GFS), oleaje Météo-France']);
     if (R.sinPaso.length) datos.push(['Advertencia', 'Hay tramos sin paso por mar en la costa incorporada; revisar la traza.']);
     const sec = [], alts = ultimo.alts, selA = alts && alts.find(x => x.sel);
