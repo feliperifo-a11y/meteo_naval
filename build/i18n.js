@@ -30,7 +30,7 @@
     'Desarrollo': 'Development', 'NUEVO': 'NEW', 'Desarrollo →': 'Development →',
     'Nuevo: condiciones a lo largo de la ruta de su nave, con avisos y estado de puerto': 'New: conditions along your vessel’s route, with warnings and port status',
     // Mapa y capas
-    'Mapa de viento y áreas marítimas': 'Wind and maritime areas map', 'Capas': 'Layers', 'Ver todo Chile': 'View all of Chile', 'Pantalla completa': 'Full screen',
+    'Mapa de viento y áreas marítimas': 'Wind and maritime areas map', 'Usa dos dedos para mover el mapa, o ábrelo en pantalla completa': 'Use two fingers to move the map, or open it full screen', 'Capas': 'Layers', 'Ver todo Chile': 'View all of Chile', 'Pantalla completa': 'Full screen',
     'Viento GFS (color)': 'GFS wind (colour)', 'Viento ECMWF 9 km (costa)': 'ECMWF 9 km wind (coast)', 'Oleaje WW3': 'WW3 waves', 'Temperatura del mar (MUR 1 km)': 'Sea surface temperature (MUR 1 km)',
     'Viento GFS (flechas)': 'GFS wind (arrows)', 'Avisos vigentes y próximos': 'Warnings in force and upcoming', 'Estaciones': 'Weather stations', 'Puertos con restricción (SITPORT)': 'Ports with restrictions (SITPORT)',
     'Boyas': 'Buoys', 'Casos SAR (marcados en Desarrollo)': 'SAR cases (marked in Development)', 'Mapa base': 'Base map', 'Imagen satelital': 'Satellite imagery', 'Océano (claro)': 'Ocean (light)', 'Sin conexión (costa)': 'Offline (coastline)',
@@ -106,6 +106,7 @@
     [/^(.+?) · (operativa|con retraso|no operativa)(?: · (.+))?$/, (m, n, k, r) => `${n} · ${est(k)}${r ? ' · ' + r : ''}`],
     [/^● (operativa|con retraso|no operativa)$/, (m, k) => '● ' + est(k)],
     [/^Viento: (.*)$/, (m, r) => 'Wind: ' + r], [/^Temperatura: (.*)$/, (m, r) => 'Temperature: ' + r], [/^Presión: (.*)$/, (m, r) => 'Pressure: ' + r], [/^Dato de (.*)$/, (m, r) => 'Observation at ' + r],
+    [/^(mín|máx)\. (-?\d+°)$/, (m, a, t) => `${a === 'mín' ? 'min' : 'max'}. ${t}`],
     [/^(.*?)(?: · )?racha (\S+) kt$/, (m, a, r) => `${a ? a + ' · ' : ''}gust ${r} kt`], [/^((?:[A-Z]{1,3} \(\d+°\) · )?)boya (.+)$/, (m, a, b) => `${a}buoy ${b}`],
     [/^humedad (\S+) %$/, (m, v) => `humidity ${v} %`], [/^aire (\S+) °C$/, (m, v) => `air ${v} °C`],
     [/^Boya (.+?) · Hs (\S+) m( \(dato antiguo\))?$/, (m, b, h, v) => `Buoy ${b} · Hs ${h} m${v ? ' (old observation)' : ''}`], [/^Boya (.+?) · sin datos$/, (m, b) => `Buoy ${b} · no data`],

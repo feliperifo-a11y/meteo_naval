@@ -1,8 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.join(__dirname,'..'),source=fs.readFileSync(path.join(root,'build/plantilla_v2.html'),'utf8');
 test('el panel SITPORT agrupa por bahía, incluye restricciones sin ubicación y escapa el contenido de la fuente',()=>{
-  const nodos={puertosNota:{},listaPuertos:{}},ctx={BAHIA_POS:{71:[-18,-70],98:[-36,-73]},document:{getElementById:id=>nodos[id],querySelectorAll:()=>[]},fmtDM:()=> '25/10/2026 08:00',escH:v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),popupPuerto:(n,l)=>'<p>Detalle '+l.length+'</p>'};
-  vm.runInNewContext(source.slice(source.indexOf('const txtSitport'),source.indexOf('function popupPuerto'))+source.slice(source.indexOf('function agruparPuertos'),source.indexOf('function aplicarRestricciones')),ctx);
+  const nodos={puertosNota:{classList:{toggle(){}}},listaPuertos:{}},ctx={BAHIA_POS:{71:[-18,-70],98:[-36,-73]},document:{getElementById:id=>nodos[id],querySelectorAll:()=>[]},fmtDM:()=> '25/10/2026 08:00',escH:v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),popupPuerto:(n,l)=>'<p>Detalle '+l.length+'</p>'};
+  vm.runInNewContext(source.slice(source.indexOf('const sitportViejo'),source.indexOf('function popupPuerto'))+source.slice(source.indexOf('function agruparPuertos'),source.indexOf('function aplicarRestricciones')),ctx);
   const d={bahias:[{IDBahia:71,NMBahia:'Arica'},{IDBahia:98,NMBahia:'Talcahuano'}],restricciones:[{bahia:98,MotivoRestriccion:'Viento'},{bahia:'71',MotivoRestriccion:'Oleaje'},{bahia:71,MotivoRestriccion:'Oleaje'},{bahia:999,GLBahia:'<img src=x>',MotivoRestriccion:'<script>mal</script>'}],actualizado:'2026-10-25T11:00:00Z',vivo:false};
   const g=ctx.agruparPuertos(d);assert.deepEqual(Array.from(g,x=>x.id),['71','98','999']);assert.equal(g[0].lista.length,2);
   ctx.pintarPuertos(d);assert.match(nodos.puertosNota.textContent,/3 bahías · 4 restricciones/);assert.match(nodos.puertosNota.textContent,/Copia publicada/);

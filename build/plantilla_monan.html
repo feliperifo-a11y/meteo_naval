@@ -1,4 +1,8 @@
-<!DOCTYPE html>
+<!DOCTY
+// Tildes y mayúsculas que la fuente publica sin corregir
+const ORTO_EST = [[/\bValparaiso\b/, 'Valparaíso'], [/\bConstitucion\b/, 'Constitución'], [/\bLirquen\b/, 'Lirquén'], [/\bQuellon\b/, 'Quellón'], [/\bChaiten\b/, 'Chaitén'], [/\bMaullin\b/, 'Maullín'], [/\bEden\b/, 'Edén'], [/\bFíldes\b/, 'Fildes'], [/\(montemar\)/, '(Montemar)'], [/ (De|Del|La|Las|Los|Y) /g, m => m.toLowerCase()]];
+const ortoEst = t => ORTO_EST.reduce((x, [a, b]) => x.replace(a, b), String(t || ''));
+PE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -232,13 +236,13 @@ function pintarComparacion() {
 function pintarVerificacion(v) {
   const el = document.getElementById('cVer');
   if (!v || !v.estaciones) { el.innerHTML = '<h3>Verificación diaria contra estaciones</h3><div class="vac">La verificación se publica una vez al día.</div>'; return; }
-  const filas = v.estaciones.map(e => { const r = v.resumen[e.codigo] || {}; return `<tr><th>${escH(e.nombre)}</th><td>${nf(e.dist_km, 1)} km</td><td>${r.n ? `<b>${nf(r.puntaje)} %</b>` : '<span class="vac">sin días aún</span>'}</td><td>${r.n || 0}</td><td>${r.n ? `${sg(r.sesgo_int)} kt` : '–'}</td><td>${r.n && r.error_tmax_abs != null ? `${nf(r.error_tmax_abs, 1)} °C` : '–'}</td></tr>`; }).join('');
-  const ult = (v.dias || []).filter(d => d.pauta).slice(0, 10).map(d => `<tr><td>${escH(d.fecha.slice(8, 10) + '/' + d.fecha.slice(5, 7))}</td><th>${escH((v.estaciones.find(e => e.codigo === d.est) || {}).nombre || d.est)}</th><td><b>${nf(d.pauta.puntaje)} %</b></td><td>${nf(d.pauta.int_pron, 1)} / ${nf(d.pauta.int_obs, 1)} kt</td><td>${d.pauta.tmax_pron != null ? `${nf(d.pauta.tmax_pron, 1)} / ${nf(d.obs.tmax, 1)} °C` : '–'}</td></tr>`).join('');
+  const filas = v.estaciones.map(e => { const r = v.resumen[e.codigo] || {}; return `<tr><th>${escH(ortoEst(e.nombre))}</th><td>${nf(e.dist_km, 1)} km</td><td>${r.n ? `<b>${nf(r.puntaje)} %</b>` : '<span class="vac">sin días aún</span>'}</td><td>${r.n || 0}</td><td>${r.n ? `${sg(r.sesgo_int)} kt` : '–'}</td><td>${r.n && r.error_tmax_abs != null ? `${nf(r.error_tmax_abs, 1)} °C` : '–'}</td></tr>`; }).join('');
+  const ult = (v.dias || []).filter(d => d.pauta).slice(0, 10).map(d => `<tr><td>${escH(d.fecha.slice(8, 10) + '/' + d.fecha.slice(5, 7))}</td><th>${escH(ortoEst((v.estaciones.find(e => e.codigo === d.est) || {}).nombre || d.est))}</th><td><b>${nf(d.pauta.puntaje)} %</b></td><td>${nf(d.pauta.int_pron, 1)} / ${nf(d.pauta.int_obs, 1)} kt</td><td>${d.pauta.tmax_pron != null ? `${nf(d.pauta.tmax_pron, 1)} / ${nf(d.obs.tmax, 1)} °C` : '–'}</td></tr>`).join('');
   el.innerHTML = `<h3>Verificación diaria contra estaciones</h3><p class="nota">Pauta O.P.I. N° 1104 (dirección, intensidad y temperatura máxima, 08:00–20:00) con la corrida iniciada a lo menos 12 h antes del día. Corridas archivadas: ${(v.corridas || []).length}.</p>`
     + `<table class="v"><thead><tr><th>Estación</th><th title="Distancia a la celda">Celda</th><th>Acierto</th><th>Días</th><th title="Observado − pronosticado">Sesgo int.</th><th>|Error Tmáx|</th></tr></thead><tbody>${filas}</tbody></table>`
     + (ult ? `<h3 style="margin-top:10px">Últimos días evaluados</h3><table class="v"><thead><tr><th>Día</th><th>Estación</th><th>Acierto</th><th>Viento MONAN / obs.</th><th>Tmáx MONAN / obs.</th></tr></thead><tbody>${ult}</tbody></table>` : '<p class="nota">Aún no hay días completos para evaluar: se necesita una corrida que cubra el día completo (08:00 a 20:00) con 12 h de anticipación.</p>');
   capaEst.clearLayers();
-  for (const e of v.estaciones) L.marker([e.lat, e.lon], { pane: 'estPane', icon: L.divIcon({ className: 'estLbl', html: `<span>${escH(e.nombre)}</span>`, iconSize: [0, 0] }) }).addTo(capaEst);
+  for (const e of v.estaciones) L.marker([e.lat, e.lon], { pane: 'estPane', icon: L.divIcon({ className: 'estLbl', html: `<span>${escH(ortoEst(e.nombre))}</span>`, iconSize: [0, 0] }) }).addTo(capaEst);
 }
 
 async function cargar() {

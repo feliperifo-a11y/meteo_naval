@@ -218,8 +218,11 @@ function decodePolyline6(str) {
   return out;
 }
 const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
-const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
-  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+// Tildes y mayúsculas que la fuente publica sin corregir
+const ORTO_EST = [[/\bValparaiso\b/, 'Valparaíso'], [/\bConstitucion\b/, 'Constitución'], [/\bLirquen\b/, 'Lirquén'], [/\bQuellon\b/, 'Quellón'], [/\bChaiten\b/, 'Chaitén'], [/\bMaullin\b/, 'Maullín'], [/\bEden\b/, 'Edén'], [/\bFíldes\b/, 'Fildes'], [/\(montemar\)/, '(Montemar)'], [/ (De|Del|La|Las|Los|Y) /g, m => m.toLowerCase()]];
+const ortoEst = t => ORTO_EST.reduce((x, [a, b]) => x.replace(a, b), String(t || ''));
+const nombreEst = s => ortoEst(s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
+  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()));
 const ICO = {
   viento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg>',
   ola: '<svg viewBox="0 0 24 24" fill="none" stroke="#5fb0ff" stroke-width="1.8" stroke-linecap="round"><path d="M2 12c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2M2 17c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2"/></svg>',

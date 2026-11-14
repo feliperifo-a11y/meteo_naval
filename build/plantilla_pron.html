@@ -221,6 +221,8 @@ const hoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Ameri
 const fDia = (f, larga) => { const d = new Date(f + 'T12:00:00'); return isNaN(d) ? escH(f) : d.toLocaleDateString('es-CL', larga ? { weekday: 'long', day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''); };
 const tG = v => v != null ? Math.round(v) + '°' : '–';
 const tieneT = p => p && (p.tmin != null || p.tmax != null);
+// Mínima y máxima; si el boletín trae solo una (p. ej. solo la máxima del día en curso), se muestra esa con su rótulo en vez de un guion
+const tPar = (p, tag = 'b', sep = ' / ') => p.tmin != null && p.tmax != null ? `<${tag} class="mn">${tG(p.tmin)}</${tag}>${sep}<${tag} class="mx">${tG(p.tmax)}</${tag}>` : p.tmax != null ? `<${tag} class="mx">máx. ${tG(p.tmax)}</${tag}>` : `<${tag} class="mn">mín. ${tG(p.tmin)}</${tag}>`;
 async function leerJSON(ruta) { const r = await fetch(`${ruta}?t=${Date.now()}`, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); return r.json(); }
 function parseLocalCL(s) {
   if (!s || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return null;
@@ -239,8 +241,11 @@ function decodePolyline6(str) {
   return out;
 }
 const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
-const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
-  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+// Tildes y mayúsculas que la fuente publica sin corregir
+const ORTO_EST = [[/\bValparaiso\b/, 'Valparaíso'], [/\bConstitucion\b/, 'Constitución'], [/\bLirquen\b/, 'Lirquén'], [/\bQuellon\b/, 'Quellón'], [/\bChaiten\b/, 'Chaitén'], [/\bMaullin\b/, 'Maullín'], [/\bEden\b/, 'Edén'], [/\bFíldes\b/, 'Fildes'], [/\(montemar\)/, '(Montemar)'], [/ (De|Del|La|Las|Los|Y) /g, m => m.toLowerCase()]];
+const ortoEst = t => ORTO_EST.reduce((x, [a, b]) => x.replace(a, b), String(t || ''));
+const nombreEst = s => ortoEst(s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
+  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()));
 const ICO = {
   viento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg>',
   ola: '<svg viewBox="0 0 24 24" fill="none" stroke="#5fb0ff" stroke-width="1.8" stroke-linecap="round"><path d="M2 12c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2M2 17c2 0 2-2 5-2s3 2 5 2 2-2 5-2 3 2 5 2"/></svg>',
@@ -387,7 +392,7 @@ function tip(it, p) {
   return `<div style="width:240px;white-space:normal;line-height:1.4"><b style="font-size:13px">${escH(it.nombre)}</b>${it.aviso ? ` <b style="color:#ff7a6b;font-size:11px">· ${escH(it.aviso)}</b>` : ''}` +
     `<div style="opacity:.75;font-size:11px;text-transform:capitalize">${fDia(p.fecha, true)}${p.horario ? ' · ' + escH(p.horario) : ''}</div>` +
     (p.nubosidad ? `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(p.cat, 18)}${escH(p.nubosidad)}</div>` : '') +
-    (tieneT(p) ? `<div><b class="mn">${tG(p.tmin)}</b> / <b class="mx">${tG(p.tmax)}</b> <span style="opacity:.75">mín / máx</span></div>` : '') +
+    (tieneT(p) ? `<div>${tPar(p)}${p.tmin != null && p.tmax != null ? ' <span style="opacity:.75">mín / máx</span>' : ''}</div>` : '') +
     `<div><b>Viento:</b> ${escH(p.viento || '–')}</div>` + (p.mar ? `<div><b>Mar:</b> ${escH(p.mar)}</div>` : '') + (p.fenomenos ? `<div style="color:#7fc4ff">${escH(p.fenomenos)}</div>` : '') + '</div>';
 }
 function pintarZonas() {
@@ -407,7 +412,7 @@ function pintarMapa() {
   for (const it of DATOS.items) {
     const pos = posDe(it), p = principal(it, FECHA); if (!pos) continue;
     const otra = !coincide(it);
-    const sub = p ? (tieneT(p) ? `<b class="mn">${tG(p.tmin)}</b><b class="mx">${tG(p.tmax)}</b>` : `<b style="font-size:11px">${escH(vientoCorto(p) || '–')}</b>`) : 'sin datos';
+    const sub = p ? (tieneT(p) ? tPar(p, 'b', '') : `<b style="font-size:11px">${escH(vientoCorto(p) || '–')}</b>`) : 'sin datos';
     const chip = `<div class="iaChip${p ? '' : ' sd'}"${it.aviso ? ' style="border-color:#ff4d4d"' : ''}>${icono(p, 20)}<div class="iaTx"><span class="iaN">${escH(it.nombre)}</span><span class="iaT">${sub}</span></div></div>`;
     if (it.pos) {
       const pt = it.tipo === 'area' ? L.marker(pos, { icon: L.divIcon({ className: '', html: `<div class="iaM${it.codigo === SEL ? ' sel' : ''}"><div class="iaDotA"></div></div>`, iconSize: [0, 0] }), opacity: otra ? 0.5 : 1 })
@@ -476,7 +481,7 @@ function item(it) {
   return `<div class="bi${it.codigo === SEL ? ' sel' : ''}" data-c="${escH(it.codigo)}">
     <span class="ic">${icono(p, 30)}</span>
     <span class="nm"><span class="t">${escH(it.nombre)}</span>${badge}</span>
-    <span class="tp">${p ? (tieneT(p) ? `<span class="mn">${tG(p.tmin)}</span> / <span class="mx">${tG(p.tmax)}</span>` : '') : '<span style="color:var(--mut)">sin datos</span>'}</span>
+    <span class="tp">${p ? (tieneT(p) ? tPar(p, 'span') : '') : '<span style="color:var(--mut)">sin datos</span>'}</span>
     <span class="ln">${p ? `<span>${ICO.viento}${escH(vientoCorto(p) || '–')}</span>${mc ? `<span>${ICO.ola}${escH(mc)}</span>` : ''}` : `<span class="${(it.periodos || []).length ? '' : 'err'}">${escH(it.error || ((it.periodos || []).length ? 'Sin pronóstico para este día' : 'Sin pronóstico'))}</span>`}</span>
     <button type="button" class="fav${fav ? ' on' : ''}" data-f="${escH(it.codigo)}" title="${fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}" aria-label="Favorito">${fav ? ICO.estrellaOn : ICO.estrella}</button></div>`;
 }
@@ -529,7 +534,7 @@ function semaforo(it) {
   return `<div class="chipEst ok">${ICO.ojo}<span>Sin viento ni mar relevantes en el pronóstico de este día${v > 0 ? ` (viento hasta ${v} kt` : ''}${o > 0 ? `${v > 0 ? ', ' : ' ('}mar hasta ${nf(o, 1)} m` : ''}${v > 0 || o > 0 ? ')' : ''}.</span></div>`;
 }
 function bloquePeriodo(p) {
-  return `<div class="perB"><div class="perH">${icono(p, 30)}<div><b>${p.tipo === 'noche' ? 'Noche' : 'Día'} · ${escH(fDia(p.fecha, true))}</b><br><small>${escH(p.horario || '')}</small></div>${tieneT(p) ? `<div style="margin-left:auto;font-size:16px"><b class="mn">${tG(p.tmin)}</b> / <b class="mx">${tG(p.tmax)}</b></div>` : ''}</div>
+  return `<div class="perB"><div class="perH">${icono(p, 30)}<div><b>${p.tipo === 'noche' ? 'Noche' : 'Día'} · ${escH(fDia(p.fecha, true))}</b><br><small>${escH(p.horario || '')}</small></div>${tieneT(p) ? `<div style="margin-left:auto;font-size:16px">${tPar(p)}</div>` : ''}</div>
     <div class="per">${p.nubosidad ? `<span class="k">Nubosidad</span><span>${escH(p.nubosidad)}</span>` : ''}${p.visibilidad ? `<span class="k">Visibilidad</span><span>${escH(p.visibilidad)}</span>` : ''}${p.fenomenos ? `<span class="k">Fenómenos</span><span style="color:#7fc4ff">${escH(p.fenomenos)}</span>` : ''}
     <span class="k">Viento</span><span>${escH(p.viento || '–')}</span><span class="k">Mar</span><span>${escH(p.mar || '–')}</span>${p.uv ? `<span class="k">Índice UV</span><span>${escH(p.uv)}</span>` : ''}</div></div>`;
 }
@@ -555,7 +560,7 @@ function pintarDetalle() {
       <div class="notaC">Estación ${escH(nombreEst(s))} (a ${Math.round(ec.dd * 111)} km).</div></div>`; }
   // tarjetas por día (período diurno o el primero)
   const dias = fs.map(f => { const p = principal(it, f), mc = marCorto(p);
-    return `<div class="d3"${f === FECHA ? ' style="background:rgba(47,140,255,.12);border-radius:8px"' : ''}><div class="n">${escH(fDia(f).replace(/ \S+$/, ''))}</div>${icono(p, 34)}${tieneT(p) ? `<div class="t"><b class="mn">${tG(p.tmin)}</b> / <b class="mx">${tG(p.tmax)}</b></div>` : '<div class="t" style="color:var(--mut);font-size:12px">–</div>'}
+    return `<div class="d3"${f === FECHA ? ' style="background:rgba(47,140,255,.12);border-radius:8px"' : ''}><div class="n">${escH(fDia(f).replace(/ \S+$/, ''))}</div>${icono(p, 34)}${tieneT(p) ? `<div class="t">${tPar(p)}</div>` : '<div class="t" style="color:var(--mut);font-size:12px">–</div>'}
       <div class="r" title="${escH(p.viento || '')}">${ICO.viento}${escH(vientoCorto(p) || '–')}</div>${mc ? `<div class="r" title="${escH(p.mar || '')}">${ICO.ola}${escH(mc)}</div>` : ''}${p.fenomenos ? `<div class="pp">${escH(p.fenomenos)}</div>` : ''}</div>`; }).join('');
   const sit = (periodosDe(it, FECHA).find(p => p.situacion) || (it.periodos || []).find(p => p.situacion) || {}).situacion;
   let cuerpo;

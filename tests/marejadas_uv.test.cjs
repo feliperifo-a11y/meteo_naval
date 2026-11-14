@@ -28,7 +28,7 @@ test('Marejadas UV está desactivada inicialmente y solo pertenece al dashboard 
   assert.match(dashboard,/'talc_uv', 'Marejadas UV'.*false,/);assert.doesNotMatch(principal,/crearMarejadasUV/); // La portada reutiliza el CSS del panel para otros modelos.
   assert.doesNotMatch(dashboard,/\/\*MAREJADAS_UV_(JS|CSS)\*\//);
   const wf=fs.readFileSync(path.join(root,'.github/workflows/actualizar.yml'),'utf8');
-  assert.equal((wf.match(/for f in marejadas_uv.json/g)||[]).length,2);
+  assert.equal((wf.match(/for f in [^\n]*marejadas_uv\.json/g)||[]).length,2);
   assert.match(wf,/python scripts\/marejadas_uv.py/);
   assert.match(fs.readFileSync(path.join(root,'scripts/marejadas_uv.py'),'utf8'),/TTL = 2 \* 3600/);
 });

@@ -41,6 +41,7 @@ a{color:var(--acc2)}
 .rail a:hover,.rail a.on{background:#123358;color:#fff}
 .rail svg{width:22px;height:22px}
 .wrap{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,1fr);gap:14px;padding:0 22px 14px 22px;align-items:start}
+.pistaGesto{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);z-index:900;max-width:calc(100% - 32px);background:rgba(8,22,38,.88);color:#e8f1fa;border:1px solid #2f8cff;border-radius:10px;padding:8px 12px;font-size:13px;text-align:center;opacity:0;pointer-events:none;transition:opacity .25s}.pistaGesto.ver{opacity:1}
 .mapCard{position:sticky;top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line);height:clamp(560px,calc(100vh - 24px),880px);background:#081626}
 #listaAlertas{max-height:430px;overflow-y:auto;padding-right:4px}
 #map{position:absolute;inset:0;background:#0b2033}
@@ -341,8 +342,11 @@ const guardarOcultas = () => { try { sessionStorage.setItem('v2_ocultas', JSON.s
 const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 }, UMBRAL_BOYA = { ok: 3 * 3600e3, ret: 24 * 3600e3 };
 const COL = { ok: '#34c26b', ret: '#f0a030', no: '#e5534b', sd: '#8a939e' };
 let EST = [], EST_TOTAL = 0, BOYAS = [], capaEst = L.layerGroup(), capaBoyas = L.layerGroup();
-const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
-  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+// Tildes y mayúsculas que la fuente publica sin corregir
+const ORTO_EST = [[/\bValparaiso\b/, 'Valparaíso'], [/\bConstitucion\b/, 'Constitución'], [/\bLirquen\b/, 'Lirquén'], [/\bQuellon\b/, 'Quellón'], [/\bChaiten\b/, 'Chaitén'], [/\bMaullin\b/, 'Maullín'], [/\bEden\b/, 'Edén'], [/\bFíldes\b/, 'Fildes'], [/\(montemar\)/, '(Montemar)'], [/ (De|Del|La|Las|Los|Y) /g, m => m.toLowerCase()]];
+const ortoEst = t => ORTO_EST.reduce((x, [a, b]) => x.replace(a, b), String(t || ''));
+const nombreEst = s => ortoEst(s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
+  .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()));
 function estadoEst(s, ahora) { const t = parseLocalCL(s.fecha) || s.cambio; if (!t) return { k: 'no', t: null }; const ms = ahora - t; return { k: ms <= UMBRAL.ok ? 'ok' : ms <= UMBRAL.ret ? 'ret' : 'no', t, ms }; }
 const aKt = (v, u) => v == null ? null : /m\/?s/i.test(u || '') ? v * 1.94384 : /km/i.test(u || '') ? v * 0.539957 : v;
 function pintarEst() {
@@ -497,6 +501,14 @@ const CAPAS = [...(capaCasoSAR ? [['Casos SAR (marcados en Desarrollo)', capaCas
   document.getElementById('btnInicio').onclick = () => map.flyToBounds(VISTA, { duration: 0.8, paddingTopLeft: [10, 58], paddingBottomRight: [10, 10] });
   document.getElementById('btnFull').onclick = () => { const c = document.querySelector('.mapCard'); c.classList.toggle('full'); document.getElementById('btnFull').classList.toggle('on'); setTimeout(() => map.invalidateSize(), 60); };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.mapCard.full')) document.getElementById('btnFull').click(); });
+  // En teléfono, un dedo sobre el mapa desplaza la página (si no, el mapa atrapa el gesto y cuesta bajar); el mapa se mueve con dos dedos o en pantalla completa
+  if (L.Browser.touch && matchMedia('(max-width:900px)').matches) {
+    const tarjeta = document.querySelector('.mapCard'), pista = document.createElement('div');
+    pista.className = 'pistaGesto'; pista.textContent = 'Usa dos dedos para mover el mapa, o ábrelo en pantalla completa'; tarjeta.appendChild(pista);
+    const ajustar = () => { const full = tarjeta.classList.contains('full'); if (full) map.dragging.enable(); else map.dragging.disable(); pista.hidden = full; };
+    ajustar(); document.getElementById('btnFull').addEventListener('click', () => setTimeout(ajustar, 0));
+    let t = 0; map.getContainer().addEventListener('touchmove', e => { if (e.touches.length === 1 && !tarjeta.classList.contains('full')) { pista.classList.add('ver'); clearTimeout(t); t = setTimeout(() => pista.classList.remove('ver'), 1600); } }, { passive: true });
+  }
 })();
 
 // ============================ Condiciones actuales ============================
@@ -542,7 +554,7 @@ function pintarPron() {
     const d = new Date(f + 'T12:00:00'), nom = n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : d.toLocaleDateString('es-CL', { weekday: 'short' }).replace('.', '');
     const fe = d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
     if (!p) return `<div class="dia vacio"><div class="n" style="text-transform:capitalize">${nom}</div><div class="f">${fe}</div><div style="font-size:11.5px;color:var(--muted);margin-top:8px">Sin pronóstico para este día</div></div>`;
-    const t = (p.tmin != null || p.tmax != null) ? `<div class="r"><b style="color:#7fb2ff">${p.tmin != null ? Math.round(p.tmin) + '°' : '–'}</b>/<b style="color:#ff8a7a">${p.tmax != null ? Math.round(p.tmax) + '°' : '–'}</b></div>` : '';
+    const t = (p.tmin != null || p.tmax != null) ? `<div class="r">${p.tmin != null ? `<b style="color:#7fb2ff">${p.tmax == null ? 'mín. ' : ''}${Math.round(p.tmin)}°</b>` : ''}${p.tmin != null && p.tmax != null ? '/' : ''}${p.tmax != null ? `<b style="color:#ff8a7a">${p.tmin == null ? 'máx. ' : ''}${Math.round(p.tmax)}°</b>` : ''}</div>` : '';
     return `<div class="dia"><div class="n" style="text-transform:capitalize">${nom}</div><div class="f">${fe}</div>${p.cat ? svgNub(p.cat, 38) : '<div style="height:38px"></div>'}${t}
       <div class="r">${ICO.viento}${escH(vientoCorto(p))}</div><div class="r">${ICO.ola}${escH(marCorto(p))}</div>${p.fenomenos ? `<div class="r" title="${escH(p.fenomenos)}">${ICO.gota}<span style="max-width:95px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(p.fenomenos)}</span></div>` : ''}</div>`;
   }).join('');

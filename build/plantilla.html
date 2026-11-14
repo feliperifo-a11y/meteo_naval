@@ -728,7 +728,10 @@ let AVISOS = [], AVISOS_META = {}, AV_ORD = [];
 function prepararAvisos(j) {
   AVISOS = (j && j.avisos) || []; AVISOS_META = j || {};
   AV_ORD = AVISOS.map((a, i) => ({ a, i, north: Math.max(-90, ...(a.zonas || []).map(z => z.north ?? -90)) })).sort((x, y) => y.north - x.north);
-  AV_ORD.forEach((o, n) => { o.a.num = n + 1; o.a.zonas = o.a.zonas || []; });
+  // Numeración: primero los vigentes y próximos (de norte a sur), después los expirados, para que la lista visible no salte números
+  const ah = new Date(), exp = o => estadoAviso(o.a, ah).k === 'X' ? 1 : 0;
+  AV_ORD.slice().sort((x, y) => exp(x) - exp(y)).forEach((o, n) => { o.a.num = n + 1; });
+  AV_ORD.forEach(o => { o.a.zonas = o.a.zonas || []; });
 }
 function popupAviso(a, z, e) {
   return `<div class="pp"><div class="ppT"><span class="pill ${e.k}">${e.txt}</span> ${a.num}. ${escH(a.tipo)}</div>` +

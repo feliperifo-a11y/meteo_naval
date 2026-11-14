@@ -24,5 +24,5 @@ test('WRF queda oculta en el selector y conserva su implementación para reactiv
   const code=dashboard.slice(start,end),checks={talc_uv:{checked:true},talc_wrf:{checked:true}},calls=[];
   const c={window:{innerWidth:1280},LAYERS:{talc_uv:{set:v=>calls.push(['uv',v])},talc_wrf:{set:v=>calls.push(['wrf',v])}},document:{getElementById:id=>checks[id.slice(4)]},map:{closePopup:()=>{},hasLayer:()=>false},ocean:{}};
   vm.runInNewContext(code,c);c.vistaPronosticoTalc('talc_wrf');assert.deepEqual(calls,[['uv',false]]);assert.equal(checks.talc_uv.checked,false);assert.equal(checks.talc_wrf.checked,true);
-  const wf=fs.readFileSync(path.join(root,'.github/workflows/actualizar.yml'),'utf8');assert.equal((wf.match(/for f in marejadas_uv.json wrf_servimet.json/g)||[]).length,2);assert.match(wf,/python scripts\/wrf_servimet.py/);
+  const wf=fs.readFileSync(path.join(root,'.github/workflows/actualizar.yml'),'utf8');assert.equal((wf.match(/for f in [^\n]*marejadas_uv\.json wrf_servimet\.json/g)||[]).length,2);assert.match(wf,/python scripts\/wrf_servimet.py/);
 });
