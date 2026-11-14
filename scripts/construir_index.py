@@ -5,6 +5,7 @@ una copia de respaldo para cuando la página se abre como archivo local.
 Ejecutar solo cuando cambie la plantilla o las capas:  python scripts/construir_index.py"""
 import hashlib
 import json
+import re
 from pathlib import Path
 
 R = Path(__file__).resolve().parent.parent
@@ -27,6 +28,29 @@ def _sug_css():
 
 
 SUG_CSS = None
+
+
+SITIO = "https://meteoia.cl/"
+PAGINAS_META = {}
+
+
+def con_meta(html, archivo, desc, titulo=None):
+    """Descripción, dirección canónica y tarjeta para compartir (Open Graph) de cada página pública."""
+    import html as _h
+    m = re.search(r"<title>(.*?)</title>", html, re.S)
+    if titulo and m:
+        html = html.replace(m.group(0), "<title>" + titulo + "</title>", 1)
+    t = titulo or (m.group(1) if m else "MeteoIA")
+    url = SITIO + ("" if archivo == "index.html" else archivo)
+    PAGINAS_META[archivo] = url
+    if 'name="description"' in html:
+        return html
+    e = lambda x: _h.escape(x, quote=True)
+    metas = (f'<meta name="description" content="{e(desc)}">\n<link rel="canonical" href="{url}">\n'
+             f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="MeteoIA">\n<meta property="og:locale" content="es_CL">\n'
+             f'<meta property="og:title" content="{e(t)}">\n<meta property="og:description" content="{e(desc)}">\n<meta property="og:url" content="{url}">\n'
+             f'<meta property="og:image" content="{SITIO}media/meteoia_intro.jpg">\n<meta name="twitter:card" content="summary_large_image">\n')
+    return html.replace("<title>", metas + "<title>", 1)
 
 
 def preparar_app(html):
@@ -108,7 +132,7 @@ html = (leer(B / "plantilla.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.
         .replace("/*TALCAHUANO_JS*/", leer(B / "talcahuano.js", ""))
         .replace("/*TALCAHUANO_CSS*/", leer(B / "talcahuano.css", ""))
         .replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "dashboard.html").write_text(preparar_app(preparar_avisos(html)), encoding="utf-8")
+(R / "dashboard.html").write_text(preparar_app(preparar_avisos(html)), encoding="utf-8")   # carta.html y rutas.html salen de este archivo
 print(f"dashboard.html: {len(html) / 1024:.0f} KB")
 # Carta de superficie pública (carta.html): la misma página en modo «solo carta», siempre. Así la página Desarrollo
 # (dashboard.html) puede quedar con acceso restringido sin romper los enlaces públicos a la carta.
@@ -116,13 +140,14 @@ MARCA_CARTA = "try { if (new URLSearchParams(location.search).has('carta')) docu
 html_dash = (R / "dashboard.html").read_text(encoding="utf-8")
 assert MARCA_CARTA in html_dash, "falta la marca del modo solo carta"
 (R / "carta.html").write_text(html_dash.replace(MARCA_CARTA, "document.documentElement.classList.add('soloCarta');")
-                              .replace("<title>", "<meta name=\"robots\" content=\"noindex\"><title>", 1), encoding="utf-8")
+                              .replace("<title>Desarrollo · MeteoIA</title>", "<title>Carta de superficie · MeteoIA</title>", 1), encoding="utf-8")
+(R / "carta.html").write_text(con_meta((R / "carta.html").read_text(encoding="utf-8"), "carta.html", "Carta de superficie del Pacífico suroriental: isobaras GFS, frentes, centros de alta y baja presión, avisos y estaciones."), encoding="utf-8")
 
 # Rutas de navegación públicas (rutas.html): la página Desarrollo en modo «solo ruta», con los colores de la portada.
 MARCA_RUTA = "try { if (new URLSearchParams(location.search).has('rutas')) {"
 assert MARCA_RUTA in html_dash, "falta la marca del modo solo ruta"
-(R / "rutas.html").write_text(html_dash.replace(MARCA_RUTA, "try { if (true) {", 1)
-                              .replace("<title>", "<meta name=\"description\" content=\"Rutas de navegación: condiciones meteorológicas y oceanográficas a lo largo de la ruta, avisos y estado de puerto.\"><title>", 1), encoding="utf-8")
+(R / "rutas.html").write_text(con_meta(html_dash.replace(MARCA_RUTA, "try { if (true) {", 1).replace("<title>Desarrollo · MeteoIA</title>", "<title>Rutas de navegación · MeteoIA</title>", 1),
+                                         "rutas.html", "Rutas de navegación: viento, oleaje, visibilidad, avisos y estado de puerto a la hora en que la nave pasa por cada punto, con la mejor hora de zarpe."), encoding="utf-8")
 
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
@@ -134,32 +159,32 @@ def con_idioma(h):
 
 html_ia = (leer(B / "plantilla_ia.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
            .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "ia.html").write_text(preparar_app(con_idioma(html_ia)), encoding="utf-8")
+(R / "ia.html").write_text(con_meta(preparar_app(con_idioma(html_ia)), "ia.html", "Pronóstico por bahía del modelo WRF para la costa de Chile y la Península Antártica: viento, temperatura y oleaje."), encoding="utf-8")
 print(f"ia.html: {len(html_ia) / 1024:.0f} KB")
 
 # Página WRF + IA: pronósticos de bahía redactados con IA sobre el mapa.
 html_wrfia = (leer(B / "plantilla_wrfia.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "wrfia.html").write_text(preparar_app(con_idioma(html_wrfia)), encoding="utf-8")
+(R / "wrfia.html").write_text(con_meta(preparar_app(con_idioma(html_wrfia)), "wrfia.html", "Pronósticos de bahía redactados con inteligencia artificial a partir del modelo WRF, comparados con el boletín oficial y verificados contra las estaciones."), encoding="utf-8")
 print(f"wrfia.html: {len(html_wrfia) / 1024:.0f} KB")
 
 # Página MONAN 3 km: corrida propia (repositorio trombas_marinas), comparación con el pronóstico local y verificación.
 html_monan = (leer(B / "plantilla_monan.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_ia).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "monan.html").write_text(preparar_app(con_idioma(html_monan)), encoding="utf-8")
+(R / "monan.html").write_text(con_meta(preparar_app(con_idioma(html_monan)), "monan.html", "Corrida experimental del modelo MONAN a 3 km sobre el golfo de Arauco: viento, temperatura, precipitación y verificación diaria contra estaciones."), encoding="utf-8")
 print(f"monan.html: {len(html_monan) / 1024:.0f} KB")
 
 # Página de pronósticos marítimos publicados (bahías y áreas): misma estructura que la de WRF + IA.
 html_pron = (leer(B / "plantilla_pron.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
              .replace("/*DATA*/", datos_ia).replace("/*IA_COMUN*/", leer(B / "ia_comun.js")).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "pronosticos.html").write_text(preparar_app(con_idioma(html_pron)), encoding="utf-8")
+(R / "pronosticos.html").write_text(con_meta(preparar_app(con_idioma(html_pron)), "pronosticos.html", "Pronósticos marítimos publicados para las bahías, zonas costeras y alta mar de Chile, con las condiciones actuales de cada estación."), encoding="utf-8")
 print(f"pronosticos.html: {len(html_pron) / 1024:.0f} KB")
 
 # Página de monitoreo de hielos (Península Antártica): misma presentación polar que la carta de superficie.
 datos_hielo = "\n".join(["const LIMITES = " + leer(D / "geo" / "limites.json") + ";", datos_ia])
 html_hielo = (leer(B / "plantilla_hielo.html").replace("/*LEAFLET_CSS*/", leer(B / "leaflet.css")).replace("/*LEAFLET_JS*/", leer(B / "leaflet.js"))
               .replace("/*DATA*/", datos_hielo).replace("/*INSTALAR*/", leer(B / "instalar.js") + "\n" + leer(B / "estadisticas.js")))
-(R / "hielos.html").write_text(preparar_app(con_idioma(html_hielo)), encoding="utf-8")
+(R / "hielos.html").write_text(con_meta(preparar_app(con_idioma(html_hielo)), "hielos.html", "Monitoreo de hielo marino en la Península Antártica y el paso Drake: carta de concentración, satélite diario AMSR2, témpanos e informe glaciológico."), encoding="utf-8")
 print(f"hielos.html: {len(html_hielo) / 1024:.0f} KB")
 
 # Página principal con el nuevo diseño (tema oscuro, campo de viento GFS y paneles de resumen); el dashboard clásico queda en dashboard.html
@@ -171,8 +196,18 @@ html_v2 = (leer(B / "plantilla_v2.html").replace("/*LEAFLET_CSS*/", leer(B / "le
            .replace("/*UMBRALES_VIENTO_JS*/", leer(B / "umbrales_viento.js", ""))
            .replace("/*CAPAS_MODELO_CSS*/", leer(B / "marejadas_uv.css", "") + leer(B / "capas_modelo_portada.css", "")))
 html_v2 = con_idioma(html_v2)
-(R / "index.html").write_text(preparar_app(preparar_avisos(html_v2)), encoding="utf-8")
+(R / "index.html").write_text(con_meta(preparar_app(preparar_avisos(html_v2)), "index.html", "Meteorología marítima de Chile con inteligencia artificial: estaciones en tiempo real, avisos vigentes, estado de puerto, pronósticos por bahía, hielo antártico y rutas de navegación.", "MeteoIA · Meteorología marítima de Chile con inteligencia artificial"), encoding="utf-8")
 print(f"index.html: {len(html_v2) / 1024:.0f} KB")
 # La dirección de la versión de prueba redirige a la portada.
 (R / "nuevo.html").write_text('<!doctype html><meta charset="utf-8"><title>MeteoIA</title><meta http-equiv="refresh" content="0; url=./"><a href="./">MeteoIA</a>\n', encoding="utf-8")
 
+# Mapa del sitio y robots.txt (la página Desarrollo queda fuera de los buscadores)
+from datetime import datetime, timezone
+_hoy = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+(R / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+                               + "".join(f"  <url><loc>{u}</loc>" + (f"<lastmod>{_hoy}</lastmod>" if _hoy else "") + "</url>\n" for u in PAGINAS_META.values())
+                               + "</urlset>\n", encoding="utf-8")
+(R / "robots.txt").write_text("User-agent: *\nAllow: /\nDisallow: /dashboard.html\nSitemap: " + SITIO + "sitemap.xml\n", encoding="utf-8")
+_d = (R / "dashboard.html").read_text(encoding="utf-8")
+if 'name="robots"' not in _d:
+    (R / "dashboard.html").write_text(_d.replace("<title>", '<meta name="robots" content="noindex">\n<title>', 1), encoding="utf-8")

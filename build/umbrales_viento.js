@@ -3,7 +3,7 @@
 // parámetros del Centro Meteorológico Marítimo (CMM) cuya área de responsabilidad la contiene (PD OPE-07, cap. VII).
 // Amarilla: umbral de aviso de mal tiempo del área. Roja: 34 kt o más (temporal o viento fuerte, fuerza 8 Beaufort);
 // en Magallanes también racha de 50 kt o más. Una estación informa el viento de un instante: no evalúa duración ni extensión.
-const PD_OPE07 = 'PD OPE-07 «Elaboración y emisión de avisos meteorológicos» (SMA, 05-08-2025)';
+const PD_OPE07 = 'PD OPE-07 "Elaboración y emisión de avisos meteorológicos" (SMA, 05-08-2025)';
 // Viento "general Norte": componente norte, procedencia entre 270° y 90° pasando por el norte.
 const vientoNorte = d => d == null || isNaN(d) || d >= 270 || d <= 90;
 const vientoEste = d => d == null || isNaN(d) || (d >= 22.5 && d <= 157.5);   // NE, E y SE (Magallanes)

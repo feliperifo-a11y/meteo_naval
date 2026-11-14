@@ -142,7 +142,7 @@ ul.links{margin:4px 0;padding-left:18px}ul.links li{margin:3px 0}
     <div class="pSec"><h2>Témpanos informados</h2><div id="tempanos"><div class="nota">Cargando…</div></div></div>
     <div class="pSec"><h2>Informe glaciológico de las bases</h2><div id="informe"><div class="nota">Cargando…</div></div></div>
     <div class="pSec"><h2>Cartas regionales y otros productos</h2><div id="enlaces"></div>
-      <div class="nota">Cartas de hielo y productos publicados en la sección «Monitoreo de hielos» del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de meteorología marítima</a>. Se usa solo el área del mapa de cada carta, georreferenciada en la misma proyección.</div></div>
+      <div class="nota">Cartas de hielo y productos publicados en la sección "Monitoreo de hielos" del <a id="lnkFuente" href="#" target="_blank" rel="noopener">sitio público de meteorología marítima</a>. Se usa solo el área del mapa de cada carta, georreferenciada en la misma proyección.</div></div>
   </aside>
   <div id="mapCol">
     <section id="mapWrap"><div id="map" role="application" aria-label="Mapa de hielos"></div><div id="avisoCarta" role="status" hidden></div></section>
@@ -203,7 +203,7 @@ C.grilla = L.layerGroup();
 for (let lon = -180; lon < 180; lon += 10) {
   const pts = []; for (let la = -50; la >= -88; la -= 1) pts.push(aH(la, lon));
   L.polyline(pts, { pane: 'lineas', className: 'hGrid', weight: 0.7, opacity: 0.55, dashArray: '3 4', interactive: false }).addTo(C.grilla);
-  L.marker(aH(-50.6, lon), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°${lon < 0 ? 'O' : lon > 0 ? 'E' : ''}</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
+  L.marker(aH(-50.6, lon), { interactive: false, icon: L.divIcon({ className: 'gridLbl', html: `<span>${Math.abs(lon)}°${lon < 0 ? 'W' : lon > 0 ? 'E' : ''}</span>`, iconSize: [0, 0] }) }).addTo(C.grilla);
 }
 for (let la = -50; la >= -85; la -= 5) {
   const pts = []; for (let lon = -180; lon <= 180; lon += 1) pts.push(aH(la, lon));

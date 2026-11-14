@@ -224,7 +224,7 @@ function pintarComparacion() {
       + '</div>';
   }).join('');
   el.innerHTML = `<h3>Comparación con el pronóstico local</h3><div class="tabs" role="tablist">${BAH.map(x => `<button type="button" role="tab" data-c="${escH(x.codigo)}" aria-selected="${x.codigo === SELB}">${escH(x.nombre)}</button>`).join('')}</div>`
-    + `<p class="nota">MONAN en la celda más cercana al punto de la bahía (${nf(b.km, 1)} km), entre las 08:00 y las 20:00. Boletín oficial emitido ${escH(b.emitido || '–')}.</p>${dias || '<div class="vac">La corrida de MONAN publicada no cubre días desde hoy en adelante; la comparación aparece con la próxima corrida.</div>'}`;
+    + `<p class="nota">MONAN en la celda más cercana al punto de la bahía (${nf(b.km, 1)} km), entre las 08:00 y las 20:00. Boletín oficial emitido ${escH(String(b.emitido || '–').replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d).*$/, '$3/$2 a las $4 (hora Chile)'))}.</p>${dias || '<div class="vac">La corrida de MONAN publicada no cubre días desde hoy en adelante; la comparación aparece con la próxima corrida.</div>'}`;
   el.querySelectorAll('.tabs button').forEach(x => x.onclick = () => { SELB = x.dataset.c; pintarComparacion(); const bb = BAH.find(y => y.codigo === SELB); if (bb) map.panTo(bb.pos); });
 }
 

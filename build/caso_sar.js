@@ -144,7 +144,7 @@ function crearCasoSAR(L, map, ctx) {
     <label class="sar-notas-l">Descripción del caso y acciones adoptadas<textarea class="sar-notas" rows="4" maxlength="2000" placeholder="Ej.: embarcación pesquera con 4 tripulantes sin comunicación desde las 06:00; se alertó a la lancha de la capitanía de puerto y se solicitó apoyo aéreo…"></textarea></label><small class="sar-notas-estado" aria-live="polite"></small>
     <form class="sar-form"><label>Latitud<input name="lat" placeholder="36 30,0 S" autocomplete="off"></label><label>Longitud<input name="lon" placeholder="73 24,0 W" autocomplete="off"></label>
     <label>Hora del incidente (hora local)<input name="hora" type="datetime-local"></label><button type="submit">Analizar</button><button type="button" class="sar-elegir">Elegir en el mapa</button><button type="button" class="sar-borrar">Borrar caso</button></form>
-    <p class="sar-ayuda">Pulsa «Elegir en el mapa» y luego la posición, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. Los casos quedan guardados en este navegador y se ven también en el mapa principal; los marcadores se pueden arrastrar.</p>
+    <p class="sar-ayuda">Pulsa "Elegir en el mapa" y luego la posición, o escribe las coordenadas (grados y minutos o decimales; S y W por defecto). Mientras eliges, las capas del mapa se ocultan y vuelven al marcar el punto. Los casos quedan guardados en este navegador y se ven también en el mapa principal; los marcadores se pueden arrastrar.</p>
     <div class="sar-res" aria-live="polite"></div>`;
   // La ficha va sobre el mapa, como panel lateral (en pantallas angostas, como panel inferior).
   const wrap = document.getElementById('mapWrap');
@@ -495,7 +495,7 @@ function crearCasoSAR(L, map, ctx) {
     if (k == null) { out.motivo = 'Indica el abatimiento del objeto como porcentaje del viento (cartas de abatimiento del IAMSAR).'; return out; }
     const t = h.time, iIni = t.findIndex(x => x.slice(0, 13) >= hi.slice(0, 13));
     const iNow = Math.max(0, t.indexOf(horaAhora)), iFin = Math.min(t.length - 1, iNow + plazo);
-    if (iIni < 0 || iIni > iFin) { out.motivo = iIni > iFin ? 'La hora del incidente es posterior a la hora del dátum: escribe una hora del incidente anterior o elige en «Dátum para» un plazo de +3 h o más.' : 'La hora del incidente está fuera del rango de datos disponible.'; return out; }
+    if (iIni < 0 || iIni > iFin) { out.motivo = iIni > iFin ? 'La hora del incidente es posterior a la hora del dátum: escribe una hora del incidente anterior o elige en "Dátum para" un plazo de +3 h o más.' : 'La hora del incidente está fuera del rango de datos disponible.'; return out; }
     if (hi.slice(0, 13) < t[0].slice(0, 13)) { out.motivo = 'El incidente es anterior al período con datos (máximo 7 días).'; return out; }
     const sinCorriente = !mh.ocean_current_velocity;
     let p = [lat, lon]; const tray = [p.slice()]; let horas = 0;
@@ -619,11 +619,11 @@ function crearCasoSAR(L, map, ctx) {
     if (errT > 24) html += `<p class="sar-error">Un margen de ${fmtH(errT)} es muy amplio: significa que no se sabe en qué día ocurrió el incidente. Lo habitual es entre 0 y 6 horas.</p>`;
     const tDat = new Date(d.hora) / 1000;
     if (t0 != null && !(tDat > t0)) return html + `<p class="sar-error">No hay tiempo de deriva: la hora del incidente (${horaChile(t0)} h) no es anterior a la hora del dátum (${horaChile(tDat)} h).</p>
-      <p class="sar-nota">Solución: en el formulario de arriba escribe la hora en que realmente ocurrió el incidente (por ejemplo, hace algunas horas), o en «Deriva y dátum» → «Dátum para» elige +3 h, +6 h o más para ver hacia dónde derivará el objeto.</p></div>`;
+      <p class="sar-nota">Solución: en el formulario de arriba escribe la hora en que realmente ocurrió el incidente (por ejemplo, hace algunas horas), o en "Deriva y dátum" → "Dátum para" elige +3 h, +6 h o más para ver hacia dónde derivará el objeto.</p></div>`;
     const vigente = ens && ens.clave === claveEns(lat, lon, d, c);
     if (vigente && ens.estado === 'calculando') return html + '<p class="sar-cargando">Descargando viento, ensemble y corriente, y simulando 2.000 partículas…</p></div>';
     html += `<p><button type="button" class="sar-ens-calc">3. ${vigente && ens.estado === 'ok' ? 'Recalcular' : 'Calcular área de búsqueda'}</button>
-      <span class="sar-nota"> Simula la deriva desde el incidente hasta la hora del dátum (<b>${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h</b>), con error de posición inicial X = ${nf(d.X, 1)} mn. Ambos se cambian en «Deriva y dátum».</span></p>`;
+      <span class="sar-nota"> Simula la deriva desde el incidente hasta la hora del dátum (<b>${d.hora.slice(8, 10)}/${d.hora.slice(5, 7)} ${sarFmtHora(d.hora)} h</b>), con error de posición inicial X = ${nf(d.X, 1)} mn. Ambos se cambian en "Deriva y dátum".</span></p>`;
     if (vigente && ens.estado === 'error') html += `<p class="sar-error">${escH(ens.msg)}</p>`;
     if (ens && !vigente && ens.estado === 'ok') html += '<p class="sar-nota">Los datos del caso cambiaron: vuelve a calcular para actualizar el área.</p>';
     if (vigente && ens.estado === 'ok') html += `<div class="sar-ens-res">${textoEnsemble()}</div>` + supuestosEnsemble();
@@ -640,7 +640,7 @@ function crearCasoSAR(L, map, ctx) {
     return `${deslizador}
       <p><span class="sar-ens-sw" style="background:#e53935"></span> Zona con 50 % de probabilidad: <b>${nf(r.area50, 0)} mn²</b> ·
          <span class="sar-ens-sw" style="background:#ff9800"></span> zona con 90 %: <b>${nf(r.area90, 0)} mn²</b></p>
-      <p>Posición más probable: <b>${pos(r.masProbable)}</b>${sep != null ? ` (a ${nf(sep, 1)} mn del dátum IAMSAR, calculado para «${escH(SAR_OBJETOS[ens.objetoIamsar]?.nombre || 'objeto indicado')}»)` : ''}<br>
+      <p>Posición más probable: <b>${pos(r.masProbable)}</b>${sep != null ? ` (a ${nf(sep, 1)} mn del dátum IAMSAR, calculado para "${escH(SAR_OBJETOS[ens.objetoIamsar]?.nombre || 'objeto indicado')}")` : ''}<br>
          Deriva desde la última posición conocida: mediana ${nf(r.distMediana, 1)} mn · 90 % de las partículas a menos de ${nf(r.dist90, 1)} mn</p>
       <p><b>Rectángulo de búsqueda</b> (cubre la zona del 90 %): <b>${nf(R.largo, 1)} × ${nf(R.ancho, 1)} mn</b> · ${nf(R.area, 0)} mn² · eje mayor ${String(Math.round(R.rumbo)).padStart(3, '0')}°/${String(Math.round(R.rumbo + 180) % 360).padStart(3, '0')}°<br>
          Centro: ${pos(R.centro)}<br>Vértices: ${R.esquinas.map(pos).join(' ; ')}</p>
@@ -658,15 +658,15 @@ function crearCasoSAR(L, map, ctx) {
       <p><b>Qué se toma de arriba (no se ingresa aquí):</b></p>
       <ul><li><b>Posición</b> del caso: última posición conocida.</li>
         <li><b>Hora del incidente</b>: fecha y hora local de Chile en que se perdió el contacto o cayó la persona al agua.</li>
-        <li><b>Dátum para</b> (en «Deriva y dátum»): hasta qué momento se calcula la deriva. «Ahora» da dónde estaría el objeto en este momento; +3 h a +72 h sirven para planificar la llegada de los medios.</li>
-        <li><b>Error X</b> (en «Deriva y dátum»): incertidumbre de la posición inicial, en millas náuticas. Ej.: 0,1 mn con GPS; 5 a 10 mn con una posición estimada.</li></ul>
+        <li><b>Dátum para</b> (en "Deriva y dátum"): hasta qué momento se calcula la deriva. "Ahora" da dónde estaría el objeto en este momento; +3 h a +72 h sirven para planificar la llegada de los medios.</li>
+        <li><b>Error X</b> (en "Deriva y dátum"): incertidumbre de la posición inicial, en millas náuticas. Ej.: 0,1 mn con GPS; 5 a 10 mn con una posición estimada.</li></ul>
       <p><b>Qué se ingresa aquí:</b></p>
       <ol><li><b>¿Qué se busca?</b> Elige lo que mejor describa el objeto en el agua. Cada tipo deriva distinto con el viento: una persona en el agua apenas se mueve con él (menos de 1 % de su velocidad), una balsa sin lastre puede derivar cerca de 4 % y una lancha sin toldo más de 6 %. Si no sabes el estado del objeto (por ejemplo, si la balsa pudo volcarse), calcula con más de una categoría y compara.</li>
         <li><b>Margen de duda de la hora (± horas).</b> Es un número de horas, no una hora del reloj. Indica cuánto puede estar equivocada la hora del incidente que escribiste arriba.
           <br>Ejemplo: hora del incidente 08:00 y margen 2 → el incidente pudo ocurrir entre las 06:00 y las 10:00; cada partícula parte en un momento al azar dentro de ese intervalo.
-          <br>Usa 0 si la hora es exacta (llamada de socorro, alarma de una baliza); 1 a 3 si se sabe aproximadamente; 6 o más si solo se sabe que estaba en el mar «durante la mañana». Acepta decimales: 0,5 = 30 minutos.</li>
+          <br>Usa 0 si la hora es exacta (llamada de socorro, alarma de una baliza); 1 a 3 si se sabe aproximadamente; 6 o más si solo se sabe que estaba en el mar "durante la mañana". Acepta decimales: 0,5 = 30 minutos.</li>
         <li><b>Calcular área de búsqueda.</b> Demora unos segundos y se hace en este navegador; la posición del caso no se publica.</li></ol>
-      <p><b>Cómo leer el resultado.</b> Rojo: zona con 50 % de probabilidad. Naranjo: 90 %. Puntos grises: partículas a la deriva; puntos rojo oscuro: partículas que llegaron a la costa (considerar búsqueda en el litoral). Línea azul segmentada: rectángulo de búsqueda que cubre la zona del 90 %. Con el deslizador se ve la nube hora a hora. «Copiar área de búsqueda» deja la posición más probable y los vértices listos para pegar en un mensaje.</p>
+      <p><b>Cómo leer el resultado.</b> Rojo: zona con 50 % de probabilidad. Naranjo: 90 %. Puntos grises: partículas a la deriva; puntos rojo oscuro: partículas que llegaron a la costa (considerar búsqueda en el litoral). Línea azul segmentada: rectángulo de búsqueda que cubre la zona del 90 %. Con el deslizador se ve la nube hora a hora. "Copiar área de búsqueda" deja la posición más probable y los vértices listos para pegar en un mensaje.</p>
       <p class="sar-nota">Herramienta de apoyo en validación: no reemplaza la planificación de búsqueda del MRCC.</p></div>`;
   }
   function supuestosEnsemble() {

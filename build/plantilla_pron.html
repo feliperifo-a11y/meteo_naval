@@ -595,8 +595,9 @@ async function cargar() {
   try {
     DATOS = await leerJSON('data/pronosticos.json');
     const e = await leerJSON('data/estaciones.json').catch(() => null);
-    if (e) EST = (e.datos || []).map(x => ({ nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), racha: num(x._racha), uVel: x._unidad_viento || '', cambio: x._cambio ? new Date(x._cambio) : null, sinDatos: !!x._sin_datos }))
+    if (e) EST = (e.datos || []).map(x => ({ nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), racha: num(x._racha), uVel: x._unidad_viento || '', cambio: x._cambio ? new Date(x._cambio) : null, sinDatos: !!x._sin_datos, cero: num(x.temperatura) === 0 && num(x.humedad) === 0, sinDir: x.direccionViento === '---' }))
       .filter(s => isFinite(s.lat) && isFinite(s.lon) && !s.sinDatos);
+    for (const s of EST) { if (s.cero) s.temp = null; if (s.sinDir && !s.vel) { s.vel = null; s.dirG = null; } }   // sensor en falla evidente: no se muestra como dato
     if (PRIMERA) {
       // ?lugar=CÓDIGO abre ese pronóstico; si no, el último consultado o Valparaíso
       let q = null; try { q = new URLSearchParams(location.search).get('lugar'); } catch (x) {}

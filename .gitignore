@@ -41,3 +41,5 @@ data/evaluacion/borradores_comparacion.json
 data/estaciones_qc.json
 rutas.html
 data/clima_derrotero_wrf.json
+sitemap.xml
+robots.txt

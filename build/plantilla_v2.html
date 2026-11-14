@@ -340,7 +340,7 @@ const guardarOcultas = () => { try { sessionStorage.setItem('v2_ocultas', JSON.s
 // ---- Estaciones y boyas
 const UMBRAL = { ok: 60 * 60e3, ret: 6 * 3600e3 }, UMBRAL_BOYA = { ok: 3 * 3600e3, ret: 24 * 3600e3 };
 const COL = { ok: '#34c26b', ret: '#f0a030', no: '#e5534b', sd: '#8a939e' };
-let EST = [], BOYAS = [], capaEst = L.layerGroup(), capaBoyas = L.layerGroup();
+let EST = [], EST_TOTAL = 0, BOYAS = [], capaEst = L.layerGroup(), capaBoyas = L.layerGroup();
 const nombreEst = s => s.nombre.replace(/^CP\.\s*/i, '').replace('LOSVILOS', 'LOS VILOS').replace('ALCAMARCHACAO', 'ALCAMAR CHACAO').replace('CHANARAL', 'CHAÑARAL').replace(/^PASCUA$/, 'RAPA NUI')
   .toLowerCase().replace(/(^|[\s.-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
 function estadoEst(s, ahora) { const t = parseLocalCL(s.fecha) || s.cambio; if (!t) return { k: 'no', t: null }; const ms = ahora - t; return { k: ms <= UMBRAL.ok ? 'ok' : ms <= UMBRAL.ret ? 'ret' : 'no', t, ms }; }
@@ -513,7 +513,7 @@ function pintarCond() {
   document.getElementById('cond').innerHTML = `
     <div class="tile">${ICO.viento}<div><div class="k">Viento</div><div class="v">${kt != null ? nf(kt, 0) : '–'} <small>kt</small></div><div class="d">${s.dirG != null ? `${cardinal(s.dirG)} (${String(Math.round(s.dirG)).padStart(3, '0')}°)` : 'sin dirección'}${r != null ? ` · racha ${nf(r, 0)} kt` : ''}</div></div></div>
     <div class="tile">${ICO.ola}<div><div class="k">Oleaje</div><div class="v">${u ? nf(u.hsig, 1) : '–'} <small>m</small></div><div class="d">${u ? `${dirOla != null ? cardinal(dirOla) + ' (' + Math.round(dirOla) + '°) · ' : ''}boya ${escH(b.nombre)}` : 'sin boya cercana con datos'}</div></div></div>
-    <div class="tile">${ICO.term}<div><div class="k">${u && u.tw != null ? 'Temperatura del mar' : 'Temperatura del aire'}</div><div class="v">${u && u.tw != null ? nf(u.tw, 1) : nf(s.temp, 1)} <small>°C</small></div><div class="d">${u && u.tw != null ? 'aire ' + nf(s.temp, 1) + ' °C' : (s.hum != null ? 'humedad ' + nf(s.hum, 0) + ' %' : '')}</div></div></div>
+    <div class="tile">${ICO.term}<div><div class="k">${u && u.tw != null ? 'Temperatura del mar' : 'Temperatura del aire'}</div><div class="v">${u && u.tw != null ? nf(u.tw, 1) : (s.temp != null ? nf(s.temp, 1) : '–')} <small>°C</small></div><div class="d">${u && u.tw != null ? 'aire ' + nf(s.temp, 1) + ' °C' : (s.hum != null ? 'humedad ' + nf(s.hum, 0) + ' %' : '')}</div></div></div>
     <div class="tile">${ICO.pres}<div><div class="k">Presión</div><div class="v">${s.pres ? nf(s.pres, 0) : '–'} <small>hPa</small></div><div class="d">nivel del mar</div></div></div>`;
   document.getElementById('condNota').textContent = `Estación ${nombreEst(s)} · ${e.t ? `dato de las ${fmtHM(e.t)} (hace ${edad(new Date() - e.t)})` : 'sin hora'}${e.k !== 'ok' ? ' · ' + (e.k === 'ret' ? 'con retraso' : 'no operativa') : ''}.`;
 }
@@ -601,9 +601,9 @@ function verMapa() { const r = document.getElementById('mapa').getBoundingClient
 // ============================ Estaciones (lista) ============================
 function pintarListaEst() {
   const ahora = new Date(), ops = EST.filter(s => estadoEst(s, ahora).k === 'ok').length;
-  document.getElementById('tEst').textContent = `Estaciones (${ops} de ${EST.length} operativas)`;
+  document.getElementById('tEst').textContent = `Estaciones (${ops} de ${EST_TOTAL || EST.length} operativas)`;
   document.getElementById('listaEst').innerHTML = [...EST].sort((a, b) => b.lat - a.lat).map(s => { const e = estadoEst(s, ahora), kt = aKt(s.vel, s.uVel);
-    return `<div class="f" data-c="${escH(s.codigo)}"><span class="dot" style="background:${COL[e.k]}"></span><span>${escH(nombreEst(s))}</span><span class="vv">${ICO.viento}${kt != null && e.k !== 'no' ? nf(kt, 0) + ' kt' : '–'}</span><span class="vv">${ICO.term}${s.temp != null && e.k !== 'no' ? nf(s.temp, 1) + '°' : '–'}</span></div>`; }).join('');
+    return `<div class="f" data-c="${escH(s.codigo)}"><span class="dot" style="background:${COL[e.k]}"></span><span${s.dudoso ? ' title="Sensor dudoso: la fuente publica valores en cero"' : ''}>${escH(nombreEst(s))}${s.dudoso ? ' ⚠' : ''}</span><span class="vv">${ICO.viento}${kt != null && e.k !== 'no' ? nf(kt, 0) + ' kt' : '–'}</span><span class="vv">${ICO.term}${s.temp != null && e.k !== 'no' ? nf(s.temp, 1) + '°' : '–'}</span></div>`; }).join('');
   document.querySelectorAll('#listaEst .f').forEach(f => f.onclick = () => irEst(f.dataset.c));
 }
 
@@ -684,10 +684,13 @@ async function miniWrf() {
 async function cargar() {
   const [e, a, p] = await Promise.all([leerJSON('data/estaciones.json').catch(() => null), leerJSON('data/avisos.json').catch(() => null), leerJSON('data/pronosticos.json').catch(() => null)]);
   if (e) {
-    EST = (e.datos || []).map(x => ({ nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), racha: num(x._racha), uVel: x._unidad_viento || '', cambio: x._cambio ? new Date(x._cambio) : null, sinDatos: !!x._sin_datos }))
-      .filter(s => isFinite(s.lat) && isFinite(s.lon) && !s.sinDatos);
+    EST = (e.datos || []).map(x => ({ nombre: x.nombre, codigo: x.codigo, fecha: x.fecha, lat: +x.latitud, lon: +x.longitud, dirG: num(x.viento), vel: num(x.velocidadDelViento), temp: num(x.temperatura), pres: num(x.presion), hum: num(x.humedad), racha: num(x._racha), uVel: x._unidad_viento || '', cambio: x._cambio ? new Date(x._cambio) : null, sinDatos: !!x._sin_datos, sinDir: x.direccionViento === '---' }))
+      .filter(s => isFinite(s.lat) && isFinite(s.lon));
+    EST_TOTAL = EST.length; EST = EST.filter(s => !s.sinDatos);
+    // Sensor en falla evidente: temperatura y humedad en cero a la vez, o viento sin dirección publicada. No se muestra como dato.
+    for (const s of EST) { if (s.temp === 0 && s.hum === 0) { s.temp = null; s.hum = null; s.dudoso = true; } if (s.sinDir && !s.vel) { s.vel = null; s.dirG = null; s.dudoso = true; } }
     const ops = EST.filter(s => estadoEst(s, new Date()).k === 'ok').length, act = e.actualizado ? new Date(e.actualizado) : null;
-    document.getElementById('estadoDatos').textContent = `${EST.length} estaciones · ${ops} operativas${act && !isNaN(act) ? ' · datos actualizados ' + fmtHM(act) : ''}`;
+    document.getElementById('estadoDatos').textContent = `${EST_TOTAL || EST.length} estaciones · ${ops} operativas${act && !isNaN(act) ? ' · datos actualizados ' + fmtHM(act) : ''}`;
     const sel = document.getElementById('selEst');
     sel.innerHTML = [...EST].sort((x, y) => y.lat - x.lat).map(s => `<option value="${escH(s.codigo)}">${escH(nombreEst(s))}</option>`).join('');
     pintarEst(); pintarCond(); pintarListaEst();

@@ -61,7 +61,7 @@ CATS = {  # clave: (rango, nombre)
     "E": (1, "Aviso especial"), "M": (2, "Mal tiempo"), "VF": (3, "Viento fuerte"), "T": (4, "Temporal"),
 }
 CRITERIOS = {
-    "fuente": "PD OPE-07 «Elaboración y emisión de avisos meteorológicos», Servicio Meteorológico de la Armada (05-08-2025), cap. VII",
+    "fuente": "PD OPE-07 \"Elaboración y emisión de avisos meteorológicos\", Servicio Meteorológico de la Armada (05-08-2025), cap. VII",
     "areas": [
         "CMM Iquique (Arica a 26° S, hasta 76° W) y CMM Valparaíso (26° S a 34,6° S, hasta 78° W): especial N 15–19 kt; mal tiempo N 20–33 kt; temporal N 34 kt o más; viento fuerte S 34 kt o más.",
         "CMM Talcahuano (34,6° S a 40,2° S, hasta 78° W): especial N 20–29 kt; mal tiempo N 30–33 kt; temporal N 34 kt o más; viento fuerte S 34 kt o más.",

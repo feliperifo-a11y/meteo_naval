@@ -145,6 +145,7 @@ def oracion(s):
     t = s.lower()
     t = re.sub(r"\bsurweste\b", "SW", t)
     t = re.sub(r"\bnorweste\b", "NW", t)
+    t = re.sub(r"\bviento (norte|sur|este|weste|oeste)\b", lambda m: "viento " + {"norte": "N", "sur": "S", "este": "E", "weste": "W", "oeste": "W"}[m.group(1)], t)
     t = re.sub(r"\b(\d+(?:\.\d+)?)([nsew])\b", lambda m: m.group(1) + m.group(2).upper(), t)
     t = re.sub(r"\b[nsew]{1,3}(?:/[nsew]{1,3})+\b", lambda m: m.group(0).upper(), t)
     t = re.sub(r"\b([nsew]{1,3})\b(?=(\s+\d|$|[.,;)]))?", lambda m: m.group(1).upper() if (m.group(1) in DIRS_SIEMPRE or (m.group(1) in DIRS_NUM and m.group(2) and m.group(2).strip()[:1].isdigit())) else m.group(1), t)
@@ -372,6 +373,7 @@ def parsear_zona_x(texto):
     situacion = "; ".join(x.strip() for x in sit.group(1).split("\n") if x.strip()) if sit else ""
     sit_t = re.search(r"PARTE II: SITUACION SINOPTICA \((.*?)\)", u_all)
     items = []
+    bloques = {}
     parte = None
     lineas = cuerpo.split("\n")
     i = 0
@@ -384,23 +386,38 @@ def parsear_zona_x(texto):
         ms = re.match(r"^SECTOR ([A-Z ]+?) \(LAT (\d+) A (\d+) SUR Y LONG (\d+) A (\d+) WESTE\)", u)
         if ms:
             cod = SECT_X.get(ms.group(1).strip())
-            txt = []
+            # Un sector puede venir dividido en subáreas: "(LAT 40 A 45 SUR Y LONG 95 A 120 WESTE):" y debajo su texto
+            sub, txt = None, []
             i += 1
             while i < len(lineas) and lineas[i].strip():
-                txt.append(lineas[i].strip()); i += 1
-            t = " ".join(txt)
-            if cod:
-                la1, la2, lo1, lo2 = (int(ms.group(k)) for k in range(2, 6))
-                d = desarmar(t)
-                per = {"tipo": "dia", "fecha": fecha, "horario": horario, **d, "texto": oracion(t)}
-                if situacion:
-                    per["situacion"] = oracion(situacion) + (f" ({oracion(sit_t.group(1))})" if sit_t else "")
-                items.append({"codigo": "zx_" + cod.lower(), "nombre": "Zona X · " + NOM_X[cod], "grupo": "Alta mar (Zona X)", "tipo": "area",
-                              "aviso": "Aviso de temporal" if parte == "aviso" else None,
-                              "metarea": "X-" + cod,   # mismo polígono de la capa base (límites del boletín, ajustados a las áreas costeras)
-                              "periodos": [per]})
+                li = lineas[i].strip(); i += 1
+                mb = re.match(r"^\(LAT (\d+) A (\d+) SUR Y LONG (\d+) A (\d+) WESTE\):?$", sin_tildes(li.upper()))
+                if mb:
+                    if txt and cod:
+                        bloques.setdefault(cod, []).append((parte, sub, " ".join(txt)))
+                    sub, txt = "lat. {} a {}° S, long. {} a {}° W".format(*mb.groups()), []
+                else:
+                    txt.append(li)
+            if txt and cod:
+                bloques.setdefault(cod, []).append((parte, sub, " ".join(txt)))
             continue
         i += 1
+    # Un ítem por sector: si parte del sector está bajo aviso de temporal, ese texto manda en el resumen (viento y mar)
+    for cod, bl in bloques.items():
+        con_aviso = any(b[0] == "aviso" for b in bl)
+        bl.sort(key=lambda b: b[0] != "aviso")
+        d = desarmar(bl[0][2])
+        if len(bl) == 1 and not bl[0][1]:
+            texto = oracion(bl[0][2])
+        else:
+            texto = " ".join(f"{(b[1] or 'Resto del sector').capitalize() if not b[1] else 'L' + b[1][1:]}{' (aviso de temporal)' if b[0] == 'aviso' else ''}: {oracion(b[2])}." for b in bl)
+        per = {"tipo": "dia", "fecha": fecha, "horario": horario, **d, "texto": texto}
+        if situacion:
+            per["situacion"] = oracion(situacion) + (f" ({oracion(sit_t.group(1))})" if sit_t else "")
+        items.append({"codigo": "zx_" + cod.lower(), "nombre": "Zona X · " + NOM_X[cod], "grupo": "Alta mar (Zona X)", "tipo": "area",
+                      "aviso": "Aviso de temporal" if con_aviso else None,
+                      "metarea": "X-" + cod,   # mismo polígono de la capa base (límites del boletín, ajustados a las áreas costeras)
+                      "periodos": [per]})
     orden = ["zx_no", "zx_ne", "zx_co", "zx_ce", "zx_so", "zx_se"]
     items.sort(key=lambda x: orden.index(x["codigo"]) if x["codigo"] in orden else 9)
     return emit, items

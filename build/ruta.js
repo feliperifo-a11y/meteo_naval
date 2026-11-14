@@ -397,14 +397,16 @@ function crearRuta(L, map, ctx) {
     out.forEach(s => { s.tierra = s.malo && rutaEnTierra(s.p[0], s.p[1]); });
     return { muestras: out, traza: P, total, recta: T.recta, sinPaso: T.sinPaso, v, t0, eta, espera, escalas };
   }
+  // El pronóstico se pide en grupos de 10 puntos en paralelo: una sola consulta con toda la ruta tarda varias veces más y vence el plazo
   async function pronostico(muestras, dias) {
-    const la = muestras.map(s => s.p[0].toFixed(3)).join(','), lo = muestras.map(s => s.p[1].toFixed(3)).join(',');
-    const q = `latitude=${la}&longitude=${lo}&forecast_days=${dias}&timezone=America%2FSantiago`;
+    const pedir = async (u, n = 2) => { for (let k = 0; ; k++) { try { const r = await fetch(u, { signal: AbortSignal.timeout(40000) }); const j = await r.json(); if (!r.ok) throw Error(j && j.reason || 'HTTP ' + r.status); return Array.isArray(j) ? j : [j]; } catch (e) { if (k >= n - 1) throw e; } } };
+    const grupos = []; for (let i = 0; i < muestras.length; i += 10) grupos.push(muestras.slice(i, i + 10));
+    const q = g => `latitude=${g.map(s => s.p[0].toFixed(3)).join(',')}&longitude=${g.map(s => s.p[1].toFixed(3)).join(',')}&forecast_days=${dias}&timezone=America%2FSantiago`;
     const [a, m] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?${q}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,precipitation&models=ecmwf_ifs,gfs_global&wind_speed_unit=kn`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?${q}&hourly=wave_height,wave_period,wave_direction`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()).catch(() => null)
+      Promise.all(grupos.map(g => pedir(`https://api.open-meteo.com/v1/forecast?${q(g)}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,precipitation&models=ecmwf_ifs,gfs_global&wind_speed_unit=kn`))),
+      Promise.all(grupos.map(g => pedir(`https://marine-api.open-meteo.com/v1/marine?${q(g)}&hourly=wave_height,wave_period,wave_direction`))).catch(() => null)
     ]);
-    const A = Array.isArray(a) ? a : [a], M = m ? (Array.isArray(m) ? m : [m]) : [];
+    const A = a.flat(), M = m ? m.flat() : [];
     if (!A[0] || !A[0].hourly) throw Error((A[0] && A[0].reason) || 'sin pronóstico');
     return { A, M };
   }
