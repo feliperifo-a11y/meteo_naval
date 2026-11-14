@@ -172,6 +172,12 @@ jobs:
           if [ "$REPO" = "$OWNER.github.io" ]; then export PUBLICADO="https://$OWNER.github.io"; else export PUBLICADO="https://$OWNER.github.io/$REPO"; fi
           python scripts/ecmwf_viento.py
 
+      - name: Archivo para MOS (ECMWF y GFS-Wave en estaciones y boyas, mediciones de boyas SHOA)
+        # Congela el pronóstico numérico 0–72 h de cada corrida nueva y las mediciones de boyas; no repite lo archivado.
+        continue-on-error: true
+        timeout-minutes: 4
+        run: python scripts/archivo_mos.py
+
       - name: Evaluación WRF + IA y archivo de pares para aprendizaje (O.P.I. N° 1104; boletín profesional, WRF + IA y oleaje WW3)
         # Va después del oleaje WW3 (data/ww3). La evaluación usa el historial de git y recalcula una vez al día;
         # el archivo de pares guarda cada boletín nuevo con las entradas del modelo disponibles a esa hora.
@@ -204,11 +210,11 @@ jobs:
         continue-on-error: true
         timeout-minutes: 2
         run: |
-          if [ -n "$(git status --porcelain data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl data/evaluacion/borradores.jsonl)" ]; then
+          if [ -n "$(git status --porcelain data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl data/evaluacion/borradores.jsonl data/evaluacion/mos_ecmwf.jsonl data/evaluacion/mos_ww3.jsonl data/evaluacion/boyas_obs.jsonl)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl data/evaluacion/borradores.jsonl 2>/dev/null || git add data/evaluacion/profesional.jsonl data/evaluacion/pares.jsonl
-            git commit -m "Archivo de boletines profesionales y pares para aprendizaje WRF + IA"
+            for f in profesional pares borradores mos_ecmwf mos_ww3 boyas_obs; do [ -f "data/evaluacion/$f.jsonl" ] && git add "data/evaluacion/$f.jsonl"; done
+            git commit -m "Archivo de boletines, pares y datos MOS para aprendizaje WRF + IA"
             for i in 1 2 3; do git pull --rebase --autostash --quiet origin main && git push --quiet origin HEAD:main && break; sleep 5; done
           fi
 

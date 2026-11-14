@@ -8,7 +8,10 @@ Se ejecuta una vez por semana (mac/dataset_semanal.sh, launchd cl.meteonaval.dat
                            temperaturas, el oleaje WW3 del período y lo que decía el WRF + IA para ese día cuando se emitió;
   wrf_ia.parquet           todas las versiones del pronóstico WRF + IA de las cinco bahías de referencia, por día pronosticado;
   observaciones.parquet    todas las observaciones de las estaciones de la plataforma (viento en kt, dirección, temperatura);
-  evaluacion.parquet       puntaje O.P.I. N° 1104 por día, bahía y fuente (WRF + IA y profesional), del resumen publicado.
+  evaluacion.parquet       puntaje O.P.I. N° 1104 por día, bahía y fuente (WRF + IA y profesional), del resumen publicado;
+  mos_ecmwf.parquet        pronóstico ECMWF 0–72 h archivado por corrida, punto (estación o boya) y plazo (scripts/archivo_mos.py);
+  mos_ww3.parquet          pronóstico GFS-Wave 0–72 h archivado por corrida, punto y plazo;
+  boyas_obs.parquet        mediciones de las boyas SHOA archivadas (unidades tal como las entrega la fuente).
 
 No modifica el repositorio ni sube nada: es un insumo local para estadística (nivel 2) y ajuste fino (nivel 3).
 """
@@ -17,7 +20,7 @@ import os
 import subprocess
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -185,12 +188,50 @@ def evaluacion():
     return filas
 
 
+# ------------------------------------------------------------ archivo MOS (pronóstico numérico congelado y boyas)
+
+def jsonl(nombre):
+    p = REPO / "data" / "evaluacion" / f"{nombre}.jsonl"
+    if not p.exists():
+        return []
+    out = []
+    for l in p.read_text(encoding="utf-8").splitlines():
+        try:
+            out.append(json.loads(l))
+        except Exception:
+            pass
+    return out
+
+
+def mos(nombre):
+    """Formato largo: una fila por corrida, punto y plazo, con la hora de validez en UTC."""
+    filas = []
+    for c in jsonl(nombre):
+        try:
+            corrida = datetime.strptime(c["clave"], "%Y%m%d%H").replace(tzinfo=timezone.utc)
+        except Exception:
+            continue
+        for pt in c.get("puntos", []):
+            vars_ = [k for k in pt if isinstance(pt[k], list) and k != "celda"]
+            for n, plazo in enumerate(c.get("plazos", [])):
+                f = {"corrida": corrida, "plazo_h": plazo, "valido": corrida + timedelta(hours=plazo), "punto": pt["id"],
+                     "celda_lat": pt["celda"][0], "celda_lon": pt["celda"][1]}
+                f.update({k: pt[k][n] if n < len(pt[k]) else None for k in vars_})
+                filas.append(f)
+    return filas
+
+
+def boyas_obs():
+    return [{k: v for k, v in x.items() if k != "v"} for x in jsonl("boyas_obs")]
+
+
 def main():
     SALIDA.mkdir(parents=True, exist_ok=True)
     if not (REPO / ".git").exists():
         print(f"No encuentro la copia del repositorio en {REPO}"); return 1
     res = {}
-    for nombre, f in (("pares_periodos", pares), ("wrf_ia", wrf_ia), ("observaciones", observaciones), ("evaluacion", evaluacion)):
+    for nombre, f in (("pares_periodos", pares), ("wrf_ia", wrf_ia), ("observaciones", observaciones), ("evaluacion", evaluacion),
+                     ("mos_ecmwf", lambda: mos("mos_ecmwf")), ("mos_ww3", lambda: mos("mos_ww3")), ("boyas_obs", boyas_obs)):
         try:
             res[nombre] = guardar(f(), nombre)
         except Exception as e:
