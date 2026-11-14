@@ -68,7 +68,7 @@ main{flex:1;display:flex;min-height:0}
   body{overflow:auto;display:block}main{display:block}.mapa{height:58vh}.panel{width:auto;border-left:0;border-top:1px solid var(--line)}
   header{gap:8px 10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px}.marca img{height:34px}.tit{border:0;padding:0}.tit h1{font-size:16px}
   .ley{display:none}
-  .hDer{width:100%;margin:0}.hDer .btnV{flex:1;text-align:center}
+  .hDer{width:100%;margin:0;flex-wrap:wrap;gap:8px}.hDer .btnV{flex:1 1 auto;text-align:center;white-space:nowrap;padding-left:10px;padding-right:10px}
 }
 </style>
 </head>
@@ -188,7 +188,7 @@ async function cargar() {
   if (!bor || !(bor.bahias || []).length) { document.getElementById('sub').textContent = 'Aún no hay pronósticos WRF + IA: el equipo local los genera una vez al día con la corrida 12Z del WRF.'; document.getElementById('panel').innerHTML = '<div class="card vac">Sin pronósticos disponibles.</div>'; return; }
   bor.bahias.sort((x, y) => ((BAHIAS[y.codigo] || {}).pos || [-99])[0] - ((BAHIAS[x.codigo] || {}).pos || [-99])[0]);
   BOR = bor;
-  document.getElementById('sub').textContent = `Pronóstico de bahía redactado con IA a partir del WRF ${bor.wrf_inicializacion || '–'} UTC y el oleaje WW3 · generado ${hora(bor.generado)} (hora Chile)`;
+  document.getElementById('sub').textContent = `Pronóstico de bahía redactado con IA a partir del WRF ${String(bor.wrf_inicializacion || '–').replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d).*$/, '$3/$2 $4')} UTC y el oleaje WW3 · generado ${hora(bor.generado)} (hora Chile)`;
   const q = new URLSearchParams(location.search).get('bahia');
   SEL = SEL || (bor.bahias.some(x => x.codigo === q) ? q : (bor.bahias.find(x => x.codigo === 'valparaiso') || bor.bahias[0]).codigo);
   pintarMapa(); pintarPanel();
