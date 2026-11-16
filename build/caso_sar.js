@@ -426,9 +426,11 @@ function crearCasoSAR(L, map, ctx) {
     html += '</div>';
     // 6. Deriva y dátum
     let deriva = null;
-    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); html += bloqueEnsemble(lat, lon, deriva); busCtx = { lat, lon, d: deriva, h, mh, env }; html += bloqueBusqueda(); } else busCtx = null;
+    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); html += bloqueEnsemble(lat, lon, deriva); busCtx = { lat, lon, d: deriva, h, mh, env, i0 }; html += bloqueBusqueda(); } else busCtx = null;
     // 7. Ventanas de operación
     if (h) html += ventanas(h, mh, i0, d.a.daily || {});
+    // 8. Borrador de SITREP
+    if (h) html += bloqueSitrep();
     html += `<p class="sar-nota">Fuentes: pronóstico puntual Open-Meteo (ECMWF IFS 9 km y NOAA GFS para viento, ráfaga y visibilidad; Météo-France para oleaje, temperatura del agua y corriente), observaciones y avisos de MeteoIA.
       Herramienta de apoyo en validación: no reemplaza los procedimientos SAR, los avisos oficiales ni las herramientas de planificación de búsqueda.</p>`;
     res.innerHTML = html;
@@ -463,7 +465,7 @@ function crearCasoSAR(L, map, ctx) {
       const m = medios.find(x => x.id === inp.dataset.id), v = parseFloat(String(inp.value).replace(',', '.'));
       m[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; guardarMedios(); pintar();
     });
-    enlazarEnsemble(lat, lon, deriva); enlazarBusqueda();
+    enlazarEnsemble(lat, lon, deriva); enlazarBusqueda(); enlazarSitrep();
     const rest = res.querySelector('.sar-restablecer'); if (rest) rest.onclick = () => { medios = SAR_MEDIOS_BASE.map(m => ({ ...m })); guardarMedios(); pintar(); };
   }
 
@@ -673,6 +675,69 @@ function crearCasoSAR(L, map, ctx) {
     const blq = res.querySelector('.sar-bus'); if (!blq || actualizandoBus) return; actualizandoBus = true;
     const abiertos = [...blq.querySelectorAll('details')].map(d => d.open), tmp = document.createElement('div'); tmp.innerHTML = bloqueBusqueda();
     blq.replaceWith(tmp.firstElementChild); res.querySelectorAll('.sar-bus details').forEach((d, i) => { if (abiertos[i]) d.open = true; }); actualizandoBus = false; enlazarBusqueda();
+    { const D = datosSitrep(), t = res.querySelector('.sar-sit-txt'); if (D && t) t.value = sarSitrep(D); }   // el párrafo K sigue al plan
+  }
+
+
+  // ---- Borrador de SITREP en formato IAMSAR (texto en sitrep_sar.js)
+  function datosSitrep() {
+    if (!busCtx) return null;
+    const { lat, lon, d, h, mh, env, i0 } = busCtx, c = caso() || borrador || {}, S = c.sit || {}, cen = env.centros[0];
+    const v = (o, k) => (o && o[k] ? o[k][i0] : null), inc = form.hora.value ? new Date(form.hora.value) : null;
+    const P = planBusqueda(), conNube = !!(P && P.conNube);
+    let area = null;
+    if (d && d.ok) {
+      const en = S.idioma === 'en', pt = P && P.pat, pd = (v, n) => Number(v).toFixed(n);
+      const patron = !pt ? null : en ? `${{ ps: 'Parallel sweep search (PS)', cs: 'Creeping line search (CS)', ss: 'Expanding square search (SS)', vs: 'Sector search (VS)' }[pt.tipo]}, ${pt.tipo === 'vs' ? 'radius ' + pd(pt.radio, 1) + ' NM' : 'track spacing ' + pd(pt.S, 2) + ' NM'}, ${{ buque: 'surface vessel', helo: 'helicopter', avion: 'fixed-wing aircraft' }[P.medio]}`
+        : `${SAR_PATRONES[pt.tipo]}, ${pt.tipo === 'vs' ? 'radio ' + pd(pt.radio, 1) + ' mn' : 'espaciamiento ' + pd(pt.S, 2) + ' mn'}, ${SAR_BARRIDO[P.medio].nombre.toLowerCase()}`;
+      area = conNube ? { tipo: 'rect', largo: ens.resumen.rect.largo, ancho: ens.resumen.rect.ancho, centro: ens.resumen.rect.centro, vertices: ens.resumen.rect.esquinas, masProbable: ens.resumen.masProbable, hora: new Date(ens.resumen.t * 1000), patron }
+        : { tipo: 'circ', radio: d.E, datum: d.datum, hora: new Date(d.hora), patron };
+    }
+    const fase = { incertidumbre: 'incerfa', alerta: 'alerfa', peligro: 'detresfa' }[c.fase] || null;
+    return { idioma: S.idioma === 'en' ? 'en' : 'es', forma: S.forma === 'breve' ? 'breve' : 'completa', numero: S.n > 0 ? Math.round(S.n) : 1, fase, fecha: new Date(),
+      de: S.de || (cen ? cen.nombre : ''), para: S.para, identidad: S.identidad || (c.nombre && !/^Caso \d+$/.test(c.nombre) ? c.nombre : ''), posicion: [lat, lon], horaIncidente: inc && !isNaN(inc) ? inc : null,
+      naturaleza: S.naturaleza, personas: S.personas, asistencia: S.asistencia, rcc: S.rcc || (cen ? cen.nombre : ''), descripcion: S.descripcion,
+      tiempo: h ? { viento: v(h, 'wind_speed_10m_ecmwf_ifs') ?? v(h, 'wind_speed_10m_gfs_global'), dir: v(h, 'wind_direction_10m_ecmwf_ifs') ?? v(h, 'wind_direction_10m_gfs_global'), racha: v(h, 'wind_gusts_10m_ecmwf_ifs'),
+        ola: v(mh, 'wave_height'), olaDir: v(mh, 'wave_direction'), olaPer: v(mh, 'wave_period'), fondo: v(mh, 'swell_wave_height'), fondoDir: v(mh, 'swell_wave_direction'), fondoPer: v(mh, 'swell_wave_period'),
+        vis: v(h, 'visibility_ecmwf_ifs') ?? v(h, 'visibility_gfs_global'), tsm: v(mh, 'sea_surface_temperature'), hora: new Date(h.time[i0]) } : null,
+      acciones: S.acciones || c.notas, area, instrucciones: S.instrucciones, planes: S.planes, adicional: S.adicional };
+  }
+  function bloqueSitrep() {
+    const D = datosSitrep(); if (!D) return '';
+    const c = caso() || borrador || {}, S = c.sit || {}, cen = busCtx.env.centros[0], e = v => escH(v == null ? '' : String(v));
+    const campo = (k, rot, ph, ancho) => `<label${ancho ? ' class="sar-sit-ancho"' : ''}>${rot}<input class="sar-sit-in" data-k="${k}" value="${e(S[k])}" placeholder="${e(ph || '')}" autocomplete="off"></label>`;
+    const sel = (k, ops, v) => `<select class="sar-sit-in" data-k="${k}">${ops.map(([a, t]) => `<option value="${a}"${a === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`;
+    return `<div class="sar-blq sar-sit"><h3>Borrador de SITREP</h3>
+      <div class="sar-der-form"><label>Formato${sel('forma', [['completa', 'Completo (A a N)'], ['breve', 'Breve (A a F)']], D.forma)}</label><label>Idioma${sel('idioma', [['es', 'Español'], ['en', 'Inglés']], D.idioma)}</label>
+      <label>N.º<input class="sar-sit-in" data-k="n" inputmode="numeric" value="${e(S.n)}" placeholder="1" style="width:56px"></label>
+      ${campo('de', 'De', cen ? cen.nombre : 'Centro que emite')}${campo('para', 'Para', 'Destinatarios')}
+      ${campo('identidad', 'A · Identidad', 'Nombre, señal de llamada, bandera', 1)}${campo('naturaleza', 'C · Naturaleza del suceso', 'Ej.: sin comunicación, hombre al agua, vía de agua', 1)}
+      ${campo('personas', 'D · Personas en peligro', 'Número')}${campo('asistencia', 'E · Auxilio requerido', 'Ej.: búsqueda y rescate')}${campo('rcc', 'F · Centro coordinador', cen ? cen.nombre : '')}
+      ${D.forma === 'completa' ? campo('descripcion', 'G · Descripción de la nave', 'Tipo, eslora, color, propietario, medios de salvamento', 1) + campo('acciones', 'J · Medidas adoptadas', 'Vacío: la descripción y acciones del caso', 1)
+        + campo('instrucciones', 'L · Instrucciones de coordinación', 'OSC designado, unidades, comunicaciones', 1) + campo('planes', 'M · Planes futuros', '', 1) + campo('adicional', 'N · Información adicional', '', 1) : ''}</div>
+      <textarea class="sar-sit-txt" readonly rows="${D.forma === 'completa' ? 22 : 12}" aria-label="Texto del SITREP">${e(sarSitrep(D))}</textarea>
+      <p><button type="button" class="sar-sit-copiar">Copiar SITREP</button> <button type="button" class="sar-sit-sig">Copiar y pasar al N.º siguiente</button></p>
+      <p class="sar-nota">Formato normalizado del Manual IAMSAR (vol. II, apéndice I). La posición (B), la fase (C), las condiciones en el lugar (H) y el área de búsqueda (K) se toman de la ficha; lo que escribas en los campos se copia tal cual, también en la versión en inglés; H es el pronóstico del modelo para esta hora, no una observación. El grupo fecha-hora es UTC y se actualiza al copiar. Borrador para revisión del coordinador: no se transmite desde la página.</p></div>`;
+  }
+  function enlazarSitrep() {
+    const blq = res.querySelector('.sar-sit'); if (!blq) return;
+    blq.querySelectorAll('.sar-sit-in').forEach(inp => inp.onchange = () => {
+      const c = caso() || borrador; if (!c || !inp.isConnected) return; c.sit = c.sit || {};
+      const k = inp.dataset.k; c.sit[k] = k === 'n' ? (parseInt(inp.value, 10) > 0 ? parseInt(inp.value, 10) : null) : (inp.value.trim() || null);
+      if (caso()) guardar();
+      if (k === 'forma') actualizarSitrep(); else { const D = datosSitrep(), t = blq.querySelector('.sar-sit-txt'); if (D && t) t.value = sarSitrep(D); }
+    });
+    const copiar = (b, sig) => { const D = datosSitrep(), t = blq.querySelector('.sar-sit-txt'); if (!D) return; t.value = sarSitrep(D); const rot = b.textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => { b.textContent = 'Copiado';
+        if (sig) { const c = caso() || borrador; if (c) { c.sit = c.sit || {}; c.sit.n = D.numero + 1; if (caso()) guardar(); } }
+      }, () => { t.select(); b.textContent = 'Selecciona y copia a mano'; }).finally(() => setTimeout(() => { b.textContent = rot; if (sig) actualizarSitrep(); }, 1800)); };
+    blq.querySelector('.sar-sit-copiar').onclick = ev => copiar(ev.currentTarget, false);
+    blq.querySelector('.sar-sit-sig').onclick = ev => copiar(ev.currentTarget, true);
+  }
+  function actualizarSitrep() {
+    const blq = res.querySelector('.sar-sit'); if (!blq) return;
+    const tmp = document.createElement('div'); tmp.innerHTML = bloqueSitrep(); if (!tmp.firstElementChild) return;
+    blq.replaceWith(tmp.firstElementChild); enlazarSitrep();
   }
 
   // ---- Área de búsqueda por deriva con ensemble (método Leeway; motor en deriva_sar.js)

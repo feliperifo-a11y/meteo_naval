@@ -88,3 +88,18 @@ puede ejecutar. Motor en `build/busqueda_sar.js`; pruebas en `tests/busqueda_sar
 
 Límites: búsqueda visual de día; no considera fatiga, altura de vuelo, tránsito al área ni otros sensores. Las tablas
 se contrastaron con una copia del manual (Doc 9731, págs. 3-18 a 3-20) y deben confirmarse con la edición vigente.
+
+# Caso SAR: borrador de SITREP
+
+Último bloque de la ficha. Arma el informe de situación en el formato normalizado del Manual IAMSAR (vol. II,
+apéndice I): forma breve (párrafos A a F) o completa (A a N), en español o en inglés. Texto en `build/sitrep_sar.js`;
+pruebas en `tests/sitrep_sar.test.cjs`.
+
+- De la ficha se toman la posición (B), la fase y la hora del incidente (C), las condiciones en el lugar (H, que son
+  el pronóstico del modelo y así se declara), las medidas adoptadas (J, desde la descripción del caso) y el área de
+  búsqueda con su patrón (K).
+- El coordinador completa identidad, naturaleza del suceso, personas, auxilio requerido, descripción, instrucciones,
+  planes e información adicional. Lo que falta queda como «NO INFORMADO».
+- El grupo fecha-hora es UTC. «Copiar y pasar al N.º siguiente» deja el texto en el portapapeles y aumenta el número.
+
+No usa inteligencia artificial: es una plantilla que se llena con los datos del caso. La página no transmite nada.
