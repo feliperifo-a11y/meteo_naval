@@ -30,6 +30,12 @@
 #mapWrap.sar-abierto .uv-panel{right:calc(min(470px,46%) + 20px)}
 #mapWrap .sar-card .sar-grid{grid-template-columns:1fr}
 #mapWrap .sar-card .sar-form input{min-width:0;width:130px}
+/* La hora del incidente necesita más ancho: el valor completo (fecha y hora) no cabe en 130 px y el control del calendario queda muy chico */
+#mapWrap .sar-card .sar-form label:has(input[name=hora]){flex:1 1 100%}
+#mapWrap .sar-card .sar-form input[name=hora]{width:100%;max-width:260px;font-size:15px;padding:9px 10px}
+.sar-form input[name=hora]{font-size:15px;padding:9px 10px;min-width:215px}
+.sar-form input[name=hora]::-webkit-calendar-picker-indicator{width:20px;height:20px;padding:2px;margin-left:6px;cursor:pointer;opacity:.85}
+.sar-form input[name=hora]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .sar-min{border:1px solid var(--line);background:transparent;border-radius:6px;cursor:pointer;min-width:32px;min-height:30px;color:var(--ink);margin-left:auto}.sar-min+.sar-cerrar{margin-left:0}
 .leaflet-tooltip.sar-etiqueta{background:#ff6a00;color:#fff;border:0;font-size:12px;line-height:1.35;box-shadow:0 2px 6px #0004}.leaflet-tooltip-top.sar-etiqueta:before{border-top-color:#ff6a00}
 .leaflet-tooltip.sar-etiqueta-centro{background:#fff;color:#8a4b00}.leaflet-tooltip-bottom.sar-etiqueta-centro:before{border-bottom-color:#fff}
