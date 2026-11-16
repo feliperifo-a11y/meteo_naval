@@ -201,7 +201,11 @@ def detalle_error(e):
 
 
 def leer_boya(url):
+    # La página consulta con POST desde el navegador, pero esa misma petición desde un servidor vuelve 405 con una
+    # página de error ajena a SHOA, así que algo intermedio la rechaza. GET devuelve el mismo JSONP.
     r = requests.post(url + "?callback=cb", headers=CAB, timeout=45)
+    if r.status_code == 405:
+        r = requests.get(url + "?callback=cb", headers=CAB, timeout=45)
     r.raise_for_status()
     m = re.match(r"^\s*cb\s*\(([\s\S]*)\)\s*;?\s*$", r.text)
     return json.loads(m[1] if m else r.text)
