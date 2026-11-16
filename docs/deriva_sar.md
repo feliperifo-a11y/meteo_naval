@@ -103,3 +103,20 @@ pruebas en `tests/sitrep_sar.test.cjs`.
 - El grupo fecha-hora es UTC. «Copiar y pasar al N.º siguiente» deja el texto en el portapapeles y aumenta el número.
 
 No usa inteligencia artificial: es una plantilla que se llena con los datos del caso. La página no transmite nada.
+
+# Caso SAR: reasignación tras una búsqueda sin resultado
+
+En «Plan de búsqueda», el botón **Registrar esta búsqueda sin resultado** guarda en el caso el patrón ejecutado (área,
+espaciamiento, hora y probabilidad de detección). Con eso se recalcula el área probable:
+
+- Cada partícula que estaba dentro de lo barrido a la hora de la búsqueda conserva la fracción (1 − POD) de su peso;
+  el peso la acompaña en las horas siguientes (`sarPesosBusquedas` en `build/busqueda_sar.js`).
+- Las zonas del 50 % y 90 %, la posición más probable y el rectángulo se calculan con los pesos
+  (`sarDerivaResumen(sim, k, esTierra, pesos)`), de modo que la probabilidad se desplaza hacia lo no buscado.
+- La ficha muestra la lista de búsquedas, la probabilidad que queda por buscar y el éxito acumulado esperado; cada
+  búsqueda se puede quitar. El plan siguiente se evalúa contra la probabilidad que queda.
+- En el patrón de sector la probabilidad de detección usa la cobertura media: ancho de barrido × recorrido / área del
+  círculo.
+
+Supuestos: lo barrido es el área nominal del patrón (o la parte que alcanzó a recorrerse) con POD uniforme, y las
+búsquedas sucesivas son independientes. No se modela el movimiento del objeto durante la búsqueda.

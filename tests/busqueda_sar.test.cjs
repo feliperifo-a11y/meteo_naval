@@ -67,3 +67,27 @@ test('la ficha de Caso SAR incorpora el plan de búsqueda', () => {
   const caso = fs.readFileSync(path.join(__dirname, '..', 'build', 'caso_sar.js'), 'utf8'), idx = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'construir_index.py'), 'utf8');
   assert.match(caso, /bloqueBusqueda\(/); assert.match(idx, /busqueda_sar\.js/);
 });
+
+test('tras una búsqueda sin resultado baja el peso de lo barrido y el área probable se desplaza', () => {
+  const d = require(path.join(__dirname, '..', 'build', 'deriva_sar.js'));
+  // Nube sintética: 1.000 partículas inmóviles repartidas en dos grupos iguales, al oeste y al este.
+  const n = 1000, lat = new Float32Array(n), lon = new Float32Array(n), estado = new Uint8Array(n).fill(1);
+  for (let i = 0; i < n; i++) { const este = i % 2, a = (i * 0.618) % 1, b = (i * 0.414) % 1; lat[i] = -36.5 + (a - 0.5) * 0.04; lon[i] = (este ? -73.2 : -73.6) + (b - 0.5) * 0.04; }
+  const sim = { n, nOut: 1, tiempos: [1000], lat, lon, estado, origen: [-36.5, -73.4] };
+  // Búsqueda sobre el grupo del este con POD 0,8.
+  const q = { t: 1000, pod: 0.8, area: { centro: [-36.5, -73.2], largo: 6, ancho: 6, rumbo: 0 }, o: { tipo: 'ps', S: 1 } };
+  const w = m.sarPesosBusquedas(sim, [q]);
+  for (let i = 0; i < n; i++) assert.ok(cerca(w[i], i % 2 ? 0.2 : 1, 1e-6));
+  const antes = d.sarDerivaResumen(sim, 0), despues = d.sarDerivaResumen(sim, 0, null, w);
+  assert.equal(antes.restante, 1); assert.ok(cerca(despues.restante, 0.6, 1e-6), 'queda el 60 % de la probabilidad');
+  assert.ok(despues.masProbable[1] < -73.5, 'la posición más probable pasa al grupo no buscado');
+  // Dos búsquedas iguales: los pesos se multiplican.
+  assert.ok(cerca(m.sarPesosBusquedas(sim, [q, q])[1], 0.04, 1e-6));
+  // Sin búsquedas, pesos unitarios.
+  assert.ok(m.sarPesosBusquedas(sim, []).every(x => x === 1));
+});
+
+test('la cobertura media coincide con W / S en tramos paralelos y da una probabilidad al sector', () => {
+  const p = m.sarPatronBusqueda(area, { tipo: 'ps', S: 2 }); assert.ok(cerca(m.sarCoberturaMedia(p, 2), 2 * p.hechoMn / 72, 1e-9)); assert.ok(m.sarCoberturaMedia(p, 2) > 0.85 && m.sarCoberturaMedia(p, 2) < 1.0);
+  const v = m.sarPatronBusqueda(area, { tipo: 'vs', radio: 3, vientoDe: 0 }); assert.ok(cerca(m.sarCoberturaMedia(v, 1), 27 / (Math.PI * 9), 1e-6));
+});

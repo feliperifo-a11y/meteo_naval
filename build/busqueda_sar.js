@@ -83,4 +83,19 @@ function sarPatronBusqueda(area, o) {
   const dentro = ll => { const [x, y] = aXY(ll); return Math.hypot(x - c0[0], y - c0[1]) <= R; };
   return { tipo: 'vs', pts: pts.map(q => aLL(q[0], q[1])), todo: full.map(q => aLL(q[0], q[1])), n: 7, radio: R, rumbos: [(h0 / rad + 360) % 360], totalMn: total, hechoMn: hecho, fraccion: Math.min(1, hecho / total), cubiertoMn2: Math.PI * R * R, dentro };
 }
-if (typeof module !== 'undefined') module.exports = { SAR_BARRIDO, SAR_PATRONES, sarObjetoBusqueda, sarAnchoBarrido, sarFactorTiempo, sarPOD, sarPatronBusqueda };
+// Cobertura media de un patrón: esfuerzo (ancho de barrido × distancia recorrida) dividido por el área barrida.
+// En los patrones de tramos paralelos equivale a W / S; permite dar una probabilidad de detección también al sector.
+function sarCoberturaMedia(pat, W) { return pat.cubiertoMn2 > 0 ? W * pat.hechoMn / pat.cubiertoMn2 : 0; }
+// Reasignación tras búsquedas sin resultado (actualización bayesiana): cada partícula que estaba dentro de lo barrido a la
+// hora de la búsqueda conserva solo la fracción (1 − POD) de su peso; el peso acompaña a la partícula en las horas siguientes.
+// busquedas: [{ t (hora, s Unix), area, o (opciones del patrón), pod }]. Devuelve un peso por partícula.
+function sarPesosBusquedas(sim, busquedas) {
+  const w = new Float32Array(sim.n).fill(1);
+  for (const q of busquedas || []) {
+    let k = 0, dm = Infinity; sim.tiempos.forEach((t, i) => { const d = Math.abs(t - q.t); if (d < dm) { dm = d; k = i; } });
+    const dentro = sarPatronBusqueda(q.area, q.o).dentro, b = k * sim.n, f = 1 - Math.max(0, Math.min(1, q.pod));
+    for (let i = 0; i < sim.n; i++) if (sim.estado[b + i] && dentro([sim.lat[b + i], sim.lon[b + i]])) w[i] *= f;
+  }
+  return w;
+}
+if (typeof module !== 'undefined') module.exports = { SAR_BARRIDO, SAR_PATRONES, sarObjetoBusqueda, sarAnchoBarrido, sarFactorTiempo, sarPOD, sarPatronBusqueda, sarCoberturaMedia, sarPesosBusquedas };

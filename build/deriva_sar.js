@@ -201,8 +201,10 @@ function sarDerivaSimular(o) {
 
 // Resumen de la nube en la salida k: zonas que contienen el 50 % y el 90 % de la probabilidad, posición más probable y
 // rectángulo de búsqueda orientado según el eje principal de la nube.
-function sarDerivaResumen(sim, k, esTierra) {
-  const n = sim.n, b = k * n, G = 111320, rad = Math.PI / 180, xs = [], ys = [], idx = [];
+// pesos (opcional): peso de cada partícula tras las búsquedas sin resultado (1 = sin buscar); las zonas, la posición más
+// probable y el rectángulo se calculan con la probabilidad que queda.
+function sarDerivaResumen(sim, k, esTierra, pesos) {
+  const n = sim.n, b = k * n, G = 111320, rad = Math.PI / 180, xs = [], ys = [], idx = [], W = pesos || null;
   let varadas = 0, sinIniciar = 0, la0 = 0, lo0 = 0, m = 0;
   for (let i = 0; i < n; i++) { const e = sim.estado[b + i]; if (e === 0) { sinIniciar++; continue; } if (e === 2) varadas++; la0 += sim.lat[b + i]; lo0 += sim.lon[b + i]; m++; }
   if (!m) return null;
@@ -213,7 +215,8 @@ function sarDerivaResumen(sim, k, esTierra) {
   // Grilla de densidad con suavizado gaussiano.
   const celda = Math.max(150, Math.max(x1 - x0, y1 - y0) / 44), mg = 3, nx = Math.ceil((x1 - x0) / celda) + 2 * mg + 1, ny = Math.ceil((y1 - y0) / celda) + 2 * mg + 1;
   const ox = x0 - mg * celda, oy = y0 - mg * celda, H = new Float32Array(nx * ny), cel = new Int32Array(m);
-  for (let i = 0; i < m; i++) { const c = Math.floor((ys[i] - oy) / celda) * nx + Math.floor((xs[i] - ox) / celda); cel[i] = c; H[c]++; }
+  let pesoTot = 0;
+  for (let i = 0; i < m; i++) { const c = Math.floor((ys[i] - oy) / celda) * nx + Math.floor((xs[i] - ox) / celda), w = W ? W[idx[i]] : 1; cel[i] = c; H[c] += w; pesoTot += w; }
   const nuc = [0.0625, 0.25, 0.375, 0.25, 0.0625], T = new Float32Array(nx * ny), D = new Float32Array(nx * ny);
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { let s = 0; for (let q = -2; q <= 2; q++) { const ii = i + q; if (ii >= 0 && ii < nx) s += H[j * nx + ii] * nuc[q + 2]; } T[j * nx + i] = s; }
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { let s = 0; for (let q = -2; q <= 2; q++) { const jj = j + q; if (jj >= 0 && jj < ny) s += T[jj * nx + i] * nuc[q + 2]; } D[j * nx + i] = s; }
@@ -228,8 +231,8 @@ function sarDerivaResumen(sim, k, esTierra) {
   const cm = orden[0], masProbable = aLL(ox + (cm % nx + 0.5) * celda, oy + (Math.floor(cm / nx) + 0.5) * celda);
   // Rectángulo de búsqueda: partículas dentro de la zona del 90 %, ejes principales de la nube.
   const dentro = []; for (let i = 0; i < m; i++) if (nivel[cel[i]]) dentro.push(i);
-  let mx = 0, my = 0; for (const i of dentro) { mx += xs[i]; my += ys[i]; } mx /= dentro.length; my /= dentro.length;
-  let sxx = 0, syy = 0, sxy = 0; for (const i of dentro) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+  let mx = 0, my = 0, sw = 0; for (const i of dentro) { const w = W ? W[idx[i]] : 1; mx += xs[i] * w; my += ys[i] * w; sw += w; } mx /= sw; my /= sw;
+  let sxx = 0, syy = 0, sxy = 0; for (const i of dentro) { const dx = xs[i] - mx, dy = ys[i] - my, w = W ? W[idx[i]] : 1; sxx += w * dx * dx; syy += w * dy * dy; sxy += w * dx * dy; }
   const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ca = Math.cos(ang), sa = Math.sin(ang);
   let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
   for (const i of dentro) { const dx = xs[i] - mx, dy = ys[i] - my, p = dx * ca + dy * sa, q = -dx * sa + dy * ca; if (p < a0) a0 = p; if (p > a1) a1 = p; if (q < b0) b0 = q; if (q > b1) b1 = q; }
@@ -240,7 +243,7 @@ function sarDerivaResumen(sim, k, esTierra) {
   const rumboEje = ((90 - ang * 180 / Math.PI) % 180 + 180) % 180;
   // Distancia desde el origen: mediana y percentil 90.
   const d = idx.map((_, i) => Math.hypot((sim.lon[b + idx[i]] - sim.origen[1]) * G * Math.cos(sim.origen[0] * rad), (sim.lat[b + idx[i]] - sim.origen[0]) * G) / 1852).sort((p, q) => p - q);
-  return { t: sim.tiempos[k], activas: m - varadas, varadas, sinIniciar, total: n, media: [la0, lo0], masProbable, celdas, celdaM: celda,
+  return { t: sim.tiempos[k], activas: m - varadas, varadas, sinIniciar, total: n, restante: m ? pesoTot / m : 1, media: [la0, lo0], masProbable, celdas, celdaM: celda,
     area50: celdas.filter(c => c.nivel === 50).length * celda * celda / 1852 ** 2, area90: celdas.length * celda * celda / 1852 ** 2,
     rect: { esquinas: esq, centro, largo: Math.max(largo, ancho), ancho: Math.min(largo, ancho), area: largo * ancho, rumbo: largo >= ancho ? rumboEje : (rumboEje + 90) % 180 },
     distMediana: d[Math.floor(d.length / 2)], dist90: d[Math.floor(d.length * 0.9)] };

@@ -597,11 +597,12 @@ function crearCasoSAR(L, map, ctx) {
     const base = { medio, objeto, vis, visPron, viento, vdir, ola, Wu, ft, W, area, dato, tipo, vel, horas, nMed, radio, conNube, B, hora: d.hora };
     if (!(W > 0) && !(B.S > 0)) return { ...base, indetectable: true };
     const S = B.S > 0 ? B.S : W, cen = env.centros[0], inicio = cen ? sarMover(lat, lon, (cen.rv + 180) % 360, cen.mn) : [lat, lon];
-    const pat = sarPatronBusqueda(area, { tipo, S, inicio, vientoDe: vdir, dato, radio, maxMn: vel * horas * nMed });
-    const C = tipo === 'vs' || !(W > 0) ? null : W / pat.S, pod = C == null ? null : sarPOD(C);
+    const opts = { tipo, S, inicio, vientoDe: vdir, dato, radio, maxMn: vel * horas * nMed }, pat = sarPatronBusqueda(area, opts);
+    // Cobertura: W / S en los patrones de tramos; en el sector, la cobertura media (esfuerzo dividido por el área del círculo).
+    const C = !(W > 0) ? null : tipo === 'vs' ? sarCoberturaMedia(pat, W) : W / pat.S, pod = C == null ? null : sarPOD(C);
     let poc = null;
-    if (conNube) { const sim = ens.sim, b = ens.k * sim.n; let tot = 0, den = 0; for (let i = 0; i < sim.n; i++) { if (!sim.estado[b + i]) continue; tot++; if (pat.dentro([sim.lat[b + i], sim.lon[b + i]])) den++; } poc = tot ? den / tot : null; }
-    return { ...base, S, pat, C, pod, poc, pos: pod != null && poc != null ? pod * poc : null, horasTotal: pat.totalMn / (vel * nMed) };
+    if (conNube) { const sim = ens.sim, b = ens.k * sim.n, w = pesosEns(); let tot = 0, den = 0; for (let i = 0; i < sim.n; i++) { if (!sim.estado[b + i]) continue; const wi = w ? w[i] : 1; tot += wi; if (pat.dentro([sim.lat[b + i], sim.lon[b + i]])) den += wi; } poc = tot ? den / tot : null; }
+    return { ...base, S, opts, pat, C, pod, poc, pos: pod != null && poc != null ? pod * poc : null, horasTotal: pat.totalMn / (vel * nMed) };
   }
   function bloqueBusqueda() {
     const P = planBusqueda(), num = v => v == null ? '' : String(+(+v).toFixed(2)).replace('.', ',');
@@ -628,8 +629,9 @@ function crearCasoSAR(L, map, ctx) {
     else html += `<p>Parte en ${P.conNube ? 'la posición más probable' : 'el dátum'}, primer tramo al <b>${r3(p.rumbos[0])}</b> (a favor del viento), radio <b>${nf(p.radio, 1)} mn</b>, virajes de 120° a estribor: siete tramos y 9 radios de recorrido. Si no hay resultado, se repite girado 30°.</p>`;
     html += `<p>Recorrido total <b>${nf(p.totalMn, 1)} mn</b>: <b>${h1(tot)}</b> a ${nf(P.vel, 0)} kt${P.nMed > 1 ? ` con ${P.nMed} medios` : ''}. ${alcanza ? `Alcanza en las ${num(P.horas)} h disponibles.` : `<span class="sar-error">En ${num(P.horas)} h se cubre el <b>${pc(p.fraccion)}</b> del patrón (${nf(p.hechoMn, 1)} mn): faltan ${h1(tot - P.horas)}, más medios o un espaciamiento mayor.</span>${(p.tipo === 'ps' || p.tipo === 'cs') ? ' Con poco tiempo, el cuadrado expansivo desde la posición más probable concentra el esfuerzo donde hay más probabilidad.' : ''}`}</p>
       <p>Punto de inicio de la búsqueda: <b>${pos(p.pts[0])}</b></p>`;
-    if (P.C != null) html += `<p>Factor de cobertura C = W / S = <b>${nf(P.C, 2)}</b> · probabilidad de detección <b>${pc(P.pod)}</b> en lo barrido${P.poc != null ? ` · el patrón${alcanza ? '' : ' (la parte que alcanza a recorrerse)'} contiene el <b>${pc(P.poc)}</b> de las partículas · probabilidad de éxito de esta búsqueda <b>${pc(P.pos)}</b>` : ''}.</p>`;
-    else if (P.poc != null) html += `<p>El círculo del sector contiene el <b>${pc(P.poc)}</b> de las partículas. En este patrón la cobertura es muy alta cerca del centro y baja hacia el borde, por lo que no se calcula una probabilidad de detección única.</p>`;
+    const previas = ((caso() || borrador || {}).busquedas || []).length;
+    if (P.C != null) html += `<p>${p.tipo === 'vs' ? 'Cobertura media C = W × recorrido / área del círculo' : 'Factor de cobertura C = W / S'} = <b>${nf(P.C, 2)}</b> · probabilidad de detección <b>${pc(P.pod)}</b> en lo barrido${p.tipo === 'vs' ? ' (promedio: es mayor cerca del centro y menor hacia el borde)' : ''}${P.poc != null ? ` · ${p.tipo === 'vs' ? 'el círculo' : 'el patrón'}${alcanza ? '' : ' (la parte que alcanza a recorrerse)'} contiene el <b>${pc(P.poc)}</b> de la probabilidad${previas ? ' que queda' : ''} · probabilidad de éxito de esta búsqueda <b>${pc(P.pos)}</b>` : ''}.</p>`;
+    if (P.conNube && P.pod != null) html += `<p><button type="button" class="sar-bus-reg" title="Guarda esta búsqueda como hecha y sin resultado: el área probable se recalcula descontando lo barrido">Registrar esta búsqueda sin resultado</button> <span class="sar-nota">Úsalo cuando el medio termine el patrón sin encontrar el objeto: la probabilidad se desplaza hacia lo que falta por buscar.</span></p>`;
     html += `<p><button type="button" class="sar-bus-copiar">Copiar plan de búsqueda</button> <button type="button" class="sar-bus-ver">Ver en el mapa</button></p>
       <details class="sar-sup-info"><summary>Puntos de viraje del patrón completo (${p.todo.length})</summary><p>${p.todo.map((q, i) => `${i ? i : 'Inicio'}: ${pos(q)}`).join('<br>')}</p></details>
       <details class="sar-sup-info"><summary>Método y supuestos</summary>
@@ -657,6 +659,14 @@ function crearCasoSAR(L, map, ctx) {
       else { const v = parseFloat(String(inp.value).replace(',', '.')); c.bus[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; }
       if (caso()) guardar(); actualizarBusqueda();
     });
+    const reg = blq.querySelector('.sar-bus-reg'); if (reg) reg.onclick = () => {
+      const P = planBusqueda(), c = caso() || borrador; if (!P || !P.pat || P.pod == null || !c || !ens || !ens.resumen) return;
+      const r1 = v => Math.round(v * 1000) / 1000, p5 = q => [Math.round(q[0] * 1e5) / 1e5, Math.round(q[1] * 1e5) / 1e5];
+      (c.busquedas = c.busquedas || []).push({ t: ens.resumen.t, area: { centro: p5(P.area.centro), largo: r1(P.area.largo), ancho: r1(P.area.ancho), rumbo: r1(P.area.rumbo) },
+        o: { tipo: P.opts.tipo, S: r1(P.opts.S), inicio: p5(P.opts.inicio), vientoDe: P.opts.vientoDe, dato: p5(P.opts.dato), radio: P.opts.radio, maxMn: r1(P.opts.maxMn) },
+        pod: r1(P.pod), poc: P.poc == null ? null : r1(P.poc), rot: `${SAR_PATRONES[P.pat.tipo]} · ${SAR_BARRIDO[P.medio].nombre.toLowerCase()}${P.nMed > 1 ? ' × ' + P.nMed : ''}`, pts: P.pat.pts.map(p5) });
+      if (caso()) guardar(); pintar();
+    };
     const ver = blq.querySelector('.sar-bus-ver'); if (ver) ver.onclick = () => { const P = planBusqueda(); if (!P || !P.pat) return; const lateral = window.innerWidth > 1050; map.fitBounds(L.latLngBounds(P.pat.todo).pad(0.15), { paddingTopLeft: [50, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 40], maxZoom: 13 }); };
     const cp = blq.querySelector('.sar-bus-copiar'); if (cp) cp.onclick = () => {
       const P = planBusqueda(); if (!P || !P.pat) return; const p = P.pat, pos = q => `${sarDM(q[0], 'N', 'S')} ${sarDM(q[1], 'E', 'W')}`, cs = caso(), r3 = v => String(Math.round(v) % 360).padStart(3, '0');
@@ -791,6 +801,14 @@ function crearCasoSAR(L, map, ctx) {
     } catch (e) { if (ens && ens.clave === clave) ens = { clave, estado: 'error', msg: e && e.message && /hora del dátum/.test(e.message) ? e.message : 'No se pudieron obtener los campos de viento y corriente. Revisa la conexión e intenta de nuevo.' }; }
     pintar();
   }
+  // Peso de cada partícula tras las búsquedas registradas sin resultado (null si no hay ninguna).
+  let pesosCache = null;
+  function pesosEns() {
+    const L = (caso() || borrador || {}).busquedas || []; if (!L.length || !ens || !ens.sim) return null;
+    const k = JSON.stringify(L.map(q => [q.t, q.area, q.o, q.pod]));
+    if (!pesosCache || pesosCache.sim !== ens.sim || pesosCache.k !== k) pesosCache = { sim: ens.sim, k, w: sarPesosBusquedas(ens.sim, L) };
+    return pesosCache.w;
+  }
   const horaChile = t => new Date(t * 1000).toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   function bloqueEnsemble(lat, lon, d) {
     const c = caso() || borrador || {}, cat = categoriaLeeway(c), num = v => v == null ? '' : String(v).replace('.', ',');
@@ -822,15 +840,20 @@ function crearCasoSAR(L, map, ctx) {
     return html + '</div>';
   }
   function textoEnsemble() {
-    const { sim, k, info } = ens, r = sarDerivaResumen(sim, k, mascaraTierra(info.caja));
+    const { sim, k, info } = ens, pesos = pesosEns(), r = sarDerivaResumen(sim, k, mascaraTierra(info.caja), pesos), hechas = (caso() || borrador || {}).busquedas || [];
     ens.resumen = r;
     const deslizador = `<label class="sar-ens-t"><span>Hora mostrada: <b>${horaChile(sim.tiempos[k])}</b> (+${nf((sim.tiempos[k] - sim.tiempos[0]) / 3600, 0)} h desde el incidente)</span>
         <input type="range" class="sar-ens-hora" min="0" max="${sim.nOut - 1}" step="1" value="${k}"></label>`;
     if (!r) return deslizador + '<p class="sar-nota">A esta hora ninguna partícula ha iniciado la deriva.</p>';
     const pos = p => `${sarDM(p[0], 'N', 'S')} · ${sarDM(p[1], 'E', 'W')}`, R = r.rect, pc = v => (100 * v / r.total < 1 ? 'Menos de 1' : nf(100 * v / r.total, 0)) + ' %';
     const sep = k === sim.nOut - 1 && ens.datum ? sarMillas(ens.datum, r.masProbable) : null;
-    return `${deslizador}
-      <p><span class="sar-ens-sw" style="background:#e53935"></span> Zona con 50 % de probabilidad: <b>${nf(r.area50, 0)} mn²</b> ·
+    // Búsquedas registradas sin resultado: lista, probabilidad que queda y probabilidad acumulada de éxito.
+    const fh = t => { const d = new Date(t * 1000); return d.toLocaleString('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); };
+    const lista = hechas.length ? `<div class="sar-ens-hechas"><p><b>${hechas.length} búsqueda${hechas.length > 1 ? 's' : ''} sin resultado</b> ya descontada${hechas.length > 1 ? 's' : ''}: queda por buscar el <b>${nf(100 * r.restante, 0)} %</b> de la probabilidad inicial (éxito acumulado esperado de lo ya buscado: ${nf(100 * (1 - r.restante), 0)} %).</p>
+        ${hechas.map((q, i) => `<p class="sar-ens-hecha">${i + 1}. ${fh(q.t)} · ${escH(q.rot || '')} · POD ${nf(100 * q.pod, 0)} %${q.poc != null ? ` · contenía el ${nf(100 * q.poc, 0)} %` : ''} <button type="button" class="sar-ens-quitar" data-i="${i}" title="Quitar esta búsqueda del cálculo">Quitar</button></p>`).join('')}
+        <p class="sar-nota">Las zonas, la posición más probable y el rectángulo de abajo ya consideran estas búsquedas. Si el objeto aparece o una búsqueda se registró por error, quítala.</p></div>` : '';
+    return `${deslizador}${lista}
+      <p><span class="sar-ens-sw" style="background:#e53935"></span> Zona con 50 % de probabilidad${hechas.length ? ' que queda' : ''}: <b>${nf(r.area50, 0)} mn²</b> ·
          <span class="sar-ens-sw" style="background:#ff9800"></span> zona con 90 %: <b>${nf(r.area90, 0)} mn²</b></p>
       <p>Posición más probable: <b>${pos(r.masProbable)}</b>${sep != null ? ` (a ${nf(sep, 1)} mn del dátum IAMSAR, calculado para "${escH(SAR_OBJETOS[ens.objetoIamsar]?.nombre || 'objeto indicado')}")` : ''}<br>
          Deriva desde la última posición conocida: mediana ${nf(r.distMediana, 1)} mn · 90 % de las partículas a menos de ${nf(r.dist90, 1)} mn</p>
@@ -865,15 +888,18 @@ function crearCasoSAR(L, map, ctx) {
     return `<details class="sar-sup-info"><summary>Método y supuestos</summary>
       <p>Cada partícula es una deriva posible. Parte de la última posición conocida con un error normal (X es el radio que contiene el 50 %), y en cada paso de 15 minutos se mueve con la corriente y con el abatimiento que corresponde al viento <b>en el lugar y la hora donde se encuentra</b>, no en la posición inicial.</p>
       <p><b>Abatimiento:</b> método Leeway, con componente a favor del viento y componente transversal (a la derecha o a la izquierda, con cambio de banda de 4 % por hora) y el error propio de cada categoría de objeto. Formulación y coeficientes iguales a los del modelo Leeway de OpenDrift; esta implementación se contrastó con OpenDrift 1.14 con viento y corriente idénticos, con diferencias menores que 1,5 % en la deriva media.</p>
+      <p><b>Búsquedas sin resultado:</b> al registrar una búsqueda, cada partícula que estaba dentro de lo barrido a esa hora conserva solo la fracción (1 − POD) de su peso, y ese peso la acompaña en las horas siguientes. Las zonas se recalculan con la probabilidad que queda (actualización bayesiana, el principio de los sistemas de planificación de búsqueda).</p>
       <p><b>Incertidumbre:</b> posición inicial (X), hora del incidente, coeficientes del objeto, viento (desviaciones de los miembros del ensemble ECMWF sobre el pronóstico de 9 km), corriente (error persistente de 0,10 m/s por componente, cerca de 0,3 kt, más difusión de 10 m²/s). No hay ensemble de corrientes.</p>
       <p><b>Límites:</b> la corriente del modelo global no resuelve la marea local, canales ni bahías cerradas; la costa es simplificada, por lo que la varada es aproximada; el resultado depende de la categoría elegida. Con derivas de varios días la incertidumbre real puede ser mayor que la mostrada.</p>
       <p class="sar-nota">Referencias: Allen y Plourde (1999), Review of Leeway, USCG R&D Center, informe CG-D-08-99; Allen (2005), Leeway Divergence, informe CG-D-05-05; Breivik y Allen (2008), J. Mar. Syst. 69, 99-113; Dagestad et al. (2018), OpenDrift v1.0, Geosci. Model Dev. 11, 1405-1420. Herramienta de apoyo: no reemplaza la planificación de búsqueda del MRCC.</p></details>`;
   }
   function dibujarEnsemble() {
     grupoEns.clearLayers(); if (!ens || ens.estado !== 'ok' || !ens.resumen) return;
-    const { sim, k } = ens, r = ens.resumen, b = k * sim.n, o = { renderer: lienzoEns, interactive: false };
+    const { sim, k } = ens, r = ens.resumen, b = k * sim.n, o = { renderer: lienzoEns, interactive: false }, pesos = pesosEns();
     for (const c of r.celdas) L.rectangle([c.sw, c.ne], { ...o, stroke: false, fillColor: c.nivel === 50 ? '#e53935' : '#ff9800', fillOpacity: c.nivel === 50 ? .42 : .26 }).addTo(grupoEns);
-    for (let i = 0; i < sim.n; i += 2) { const e = sim.estado[b + i]; if (!e) continue; L.circleMarker([sim.lat[b + i], sim.lon[b + i]], { ...o, radius: e === 2 ? 2.4 : 1.3, stroke: false, fillColor: e === 2 ? '#b71c1c' : '#1b2a3a', fillOpacity: e === 2 ? .95 : .55 }).addTo(grupoEns); }
+    for (let i = 0; i < sim.n; i += 2) { const e = sim.estado[b + i]; if (!e) continue; const wi = pesos ? pesos[i] : 1; L.circleMarker([sim.lat[b + i], sim.lon[b + i]], { ...o, radius: e === 2 ? 2.4 : 1.3, stroke: false, fillColor: e === 2 ? '#b71c1c' : '#1b2a3a', fillOpacity: (e === 2 ? .95 : .55) * (0.2 + 0.8 * wi) }).addTo(grupoEns); }
+    // Trayectorias ya recorridas sin resultado, en gris.
+    for (const q of (caso() || borrador || {}).busquedas || []) if (q.pts && q.pts.length > 1) L.polyline(q.pts, { color: '#9aa6b2', weight: 2, opacity: .8, dashArray: '2 5' }).bindTooltip(`Búsqueda sin resultado · ${escH(q.rot || '')}`, { sticky: true }).addTo(grupoEns);
     L.polygon(r.rect.esquinas, { color: '#0d47a1', weight: 2.5, dashArray: '8 5', fill: false })
       .bindTooltip(`Rectángulo de búsqueda ${nf(r.rect.largo, 1)} × ${nf(r.rect.ancho, 1)} mn (${nf(r.rect.area, 0)} mn²)`, { sticky: true }).addTo(grupoEns);
     L.circleMarker(r.masProbable, { radius: 6, color: '#fff', weight: 2, fillColor: '#e53935', fillOpacity: 1 }).bindTooltip(`Posición más probable · ${horaChile(r.t)}`).addTo(grupoEns);
@@ -895,6 +921,7 @@ function crearCasoSAR(L, map, ctx) {
         tmp.querySelector('.sar-ens-t').remove(); while (tmp.firstChild) caja.appendChild(tmp.firstChild);
         dibujarEnsemble(); enlazar(); actualizarBusqueda();
       };
+      caja.querySelectorAll('.sar-ens-quitar').forEach(bq => bq.onclick = () => { const c = caso() || borrador; if (!c || !c.busquedas) return; c.busquedas.splice(+bq.dataset.i, 1); if (caso()) guardar(); pintar(); });
       const ver = caja.querySelector('.sar-ens-ver');
       if (ver) ver.onclick = () => { const lateral = window.innerWidth > 1050; map.fitBounds(L.latLngBounds(ens.resumen.rect.esquinas).extend([lat, lon]), { paddingTopLeft: [50, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 40], maxZoom: 12 }); };
       const cp = caja.querySelector('.sar-ens-copiar');
