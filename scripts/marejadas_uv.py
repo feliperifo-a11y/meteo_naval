@@ -61,7 +61,7 @@ def reciente(data, ahora):
 
 def fecha_titulo(texto):
     meses = dict(zip(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], range(1, 13)))
-    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*([0-9OoIl]{1,2})\s+([0-9OoIl]{1,2})\s*[Ss]?\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
+    m = re.search(r'(20\d{2})\s*/\s*([A-Za-z]{3})\s*/\s*([0-9OoIl]{1,2})\s+([0-9OoIl]{1,2})\s*[^0-9\s]{0,2}\s*h', texto.replace('0c¢t','Oct').replace('0ct', 'Oct'))
     if not m or m[2].title() not in meses:
         raise ValueError('Fecha UV ilegible: ' + texto)
     # La fuente no indica zona horaria. No se inventa un desplazamiento a UTC.
@@ -175,15 +175,30 @@ def procesar(blob, ocr=leer_titulo, ejes=None, escala=None, nombre='talcahuano')
     validar_escala(escala if escala is not None else leer_escala(im.convert('RGB'),nombre),cfg['maximo'])
     leyenda = im.convert('RGB').crop((975,170,1060,751)).tobytes()
     px, py, inside, bounds = proyeccion(extent=cfg['extent'],crs=cfg['crs'],grid_size=grid_size)
+    # Fechas: el título de cada fotograma se lee por OCR. Un título mal leído no descarta la corrida:
+    # la animación avanza de tres en tres horas, así que su fecha se deduce de los fotogramas legibles,
+    # que deben ser mayoría y calzar todos con esa secuencia.
+    from datetime import timedelta
+    leidas = []
+    for i in range(im.n_frames):
+        im.seek(i)
+        try:
+            leidas.append(fecha_titulo(ocr(im.convert('RGB'))))
+        except ValueError:
+            leidas.append(None)
+    buenas = [(i, f) for i, f in enumerate(leidas) if f]
+    if len(buenas) * 2 <= im.n_frames:
+        raise ValueError('Fecha UV ilegible en la mayoría de los fotogramas')
+    inicio = buenas[0][1] - timedelta(hours=3 * buenas[0][0])
+    if any(f != inicio + timedelta(hours=3 * i) for i, f in buenas):
+        raise ValueError('Secuencia UV no consecutiva de tres horas')
     frames, fechas = [], []
     for i in range(im.n_frames):
         im.seek(i)
         frame = im.convert('RGB')
         if frame.crop((975,170,1060,751)).tobytes() != leyenda:
             raise ValueError('La escala UV cambia entre fotogramas')
-        fecha = fecha_titulo(ocr(frame))
-        if fechas and (fecha-fechas[-1]).total_seconds() != 3*3600:
-            raise ValueError('Secuencia UV no consecutiva de tres horas')
+        fecha = inicio + timedelta(hours=3 * i)
         fechas.append(fecha)
         crop, grid = clasificar(frame,nombre)
         # Mantiene las flechas sobre el mar, sin extender colores sobre tierra.
