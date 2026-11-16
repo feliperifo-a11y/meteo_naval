@@ -67,6 +67,7 @@ function crearRuta(L, map, ctx) {
   L.DomEvent.disableClickPropagation(card); L.DomEvent.disableScrollPropagation(card);
   const form = card.querySelector('.ruta-form'), res = card.querySelector('.ruta-res');
   const grupo = L.layerGroup(), grupoAbr = L.layerGroup();
+  let marcasPunto = [], puntosM = [];   // un marcador y un punto por fila, para enlazar la tabla con el mapa
   // Opciones del usuario: abrigos del Derrotero en el mapa (capa aparte) y secciones opcionales del informe
   const OPC_KEY = 'meteoia_ruta_opciones', opc = { abrMapa: false, inf: {} };
   try { Object.assign(opc, JSON.parse(localStorage.getItem(OPC_KEY) || '{}')); } catch (e) {}
@@ -443,6 +444,34 @@ function crearRuta(L, map, ctx) {
   }
   const porVis = M => M.some(s => causas(s).includes('visibilidad'));
   const NOTA_VIS = 'La visibilidad proviene de modelos globales; en canales y fiordos es solo referencial.';
+  // Ficha de un punto de la ruta: lo que la tabla muestra en columnas, en un popup del mapa
+  function fichaPunto(s, i) {
+    const f = (a, b) => `<tr><td>${a}</td><td>${b}</td></tr>`;
+    const cs = causas(s);
+    return `<div class="ruta-ficha"><h4>${s.puerto ? escH(s.puerto) : 'Punto ' + (i + 1)}</h4>
+      <div class="der-sub">${hf(s.eta)} · milla ${nf(s.mn, 0)} · ${fmtPos(s.p)}</div>
+      <table class="ruta-ficha-t"><tbody>
+      ${f('Viento', s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)} kt${s.rafaga != null ? ` (ráfaga ${nf(s.rafaga, 0)})` : ''}`)}
+      ${f('Ola', s.ola == null ? '–' : `${nf(s.ola, 1)} m · ${nf(s.tp, 0)} s del ${sarCompas(s.dola)}`)}
+      ${f('Visibilidad', s.vis == null ? '–' : `${nf(Math.min(s.vis / 1852, 10), 1)}${s.vis / 1852 >= 10 ? '+' : ''} mn`)}
+      ${f('Condición', `<span class="ruta-sem" style="background:${COL[s.nivel]}"></span> ${TXT[s.nivel]}${cs.length ? ' por ' + cs.join(', ') : ''}`)}
+      </tbody></table>
+      <p class="sar-nota">Pronóstico a la hora estimada de paso.</p></div>`;
+  }
+  // Abre el punto en el mapa y marca su fila en la tabla, venga el clic de donde venga
+  function verPunto(i, desde) {
+    const s = puntosM[i]; if (!s) return;
+    const mk = marcasPunto[i];
+    if (mk && desde !== 'mapa') { if (!map.getBounds().contains(mk.getLatLng())) map.panTo(mk.getLatLng()); mk.openPopup(); }
+    const tb = res.querySelector('.ruta-tabla tbody'); if (!tb) return;
+    tb.querySelectorAll('tr.sel').forEach(t => t.classList.remove('sel'));
+    const tr = tb.querySelector(`tr[data-i="${i}"]`); if (!tr) return;
+    tr.classList.add('sel');
+    if (desde === 'mapa') {
+      const det = res.querySelector('.ruta-cond'); if (det && !det.open) det.open = true;
+      tr.scrollIntoView({ block: 'nearest' });
+    }
+  }
   async function alertasPreventivas() {
     const leer = u => fetch(u + '?t=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : null).catch(() => null);
     const [v, m] = await Promise.all([leer('data/viento_alerta.json'), leer('data/marejadas_alerta.json')]);
@@ -625,8 +654,10 @@ function crearRuta(L, map, ctx) {
       seg.push(M[i + 1].p);
       L.polyline(seg, { color: COL[M[i].nivel], weight: 6, opacity: .9 }).addTo(grupo);
     }
-    M.forEach(s => L.circleMarker(s.p, { radius: 4, color: '#fff', weight: 1, fillColor: COL[s.nivel], fillOpacity: 1 })
-      .bindTooltip(`${hf(s.eta)} · ${nf(s.mn, 0)} mn<br>Viento ${s.viento == null ? '–' : nf(s.viento, 0) + ' kt ' + sarCompas(s.dir)}${s.rafaga != null ? ' (ráfaga ' + nf(s.rafaga, 0) + ')' : ''}<br>Ola ${s.ola == null ? '–' : nf(s.ola, 1) + ' m · ' + nf(s.tp, 0) + ' s ' + sarCompas(s.dola)}<br>${TXT[s.nivel]}`).addTo(grupo));
+    marcasPunto = []; puntosM = M;
+    M.forEach((s, i) => marcasPunto.push(L.circleMarker(s.p, { radius: 5, color: '#fff', weight: 1, fillColor: COL[s.nivel], fillOpacity: 1 })
+      .bindPopup(fichaPunto(s, i), { maxWidth: 300 }).on('click', () => verPunto(i, 'mapa'))
+      .bindTooltip(`${hf(s.eta)} · ${nf(s.mn, 0)} mn<br>Viento ${s.viento == null ? '–' : nf(s.viento, 0) + ' kt ' + sarCompas(s.dir)}${s.rafaga != null ? ' (ráfaga ' + nf(s.rafaga, 0) + ')' : ''}<br>Ola ${s.ola == null ? '–' : nf(s.ola, 1) + ' m · ' + nf(s.tp, 0) + ' s ' + sarCompas(s.dola)}<br>${TXT[s.nivel]}<br><i>clic para ver el detalle</i>`).addTo(grupo)));
     grupoAbr.clearLayers();
     if (ultimo.abr) ultimo.abr.lista.forEach(o => L.marker([o.x.la, o.x.lo], { icon: L.divIcon({ className: '', html: '<div class="der-pin ab mini">⚓</div>', iconSize: [18, 18], iconAnchor: [9, 9] }) })
       .bindTooltip(`${escH(o.x.n)} · milla ${nf(o.mn, 0)}`).bindPopup(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`), { maxWidth: 340 }).addTo(grupoAbr));
@@ -724,7 +755,7 @@ function crearRuta(L, map, ctx) {
     }
     // Tabla por punto de la ruta
     h += `<details class="sar-blq ruta-cond"${condAbierta ? ' open' : ''}><summary><h3>Condiciones a la hora de paso</h3><span class="ruta-cond-n">${M.length} puntos de la ruta · ${condAbierta ? 'ocultar' : 'desplegar'}</span></summary><div class="sar-tabla-scroll"><table class="sar-tabla ruta-tabla"><thead><tr><th>Hora</th><th>mn</th><th>Posición</th><th>Viento</th><th>Ola</th><th>Vis.</th><th></th></tr></thead><tbody>` +
-      M.map(s => `<tr><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${s.puerto ? `<b>${escH(s.puerto)}</b><br>` : ''}${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
+      M.map((s, i) => `<tr data-i="${i}" tabindex="0" title="Clic para verlo en el mapa"><td>${hf(s.eta)}</td><td>${nf(s.mn, 0)}</td><td>${s.puerto ? `<b>${escH(s.puerto)}</b><br>` : ''}${fmtPos(s.p)}</td><td>${s.viento == null ? '–' : `${sarCompas(s.dir)} ${nf(s.viento, 0)}${s.rafaga != null ? `<small> (${nf(s.rafaga, 0)})</small>` : ''}`}</td>` +
         `<td>${s.ola == null ? '–' : `${nf(s.ola, 1)} m<small> ${nf(s.tp, 0)} s ${sarCompas(s.dola)}</small>`}</td><td>${s.vis == null ? '–' : nf(Math.min(s.vis / 1852, 10), 1) + (s.vis / 1852 >= 10 ? '+' : '')} mn</td>` +
         `<td><span class="ruta-sem" style="background:${COL[s.nivel]}" title="${TXT[s.nivel]}${causas(s).length ? ' por ' + causas(s).join(', ') : ''}"></span>${causas(s).length ? `<small class="ruta-causa"> ${causas(s).join(', ')}</small>` : ''}</td></tr>`).join('') +
       `</tbody></table></div><p class="sar-nota">Viento en kt con ráfaga entre paréntesis (ECMWF IFS; si falta, GFS). Ola: altura significativa, período y dirección de procedencia (Météo-France). Hora de Chile.</p></details>`;
@@ -772,6 +803,10 @@ function crearRuta(L, map, ctx) {
         p0 = null; if (altSel !== tr.dataset.alt || !tr.classList.contains('sel')) { altSel = tr.dataset.alt; calcular(); }
       });
       tr.tabIndex = 0; tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); altSel = tr.dataset.alt; calcular(); } });
+    });
+    res.querySelectorAll('.ruta-tabla tbody tr[data-i]').forEach(tr => {
+      tr.onclick = () => verPunto(+tr.dataset.i, 'tabla');
+      tr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); verPunto(+tr.dataset.i, 'tabla'); } };
     });
     const cd = res.querySelector('.ruta-cond'); if (cd) cd.addEventListener('toggle', () => { condAbierta = cd.open; cd.querySelector('.ruta-cond-n').textContent = `${M.length} puntos de la ruta · ${cd.open ? 'ocultar' : 'desplegar'}`; });
     res.querySelectorAll('.sar-umbral').forEach(inp => inp.onchange = () => { const v = parseFloat(inp.value.replace(',', '.')); if (isFinite(v)) { umb[inp.dataset.k] = v; guardarUmb(); M.forEach(s => s.nivel = nivel(s)); pintar(); dibujarRuta(); } });

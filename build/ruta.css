@@ -108,3 +108,11 @@
 /* Caso SAR: abrigo del Derrotero elegido en la lista y marcado en el mapa */
 .der-item:hover{background:rgba(10,163,127,.10)}.der-item.sel{background:rgba(10,163,127,.18);border-left:3px solid #0aa37f;padding-left:7px;border-radius:4px}
 .sar-abrigo{background:none;border:0}.sar-abrigo-tip{background:#0b3d33;color:#fff;border:1px solid #0aa37f;font-size:12.5px;box-shadow:0 2px 8px #0006}.sar-abrigo-tip::before{border-top-color:#0aa37f!important}
+.ruta-tabla tbody tr[data-i]{cursor:pointer}
+.ruta-tabla tbody tr[data-i]:hover{background:rgba(47,140,255,.14)}
+.ruta-tabla tbody tr.sel{background:rgba(47,140,255,.26);box-shadow:inset 3px 0 0 #2f8cff}
+.ruta-ficha h4{margin:0 0 2px;font-size:14px}
+.ruta-ficha-t{width:100%;border-collapse:collapse;margin-top:7px;font-size:12.5px}
+.ruta-ficha-t td{padding:3px 0;vertical-align:top}
+.ruta-ficha-t td:first-child{opacity:.72;padding-right:10px;white-space:nowrap}
+.ruta-ficha .sar-nota{margin:6px 0 0}
