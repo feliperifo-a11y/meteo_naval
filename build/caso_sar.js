@@ -224,7 +224,7 @@ function crearCasoSAR(L, map, ctx) {
   function nuevoCaso() {
     const n = siguienteN();
     actual = null; borrador = { id: 'c' + Date.now().toString(36), n, nombre: 'Caso ' + n, fase: null };
-    marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); ens = null; res.innerHTML = '';
+    marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; res.innerHTML = '';
     form.lat.value = ''; form.lon.value = ''; form.hora.value = sarHoraLocal(new Date()).slice(0, 16);
     casos.forEach(pintarMarca); mostrarFicha(); pintarCabecera(); modoElegir(true);
   }
@@ -264,14 +264,14 @@ function crearCasoSAR(L, map, ctx) {
     if (!map.hasLayer(capaCaso) && casos.length) { capaCaso.addTo(map); const ch = document.getElementById('chk_caso_sar'); if (ch) ch.checked = true; }
   }
   // Cerrar la ficha no borra los casos: los puntos quedan en el mapa como una capa más.
-  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); grupoEns.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
   const btnBorrar = card.querySelector('.sar-borrar');
   btnBorrar.onclick = () => {
     if (!caso()) { if (borrador) { borrador = null; modoElegir(false); abrir(); } return; }
     if (!btnBorrar.dataset.ok) { btnBorrar.dataset.ok = '1'; btnBorrar.textContent = '¿Borrar? Pulsa de nuevo'; setTimeout(() => { delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso'; }, 4000); return; }
     delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso';
     const m = marcas.get(actual); if (m) capaCaso.removeLayer(m); marcas.delete(actual);
-    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); ens = null; res.innerHTML = '';
+    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; res.innerHTML = '';
     if (casos.length) seleccionar(casos[casos.length - 1].id, true);
     else { form.lat.value = ''; form.lon.value = ''; pintarCabecera(); }
   };
@@ -435,9 +435,14 @@ function crearCasoSAR(L, map, ctx) {
     derroteroCargar().then(() => {
       const b = res.querySelector('.sar-abrigos'); if (!b || ultimo?.lat !== lat || ultimo?.lon !== lon) return;
       const A = derroteroCerca([lat, lon], 30, true, 6);
-      b.innerHTML = `<h3>Abrigos cercanos (Derrotero)</h3>` + (A.length ? A.map(o => `<p class="der-item" data-la="${o.x.la}" data-lo="${o.x.lo}"><b>${escH(o.x.n)}</b> · ${nf(o.mn, 1)} mn al ${String(Math.round(o.rumbo)).padStart(3, '0')}°${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></p>`).join('')
-        : '<p>No hay caletas ni fondeaderos del Derrotero a 30 mn o menos de la posición.</p>') + '<p class="sar-nota">Distancia y rumbo verdadero desde la posición del caso. Texto extraído automáticamente del Derrotero de la Costa de Chile (Pub. SHOA 3001 a 3006); verificar en la carta.</p>';
-      b.querySelectorAll('.der-item').forEach(d => d.onclick = () => map.flyTo([+d.dataset.la, +d.dataset.lo], Math.max(map.getZoom(), 10), { duration: .6 }));
+      b.innerHTML = `<h3>Abrigos cercanos (Derrotero)</h3>` + (A.length ? A.map(o => `<p class="der-item" data-i="${A.indexOf(o)}" data-la="${o.x.la}" data-lo="${o.x.lo}" title="Mostrar en el mapa"><b>${escH(o.x.n)}</b> · ${nf(o.mn, 1)} mn al ${String(Math.round(o.rumbo)).padStart(3, '0')}°${o.x.me ? ' · <i>solo embarcaciones menores</i>' : ''}<br><small>${escH(o.x.tx)} (Vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</small></p>`).join('')
+        : '<p>No hay caletas ni fondeaderos del Derrotero a 30 mn o menos de la posición.</p>') + '<p class="sar-nota">Pulsa un abrigo para verlo marcado en el mapa con su nombre. Distancia y rumbo verdadero desde la posición del caso. Texto extraído automáticamente del Derrotero de la Costa de Chile (Pub. SHOA 3001 a 3006); verificar en la carta.</p>';
+      // En el mapa: todos los abrigos de la lista como puntos; al pulsar uno, queda marcado con su nombre y la línea desde el caso.
+      grupoAbrigos.clearLayers(); abrigoSel.clearLayers();
+      A.forEach((o, i) => L.circleMarker([o.x.la, o.x.lo], { radius: 5, color: '#fff', weight: 1.5, fillColor: '#0aa37f', fillOpacity: 1 })
+        .bindTooltip(`${escH(o.x.n)} · ${nf(o.mn, 1)} mn`, { direction: 'top', offset: [0, -4] }).on('click', () => mostrarAbrigo(A, i, [lat, lon], b)).addTo(grupoAbrigos));
+      b.querySelectorAll('.der-item').forEach(d => d.onclick = () => mostrarAbrigo(A, +d.dataset.i, [lat, lon], b));
+      { const k = A.findIndex(o => o.x.n === abrigoNombre); if (k >= 0) mostrarAbrigo(A, k, [lat, lon], b, true); else abrigoNombre = null; }
     });
     if (deriva && deriva.ok) {
       const cir = dibujarDeriva(lat, lon, deriva);
@@ -546,6 +551,25 @@ function crearCasoSAR(L, map, ctx) {
     L.marker(d.datum, { icon: L.divIcon({ className: 'sar-datum', html: '<svg width="26" height="24" viewBox="0 0 26 24"><path d="M13 2 24 22H2Z" fill="#7a3cff" stroke="#fff" stroke-width="2"/></svg>', iconSize: [26, 24], iconAnchor: [13, 16] }) })
       .bindTooltip(`<b>Dátum</b> ${sarFmtHora(d.hora)} h<br>${sarDM(d.datum[0], 'N', 'S')} · ${sarDM(d.datum[1], 'E', 'W')}`, { direction: 'bottom', offset: [0, 8] }).addTo(grupoMapa);
     return cir;
+  }
+
+  // ---- Abrigos del Derrotero en el mapa
+  const grupoAbrigos = L.layerGroup().addTo(map), abrigoSel = L.layerGroup().addTo(map);
+  let abrigoNombre = null;
+  function mostrarAbrigo(A, i, pos, bloque, sinEncuadre) {
+    const o = A[i]; if (!o) return; abrigoNombre = o.x.n; const ll = [o.x.la, o.x.lo], rumbo = String(Math.round(o.rumbo)).padStart(3, '0');
+    abrigoSel.clearLayers();
+    L.polyline([pos, ll], { color: '#0aa37f', weight: 2.5, dashArray: '7 6', opacity: .95 }).bindTooltip(`${nf(o.mn, 1)} mn al ${rumbo}°`, { sticky: true }).addTo(abrigoSel);
+    L.circleMarker(ll, { radius: 15, color: '#0aa37f', weight: 3, fillColor: '#0aa37f', fillOpacity: .18 }).addTo(abrigoSel);
+    L.marker(ll, { zIndexOffset: 900, icon: L.divIcon({ className: 'sar-abrigo', iconSize: [30, 30], iconAnchor: [15, 15],
+      html: '<svg width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#0aa37f" stroke="#fff" stroke-width="2.5"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="15" cy="9" r="2"/><path d="M15 11v11M10.5 14h9M8 18c.8 3.3 3.6 4.5 7 4.5s6.200-1.200 7-4.500"/></g></svg>' }) })
+      .bindTooltip(`<b>${escH(o.x.n)}</b><br>${nf(o.mn, 1)} mn al ${rumbo}° desde el caso${o.x.me ? '<br><i>solo embarcaciones menores</i>' : ''}`, { permanent: true, direction: 'top', offset: [0, -17], className: 'sar-abrigo-tip' })
+      .bindPopup(`<b>${escH(o.x.n)}</b><br>${sarDM(o.x.la, 'N', 'S')} · ${sarDM(o.x.lo, 'E', 'W')}<br>${nf(o.mn, 1)} mn al ${rumbo}° desde el caso${o.x.me ? '<br><i>Solo embarcaciones menores</i>' : ''}<div style="margin-top:5px;max-width:270px;font-size:12px">${escH(o.x.tx)} (Derrotero, vol. ${escH(o.x.v)}${o.x.c ? ', carta ' + escH(o.x.c) : ''})</div>`, { maxWidth: 300 }).addTo(abrigoSel);
+    if (bloque) bloque.querySelectorAll('.der-item').forEach(d => d.classList.toggle('sel', +d.dataset.i === i));
+    // Encuadre: el caso y el abrigo a la vista, sin quedar bajo la ficha.
+    if (sinEncuadre) return;
+    const lateral = window.innerWidth > 1050;
+    map.fitBounds(L.latLngBounds([pos, ll]).pad(0.25), { paddingTopLeft: [60, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 30], maxZoom: 13, duration: .6 });
   }
 
   // ---- Área de búsqueda por deriva con ensemble (método Leeway; motor en deriva_sar.js)

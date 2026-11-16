@@ -104,3 +104,7 @@
 .zarpe-top{margin:6px 0;padding-left:20px}.zarpe-top li{margin:6px 0}
 .zarpe-usar{font:inherit;font-size:12px;margin-left:6px;padding:2px 8px;border-radius:5px;border:1px solid rgba(127,140,160,.6);background:transparent;color:inherit;cursor:pointer}
 .ruta-causa{opacity:.8;font-size:11px;white-space:nowrap}.ruta-motivo{margin-top:-2px}
+
+/* Caso SAR: abrigo del Derrotero elegido en la lista y marcado en el mapa */
+.der-item:hover{background:rgba(10,163,127,.10)}.der-item.sel{background:rgba(10,163,127,.18);border-left:3px solid #0aa37f;padding-left:7px;border-radius:4px}
+.sar-abrigo{background:none;border:0}.sar-abrigo-tip{background:#0b3d33;color:#fff;border:1px solid #0aa37f;font-size:12.5px;box-shadow:0 2px 8px #0006}.sar-abrigo-tip::before{border-top-color:#0aa37f!important}
