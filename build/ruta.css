@@ -116,3 +116,5 @@
 .ruta-ficha-t td{padding:3px 0;vertical-align:top}
 .ruta-ficha-t td:first-child{opacity:.72;padding-right:10px;white-space:nowrap}
 .ruta-ficha .sar-nota{margin:6px 0 0}
+.ruta-tabla tbody tr.hov{background:rgba(255,210,74,.16)}
+.ruta-tabla tbody tr.hov.sel{background:rgba(47,140,255,.26)}

@@ -459,6 +459,20 @@ function crearRuta(L, map, ctx) {
       <p class="sar-nota">Pronóstico a la hora estimada de paso.</p></div>`;
   }
   // Abre el punto en el mapa y marca su fila en la tabla, venga el clic de donde venga
+  // Resalta un punto sin abrir su ficha: al recorrer la tabla con el cursor y al revés
+  let resaltado = null;
+  function resaltar(i) {
+    if (resaltado === i) return;
+    const ant = marcasPunto[resaltado];
+    if (ant) ant.setStyle({ radius: 5, color: '#fff', weight: 1 });
+    resaltado = i;
+    const mk = marcasPunto[i];
+    if (mk) { mk.setStyle({ radius: 9, color: '#ffd24a', weight: 3 }); mk.bringToFront(); }
+    const tb = res.querySelector('.ruta-tabla tbody'); if (!tb) return;
+    tb.querySelectorAll('tr.hov').forEach(t => t.classList.remove('hov'));
+    const tr = i == null ? null : tb.querySelector(`tr[data-i="${i}"]`);
+    if (tr) tr.classList.add('hov');
+  }
   function verPunto(i, desde) {
     const s = puntosM[i]; if (!s) return;
     const mk = marcasPunto[i];
@@ -654,9 +668,10 @@ function crearRuta(L, map, ctx) {
       seg.push(M[i + 1].p);
       L.polyline(seg, { color: COL[M[i].nivel], weight: 6, opacity: .9 }).addTo(grupo);
     }
-    marcasPunto = []; puntosM = M;
+    marcasPunto = []; puntosM = M; resaltado = null;
     M.forEach((s, i) => marcasPunto.push(L.circleMarker(s.p, { radius: 5, color: '#fff', weight: 1, fillColor: COL[s.nivel], fillOpacity: 1 })
       .bindPopup(fichaPunto(s, i), { maxWidth: 300 }).on('click', () => verPunto(i, 'mapa'))
+      .on('mouseover', () => resaltar(i)).on('mouseout', () => resaltar(null))
       .bindTooltip(`${hf(s.eta)} · ${nf(s.mn, 0)} mn<br>Viento ${s.viento == null ? '–' : nf(s.viento, 0) + ' kt ' + sarCompas(s.dir)}${s.rafaga != null ? ' (ráfaga ' + nf(s.rafaga, 0) + ')' : ''}<br>Ola ${s.ola == null ? '–' : nf(s.ola, 1) + ' m · ' + nf(s.tp, 0) + ' s ' + sarCompas(s.dola)}<br>${TXT[s.nivel]}<br><i>clic para ver el detalle</i>`).addTo(grupo)));
     grupoAbr.clearLayers();
     if (ultimo.abr) ultimo.abr.lista.forEach(o => L.marker([o.x.la, o.x.lo], { icon: L.divIcon({ className: '', html: '<div class="der-pin ab mini">⚓</div>', iconSize: [18, 18], iconAnchor: [9, 9] }) })
@@ -806,6 +821,9 @@ function crearRuta(L, map, ctx) {
     });
     res.querySelectorAll('.ruta-tabla tbody tr[data-i]').forEach(tr => {
       tr.onclick = () => verPunto(+tr.dataset.i, 'tabla');
+      tr.onpointerenter = e => { if (e.pointerType !== 'touch') resaltar(+tr.dataset.i); };
+      tr.onpointerleave = e => { if (e.pointerType !== 'touch') resaltar(null); };
+      tr.onfocus = () => resaltar(+tr.dataset.i);
       tr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); verPunto(+tr.dataset.i, 'tabla'); } };
     });
     const cd = res.querySelector('.ruta-cond'); if (cd) cd.addEventListener('toggle', () => { condAbierta = cd.open; cd.querySelector('.ruta-cond-n').textContent = `${M.length} puntos de la ruta · ${cd.open ? 'ocultar' : 'desplegar'}`; });
