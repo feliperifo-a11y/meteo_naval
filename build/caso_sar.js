@@ -576,7 +576,14 @@ function crearCasoSAR(L, map, ctx) {
 
 
   // ---- Plan de búsqueda: espaciamiento, patrón y probabilidad de detección (motor en busqueda_sar.js)
-  const grupoBus = L.layerGroup().addTo(map);
+  // El patrón de búsqueda es una capa más: se puede apagar y la elección se recuerda en este navegador.
+  const grupoBus = L.layerGroup();
+  let verBus = localStorage.getItem('meteoia_sar_patron') !== '0';
+  const aplicarBus = () => { if (verBus && !card.hidden) { if (!map.hasLayer(grupoBus)) grupoBus.addTo(map); } else if (map.hasLayer(grupoBus)) map.removeLayer(grupoBus); };
+  const ponerBus = v => { verBus = v; localStorage.setItem('meteoia_sar_patron', v ? '1' : '0'); aplicarBus();
+    res.querySelectorAll('.sar-bus-mapa').forEach(c => { c.checked = v; }); };
+  if (ctx.ctlCapas && ctx.ctlCapas.addOverlay) ctx.ctlCapas.addOverlay(grupoBus, 'Patrón de búsqueda (Caso SAR)');
+  map.on('overlayadd overlayremove', e => { if (e.layer === grupoBus && verBus !== (e.type === 'overlayadd')) ponerBus(e.type === 'overlayadd'); });
   let busCtx = null;
   function planBusqueda() {
     if (!busCtx) return null;
@@ -610,6 +617,8 @@ function crearCasoSAR(L, map, ctx) {
     const T = SAR_BARRIDO[P.medio], B = P.B, pos = p => `${sarDM(p[0], 'N', 'S')} · ${sarDM(p[1], 'E', 'W')}`, r3 = v => String(Math.round(v) % 360).padStart(3, '0') + '°', pc = v => nf(100 * v, 0) + ' %';
     const sel = (k, ops, v) => `<select class="sar-bus-in" data-k="${k}">${ops.map(([a, t]) => `<option value="${a}"${a === v ? ' selected' : ''}>${escH(t)}</option>`).join('')}</select>`;
     let html = `<div class="sar-blq sar-bus"><h3>Plan de búsqueda</h3>
+      <label class="sar-bus-ver"><input type="checkbox" class="sar-bus-mapa"${verBus ? ' checked' : ''}> Dibujar el patrón en el mapa</label>
+      <p class="sar-nota">El patrón es el recorrido que se propone para el medio de búsqueda dentro del área: las líneas celestes son los tramos a navegar y el punto marca dónde empezar. No es el área de búsqueda, que es el rectángulo o el círculo del dátum.</p>
       <div class="sar-der-form"><label>Medio de búsqueda${sel('medio', Object.entries(SAR_BARRIDO).map(([k, t]) => [k, t.nombre]), P.medio)}</label>
       <label>Objeto buscado${sel('objeto', Object.entries(T.objetos).map(([k, o]) => [k, o[0]]), P.objeto)}</label>
       <label>Patrón${sel('patron', Object.entries(SAR_PATRONES), P.tipo)}</label>
@@ -641,7 +650,7 @@ function crearCasoSAR(L, map, ctx) {
     return html;
   }
   function dibujarBusqueda() {
-    grupoBus.clearLayers(); const P = planBusqueda(); if (!P || !P.pat || card.hidden) return;
+    grupoBus.clearLayers(); aplicarBus(); const P = planBusqueda(); if (!P || !P.pat || card.hidden || !verBus) return;
     const p = P.pat;
     // El patrón completo en línea segmentada; encima, en línea continua, lo que alcanza a recorrerse en las horas disponibles.
     if (p.fraccion < 0.999) L.polyline(p.todo, { color: '#00e5ff', weight: 1.5, opacity: .6, dashArray: '5 6', interactive: false }).addTo(grupoBus);
@@ -653,6 +662,7 @@ function crearCasoSAR(L, map, ctx) {
   }
   function enlazarBusqueda() {
     const blq = res.querySelector('.sar-bus'); if (!blq) return;
+    blq.querySelectorAll('.sar-bus-mapa').forEach(c => c.onchange = () => { ponerBus(c.checked); dibujarBusqueda(); });
     blq.querySelectorAll('.sar-bus-in').forEach(inp => inp.onchange = () => {
       const c = caso() || borrador; if (!c || !inp.isConnected) return; c.bus = c.bus || {};
       if (inp.tagName === 'SELECT') { c.bus[inp.dataset.k] = inp.value; if (inp.dataset.k === 'medio') { delete c.bus.objeto; delete c.bus.vel; delete c.bus.radio; } }
