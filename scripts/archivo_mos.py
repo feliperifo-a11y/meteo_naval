@@ -191,6 +191,15 @@ def archivar_modelo(carpeta, salida, decimales, buscar_mar, pts):
 
 # ------------------------------------------------------------ mediciones de boyas SHOA
 
+def detalle_error(e):
+    """Nombre del error y, si el servidor respondió, su código y el inicio del cuerpo: sin eso no se sabe si es bloqueo o ruta caída."""
+    r = getattr(e, "response", None)
+    if r is None:
+        return type(e).__name__
+    cuerpo = " ".join((r.text or "")[:80].split())
+    return f"HTTP {r.status_code}" + (f" ({cuerpo})" if cuerpo else "")
+
+
 def leer_boya(url):
     r = requests.post(url + "?callback=cb", headers=CAB, timeout=45)
     r.raise_for_status()
@@ -215,7 +224,7 @@ def archivar_boyas():
         try:
             filas = leer_boya(url)
         except Exception as e:
-            errores.append(f"{nombre}: {type(e).__name__}")
+            errores.append(f"{nombre}: {detalle_error(e)}")
             continue
         for f in filas if isinstance(filas, list) else []:
             fecha = str(f.get("fecha_completa") or "")[:19]

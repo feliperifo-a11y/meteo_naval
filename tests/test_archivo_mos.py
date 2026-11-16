@@ -82,3 +82,16 @@ class ArchivoMOS(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def test_detalle_error_lleva_el_codigo():
+    """Sin el código HTTP no se distingue un bloqueo del servidor de una ruta caída."""
+    import requests
+
+    from scripts.archivo_mos import detalle_error
+
+    r = requests.Response()
+    r.status_code = 403
+    r._content = b"Forbidden\n"
+    assert detalle_error(requests.HTTPError(response=r)) == "HTTP 403 (Forbidden)"
+    assert detalle_error(ValueError("sin respuesta")) == "ValueError"
