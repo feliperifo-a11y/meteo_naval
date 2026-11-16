@@ -66,3 +66,25 @@ de viento y corriente.
   *Journal of Marine Systems*, 69, 99-113.
 - Dagestad, K.-F., Röhrs, J., Breivik, Ø. y Ådlandsvik, B. (2018). OpenDrift v1.0: a generic framework for trajectory
   modelling. *Geoscientific Model Development*, 11, 1405-1420.
+
+# Caso SAR: plan de búsqueda
+
+Bloque «Plan de búsqueda» de la ficha, a continuación del área de búsqueda. Convierte el área en un patrón que un medio
+puede ejecutar. Motor en `build/busqueda_sar.js`; pruebas en `tests/busqueda_sar.test.cjs`.
+
+- **Área:** el rectángulo de la deriva por ensemble a la hora mostrada; si no se ha calculado, un cuadrado de lado 2E
+  centrado en el dátum IAMSAR.
+- **Espaciamiento:** tablas del Manual IAMSAR, vol. III, sección 3: espaciamiento recomendado para buques mercantes
+  (Su) y anchos de barrido para helicópteros y aviones, según el objeto y la visibilidad meteorológica, con
+  interpolación entre columnas. Se corrige con el factor por tiempo fw (viento sobre 15 o 25 kt, ola sobre 1 o 1,5 m).
+  La visibilidad, el viento y la ola son los pronosticados para la hora del dátum; todo se puede cambiar a mano.
+- **Patrones:** trayectorias paralelas (PS), línea progresiva (CS), cuadrado expansivo (SS) y sector (VS). En PS y CS
+  el espaciamiento se ajusta hacia abajo para cubrir el área exacta y el primer tramo va a medio espaciamiento del
+  borde; el inicio es la esquina más cercana al centro coordinador más próximo. SS parte en la posición más probable
+  con el primer tramo contra el viento y virajes de 90° a estribor. VS usa virajes de 120° a estribor y 9 radios.
+- **Resultados:** tramos, rumbos, recorrido, tiempo a la velocidad indicada, parte del patrón que alcanza a recorrerse
+  en las horas disponibles, factor de cobertura C = W / S, probabilidad de detección POD = 1 − e^(−C) (búsqueda
+  aleatoria, la curva más conservadora) y probabilidad de éxito = POD × proporción de partículas dentro de lo barrido.
+
+Límites: búsqueda visual de día; no considera fatiga, altura de vuelo, tránsito al área ni otros sensores. Las tablas
+se contrastaron con una copia del manual (Doc 9731, págs. 3-18 a 3-20) y deben confirmarse con la edición vigente.

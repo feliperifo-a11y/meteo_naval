@@ -224,7 +224,7 @@ function crearCasoSAR(L, map, ctx) {
   function nuevoCaso() {
     const n = siguienteN();
     actual = null; borrador = { id: 'c' + Date.now().toString(36), n, nombre: 'Caso ' + n, fase: null };
-    marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; res.innerHTML = '';
+    marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoBus.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; busCtx = null; res.innerHTML = '';
     form.lat.value = ''; form.lon.value = ''; form.hora.value = sarHoraLocal(new Date()).slice(0, 16);
     casos.forEach(pintarMarca); mostrarFicha(); pintarCabecera(); modoElegir(true);
   }
@@ -264,14 +264,14 @@ function crearCasoSAR(L, map, ctx) {
     if (!map.hasLayer(capaCaso) && casos.length) { capaCaso.addTo(map); const ch = document.getElementById('chk_caso_sar'); if (ch) ch.checked = true; }
   }
   // Cerrar la ficha no borra los casos: los puntos quedan en el mapa como una capa más.
-  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
+  function cerrar() { card.hidden = true; wrap.classList.remove('sar-abierto'); modoElegir(false); grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoBus.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); borrador = null; casos.forEach(pintarMarca); }
   const btnBorrar = card.querySelector('.sar-borrar');
   btnBorrar.onclick = () => {
     if (!caso()) { if (borrador) { borrador = null; modoElegir(false); abrir(); } return; }
     if (!btnBorrar.dataset.ok) { btnBorrar.dataset.ok = '1'; btnBorrar.textContent = '¿Borrar? Pulsa de nuevo'; setTimeout(() => { delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso'; }, 4000); return; }
     delete btnBorrar.dataset.ok; btnBorrar.textContent = 'Borrar caso';
     const m = marcas.get(actual); if (m) capaCaso.removeLayer(m); marcas.delete(actual);
-    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; res.innerHTML = '';
+    casos = casos.filter(c => c.id !== actual); guardar(); actual = null; marca = null; ultimo = null; grupoMapa.clearLayers(); grupoEns.clearLayers(); grupoBus.clearLayers(); grupoAbrigos.clearLayers(); abrigoSel.clearLayers(); ens = null; busCtx = null; res.innerHTML = '';
     if (casos.length) seleccionar(casos[casos.length - 1].id, true);
     else { form.lat.value = ''; form.lon.value = ''; pintarCabecera(); }
   };
@@ -426,7 +426,7 @@ function crearCasoSAR(L, map, ctx) {
     html += '</div>';
     // 6. Deriva y dátum
     let deriva = null;
-    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); html += bloqueEnsemble(lat, lon, deriva); }
+    if (h) { deriva = calcularDeriva(lat, lon, h, mh, horaAhora); html += bloqueDeriva(deriva); html += bloqueEnsemble(lat, lon, deriva); busCtx = { lat, lon, d: deriva, h, mh, env }; html += bloqueBusqueda(); } else busCtx = null;
     // 7. Ventanas de operación
     if (h) html += ventanas(h, mh, i0, d.a.daily || {});
     html += `<p class="sar-nota">Fuentes: pronóstico puntual Open-Meteo (ECMWF IFS 9 km y NOAA GFS para viento, ráfaga y visibilidad; Météo-France para oleaje, temperatura del agua y corriente), observaciones y avisos de MeteoIA.
@@ -463,7 +463,7 @@ function crearCasoSAR(L, map, ctx) {
       const m = medios.find(x => x.id === inp.dataset.id), v = parseFloat(String(inp.value).replace(',', '.'));
       m[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; guardarMedios(); pintar();
     });
-    enlazarEnsemble(lat, lon, deriva);
+    enlazarEnsemble(lat, lon, deriva); enlazarBusqueda();
     const rest = res.querySelector('.sar-restablecer'); if (rest) rest.onclick = () => { medios = SAR_MEDIOS_BASE.map(m => ({ ...m })); guardarMedios(); pintar(); };
   }
 
@@ -570,6 +570,109 @@ function crearCasoSAR(L, map, ctx) {
     if (sinEncuadre) return;
     const lateral = window.innerWidth > 1050;
     map.fitBounds(L.latLngBounds([pos, ll]).pad(0.25), { paddingTopLeft: [60, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 30], maxZoom: 13, duration: .6 });
+  }
+
+
+  // ---- Plan de búsqueda: espaciamiento, patrón y probabilidad de detección (motor en busqueda_sar.js)
+  const grupoBus = L.layerGroup().addTo(map);
+  let busCtx = null;
+  function planBusqueda() {
+    if (!busCtx) return null;
+    const { lat, lon, d, h, mh, env } = busCtx, c = caso() || borrador || {}, B = c.bus || {};
+    if (!d || !d.ok || !h) return null;
+    const medio = SAR_BARRIDO[B.medio] ? B.medio : 'buque', T = SAR_BARRIDO[medio];
+    const objeto = T.objetos[B.objeto] ? B.objeto : sarObjetoBusqueda(categoriaLeeway(c), medio);
+    const iF = Math.max(0, h.time.indexOf(d.hora));
+    const visM = h.visibility_ecmwf_ifs?.[iF] ?? h.visibility_gfs_global?.[iF], visPron = visM == null ? null : Math.min(20, visM / 1852);
+    const vis = B.vis > 0 ? B.vis : (visPron ?? 10);
+    const viento = h.wind_speed_10m_ecmwf_ifs?.[iF] ?? h.wind_speed_10m_gfs_global?.[iF] ?? 0, vdir = h.wind_direction_10m_ecmwf_ifs?.[iF] ?? h.wind_direction_10m_gfs_global?.[iF] ?? null, ola = mh.wave_height?.[iF] ?? 0;
+    const Wu = sarAnchoBarrido(medio, objeto, vis), ft = sarFactorTiempo(objeto, viento, ola), W = Wu * ft.fw;
+    const conNube = !!(ens && ens.estado === 'ok' && ens.resumen && ens.clave === claveEns(lat, lon, d, c)), R = conNube ? ens.resumen.rect : null;
+    const lado = Math.max(2, 2 * d.E);
+    const area = R ? { centro: R.centro, largo: R.largo, ancho: R.ancho, rumbo: R.rumbo } : { centro: d.datum, largo: lado, ancho: lado, rumbo: d.rumbo ?? 0 };
+    const dato = conNube ? ens.resumen.masProbable : d.datum, tipo = SAR_PATRONES[B.patron] ? B.patron : 'ps';
+    const vel = B.vel > 0 ? B.vel : T.vel, horas = B.horas > 0 ? B.horas : 4, nMed = B.n > 0 ? Math.max(1, Math.round(B.n)) : 1, radio = B.radio > 0 ? B.radio : (medio === 'buque' ? 3 : 10);
+    const base = { medio, objeto, vis, visPron, viento, vdir, ola, Wu, ft, W, area, dato, tipo, vel, horas, nMed, radio, conNube, B, hora: d.hora };
+    if (!(W > 0) && !(B.S > 0)) return { ...base, indetectable: true };
+    const S = B.S > 0 ? B.S : W, cen = env.centros[0], inicio = cen ? sarMover(lat, lon, (cen.rv + 180) % 360, cen.mn) : [lat, lon];
+    const pat = sarPatronBusqueda(area, { tipo, S, inicio, vientoDe: vdir, dato, radio, maxMn: vel * horas * nMed });
+    const C = tipo === 'vs' || !(W > 0) ? null : W / pat.S, pod = C == null ? null : sarPOD(C);
+    let poc = null;
+    if (conNube) { const sim = ens.sim, b = ens.k * sim.n; let tot = 0, den = 0; for (let i = 0; i < sim.n; i++) { if (!sim.estado[b + i]) continue; tot++; if (pat.dentro([sim.lat[b + i], sim.lon[b + i]])) den++; } poc = tot ? den / tot : null; }
+    return { ...base, S, pat, C, pod, poc, pos: pod != null && poc != null ? pod * poc : null, horasTotal: pat.totalMn / (vel * nMed) };
+  }
+  function bloqueBusqueda() {
+    const P = planBusqueda(), num = v => v == null ? '' : String(+(+v).toFixed(2)).replace('.', ',');
+    if (!P) return '<div class="sar-blq sar-bus"><h3>Plan de búsqueda</h3><p class="sar-nota">Completa la deriva (posición y hora del incidente) para planificar la búsqueda.</p></div>';
+    const T = SAR_BARRIDO[P.medio], B = P.B, pos = p => `${sarDM(p[0], 'N', 'S')} · ${sarDM(p[1], 'E', 'W')}`, r3 = v => String(Math.round(v) % 360).padStart(3, '0') + '°', pc = v => nf(100 * v, 0) + ' %';
+    const sel = (k, ops, v) => `<select class="sar-bus-in" data-k="${k}">${ops.map(([a, t]) => `<option value="${a}"${a === v ? ' selected' : ''}>${escH(t)}</option>`).join('')}</select>`;
+    let html = `<div class="sar-blq sar-bus"><h3>Plan de búsqueda</h3>
+      <div class="sar-der-form"><label>Medio de búsqueda${sel('medio', Object.entries(SAR_BARRIDO).map(([k, t]) => [k, t.nombre]), P.medio)}</label>
+      <label>Objeto buscado${sel('objeto', Object.entries(T.objetos).map(([k, o]) => [k, o[0]]), P.objeto)}</label>
+      <label>Patrón${sel('patron', Object.entries(SAR_PATRONES), P.tipo)}</label>
+      <label title="Vacío: visibilidad pronosticada en el área a la hora del dátum">Visibilidad (mn)<input class="sar-bus-in" data-k="vis" inputmode="decimal" value="${num(B.vis)}" placeholder="${num(P.vis)}"></label>
+      <label title="Vacío: el espaciamiento que resulta de la tabla y del factor por tiempo">Espaciamiento S (mn)<input class="sar-bus-in" data-k="S" inputmode="decimal" value="${num(B.S)}" placeholder="${P.W > 0 ? num(P.W) : '–'}"></label>
+      <label>Velocidad de búsqueda (kt)<input class="sar-bus-in" data-k="vel" inputmode="decimal" value="${num(B.vel)}" placeholder="${num(P.vel)}"></label>
+      <label>Horas en el área<input class="sar-bus-in" data-k="horas" inputmode="decimal" value="${num(B.horas)}" placeholder="${num(P.horas)}"></label>
+      <label title="Medios iguales que se reparten el área en partes iguales">Número de medios<input class="sar-bus-in" data-k="n" inputmode="numeric" value="${num(B.n)}" placeholder="1"></label>
+      ${P.tipo === 'vs' ? `<label title="Buques: 2 a 5 mn. Aeronaves: 5 a 20 mn">Radio del sector (mn)<input class="sar-bus-in" data-k="radio" inputmode="decimal" value="${num(B.radio)}" placeholder="${num(P.radio)}"></label>` : ''}</div>
+      <p>Condiciones en el área (${P.hora.slice(8, 10)}/${P.hora.slice(5, 7)} ${sarFmtHora(P.hora)} h): visibilidad <b>${P.visPron == null ? 'sin dato' : P.visPron >= 10.7 ? 'más de 10 mn' : nf(P.visPron, 1) + ' mn'}</b>, viento <b>${nf(P.viento, 0)} kt</b>${P.vdir != null ? ' del ' + sarCompas(P.vdir) : ''}, ola <b>${nf(P.ola, 1)} m</b>: condiciones <b>${P.ft.nombre}</b> para la detección.</p>
+      <p>${P.medio === 'buque' ? 'Espaciamiento sin corregir S<sub>u</sub>' : 'Ancho de barrido sin corregir'} <b>${nf(P.Wu, 1)} mn</b> × factor por tiempo f<sub>w</sub> <b>${String(P.ft.fw).replace('.', ',')}</b> = <b>${nf(P.W, 2)} mn</b></p>`;
+    if (P.indetectable) return html + `<p class="sar-error">Con esta visibilidad la tabla da un ancho de barrido nulo para este objeto y este medio: la búsqueda visual no es efectiva. Cambia el medio, o indica un espaciamiento a mano.</p></div>`;
+    const p = P.pat, h1 = h => h < 1 ? nf(h * 60, 0) + ' min' : nf(h, 1) + ' h', tot = P.horasTotal, alcanza = tot <= P.horas + 1e-6;
+    html += `<p>Área a cubrir: <b>${nf(P.area.largo, 1)} × ${nf(P.area.ancho, 1)} mn</b> (${nf(P.area.largo * P.area.ancho, 0)} mn²), ${P.conNube ? 'el rectángulo de búsqueda de la deriva por ensemble' : 'cuadrado de lado 2E centrado en el dátum IAMSAR (calcula el área por ensemble para afinarla)'}.</p>`;
+    if (p.tipo === 'ps' || p.tipo === 'cs') html += `<p><b>${p.n} tramos de ${nf(p.tramoMn, 1)} mn</b> a los rumbos <b>${r3(p.rumbos[0])} / ${r3(p.rumbos[1])}</b>, separados <b>${nf(p.S, 2)} mn</b>${Math.abs(p.S - P.S) > 0.005 ? ` (ajustado desde ${nf(P.S, 2)} mn para cubrir el área exacta)` : ''}. El primer tramo va a medio espaciamiento del borde.</p>`;
+    else if (p.tipo === 'ss') html += `<p>Parte en ${P.conNube ? 'la posición más probable' : 'el dátum'}, primer tramo al <b>${r3(p.rumbos[0])}</b> (contra el viento), virajes de 90° a estribor y tramos de ${nf(P.S, 2)}, ${nf(P.S, 2)}, ${nf(2 * P.S, 2)}, ${nf(2 * P.S, 2)}, ${nf(3 * P.S, 2)}… mn. ${p.nTotal} tramos para cubrir el área.</p>`;
+    else html += `<p>Parte en ${P.conNube ? 'la posición más probable' : 'el dátum'}, primer tramo al <b>${r3(p.rumbos[0])}</b> (a favor del viento), radio <b>${nf(p.radio, 1)} mn</b>, virajes de 120° a estribor: siete tramos y 9 radios de recorrido. Si no hay resultado, se repite girado 30°.</p>`;
+    html += `<p>Recorrido total <b>${nf(p.totalMn, 1)} mn</b>: <b>${h1(tot)}</b> a ${nf(P.vel, 0)} kt${P.nMed > 1 ? ` con ${P.nMed} medios` : ''}. ${alcanza ? `Alcanza en las ${num(P.horas)} h disponibles.` : `<span class="sar-error">En ${num(P.horas)} h se cubre el <b>${pc(p.fraccion)}</b> del patrón (${nf(p.hechoMn, 1)} mn): faltan ${h1(tot - P.horas)}, más medios o un espaciamiento mayor.</span>${(p.tipo === 'ps' || p.tipo === 'cs') ? ' Con poco tiempo, el cuadrado expansivo desde la posición más probable concentra el esfuerzo donde hay más probabilidad.' : ''}`}</p>
+      <p>Punto de inicio de la búsqueda: <b>${pos(p.pts[0])}</b></p>`;
+    if (P.C != null) html += `<p>Factor de cobertura C = W / S = <b>${nf(P.C, 2)}</b> · probabilidad de detección <b>${pc(P.pod)}</b> en lo barrido${P.poc != null ? ` · el patrón${alcanza ? '' : ' (la parte que alcanza a recorrerse)'} contiene el <b>${pc(P.poc)}</b> de las partículas · probabilidad de éxito de esta búsqueda <b>${pc(P.pos)}</b>` : ''}.</p>`;
+    else if (P.poc != null) html += `<p>El círculo del sector contiene el <b>${pc(P.poc)}</b> de las partículas. En este patrón la cobertura es muy alta cerca del centro y baja hacia el borde, por lo que no se calcula una probabilidad de detección única.</p>`;
+    html += `<p><button type="button" class="sar-bus-copiar">Copiar plan de búsqueda</button> <button type="button" class="sar-bus-ver">Ver en el mapa</button></p>
+      <details class="sar-sup-info"><summary>Puntos de viraje del patrón completo (${p.todo.length})</summary><p>${p.todo.map((q, i) => `${i ? i : 'Inicio'}: ${pos(q)}`).join('<br>')}</p></details>
+      <details class="sar-sup-info"><summary>Método y supuestos</summary>
+      <p>El espaciamiento para buques y los anchos de barrido para helicóptero y avión provienen de las tablas del Manual IAMSAR, vol. III, sección 3, según el objeto y la visibilidad meteorológica (se interpola entre columnas). Se corrigen con el factor por tiempo f<sub>w</sub>: condiciones moderadas con viento sobre 15 kt u ola sobre 1 m, y fuertes con viento sobre 25 kt u ola sobre 1,5 m. La visibilidad, el viento y la ola son los pronosticados para la hora del dátum.</p>
+      <p>Probabilidad de detección POD = 1 − e<sup>−C</sup> (búsqueda aleatoria, la curva más conservadora). Probabilidad de éxito = POD × proporción de partículas de la deriva dentro de lo barrido. Con varios medios se supone que se reparten el área en partes iguales.</p>
+      <p><b>Límites:</b> las tablas suponen búsqueda visual de día; de noche o con otros sensores (radar, infrarrojo, bengalas) el ancho de barrido es distinto. No se consideran la fatiga, la altura de vuelo ni el tiempo de tránsito al área. Las tablas se contrastaron con una copia del manual y deben confirmarse con la edición vigente. Herramienta de apoyo: no reemplaza la planificación de búsqueda del MRCC.</p></details></div>`;
+    return html;
+  }
+  function dibujarBusqueda() {
+    grupoBus.clearLayers(); const P = planBusqueda(); if (!P || !P.pat || card.hidden) return;
+    const p = P.pat;
+    // El patrón completo en línea segmentada; encima, en línea continua, lo que alcanza a recorrerse en las horas disponibles.
+    if (p.fraccion < 0.999) L.polyline(p.todo, { color: '#00e5ff', weight: 1.5, opacity: .6, dashArray: '5 6', interactive: false }).addTo(grupoBus);
+    L.polyline(p.pts, { color: '#00e5ff', weight: 2.5, opacity: .95 }).bindTooltip(`${SAR_PATRONES[p.tipo]} · ${nf(p.hechoMn, 1)} mn`, { sticky: true }).addTo(grupoBus);
+    L.circleMarker(p.pts[0], { radius: 7, color: '#fff', weight: 2, fillColor: '#00b8d4', fillOpacity: 1 }).bindTooltip('Inicio de la búsqueda', { permanent: true, direction: 'left', offset: [-8, 0], className: 'sar-bus-tip' }).addTo(grupoBus);
+    // Flecha de sentido en la mitad de cada tramo.
+    for (let i = 1; i < p.pts.length; i++) { const a = p.pts[i - 1], b = p.pts[i]; if (sarMillas(a, b) < 0.05) continue;
+      L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { interactive: false, icon: L.divIcon({ className: 'sar-bus-fl', iconSize: [12, 12], iconAnchor: [6, 6], html: `<svg width="12" height="12" viewBox="0 0 12 12" style="transform:rotate(${sarRumbo(a, b)}deg)"><path d="M6 1 10.5 10 6 7.5 1.5 10Z" fill="#00e5ff" stroke="#003b44" stroke-width=".8"/></svg>` }) }).addTo(grupoBus); }
+  }
+  function enlazarBusqueda() {
+    const blq = res.querySelector('.sar-bus'); if (!blq) return;
+    blq.querySelectorAll('.sar-bus-in').forEach(inp => inp.onchange = () => {
+      const c = caso() || borrador; if (!c || !inp.isConnected) return; c.bus = c.bus || {};
+      if (inp.tagName === 'SELECT') { c.bus[inp.dataset.k] = inp.value; if (inp.dataset.k === 'medio') { delete c.bus.objeto; delete c.bus.vel; delete c.bus.radio; } }
+      else { const v = parseFloat(String(inp.value).replace(',', '.')); c.bus[inp.dataset.k] = isFinite(v) && v > 0 ? v : null; }
+      if (caso()) guardar(); actualizarBusqueda();
+    });
+    const ver = blq.querySelector('.sar-bus-ver'); if (ver) ver.onclick = () => { const P = planBusqueda(); if (!P || !P.pat) return; const lateral = window.innerWidth > 1050; map.fitBounds(L.latLngBounds(P.pat.todo).pad(0.15), { paddingTopLeft: [50, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 40], maxZoom: 13 }); };
+    const cp = blq.querySelector('.sar-bus-copiar'); if (cp) cp.onclick = () => {
+      const P = planBusqueda(); if (!P || !P.pat) return; const p = P.pat, pos = q => `${sarDM(q[0], 'N', 'S')} ${sarDM(q[1], 'E', 'W')}`, cs = caso(), r3 = v => String(Math.round(v) % 360).padStart(3, '0');
+      const txt = [`${cs ? cs.nombre : 'Caso SAR'} · plan de búsqueda (MeteoIA, herramienta de apoyo)`, `Medio: ${SAR_BARRIDO[P.medio].nombre}${P.nMed > 1 ? ' × ' + P.nMed : ''} · objeto: ${SAR_BARRIDO[P.medio].objetos[P.objeto][0]}`,
+        `Patrón: ${SAR_PATRONES[p.tipo]}${p.tipo === 'vs' ? `, radio ${nf(p.radio, 1)} mn` : `, espaciamiento ${nf(p.S, 2)} mn`}${p.rumbos.length > 1 ? `, tramos al ${r3(p.rumbos[0])}/${r3(p.rumbos[1])}` : `, primer tramo al ${r3(p.rumbos[0])}`}`,
+        `Recorrido ${nf(p.totalMn, 1)} mn · ${nf(P.horasTotal, 1)} h a ${nf(P.vel, 0)} kt`, P.C != null ? `Cobertura C ${nf(P.C, 2)} · POD ${nf(100 * P.pod, 0)} %${P.pos != null ? ` · probabilidad de éxito ${nf(100 * P.pos, 0)} %` : ''}` : null,
+        ...p.todo.map((q, i) => `${i ? 'Punto ' + i : 'Inicio'}: ${pos(q)}`)].filter(Boolean).join('\n');
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { cp.textContent = 'Copiado'; }, () => { cp.textContent = 'No se pudo copiar'; });
+      setTimeout(() => { cp.textContent = 'Copiar plan de búsqueda'; }, 2500);
+    };
+    dibujarBusqueda();
+  }
+  // Vuelve a calcular solo este bloque (al cambiar sus datos o la hora mostrada de la deriva).
+  let actualizandoBus = false;
+  function actualizarBusqueda() {
+    const blq = res.querySelector('.sar-bus'); if (!blq || actualizandoBus) return; actualizandoBus = true;
+    const abiertos = [...blq.querySelectorAll('details')].map(d => d.open), tmp = document.createElement('div'); tmp.innerHTML = bloqueBusqueda();
+    blq.replaceWith(tmp.firstElementChild); res.querySelectorAll('.sar-bus details').forEach((d, i) => { if (abiertos[i]) d.open = true; }); actualizandoBus = false; enlazarBusqueda();
   }
 
   // ---- Área de búsqueda por deriva con ensemble (método Leeway; motor en deriva_sar.js)
@@ -725,7 +828,7 @@ function crearCasoSAR(L, map, ctx) {
         const et = caja.querySelector('.sar-ens-t'); et.querySelector('span').innerHTML = tmp.querySelector('.sar-ens-t span').innerHTML;
         while (et.nextSibling) et.nextSibling.remove();
         tmp.querySelector('.sar-ens-t').remove(); while (tmp.firstChild) caja.appendChild(tmp.firstChild);
-        dibujarEnsemble(); enlazar();
+        dibujarEnsemble(); enlazar(); actualizarBusqueda();
       };
       const ver = caja.querySelector('.sar-ens-ver');
       if (ver) ver.onclick = () => { const lateral = window.innerWidth > 1050; map.fitBounds(L.latLngBounds(ens.resumen.rect.esquinas).extend([lat, lon]), { paddingTopLeft: [50, 70], paddingBottomRight: [lateral ? card.offsetWidth + 40 : 40, lateral ? 40 : card.offsetHeight + 40], maxZoom: 12 }); };
