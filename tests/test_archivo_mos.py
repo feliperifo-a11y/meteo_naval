@@ -95,3 +95,31 @@ def test_detalle_error_lleva_el_codigo():
     r._content = b"Forbidden\n"
     assert detalle_error(requests.HTTPError(response=r)) == "HTTP 403 (Forbidden)"
     assert detalle_error(ValueError("sin respuesta")) == "ValueError"
+
+
+def test_leer_boya_reintenta_con_get_ante_un_405(monkeypatch):
+    """La consulta POST de la página vuelve 405 desde un servidor; el archivado cae a GET."""
+    import requests
+
+    from scripts import archivo_mos
+
+    llamadas = []
+
+    def respuesta(codigo, cuerpo):
+        r = requests.Response()
+        r.status_code = codigo
+        r._content = cuerpo.encode()
+        return r
+
+    def post(url, **k):
+        llamadas.append("post")
+        return respuesta(405, "<!DOCTYPE html>")
+
+    def get(url, **k):
+        llamadas.append("get")
+        return respuesta(200, 'cb([{"idBoya":"1"}]);')
+
+    monkeypatch.setattr(archivo_mos.requests, "post", post)
+    monkeypatch.setattr(archivo_mos.requests, "get", get)
+    assert archivo_mos.leer_boya("https://x/consultar_1.php") == [{"idBoya": "1"}]
+    assert llamadas == ["post", "get"]
