@@ -317,12 +317,13 @@ dialog button{border-color:var(--line)}
 </style>
 <script>try { if (new URLSearchParams(location.search).has('carta')) document.documentElement.classList.add('soloCarta'); } catch (e) {}</script>
 <script>try { if (new URLSearchParams(location.search).has('rutas')) { document.documentElement.classList.add('soloRuta'); document.documentElement.dataset.theme = 'dark'; } } catch (e) {}</script>
+<script>try { if (new URLSearchParams(location.search).has('sar')) { document.documentElement.classList.add('soloRuta', 'soloSAR'); document.documentElement.dataset.theme = 'dark'; } } catch (e) {}</script>
 <style>
 /* Página pública Rutas de navegación (rutas.html): solo el mapa y la ficha de ruta, con los colores de la portada */
 .rutaHdr{display:none}
 html.soloRuta{--bg:#06121f;--panel:#0e2136;--ink:#e8f1fa;--muted:#8fa7bf;--line:#1d3a58;--head:#0a1a2c;--headInk:#e8f1fa;--chip:#12294a}
 html.soloRuta body{background:radial-gradient(1200px 600px at 20% -10%,#123056 0%,#06121f 55%) fixed,#06121f;font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-html.soloRuta body>header:not(.rutaHdr),html.soloRuta #alertasRT,html.soloRuta main>.left,html.soloRuta #visitas,html.soloRuta #rutaNav .sar-cerrar{display:none!important}
+html.soloRuta body>header:not(.rutaHdr),html.soloRuta #alertasRT,html.soloRuta main>.left,html.soloRuta #visitas,html.soloRuta #rutaNav .sar-cerrar,html.soloSAR #casoSAR .sar-cerrar{display:none!important}
 html.soloRuta .rutaHdr{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:calc(env(safe-area-inset-top,0px) + 12px) 22px 10px;background:transparent;color:var(--ink)}
 .rutaHdr .marca{background:#fff;border-radius:10px;padding:3px 8px;display:flex}.rutaHdr .marca img{height:44px;display:block}
 .rutaHdr .tit{flex:1 1 320px;min-width:0}.rutaHdr h1{margin:0;font-size:22px;letter-spacing:.2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -349,6 +350,11 @@ html.soloRuta #mapWrap .ruta-card .sar-form button[type=submit],html.soloRuta #m
 html.soloRuta #mapWrap .ruta-card .ruta-elegir{background:transparent;border:1px solid #2f8cff;color:#5fb0ff}
 html.soloRuta #mapWrap .ruta-card .ruta-borrar{background:transparent;border:1px solid #e5534b;color:#ff8a84}
 html.soloRuta .ruta-tipo{border-color:#1d3a58;background:#0b1d31}
+/* Caso SAR público: los mismos colores en los botones y bloques de la ficha */
+html.soloSAR #casoSAR .sar-nuevo,html.soloSAR #casoSAR .sar-elegir{background:transparent;border:1px solid #2f8cff;color:#5fb0ff}
+html.soloSAR #casoSAR .sar-borrar{background:transparent;border:1px solid #e5534b;color:#ff8a84}
+html.soloSAR #casoSAR .sar-blq{border-color:#1d3a58;background:#0b1d3166}html.soloSAR #casoSAR .sar-blq h3,html.soloSAR #casoSAR .sar-ventanas h3{color:#7fb8ff!important}
+html.soloSAR #casoSAR{border-top-color:#2f8cff!important}
 html.soloRuta #mapWrap .ruta-card .sar-etq{background:#f2c2301f;border:1px solid #f2c23066;color:#f2c230}
 html.soloRuta #mapWrap .ruta-card .sar-min{background:#0b1d31;border:1px solid #1d3a58;color:#e8f1fa}
 html.soloRuta #mapWrap .ruta-card table th{background:#0a1a2c;color:#c9d9ea;border-color:#1d3a58}html.soloRuta #mapWrap .ruta-card table td{border-color:#1d3a58}
@@ -393,7 +399,7 @@ html.soloRuta #baseStatus{background:#0e2136f2;color:#e8f1fa;border:1px solid #1
     <button type="button" class="btnCarta btnBorr" id="btnBorrador" title="Borrador del boletín de bahía de las 16:00 redactado por IA a partir del WRF + IA y el oleaje WW3, imitando al especialista">BORRADOR BOLETÍN</button>
     <button type="button" class="btnCarta btnBorr" id="btnQC" title="Control de calidad de las estaciones con aprendizaje automático (Isolation Forest): lecturas sospechosas y sensores pegados en las últimas 72 h">CONTROL DE CALIDAD</button>
     <button type="button" class="btnCarta btnTromba" id="btnTrombas" hidden title="Perspectiva experimental de ambientes favorables a trombas marinas a 72 h (STP, SHERBE y NST sobre el GFS) y ficha técnica con umbrales y referencias">TROMBAS</button>
-    <button type="button" class="btnCarta btnSAR" id="btnRuta" title="Condiciones meteorológicas y oceanográficas a lo largo de una ruta: zarpe, puntos intermedios y destino, a la velocidad de la embarcación">RUTA</button><button type="button" class="btnCarta btnSAR" id="btnCasoSAR" title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
+    <button type="button" class="btnCarta btnSAR" id="btnRuta" title="Condiciones meteorológicas y oceanográficas a lo largo de una ruta: zarpe, puntos intermedios y destino, a la velocidad de la embarcación">RUTA</button><a class="btnCarta btnSAR" id="btnMonan" href="monan.html" style="text-decoration:none;display:inline-flex;align-items:center" title="Modelo MONAN 3 km (corrida propia): campos, comparación con el pronóstico local y verificación contra estaciones">MODELO MONAN</a><button type="button" class="btnCarta btnSAR" id="btnCasoSAR" hidden title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
     <button type="button" class="btnSug" onclick="abrirSug()" title="Envíe sus sugerencias o comentarios">Sugerencias</button>
   </div>
@@ -1902,7 +1908,17 @@ document.getElementById('btnRuta').onclick = () => { cerrarPaneles('ruta'); ruta
 // Buscador de lugares del Derrotero (caletas, bahías, puertos, fondeaderos) con opción de usarlos en la ruta
 const buscadorDerrotero = crearBuscadorDerrotero(L, map, { escH, usar: (x, rol) => { cerrarPaneles('ruta'); ruta.usarLugar(x, rol); } });
 // Página pública de rutas: la ficha se abre sola y el botón del encabezado la vuelve a mostrar
-if (document.documentElement.classList.contains('soloRuta')) {
+if (document.documentElement.classList.contains('soloSAR')) {
+  // Página pública Caso SAR (casosar.html): el mismo encabezado y colores de Rutas, con la ficha del caso abierta
+  document.title = 'Caso SAR · MeteoIA';
+  const hd = document.querySelector('.rutaHdr');
+  hd.querySelector('h1').textContent = 'Caso SAR';
+  hd.querySelector('.sub').textContent = 'Cuadro ambiental, deriva, área de búsqueda probable y ventanas de operación para la posición de un caso de búsqueda y salvamento';
+  const ba = document.getElementById('btnRutaAbrir'); ba.textContent = '⊕ Ficha del caso';
+  const fichaSAR = document.getElementById('casoSAR'); fichaSAR.classList.add('ruta-card');
+  ba.onclick = () => { cerrarPaneles('sar'); casoSAR.abrir(); fichaSAR.classList.remove('sar-minimizada'); };
+  setTimeout(() => { map.invalidateSize(); if (!new URLSearchParams(location.search).get('caso')) casoSAR.abrir(); }, 300);
+} else if (document.documentElement.classList.contains('soloRuta')) {
   document.title = 'Rutas de navegación · MeteoIA';
   document.getElementById('btnRutaAbrir').onclick = () => { cerrarPaneles('ruta'); ruta.abrir(); document.getElementById('rutaNav').classList.remove('sar-minimizada'); };
   setTimeout(() => { map.invalidateSize(); ruta.abrir(); }, 300);

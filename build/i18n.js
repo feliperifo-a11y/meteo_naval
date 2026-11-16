@@ -33,7 +33,7 @@
     'Mapa de viento y áreas marítimas': 'Wind and maritime areas map', 'Usa dos dedos para mover el mapa, o ábrelo en pantalla completa': 'Use two fingers to move the map, or open it full screen', 'Capas': 'Layers', 'Ver todo Chile': 'View all of Chile', 'Pantalla completa': 'Full screen',
     'Viento GFS (color)': 'GFS wind (colour)', 'Viento ECMWF 9 km (costa)': 'ECMWF 9 km wind (coast)', 'Oleaje WW3': 'WW3 waves', 'Temperatura del mar (MUR 1 km)': 'Sea surface temperature (MUR 1 km)',
     'Viento GFS (flechas)': 'GFS wind (arrows)', 'Avisos vigentes y próximos': 'Warnings in force and upcoming', 'Estaciones': 'Weather stations', 'Puertos con restricción (SITPORT)': 'Ports with restrictions (SITPORT)',
-    'Boyas': 'Buoys', 'Casos SAR (marcados en Desarrollo)': 'SAR cases (marked in Development)', 'Mapa base': 'Base map', 'Imagen satelital': 'Satellite imagery', 'Océano (claro)': 'Ocean (light)', 'Sin conexión (costa)': 'Offline (coastline)',
+    'Boyas': 'Buoys', 'Casos SAR (marcados en Caso SAR)': 'SAR cases (marked in SAR Case)', 'Caso SAR: cuadro ambiental, deriva y área de búsqueda probable para la posición de un caso de búsqueda y salvamento': 'SAR case: environmental picture, drift and probable search area for the position of a search and rescue case', 'Mapa base': 'Base map', 'Imagen satelital': 'Satellite imagery', 'Océano (claro)': 'Ocean (light)', 'Sin conexión (costa)': 'Offline (coastline)',
     'Viento a 10 m (kt)': '10 m wind (kt)', 'Sin acceso a mapas en línea: se usa la costa incorporada.': 'Online maps unavailable: using the built-in coastline.', 'Imagen © Esri': 'Imagery © Esri',
     // Viento ECMWF
     'Control de viento ECMWF': 'ECMWF wind control', 'Viento ECMWF 9 km': 'ECMWF 9 km wind', 'Fuente ECMWF ↗': 'ECMWF source ↗', 'Cargando corrida…': 'Loading model run…',
@@ -88,11 +88,11 @@
     'Cualquier sugerencia o comentario será bienvenido. Envíelo a:': 'Any suggestion or comment is welcome. Send it to:', 'Desarrollado por Felipe Rifo Espósito': 'Developed by Felipe Rifo Espósito',
     'Visitas registradas por GoatCounter (se actualiza con hasta 4 horas de retraso). Estadísticas anónimas: no se usan cookies ni datos personales.': 'Visits recorded by GoatCounter (updated with up to 4 hours of delay). Anonymous statistics: no cookies or personal data are used.',
     'Presentación de MeteoIA · 50 s': 'MeteoIA presentation · 50 s', '🔇 Silenciar': '🔇 Mute', '🔊 Activar sonido': '🔊 Unmute', 'Cerrar video': 'Close video', 'Video de bienvenida a MeteoIA': 'MeteoIA welcome video', 'Cerrar (Esc)': 'Close (Esc)',
-    'Video de presentación de MeteoIA (50 s)': 'MeteoIA presentation video (50 s)', 'Sin fase declarada': 'No phase declared', 'Abrir ficha en Desarrollo →': 'Open case file in Development →', 'Caso SAR': 'SAR case',
+    'Video de presentación de MeteoIA (50 s)': 'MeteoIA presentation video (50 s)', 'Sin fase declarada': 'No phase declared', 'Abrir ficha del caso →': 'Open case file →', 'Caso SAR': 'SAR case',
   };
   // Rótulos de dos líneas (texto, salto de línea, texto).
   const PARES = { 'Pronósticos|Marítimos': ['Marine', 'Forecasts'], 'Carta de|Superficie': ['Surface', 'Chart'], 'Monitoreo|de Hielos': ['Ice', 'Monitoring'], 'Pronósticos|WRF': ['WRF', 'Forecasts'],
-    'Pronósticos|WRF + IA': ['WRF + AI', 'Forecasts'], 'Modelo|MONAN': ['MONAN', 'Model'], 'Rutas de|navegación': ['Navigation', 'Routes'] };
+    'Pronósticos|WRF + IA': ['WRF + AI', 'Forecasts'], 'Modelo|MONAN': ['MONAN', 'Model'], 'Caso|SAR': ['SAR', 'Case'], 'Rutas de|navegación': ['Navigation', 'Routes'] };
   const est = k => ({ operativa: 'operational', 'con retraso': 'delayed', 'no operativa': 'not operational' }[k] || k);
   const tiempo = s => s.replace(/ días$/, ' days');
   const umbrales = s => s.replace(/viento ≥/g, 'wind ≥').replace('con componente norte de Arica a', 'with a northerly component from Arica to').replace(/ de (\d[\d.,° S]+) a /g, ' from $1 to ')

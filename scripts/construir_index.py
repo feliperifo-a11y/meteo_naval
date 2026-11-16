@@ -149,6 +149,12 @@ assert MARCA_RUTA in html_dash, "falta la marca del modo solo ruta"
 (R / "rutas.html").write_text(con_meta(html_dash.replace(MARCA_RUTA, "try { if (true) {", 1).replace("<title>Desarrollo · MeteoIA</title>", "<title>Rutas de navegación · MeteoIA</title>", 1),
                                          "rutas.html", "Rutas de navegación: viento, oleaje, visibilidad, avisos y estado de puerto a la hora en que la nave pasa por cada punto, con la mejor hora de zarpe."), encoding="utf-8")
 
+# Caso SAR público (casosar.html): la página Desarrollo en modo «solo caso SAR», con el encabezado y los colores de Rutas.
+MARCA_SAR = "try { if (new URLSearchParams(location.search).has('sar')) {"
+assert MARCA_SAR in html_dash, "falta la marca del modo solo caso SAR"
+(R / "casosar.html").write_text(con_meta(html_dash.replace(MARCA_SAR, "try { if (true) {", 1).replace("<title>Desarrollo · MeteoIA</title>", "<title>Caso SAR · MeteoIA</title>", 1),
+                                           "casosar.html", "Caso SAR: cuadro ambiental, deriva, área de búsqueda probable y ventanas de operación para un caso de búsqueda y salvamento marítimo."), encoding="utf-8")
+
 # Página de pronósticos WRF + IA: solo necesita la costa y la METAREA XV.
 datos_ia = "\n".join(["const LAND = " + leer(D / "geo" / "land.json") + ";", "const METAREA = " + leer(D / "geo" / "metarea.json") + ";",
                       "const VERSION_PAGINA = " + json.dumps(version) + ";"])
