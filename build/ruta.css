@@ -94,6 +94,9 @@
 .ruta-inf-opc{margin:10px 0 4px;font-size:13px}
 .ruta-inf-opc summary{cursor:pointer;font-weight:600}
 .ruta-inf-opc .ruta-inf-n{font-weight:400;opacity:.75;margin-left:6px}
+.ruta-apac summary{cursor:pointer;font-weight:600}
+.ruta-apac .ruta-inf-n{font-weight:400;opacity:.75;margin-left:6px}
+.ruta-apac p{margin:6px 0}
 .ruta-inf-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 14px;margin:8px 0 6px}
 .ruta-inf-lista label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .ruta-inf-acc{display:flex;gap:8px;margin:4px 0}

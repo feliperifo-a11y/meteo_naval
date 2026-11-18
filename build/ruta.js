@@ -78,7 +78,7 @@ function crearRuta(L, map, ctx) {
   if (!opc.inf || typeof opc.inf !== 'object') opc.inf = {};
   if (opc.infAbr === false) opc.inf.abrigos = false; if (opc.infClima === false) opc.inf.clima = false; delete opc.infAbr; delete opc.infClima;
   // Secciones del informe que el usuario puede incluir o quitar (clave, rótulo, comienzo del título de la sección)
-  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['zarpe', 'Mejor hora de zarpe', 'Mejor hora de zarpe'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'], ['nonav', 'Pasos no navegables', 'Pasos no navegables'], ['recalada', 'Recalada (Derrotero)', 'Recalada ·'],
+  const INF_SECC = [['alternativas', 'Alternativas de ruta', 'Alternativas de ruta'], ['zarpe', 'Mejor hora de zarpe', 'Mejor hora de zarpe'], ['pasos', 'Canales y pasos con restricción', 'Canales, pasos'], ['nonav', 'Pasos no navegables', 'Pasos no navegables'], ['recalada', 'Recalada (Derrotero)', 'Recalada ·'], ['apac', 'Otros pasos APAC (no oficial)', 'Otros pasos recomendados'],
     ['abrigos', 'Abrigos del Derrotero', 'Abrigos y fondeaderos'], ['clima', 'Clima regional (Derrotero)', 'Clima regional'],
     ['condiciones', 'Condiciones a la hora de paso', 'Condiciones a la hora'], ['avisos', 'Avisos vigentes', 'Avisos vigentes'],
     ['probables', 'Avisos probables', 'Avisos probables'], ['sitport', 'Puertos (SITPORT)', 'Puertos (SITPORT)'],
@@ -337,6 +337,36 @@ function crearRuta(L, map, ctx) {
   // Sentido de tránsito que la APAC prescribe para cada paso, contra el rumbo con que la ruta lo cruza
   const SENTIDO = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
   const SENTIDO_TXT = { N: 'al norte', NE: 'al noreste', E: 'al este', SE: 'al sureste', S: 'al sur', SW: 'al suroeste', W: 'al oeste', NW: 'al noroeste' };
+  // Pasos que la carta de la APAC regula y que el Derrotero no sitúa: van como referencia, sin
+  // georreferenciar, porque no hay fuente trazable de su posición y no se pueden cruzar con la ruta
+  const APAC_SIN_POS = [
+    { n: 'Canal Yal', aereo: 42 },
+    { n: 'Paso Galvarino', eslora: 100, calado: 6, sentido: 'N' },
+    { n: 'Laguna San Rafael', eslora: 150, calado: 6 },
+    { n: 'Paso Picton', calado: 6, uka: 1, sentido: 'S' },
+    { n: 'Canal Fitzroy', eslora: 80, calado: 6.8, uka: 1, sentido: 'S' },
+    { n: 'Canal Bonduca', sentido: 'S' },
+    { n: 'Canal Gabriel', sentido: 'NW' },
+    { n: 'Canal Ocasión', eslora: 80, sentido: 'E' },
+    { n: 'Paso Mc Intyre', sentido: 'E' },
+  ];
+  const APAC_LEYENDA = 'Pasos que regula la Carta de Rutas Normales de Navegación de la APAC (marzo de 2024) y que el Derrotero de la Costa de Chile no describe con posición. Se reproducen porque son la recomendación de los prácticos de canales: la información no es oficial y no aparece en los derroteros. Al no tener posición, estos pasos no se comparan con la ruta ni se marcan en el mapa. Verificar en la carta y con el práctico.';
+  function apacLim(x) {
+    const p = [];
+    if (x.eslora) p.push('eslora máxima ' + nf(x.eslora, 0) + ' m');
+    if (x.calado) p.push('calado máximo ' + nf(x.calado, 1) + ' m' + (x.uka ? ' o UKA ' + nf(x.uka, 1) + ' m' : ''));
+    if (x.aereo) p.push('puntal aéreo máximo ' + nf(x.aereo, 1) + ' m');
+    if (x.sentido) p.push('sentido normal de tránsito ' + SENTIDO_TXT[x.sentido]);
+    return p.length ? p.join('; ') + '.' : 'La carta no indica límites de dimensiones.';
+  }
+  // Compara las dimensiones del buque con los límites de la carta, sin afirmar que el paso esté en la ruta
+  function apacExcede(x) {
+    const p = [];
+    if (x.eslora && eslora && eslora > x.eslora) p.push('eslora');
+    if (x.calado && calado && calado > x.calado) p.push('calado');
+    if (x.aereo && aereo && aereo > x.aereo) p.push('puntal aéreo');
+    return p.join(' y ');
+  }
   // Rumbo medio de la traza en el entorno del paso (± 2 puntos), para no depender de un solo tramo
   function rumboEn(tr, i) {
     const a = tr[Math.max(0, i - 2)], b = tr[Math.min(tr.length - 1, i + 2)];
@@ -817,6 +847,10 @@ function crearRuta(L, map, ctx) {
       `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}${x.ruta ? `<br><b>Con este buque: ${escH(x.ruta)}.</b>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small>` +
       `${x.apac ? `<br><small><b>APAC:</b> ${x.apac.sentido ? `sentido normal ${escH(SENTIDO_TXT[x.apac.sentido])}${x.rv != null ? ` · la ruta lo cruza al rumbo ${Math.round(x.rv)}°` : ''}. ` : ''}${escH(x.apac.nota || '')} (${escH(x.apac.ref)})</small>` : ''}</p>`).join('') +
       `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora, el calado y el puntal aéreo del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. El sentido normal de tránsito y los límites de puntal aéreo provienen de la Carta de Rutas Normales de Navegación de la APAC; entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
+    // Pasos de la carta APAC que el Derrotero no sitúa: referencia, no se cruzan con la ruta
+    if (selA) h += `<div class="sar-blq"><details class="ruta-apac"><summary>Otros pasos recomendados por los prácticos (APAC) <span class="ruta-inf-n">${APAC_SIN_POS.length} pasos · información no oficial</span></summary>` +
+      APAC_SIN_POS.map(x => `<p><b>${escH(x.n)}</b><br><small>${escH(apacLim(x))}</small>${apacExcede(x) ? `<br><span class="sar-error">Este buque excede: ${escH(apacExcede(x))}.</span>` : ''}</p>`).join('') +
+      `<p class="sar-nota">${escH(APAC_LEYENDA)}</p></details></div>`;
     // Pasos no navegables y recalada (Derrotero)
     if (ultimo.noNav && ultimo.noNav.length) h += `<div class="sar-blq ruta-nonav"><h3>Pasos no navegables en la ruta</h3>` + ultimo.noNav.map(x =>
       `<p><span class="sar-pill" style="background:#d32f2f">No navegar</span> <b>${escH(x.q.n)}</b> · milla ${nf(x.mn, 0)} · paso estimado ${hf(x.eta)}<br>${escH(x.q.nota)} <small>(${escH(x.q.ref)})</small></p>`).join('') +
@@ -952,6 +986,9 @@ function crearRuta(L, map, ctx) {
           x.apac && x.apac.sentido ? SENTIDO_TXT[x.apac.sentido] + (x.rv != null ? ` (ruta ${Math.round(x.rv)}°)` : '') : '–',
           [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
         nota: (eslora || calado || aereo ? `Buque: ${[eslora ? 'eslora ' + nf(eslora, 0) + ' m' : '', calado ? 'calado ' + nf(calado, 1) + ' m' : '', aereo ? 'puntal aéreo ' + nf(aereo, 1) + ' m' : ''].filter(Boolean).join(', ')}. ` : '') + 'Sentido normal de tránsito y puntal aéreo: Carta de Rutas Normales de Navegación de la APAC, marzo de 2024. Entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
+      sec.push({ titulo: 'Otros pasos recomendados por los prácticos (APAC)', tabla: { cab: ['Paso', 'Sentido APAC', 'Límites de la carta APAC', 'Este buque'], anchos: [1.6, 1.1, 3.4, 1.1],
+        filas: APAC_SIN_POS.map(x => [x.n, x.sentido ? SENTIDO_TXT[x.sentido] : '–', apacLim(x), apacExcede(x) ? 'excede ' + apacExcede(x) : '–']) },
+        nota: APAC_LEYENDA });
     }
     if (ultimo.ventanas && ultimo.ventanas.top && ultimo.ventanas.top.length) sec.push({ titulo: 'Mejor hora de zarpe', tabla: { cab: ['Zarpe', 'Llegada', 'Alternativa', 'Rojo', 'Amarillo', 'Avisos', 'Pasos de noche', 'Viento máx.', 'Ola máx.'], anchos: [1.2, 1.2, 1.8, .5, .6, .5, .7, .7, .6],
       filas: ultimo.ventanas.top.map(x => [hf(x.t0), hf(x.llegada), x.c.a ? x.c.a.nombre : '–', String(x.rojo), String(x.amar), String(x.avisos), String(x.noche), x.vmax < 0 ? '–' : n0(x.vmax) + ' kt', x.omax < 0 ? '–' : n1(x.omax) + ' m']) },
