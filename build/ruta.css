@@ -28,7 +28,13 @@
 .ruta-card [hidden]{display:none!important}
 .ruta-export{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .ruta-export button{padding:7px 12px;border-radius:6px;border:1px solid #0f3b66;background:#0f3b66;color:#fff;font-weight:700;cursor:pointer}
-.ruta-export .ruta-pdf{background:transparent;color:inherit}
+.ruta-export .ruta-pdf,.ruta-export .ruta-gpx{background:transparent;color:inherit}
+#mapWrap .ruta-card .sar-form .ruta-abrir{border:1px solid #0f3b66;background:transparent;color:inherit;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:700}
+.ruta-import{margin:8px 0 0;padding:8px 10px;border-radius:6px;border-left:4px solid #2e9d57;background:rgba(46,157,87,.10);font-size:13px;line-height:1.35}
+.ruta-import.err{border-left-color:#c0392b;background:rgba(192,57,43,.10)}
+.ruta-import ul{margin:4px 0 0;padding-left:18px}
+.ruta-import li{margin:2px 0}
+#mapWrap .ruta-card.ruta-drop{outline:2px dashed #ff6a00;outline-offset:-4px}
 .ruta-recs{display:flex;flex-direction:column;gap:6px;width:100%}
 .ruta-rec{display:flex;align-items:flex-end;gap:8px;flex-wrap:nowrap}
 #mapWrap .ruta-card .ruta-rec>label:first-child{flex:1 1 auto;min-width:0}

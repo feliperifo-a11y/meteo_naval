@@ -57,8 +57,11 @@ function crearRuta(L, map, ctx) {
       <label title="La ruta se mantiene a esta distancia de la costa y de las islas, salvo al salir del zarpe y al llegar a cada recalada">Distancia a la costa (mn)<input name="margen" inputmode="decimal" value="5" style="width:80px;min-width:80px"></label>
       <button type="submit">Calcular</button>
       <button type="button" class="sar-elegir ruta-elegir ruta-c">Marcar en el mapa</button>
+      <button type="button" class="ruta-abrir" title="Cargar una ruta propia en GPX, RTZ o KML y evaluarla">Abrir ruta</button>
       <button type="button" class="sar-borrar ruta-borrar">Limpiar</button>
+      <input type="file" class="ruta-file" accept=".gpx,.rtz,.kml,.xml" hidden>
     </form>
+    <p class="ruta-import" hidden aria-live="polite"></p>
     <p class="sar-ayuda ruta-ayuda ruta-c">Escribe las coordenadas (grados y minutos o decimales; S y W por defecto) o usa "Marcar en el mapa": primer clic = zarpe, cada clic siguiente agrega un punto de la ruta; el último es la recalada. Termina con <b>Enter</b>, doble clic o el botón "Terminar ruta" (Esc cancela). Los puntos se pueden arrastrar; un punto sobre tierra se lleva a la orilla.</p>
     <p class="sar-ayuda ruta-ayuda ruta-p">Elige el puerto de zarpe y uno o más puertos de recalada, en el orden de navegación (136 puertos y bahías de SITPORT, de norte a sur, agrupados por zona). En cada recalada intermedia puedes indicar la estadía en horas. Las restricciones SITPORT se leen de las bahías elegidas.</p>
     <div class="sar-res ruta-res" aria-live="polite"></div>`;
@@ -201,7 +204,57 @@ function crearRuta(L, map, ctx) {
     if (pts.length >= 2) calcular(); else { res.innerHTML = '<p class="sar-error">Marca al menos el zarpe y el destino.</p>'; dibujarPuntos(); }
   }
   card.querySelector('.ruta-elegir').onclick = () => modoMarcar(true);
-  card.querySelector('.ruta-borrar').onclick = () => { modoMarcar(false); pts = []; ultimo = null; guardar(); sincForm(); res.innerHTML = ''; grupo.clearLayers(); grupoAbr.clearLayers(); };
+  card.querySelector('.ruta-borrar').onclick = () => { modoMarcar(false); pts = []; ultimo = null; guardar(); sincForm(); res.innerHTML = ''; grupo.clearLayers(); grupoAbr.clearLayers(); msgImp.hidden = true; };
+
+  // ------------------------------ Cargar una ruta propia (GPX, RTZ o KML) ------------------------------
+  // El archivo lo lee el navegador del usuario y nunca sale de su máquina. El análisis está en ruta_archivos.js.
+  const msgImp = card.querySelector('.ruta-import'), entradaArch = card.querySelector('.ruta-file');
+  function avisarImport(texto, error, detalles) {
+    msgImp.hidden = false;
+    msgImp.classList.toggle('err', !!error);
+    msgImp.innerHTML = `<b>${escH(texto)}</b>` + (detalles && detalles.length ? `<ul>${detalles.map(d => `<li>${escH(d)}</li>`).join('')}</ul>` : '');
+  }
+  function cargarArchivoRuta(archivo) {
+    if (!archivo) return;
+    if (archivo.size > RUTA_MAX_BYTES) { avisarImport(`El archivo pesa ${nf(archivo.size / 1048576, 1)} MB y el máximo son 2 MB. Expórtalo como ruta, no como derrota registrada.`, true); return; }
+    const fr = new FileReader();
+    fr.onerror = () => avisarImport('No se pudo leer el archivo.', true);
+    fr.onload = () => {
+      const r = rutaLeerRuta(String(fr.result || ''));
+      if (r.error) { avisarImport(r.error, true); return; }
+      modoMarcar(false);
+      if (tipo !== 'coord') ponerTipo('coord');
+      const movidos = [];
+      pts = r.puntos.map((p, i) => {
+        const q = rutaAlMar([+p.lat.toFixed(4), +p.lon.toFixed(4)]);
+        if (Math.abs(q[0] - p.lat) > 2e-4 || Math.abs(q[1] - p.lon) > 2e-4) movidos.push(i + 1);
+        return q;
+      });
+      pp = pts.map(() => null); est = pts.map(() => 0); ultimo = null;
+      if (r.zarpe) form.hora.value = sarHoraLocal(r.zarpe).slice(0, 16);
+      if (r.velocidad > 0) form.vel.value = String(Math.round(r.velocidad * 10) / 10).replace('.', ',');
+      const det = r.avisos.slice();
+      if (movidos.length) det.push(`${movidos.length} ${movidos.length === 1 ? 'punto quedaba sobre tierra y se llevó' : 'puntos quedaban sobre tierra y se llevaron'} a la orilla.`);
+      const tomado = [r.zarpe ? 'la hora de zarpe' : null, r.velocidad > 0 ? 'la velocidad' : null].filter(Boolean);
+      if (tomado.length) det.push(`Del archivo se tomó también ${tomado.join(' y ')}.`);
+      det.push('Es una ruta de apoyo a la planificación: verifícala en la carta náutica antes de navegar.');
+      guardar(); sincForm(); dibujarPuntos();
+      avisarImport(`${r.formato}${r.nombre ? ' · ' + r.nombre : ''}: ${pts.length} puntos de paso cargados.`, false, det);
+      calcular();
+    };
+    fr.readAsText(archivo);
+  }
+  card.querySelector('.ruta-abrir').onclick = () => { entradaArch.value = ''; entradaArch.click(); };
+  entradaArch.onchange = () => cargarArchivoRuta(entradaArch.files && entradaArch.files[0]);
+  // Arrastrar el archivo sobre la ficha o sobre el mapa
+  const traeArchivo = e => !card.hidden && e.dataTransfer && Array.prototype.includes.call(e.dataTransfer.types || [], 'Files');
+  ['dragenter', 'dragover'].forEach(ev => wrap.addEventListener(ev, e => { if (!traeArchivo(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; card.classList.add('ruta-drop'); }));
+  ['dragleave', 'dragend'].forEach(ev => wrap.addEventListener(ev, e => { if (!wrap.contains(e.relatedTarget)) card.classList.remove('ruta-drop'); }));
+  wrap.addEventListener('drop', e => {
+    if (!traeArchivo(e) || !e.dataTransfer.files.length) return;
+    e.preventDefault(); card.classList.remove('ruta-drop');
+    cargarArchivoRuta(e.dataTransfer.files[0]);
+  });
   // Al elegir un puerto de la lista (o escribir uno completo) se calcula de inmediato si el otro extremo ya está
   form.onsubmit = e => {
     e.preventDefault();
@@ -736,7 +789,7 @@ function crearRuta(L, map, ctx) {
         <div class="ruta-inf-acc"><button type="button" data-todo="1">Marcar todo</button><button type="button" data-todo="0">Quitar todo</button></div>
         <p class="sar-nota">El resumen de la ruta y la advertencia van siempre. La selección se recuerda en este equipo.</p></details>
       <div class="ruta-zarpe"><button type="button" class="ruta-mejorzarpe">¿Cuál es la mejor hora de zarpe?</button><div class="ruta-zarpe-res"></div></div>
-      <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button></div></div>`;
+      <div class="ruta-export"><button type="button" class="ruta-word">Descargar informe Word</button><button type="button" class="ruta-pdf">Imprimir o guardar PDF</button><button type="button" class="ruta-gpx" title="Archivo de ruta para plotters y aplicaciones de navegación (GPX 1.1)">Descargar ruta GPX</button></div></div>`;
     // Pasos con restricción de la alternativa elegida (Derrotero)
     if (selA && selA.pasos.length) h += `<div class="sar-blq"><h3>Canales, pasos y angosturas con restricción</h3>` + selA.pasos.map(x =>
       `<p><b>${escH(x.q.n)}</b> · carta ${escH(x.q.carta)} · milla ${nf(x.mn, 0)} · paso estimado <b>${hf(x.eta)}</b> ${x.q.luz ? `<span class="sar-pill" style="background:${x.dia ? '#2e9d57' : '#d32f2f'}">${x.dia ? 'de día' : 'de noche'}</span>` : ''}` +
@@ -802,6 +855,16 @@ function crearRuta(L, map, ctx) {
     const bz = res.querySelector('.ruta-mejorzarpe'); if (bz) bz.onclick = () => { if (!ultimo.ventanas) ultimo.ventanas = ventanasZarpe(); pintarVentanas(res.querySelector('.ruta-zarpe-res')); bz.hidden = true; };
     res.querySelector('.ruta-word').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(rutaDocx(informe())); a.download = nombreInforme() + '.docx'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); };
     res.querySelector('.ruta-pdf').onclick = () => { const u = URL.createObjectURL(new Blob([rutaHtmlInforme(informe())], { type: 'text/html' })); const w = window.open(u, '_blank'); if (!w) location.href = u; setTimeout(() => URL.revokeObjectURL(u), 60000); };
+    res.querySelector('.ruta-gpx').onclick = () => {
+      const P = rutaPuntosArchivo(ultimo && ultimo.R); if (P.length < 2) return;
+      const txt = rutaGpx({ nombre: `${corto(false)} a ${corto(true)}`, fecha: new Date(), puntos: P,
+        desc: `Ruta evaluada en MeteoIA${buque ? ' para ' + buque : ''} el ${hf(new Date())}. Apoyo a la planificación: verificar en la carta náutica antes de navegar.` });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([txt], { type: 'application/gpx+xml' }));
+      a.download = nombreInforme() + '.gpx';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    };
     // Elegir alternativa: con puntero (mouse o dedo) y sin arrastre; en celular el clic sintético no siempre llega a la fila
     res.querySelectorAll('.der-item').forEach(d => d.onclick = () => { const o = ultimo.abr.lista[+d.dataset.i]; map.flyTo([o.x.la, o.x.lo], Math.max(map.getZoom(), 10), { duration: .6 });
       map.once('moveend', () => L.popup({ maxWidth: 340 }).setLatLng([o.x.la, o.x.lo]).setContent(derroteroFicha(o.x, escH, `<div class="der-sub">Milla ${nf(o.mn, 0)} · a ${nf(o.d, 1)} mn de la ruta · paso ${hf(o.eta)}</div>`)).openOn(map)); });
