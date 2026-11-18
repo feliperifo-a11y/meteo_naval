@@ -48,7 +48,7 @@ BASE_AVISOS = "https://meteoarmada.directemar.cl"
 CABECERAS = {"User-Agent": "dashboard-meteo-publico/1.0 (consulta programada cada 20 min)"}
 PAUSA = 1.0          # segundos entre descargas, para no cargar los servidores
 CONSERVAR_H = 6      # horas que se mantiene un aviso después de expirar
-LECTOR_AVISOS_VERSION = 2  # releer PDFs cacheados cuando cambia la interpretación geográfica
+LECTOR_AVISOS_VERSION = 3  # releer PDFs cacheados cuando cambia la interpretación geográfica
 
 errores: list[str] = []
 
@@ -709,7 +709,8 @@ def leer_marejadas(t: str, ref: datetime, geo: Geo):
     """Avisos de marejadas: sectores con día de inicio (AM/PM) y día de término."""
     anio, emi = anio_emision(t, ref)
     tt = sin_acentos(t.upper())
-    ini = seccion(tt, r"INICIO\s+MAREJADAS?\s*:", [r"\d\.\s*TERMINO", r"TERMINO\s+CONDICION"])
+    # El encabezado es "INICIO MAREJADAS:" o, en los avisos de marejadas anormales, "INICIO MAREJADAS ANORMALES:"
+    ini = seccion(tt, r"INICIO\s+MAREJADAS?(?:\s+ANORMALES?)?\s*:", [r"\d\.\s*TERMINO", r"TERMINO\s+CONDICION"])
     fin = seccion(tt, r"TERMINO\s+CONDICION\s*:", [r"\d\.\s*HORARIOS", r"HORARIOS"])
     pat = re.compile(r"([A-Z][A-Z\.\s]+?)\s+" + DIAS + r"\s+(\d{1,2})\s+DE\s+([A-Z]+)(?:\s*\((AM|PM)\))?")
 
@@ -803,11 +804,14 @@ def tipo_aviso(t: str, tipo_portada: str) -> str:
     """Primero la descripción de la portada; luego el encabezado del PDF. ('mar marejada' en un pronóstico no es un aviso de marejadas)."""
     tp = sin_acentos(tipo_portada.upper())
     tt = sin_acentos(t.upper())
+    anormal = re.compile(r"MAREJADAS?\s+ANORMALES?")
     for clave, nombre in (("MAREJADA", "Aviso de marejadas"), ("TROMBA", "Aviso especial · trombas marinas"),
                           ("TEMPORAL", "Aviso de temporal"), ("MAL TIEMPO", "Aviso de mal tiempo")):
         if clave in tp:
-            return nombre
-    if re.search(r"AVISO\s+DE\s+MAREJADAS|INICIO\s+MAREJADAS", tt): return "Aviso de marejadas"
+            # La portada rotula ambos como "marejadas"; el encabezado del PDF distingue las anormales
+            return nombre + " anormales" if nombre == "Aviso de marejadas" and anormal.search(tt) else nombre
+    if re.search(r"AVISO\s+DE\s+MAREJADAS|INICIO\s+MAREJADAS", tt):
+        return "Aviso de marejadas anormales" if anormal.search(tt) else "Aviso de marejadas"
     if "TROMBA" in tt: return "Aviso especial · trombas marinas"
     if re.search(r"AVISO\s+DE\s+TEMPORAL", tt): return "Aviso de temporal"
     if re.search(r"AVISO\s+DE\s+MAL\s+TIEMPO", tt): return "Aviso de mal tiempo"

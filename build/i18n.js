@@ -67,7 +67,7 @@
     'Alertas y avisos': 'Alerts and warnings', 'Mostrar todas en el mapa': 'Show all on map', 'Ocultar todas del mapa': 'Hide all from map', 'En mapa': 'On map', 'Oculta': 'Hidden',
     'Roja': 'Red', 'Amarilla': 'Yellow', 'Vigente': 'In force', 'Próximo': 'Upcoming',
     // Nombres de los avisos como en la versión en inglés del sitio de la autoridad marítima: especial = Weather, mal tiempo = Gales, temporal = Storms, marejadas = Swell-Surges.
-    'Aviso de marejadas': 'Swell-Surge Warning', 'Aviso de temporal': 'Storm Warning', 'Aviso de mal tiempo': 'Gale Warning', 'Aviso especial · trombas marinas': 'Special Weather Warning · waterspouts', 'Aviso de temporal · Zona IX': 'Storm Warning · Area IX', 'Aviso especial': 'Special Weather Warning',
+    'Aviso de marejadas': 'Swell-Surge Warning', 'Aviso de marejadas anormales': 'Abnormal Swell-Surge Warning', 'Aviso de temporal': 'Storm Warning', 'Aviso de mal tiempo': 'Gale Warning', 'Aviso especial · trombas marinas': 'Special Weather Warning · waterspouts', 'Aviso de temporal · Zona IX': 'Storm Warning · Area IX', 'Aviso especial': 'Special Weather Warning',
     // Estado de puerto
     'Estado de puerto': 'Port status', 'Consultando restricciones…': 'Checking restrictions…', 'Ver en SITPORT ↗': 'View in SITPORT ↗', 'Bahía': 'Bay', 'Restricción informada': 'Reported restriction', 'Restricción': 'Restriction', 'Toda la bahía': 'Whole bay',
     'La consulta no informa restricciones. Consulte el estado oficial en SITPORT.': 'No restrictions are reported. Check the official status in SITPORT.', 'SITPORT: bahía sin posición': 'SITPORT: bay without position',
@@ -113,7 +113,7 @@
     [/^Área (\S+) · (.+)$/, (m, a, n) => `Area ${a} · ${n}`], [/^GFS · válido (.+) \(hora Chile\)$/, (m, f) => `GFS · valid ${f} (Chile time)`],
     [/^Oleaje sobre (\d) m en boya (.+)$/, (m, h, b) => `Waves above ${h} m at buoy ${b}`], [/^Viento ≥ (\d+) kt en (.+)$/, (m, k, n) => `Wind ≥ ${k} kt at ${n}`],
     [/^Altura significativa (\S+) m · (.+)$/, (m, h, f) => `Significant wave height ${h} m · ${f}`], [/^(\d\S+ \d\S+) a (\d\S+ \d\S+)$/, (m, a, b) => `${a} to ${b}`],
-    [/^(Aviso de marejadas|Aviso de temporal|Aviso de mal tiempo|Aviso especial · trombas marinas|Aviso de temporal · Zona IX) · (.+) · (vigente|próximo)$/, (m, t, z, e) => `${EX[t]} · ${z} · ${e === 'vigente' ? 'in force' : 'upcoming'}`],
+    [/^(Aviso de marejadas anormales|Aviso de marejadas|Aviso de temporal|Aviso de mal tiempo|Aviso especial · trombas marinas|Aviso de temporal · Zona IX) · (.+) · (vigente|próximo)$/, (m, t, z, e) => `${EX[t]} · ${z} · ${e === 'vigente' ? 'in force' : 'upcoming'}`],
     [/^Sin avisos vigentes ni alertas por viento u oleaje \(≥ 3 m\) en este momento\. Umbrales de viento del PD OPE-07: (.+)\.$/, (m, u) => `No warnings in force and no wind or wave (≥ 3 m) alerts at this time. Wind thresholds from directive PD OPE-07: ${umbrales(u)}.`],
     [/^(.+?) · (\d+) restricci(?:ón|ones)(?: \((.+)\))?$/, (m, n, c, r) => `${n} · ${c} restriction${c === '1' ? '' : 's'}${r ? ' (' + r + ')' : ''}`], [/^(\d+) restricci(?:ón|ones)$/, (m, c) => `${c} restriction${c === '1' ? '' : 's'}`],
     [/^(\d+) bahías · (\d+) restricciones publicadas\. (Consulta en vivo|Copia publicada)(?: · (fecha no disponible|[^.⚠]+))?\.( ⚠ SITPORT no responde desde esa hora: las restricciones pueden haber cambiado\.)?$/,
