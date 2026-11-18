@@ -69,17 +69,18 @@ CAMPOS = [
 CRITERIOS = {
     "fuente": "O.P.I. N° 1107 de la Gobernación Marítima de Valparaíso (21 mar 2024, ver. 1.6), puntos II.2 y II.3",
     "marejadas": ["Mar de fondo del SW/W con olas de 3 a 4 m",
-                  "Mar de fondo del NW con olas de 2,0 m o más",
+                  "Mar de fondo del NW/W con olas de 2,0 m o más",
                   "Mar de viento del S/SW sobre 3 m en el litoral central (zonas II y III; criterio asociado al fortalecimiento del Anticiclón)"],
     "anormales": ["Mar de fondo del SW/W sobre 4 m",
-                  "Mar de fondo del NW con período de 14 a 17 s y olas de 2,5 m o más",
-                  "Mar de fondo del NW con período de 18 s o más y olas de 2,0 m o más",
+                  "Mar de fondo del NW/W con período de 14 a 17 s y olas de 2,5 m o más",
+                  "Mar de fondo del NW/W con período de 18 s o más y olas de 2,0 m o más",
                   "Mar de viento del NW/W sobre 3,0 m (sistema frontal); se aplica de la zona IV al norte y en Juan Fernández y Rapa Nui"],
     "notas": ["El rango de cada día es la altura significativa total (mar de viento y de fondo) del modelo: mediana y percentil 90 de los máximos diarios de los puntos de la zona, en múltiplos de 0,5 m.",
               "La O.P.I. usa como referencia la costa de la Región de Valparaíso; aquí se aplica a toda la costa evaluada.",
               "El modelo entrega altura significativa mar afuera por partición, no la altura de las olas en la rompiente.",
               "El período de cada partición del modelo es su período medio.",
-              "Sectores de procedencia: SW 202,5°–247,5°, W 247,5°–292,5°, NW 292,5°–337,5°, S/SW 157,5°–247,5°.",
+              "Sectores de procedencia: SW/W 202,5°–292,5°, NW/W 247,5°–337,5°, S/SW 157,5°–247,5°. El sector W (247,5°–292,5°) queda en los dos criterios de mar de fondo y se aplica el más severo.",
+              "La O.P.I. N° 1107 escribe los criterios de mar de fondo de marejadas y de marejadas anormales como procedencia Norweste; aquí se aplican al sector Norweste/Weste por criterio operativo del Centro, de modo que una mar de fondo del W con 2,0 m o más también califica.",
               "La O.P.I. exige emitir los avisos con a lo menos 48 horas de antelación; las sicigias se consideran al evaluar marejadas anormales."],
 }
 
@@ -252,11 +253,12 @@ def evaluar(v, zona):
         if s in ("SW", "W"):
             if h > 4.0: tomar(2, "Mar de fondo del SW/W", h, t, d)
             elif h >= 3.0: tomar(1, "Mar de fondo del SW/W", h, t, d)
-        elif s == "NW":
+        # El sector W cae en los dos criterios de mar de fondo: se evalúan ambos y queda el más severo
+        if s in ("W", "NW"):
             if math.isfinite(t) and ((t >= 18 and h >= 2.0) or (14 <= t < 18 and h >= 2.5)):
-                tomar(2, "Mar de fondo del NW", h, t, d)
+                tomar(2, "Mar de fondo del NW/W", h, t, d)
             elif h >= 2.0:
-                tomar(1, "Mar de fondo del NW", h, t, d)
+                tomar(1, "Mar de fondo del NW/W", h, t, d)
     h, t, d = v["hw"], v["tw"], v["dw"]
     if math.isfinite(h) and math.isfinite(d):
         s = sector(d)
