@@ -56,6 +56,34 @@ PASOS.update({
  'aguirrecerda': {'n': 'Canal Aguirre Cerda', 'carta': '15350 (INT 9104)', 'p': [-64.826, -62.852], 'ref': 'Pub. SHOA N° 3006, cap. XV, segunda parte',
    'nota': 'El más estrecho de los accesos a la bahía Paraíso (5 cables frente a la caleta Gloria); profundo y limpio, salvo dos pequeños bancos de piedra en la punta Molina. Corrientes de marea de hasta 5 nudos (flujo al SSW, reflujo al NNE). Los témpanos de los glaciares pueden obstruir por completo su boca N; alternativas: canales Lientur y Lautaro, aptos para toda clase de buques.'},
 })
+# ---- Carta de Rutas Normales de Navegación de la APAC (Asociación de Prácticos Autorizados de Canales),
+# Canal Chacao a Islas Diego Ramírez, edición de marzo de 2024. Zona de pilotaje obligatorio.
+# Aporta el sentido de tránsito normal de cada paso y límites que el Derrotero no expresa como cifra
+# (puntal aéreo, manga, UKA). Donde ambas fuentes dan la misma cifra, coinciden.
+APAC_REF = 'Carta de Rutas Normales de Navegación, APAC, marzo de 2024'
+APAC = {
+ 'chacao':   {'sentido': 'E', 'aereo': 59},
+ 'dalcahue': {'sentido': 'S', 'calado': 4.0, 'aereo': 44.34},
+ 'pulluche': {'sentido': 'E', 'nota': 'Bajo Roepke: calado máximo 7,5 m al E y 9,0 m al W, o UKA 1,3 m.'},
+ 'inglesa':  {'sentido': 'N', 'eslora': 180, 'calado': 10.7, 'luz': True, 'estoa': True},
+ 'escape':   {'sentido': None, 'luz': True,
+              'nota': 'Paso Piloto Pardo: solo al N y con luz diurna. Paso del Abismo: solo al S y con luz diurna.'},
+ 'guia':     {'sentido': 'N'},
+ 'smyth':    {'sentido': 'N', 'luz': True,
+              'nota': 'Canal Gray: eslora máxima 230 m y calado 12,0 m, con luz diurna. Paso Summer: calado 7,35 m o UKA 0,75 m. Ambos al N.'},
+ 'shoal':    {'sentido': 'S'},
+ 'kirke':    {'sentido': 'E', 'luz': True, 'estoa': True,
+              'nota': 'Angostura Kirke: eslora 150 m, calado 6,3 m y manga 23,0 m. Angostura White: eslora 140 m y calado 7,0 m. Ambas al E, con estoa y luz diurna.'},
+ 'obrien':   {'sentido': 'W'},
+ 'timbales': {'sentido': 'E'},
+ 'mackinlay': {'sentido': 'E'},
+}
+for _id, _d in APAC.items():
+    if _id in PASOS:
+        PASOS[_id]['apac'] = {**_d, 'ref': APAC_REF}
+        for _k in ('aereo', 'manga'):          # límites que el Derrotero no trae como cifra
+            if _d.get(_k) and not PASOS[_id].get(_k): PASOS[_id][_k] = _d[_k]
+
 NO_NAV = [
  {'n': 'Estrecho Fildes', 'p': [-62.205, -59.02], 'r': 0.8, 'ref': 'Pub. SHOA N° 3006, cap. XIV, primera parte',
   'nota': 'Pasaje somero y sucio, obstruido por islotes, rocas y bajos fondos, con fuertes corrientes de marea: el Derrotero recomienda no intentar su navegación, ni siquiera con embarcaciones menores.'},
