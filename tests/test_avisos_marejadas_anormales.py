@@ -36,6 +36,13 @@ class AvisoMarejadasAnormales(unittest.TestCase):
         # La portada de DIRECTEMAR rotula ambos como "marejadas"; manda el encabezado del PDF
         self.assertEqual(colector.tipo_aviso(AVISO, "Aviso de marejadas"), "Aviso de marejadas anormales")
 
+    def test_el_tipo_anormales_sigue_enrutando_al_lector_de_marejadas(self):
+        # El despacho comparaba el tipo exacto, así que al nombrar las anormales dejaban de leerse
+        self.assertTrue(colector.es_aviso_marejadas("Aviso de marejadas anormales"))
+        self.assertTrue(colector.es_aviso_marejadas("Aviso de marejadas"))
+        self.assertFalse(colector.es_aviso_marejadas("Aviso de temporal"))
+        self.assertTrue(colector.es_aviso_marejadas(colector.tipo_aviso(AVISO, "")))
+
     def test_lee_los_dos_sectores(self):
         self.assertEqual(len(self.zonas), 2)
         nombres = {z["nombre"] for z in self.zonas}

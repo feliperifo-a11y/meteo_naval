@@ -705,6 +705,11 @@ def resumen_corto(s: str, n=320) -> str:
 DIAS = r"(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES|SABADO|DOMINGO)"
 
 
+def es_aviso_marejadas(tipo: str) -> bool:
+    """Marejadas normales y anormales comparten formato, así que las lee leer_marejadas()."""
+    return (tipo or "").startswith("Aviso de marejadas")
+
+
 def leer_marejadas(t: str, ref: datetime, geo: Geo):
     """Avisos de marejadas: sectores con día de inicio (AM/PM) y día de término."""
     anio, emi = anio_emision(t, ref)
@@ -1037,7 +1042,7 @@ def recolectar_avisos(geo: Geo) -> bool:
                 avisos[url] = previo[url]; continue            # ya leído en una ejecución anterior
             t = texto_pdf(get(url).content)
             tipo = tipo_aviso(t, p["tipo_portada"])
-            if tipo == "Aviso de marejadas":
+            if es_aviso_marejadas(tipo):
                 zonas, res = leer_marejadas(t, ref, geo)
                 nota = "El aviso indica días (AM/PM); el inicio se toma a las 00:00 o 12:00 y el término al fin del día, hora Chile."
             else:
@@ -1052,6 +1057,10 @@ def recolectar_avisos(geo: Geo) -> bool:
                 a["motivo"] = "No se pudo leer el PDF (posible imagen escaneada) o no trae fechas/sector reconocibles." if not t.strip() else "No se reconocieron fechas de validez o sectores."
             avisos[url] = a
             print(f"  {tipo} · {sector}: {len(zonas)} zona(s){' · REVISAR' if not zonas else ''}")
+            if not zonas and t.strip():
+                # Muestra lo que vio el lector, para no tener que adivinar por qué falló
+                i = t.upper().find("INICIO")
+                print("    texto:", re.sub(r"\s+", " ", t[max(0, i - 40):i + 220] if i >= 0 else t[:220]))
         except Exception as e:
             errores.append(f"aviso {p.get('pagina')}: {e}")
             print("  ERROR", p.get("pagina"), e)
