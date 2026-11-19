@@ -23,6 +23,12 @@ Instala Ollama como servicio (solo `127.0.0.1`), descarga el modelo (`qwen3:4b` 
 
 Prueba sin modelo: `python3 asistente_local.py --probar`. Una pregunta por terminal: `python3 asistente_local.py --pregunta "…"`.
 
+## Publicación en la página Desarrollo (botón ASISTENTE IA)
+
+1. **Cloudflare Access primero.** En Cloudflare Zero Trust → Access → Applications → Add an application → Self-hosted: dominio `asistente.meteoia.cl`, política *Allow* con los correos autorizados e inicio de sesión por código al correo (One-time PIN).
+2. **Túnel** en el Mac mini: `curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar_tunel.sh | bash`. Pide autorizar la cuenta de Cloudflare en el navegador (una vez), crea el túnel `meteoia-asistente`, el registro DNS y el servicio. Al final verifica que el subdominio exija inicio de sesión; si responde sin protección, apaga el túnel.
+3. **Panel** (`build/asistente_ia.js` y `.css`): consulta `https://asistente.meteoia.cl` con la cookie de Access (`credentials: 'include'`). La pregunta va como `text/plain` para no generar la petición previa OPTIONS, que Access bloquea. Sin sesión o con el Mac apagado, el panel muestra el enlace para iniciar sesión y el resto de la página no se ve afectado. Las posiciones consultadas se marcan en el mapa.
+
 ## Límites del prototipo
 
 - Un usuario a la vez; en un M1 de 8 GB cada respuesta tarda del orden de 10 a 30 s.
