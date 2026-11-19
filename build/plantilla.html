@@ -36,6 +36,7 @@
 /*EVALUACION_IA_CSS*/
 /*RUTA_CSS*/
 /*TROMBAS_CSS*/
+/*ASISTENTE_CSS*/
 </style>
 <style>
 :root{
@@ -398,6 +399,7 @@ html.soloRuta #baseStatus{background:#0e2136f2;color:#e8f1fa;border:1px solid #1
     <button type="button" class="btnCarta btnEval" id="btnEvaluacionIA" title="Evaluación con pauta fija del pronóstico WRF, el borrador IA y el pronóstico profesional contra las estaciones de Iquique, Valparaíso y Talcahuano, por versión de prompt">EVALUACIÓN IA</button>
     <button type="button" class="btnCarta btnBorr" id="btnBorrador" title="Borrador del boletín de bahía de las 16:00 redactado por IA a partir del WRF + IA y el oleaje WW3, imitando al especialista">BORRADOR BOLETÍN</button>
     <button type="button" class="btnCarta btnBorr" id="btnQC" title="Control de calidad de las estaciones con aprendizaje automático (Isolation Forest): lecturas sospechosas y sensores pegados en las últimas 72 h">CONTROL DE CALIDAD</button>
+    <button type="button" class="btnCarta btnAsis" id="btnAsistente" title="Asistente con IA local: pregunte por la condición en un punto, avisos vigentes, el pronóstico WRF + IA de una bahía o la mejor ruta (prototipo)">ASISTENTE IA</button>
     <button type="button" class="btnCarta btnTromba" id="btnTrombas" hidden title="Perspectiva experimental de ambientes favorables a trombas marinas a 72 h (STP, SHERBE y NST sobre el GFS) y ficha técnica con umbrales y referencias">TROMBAS</button>
     <button type="button" class="btnCarta btnSAR" id="btnRuta" title="Condiciones meteorológicas y oceanográficas a lo largo de una ruta: zarpe, puntos intermedios y destino, a la velocidad de la embarcación">RUTA</button><a class="btnCarta btnSAR" id="btnMonan" href="monan.html" style="text-decoration:none;display:inline-flex;align-items:center" title="Modelo MONAN 3 km (corrida propia): campos, comparación con el pronóstico local y verificación contra estaciones">MODELO MONAN</a><button type="button" class="btnCarta btnSAR" id="btnCasoSAR" hidden title="Cuadro ambiental y ventanas de operación para la posición de un caso de búsqueda y salvamento">CASO SAR</button><div class="capuertos-acceso"><button type="button" class="btnCarta" id="btnCapuertos" aria-expanded="false" aria-controls="menuCapuertos">Capuertos</button><div class="capuertos-menu" id="menuCapuertos" role="group" aria-label="Capuertos disponibles" hidden><button type="button" id="btnCapuertoValpo">Capuerto Valparaíso</button><button type="button" id="btnCapuertoTalc">Capuerto Talcahuano</button></div></div>
     <button type="button" id="btnRefresh" title="Vuelve a leer los datos publicados">Actualizar</button>
@@ -1645,6 +1647,7 @@ setInterval(() => { if (LAYERS.puertos && LAYERS.puertos.lyr && map.hasLayer(LAY
 /*QC_ESTACIONES_JS*/
 /*RUTA_JS*/
 /*TROMBAS_JS*/
+/*ASISTENTE_JS*/
 
 // ============================ Panel de capas ============================
 const LAYERS = {};
@@ -1887,6 +1890,7 @@ const alertaVto = crearAlertaViento(L, map, { escH });
 const evalIA = crearEvaluacionIA(L, map, { escH });
 const borrador = crearBorradorBoletin(L, map, { escH });
 const trombas = crearTrombas(L, map, { escH });
+const asistente = crearAsistenteIA(L, map, { escH });
 const qcEst = crearQCEstaciones(L, map, { escH });
 const ruta = crearRuta(L, map, { capas: window.MAPA_CAPAS || null, escH, nf, estaciones: () => ESTACIONES, evaluar, nombreEst, avisos: () => AV_ORD, estadoAviso, sitport: async () => PUERTO_DATOS || (PUERTO_DATOS = await leerRestricciones()), bahiaPos: () => BAHIA_POS, txtSitport });
 function cerrarPaneles(salvo) {
@@ -1898,6 +1902,7 @@ function cerrarPaneles(salvo) {
   if (salvo !== 'tromba' && trombas.abierto) trombas.cerrar();
   if (salvo !== 'qc' && qcEst.abierto) qcEst.cerrar();
   if (salvo !== 'ruta' && ruta.abierto) ruta.cerrar();
+  if (salvo !== 'asis' && asistente.abierto) asistente.cerrar();
 }
 document.getElementById('btnCasoSAR').onclick = () => { cerrarPaneles('sar'); casoSAR.abrir(); };
 document.getElementById('btnAlertaMar').onclick = () => { cerrarPaneles('mar'); alertaMar.abrir(); };
@@ -1925,6 +1930,7 @@ if (document.documentElement.classList.contains('soloSAR')) {
 }
 document.getElementById('btnQC').onclick = () => { cerrarPaneles('qc'); qcEst.abrir(); };
 document.getElementById('btnTrombas').onclick = () => { cerrarPaneles('tromba'); trombas.abrir(); };
+document.getElementById('btnAsistente').onclick = () => { cerrarPaneles('asis'); asistente.abrir(); };
 { // Fila "Caso SAR" al inicio del grupo Operación: muestra u oculta el punto marcado.
   const box = document.getElementById('layers');
   addLayerRow(box, 'caso_sar', 'Casos SAR (posiciones marcadas)', '<span class="sarSw"></span>', false, () => casoSAR.capa);

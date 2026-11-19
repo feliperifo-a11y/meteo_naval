@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.0"
+VERSION = "1.1"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -304,7 +304,7 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
     if not periodos:
         raise ValueError("Open-Meteo no entregó datos para esa fecha.")
     return {
-        "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar,
+        "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
         "fecha": f"{DIAS[f.weekday()]} {f:%d/%m/%Y}", "hora": "local de Chile",
         "periodos": periodos,
         "fuente": f"Open-Meteo: viento {' y '.join(sorted(modelos_usados)) or 'ECMWF IFS/GFS'}; oleaje del modelo marino de Open-Meteo",
@@ -386,7 +386,7 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
     salida = salida[:12]
     return {"lugar": f"{punto[0]} ({gm(punto[1], punto[2])})" if punto else "todo el litoral",
             "avisos": salida, "cantidad": len(salida),
-            "sin_avisos": not salida,
+            "sin_avisos": not salida, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
             "fuente": datos.get("fuente") or "Avisos del Servicio Meteorológico de la Armada (meteoarmada.directemar.cl), leídos por MeteoIA",
             "actualizado": hora_local(datos.get("actualizado", "")),
             "nota": "Horas locales de Chile. El aviso oficial es el publicado por DIRECTEMAR."}
@@ -649,7 +649,8 @@ def preguntar(pregunta, historial=None):
                     except Exception:
                         args = {}
                 r = ejecutar(f.get("name"), args)
-                usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error")})
+                pos = r.pop("_pos", None)
+                usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos})
                 msgs.append({"role": "tool", "tool_name": f.get("name"), "content": json.dumps(r, ensure_ascii=False)[:6000]})
         return {"respuesta": "No logré completar la consulta. Intente formularla de otra manera, indicando lugar y día.",
                 "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
@@ -711,6 +712,7 @@ class Manejador(BaseHTTPRequestHandler):
         o = self.headers.get("Origin", "")
         if o in ORIGENES or o.startswith("http://localhost") or o.startswith("http://127.0.0.1"):
             self.send_header("Access-Control-Allow-Origin", o)
+            self.send_header("Access-Control-Allow-Credentials", "true")   # cookie de Cloudflare Access
             self.send_header("Vary", "Origin")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
