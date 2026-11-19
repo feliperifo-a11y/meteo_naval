@@ -33,8 +33,19 @@ if [ ! -f "$HOME/.cloudflared/cert.pem" ]; then
 fi
 echo "    Cuenta autorizada."
 
-echo "3/5 Túnel $NOMBRE…"
-id_tunel() { "$CF" tunnel list --output json 2>/dev/null | /usr/bin/python3 -c "import json,sys; print(next((t['id'] for t in json.load(sys.stdin) if t['name']=='$NOMBRE' and not t.get('deleted_at')), ''))" 2>/dev/null || true; }
+echo "3/5 Túnel ${NOMBRE}…"
+PY=""
+for c in /usr/local/bin/python3 /opt/homebrew/bin/python3 /Library/Frameworks/Python.framework/Versions/Current/bin/python3; do
+  [ -x "$c" ] && { PY="$c"; break; }
+done
+id_tunel() {
+  local j; j=$("$CF" tunnel list --name "${NOMBRE}" --output json 2>/dev/null || true)
+  if [ -n "$PY" ]; then
+    printf '%s' "$j" | "$PY" -c "import json,sys; print(next((t['id'] for t in json.load(sys.stdin) if t['name']=='${NOMBRE}' and str(t.get('deleted_at') or '0001').startswith('0001')), ''))" 2>/dev/null || true
+  else
+    printf '%s' "$j" | grep -oE '"id": ?"[0-9a-f-]{36}"' | head -1 | grep -oE '[0-9a-f-]{36}' || true
+  fi
+}
 ID=$(id_tunel)
 if [ -z "$ID" ]; then "$CF" tunnel create "$NOMBRE"; ID=$(id_tunel); fi
 [ -n "$ID" ] || { echo "    No se pudo crear o leer el túnel."; exit 1; }
@@ -42,7 +53,7 @@ CRED="$HOME/.cloudflared/$ID.json"
 [ -f "$CRED" ] || { echo "    Falta la credencial $CRED (el túnel se creó en otro equipo). Bórrelo en Cloudflare y repita."; exit 1; }
 echo "    Túnel $ID"
 
-echo "4/5 Dirección $HOST…"
+echo "4/5 Dirección ${HOST}…"
 "$CF" tunnel route dns "$NOMBRE" "$HOST" 2>&1 | tail -1 || true
 cat > "$DEST/tunel.yml" <<Y
 tunnel: $ID
@@ -66,7 +77,7 @@ P
 launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
-echo "5/5 Verificando que $HOST exija inicio de sesión (Cloudflare Access)…"
+echo "5/5 Verificando que ${HOST} exija inicio de sesión (Cloudflare Access)…"
 R=""
 for i in $(seq 1 12); do
   sleep 5
