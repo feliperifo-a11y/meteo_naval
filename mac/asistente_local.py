@@ -29,7 +29,7 @@ try:
 except Exception:  # pragma: no cover
     TZ = timezone(timedelta(hours=-3))
 
-MODELO = os.environ.get("MN_MODELO", "qwen3:4b")
+MODELO = os.environ.get("MN_MODELO", "qwen3:4b-instruct-2507-q4_K_M")
 OLLAMA = os.environ.get("MN_OLLAMA", "http://127.0.0.1:11434").rstrip("/")
 PUERTO = int(os.environ.get("MN_PUERTO", "8765"))
 HOSTS = [h.strip() for h in os.environ.get("MN_HOSTS", "127.0.0.1").split(",") if h.strip()]
@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.1"
+VERSION = "1.2"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -383,10 +383,17 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
                            "hasta": hora_local(z.get("hasta", "")) if z.get("hasta") else None,
                            "detalle": z.get("detalle"), "resumen": a.get("resumen"),
                            "publicado": a.get("publicado")})
-    salida = salida[:12]
+    vig = [a for a in salida if a["estado"] == "vigente"][:8]
+    prox = [a for a in salida if a["estado"] == "próximo"][:8]
+    lugar_txt = punto[0] if punto else "el litoral"
+    def linea(a):
+        return f"{a['tipo']} {a['codigo'] or ''}, {a['zona']}, desde {a['desde'] or '–'} hasta {a['hasta'] or '–'}".replace("  ", " ")
+    partes = [f"Vigentes ahora en {lugar_txt}: " + ("; ".join(linea(a) for a in vig) if vig else "ninguno") + "."]
+    if prox:
+        partes.append("Próximos (aún no comienzan): " + "; ".join(linea(a) for a in prox) + ".")
     return {"lugar": f"{punto[0]} ({gm(punto[1], punto[2])})" if punto else "todo el litoral",
-            "avisos": salida, "cantidad": len(salida),
-            "sin_avisos": not salida, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
+            "resumen": " ".join(partes),
+            "vigentes_ahora": vig, "proximos": prox, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
             "fuente": datos.get("fuente") or "Avisos del Servicio Meteorológico de la Armada (meteoarmada.directemar.cl), leídos por MeteoIA",
             "actualizado": hora_local(datos.get("actualizado", "")),
             "nota": "Horas locales de Chile. El aviso oficial es el publicado por DIRECTEMAR."}
@@ -599,8 +606,9 @@ Reglas obligatorias:
 2. Responde solo con los datos que devolvió la herramienta. Si devolvió "error", explícalo al usuario y no inventes.
 3. Viento en nudos (kt) con dirección (N, NE, E, SE, S, SW, W, NW), oleaje en metros con el estado del mar de la escala de la Armada (rizada, marejadilla, marejada, gruesa, muy gruesa). Usa rangos.
 4. Para "mejor ruta" usa comparar_rutas y recomienda la alternativa con menor oleaje y viento máximos, mencionando avisos y restricciones si las hay.
-5. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
-6. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero."""
+5. Si la herramienta trae "resumen", básate en él. Un aviso "próximo" todavía no está vigente: dilo así.
+6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
+7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
 
 def _ollama(mensajes):
@@ -637,7 +645,7 @@ def preguntar(pregunta, historial=None):
             m = _ollama(msgs)
             llamadas = m.get("tool_calls") or list(_llamadas_en_texto(m.get("content")))
             if not llamadas:
-                texto = re.sub(r"<think>.*?</think>", "", m.get("content") or "", flags=re.S).strip()
+                texto = (m.get("content") or "").split("</think>")[-1].strip()   # por si el modelo razona en el texto
                 return {"respuesta": texto, "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
             msgs.append({"role": "assistant", "content": m.get("content") or "", "tool_calls": llamadas})
             for c in llamadas:

@@ -1,11 +1,12 @@
 #!/bin/bash
 # Instala en este Mac el ASISTENTE MeteoIA con IA local (Ollama), sin costo y sin la API pagada.
 #   1. Ollama (motor de IA local) como servicio, solo accesible desde este Mac.
-#   2. El modelo: qwen3:4b con 8 GB de RAM (unos 2,5 GB de descarga); qwen3:8b con 16 GB o más.
+#   2. El modelo: qwen3:4b-instruct-2507 con 8 GB de RAM (unos 2,5 GB; responde sin "pensar en voz alta", más rápido);
+#      qwen3:8b con 16 GB o más. Si una variante no existe en Ollama, prueba la siguiente.
 #   3. El asistente (asistente_local.py) como servicio en el puerto 8765: http://127.0.0.1:8765
 #      y, si hay Tailscale, también en la IP de Tailscale (para abrirlo desde el MacBook o el celular).
 # Uso:  curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar_asistente.sh | bash
-# Para otro modelo:  ... | MN_MODELO=gemma3:4b bash
+# Para otro modelo:  ... | MN_MODELO=llama3.2:3b bash
 set -e
 RAMA="${MN_RAMA:-main}"
 URL="https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/$RAMA/mac"
@@ -18,10 +19,10 @@ mkdir -p "$DEST" "$LA"
 
 [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ] || { echo "Este instalador es para Mac con Apple Silicon (M1 o posterior)."; exit 1; }
 RAM_GB=$(( $(sysctl -n hw.memsize) / 1073741824 ))
-if [ -z "${MN_MODELO:-}" ]; then
-  if [ "$RAM_GB" -ge 16 ]; then MN_MODELO="qwen3:8b"; else MN_MODELO="qwen3:4b"; fi
-fi
-echo "Mac con $RAM_GB GB de RAM → modelo $MN_MODELO"
+if [ -n "${MN_MODELO:-}" ]; then CANDIDATOS="$MN_MODELO"
+elif [ "$RAM_GB" -ge 16 ]; then CANDIDATOS="qwen3:8b qwen3:4b-instruct-2507-q4_K_M"
+else CANDIDATOS="qwen3:4b-instruct-2507-q4_K_M qwen3:4b-instruct llama3.2:3b"; fi
+echo "Mac con $RAM_GB GB de RAM → modelo: ${CANDIDATOS%% *}"
 
 # Python 3.9+ (el de python.org, Homebrew o las herramientas de desarrollo de Apple)
 PY=""
@@ -82,8 +83,18 @@ P
   echo "    Ollama corriendo como servicio (solo accesible desde este Mac)."
 fi
 
-echo "2/4 Descargando el modelo $MN_MODELO (solo la primera vez; puede tardar varios minutos)…"
-"$OLL" pull "$MN_MODELO"
+echo "2/4 Descargando el modelo (solo la primera vez; puede tardar varios minutos)…"
+MN_MODELO=""
+for m in $CANDIDATOS; do
+  echo "    $m"
+  if "$OLL" pull "$m"; then MN_MODELO="$m"; break; fi
+  echo "    No disponible; se prueba el siguiente."
+done
+[ -n "$MN_MODELO" ] || { echo "    No se pudo descargar ningún modelo."; exit 1; }
+# La primera versión instaló qwen3:4b, que razona en voz alta (lento en el M1): se borra para liberar espacio.
+if [ "$MN_MODELO" != "qwen3:4b" ] && "$OLL" list 2>/dev/null | grep -q '^qwen3:4b '; then
+  "$OLL" rm qwen3:4b >/dev/null 2>&1 && echo "    Se borró el modelo anterior qwen3:4b (2,5 GB liberados)."
+fi
 
 echo "3/4 Instalando el asistente…"
 curl -fsSL "$URL/asistente_local.py" -o "$DEST/asistente_local.py"
