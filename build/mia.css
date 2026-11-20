@@ -1,0 +1,58 @@
+/* ============================ MIA · mascota y chat de la portada ============================ */
+#mia{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);z-index:4500;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none;font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+#mia > *{pointer-events:auto}
+#mia [hidden]{display:none!important}
+.mia-btn{border:0;background:none;padding:0;cursor:pointer;width:94px;height:120px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.45));transition:transform .18s;-webkit-tap-highlight-color:transparent;order:3}
+.mia-btn img{width:100%;height:100%;object-fit:contain;display:block}
+.mia-btn:hover{transform:translateY(-3px) scale(1.04)}
+.mia-btn:focus-visible{outline:2px solid #5fb0ff;outline-offset:4px;border-radius:14px}
+#mia.abierto .mia-btn{width:62px;height:80px}
+#mia.pensando .mia-btn{animation:miaFlota 1.4s ease-in-out infinite}
+@keyframes miaFlota{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.mia-globo{order:2;position:relative;max-width:230px;background:#fff;color:#0f2a44;border-radius:14px;padding:9px 30px 9px 12px;font-size:13px;font-weight:600;box-shadow:0 8px 22px rgba(0,0,0,.4);animation:miaEntra .35s ease-out}
+.mia-globo span{cursor:pointer}
+.mia-globo:after{content:"";position:absolute;right:34px;bottom:-7px;border:7px solid transparent;border-top-color:#fff;border-bottom:0}
+.mia-gx{position:absolute;top:4px;right:6px;border:0;background:none;color:#5a7690;font-size:13px;cursor:pointer;padding:2px 4px}
+@keyframes miaEntra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.mia-panel{order:1;width:min(380px,calc(100vw - 28px));height:min(560px,calc(100vh - 190px));display:flex;flex-direction:column;background:linear-gradient(180deg,#0f243b,#0b1c30);border:1px solid #2f5f8f;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.55);overflow:hidden;color:#e8f1fa;animation:miaEntra .25s ease-out}
+.mia-cab{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(180deg,#16365a,#0e2540);border-bottom:1px solid #1d3a58;flex-wrap:wrap}
+.mia-cab img{width:40px;height:40px;border-radius:50%;background:#e8f4ff;flex:none}
+.mia-cab b{display:block;font-size:16px;letter-spacing:.5px}.mia-cab small{display:block;font-size:11.5px;color:#9fb6cc}
+.mia-x{margin-left:auto;width:32px;height:32px;border-radius:50%;border:1px solid #1d3a58;background:#0b1d31;color:#e8f1fa;cursor:pointer;font-size:14px;flex:none}
+.mia-est{order:5;flex-basis:100%;display:flex;align-items:flex-start;gap:6px;font-size:11.5px;color:#c9d9ea}
+.mia-est i{width:8px;height:8px;border-radius:50%;background:#f0a030;margin-top:4px;flex:none}
+.mia-est.on i{background:#34c26b}.mia-est.mal i{background:#f0a030}.mia-est.off i{background:#e5534b}
+.mia-est em{font-style:normal}
+.mia-reint{margin-left:4px;background:none;border:1px solid #39618b;border-radius:7px;color:#a8d3ff;font:600 11px system-ui,sans-serif;padding:2px 8px;cursor:pointer}
+.mia-chat{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px;display:flex;flex-direction:column;gap:8px}
+.mia-m{max-width:88%;padding:8px 11px;border-radius:13px;font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.mia-a{align-self:flex-start;background:#13304f;border:1px solid #1d4670;border-bottom-left-radius:4px}
+.mia-u{align-self:flex-end;background:#2f8cff;color:#fff;border-bottom-right-radius:4px}
+.mia-err{border-color:#8a3a36;background:#3a1715}
+.mia-espera{color:#9fb6cc;font-style:italic}
+.mia-espera:after{content:"";display:inline-block;width:1.2em;text-align:left;animation:miaPuntos 1.2s steps(4) infinite}
+@keyframes miaPuntos{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.mia-h{margin-top:6px;font-size:10.5px;color:#8fa7bf;font-style:normal}
+.mia-ej{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.mia-ej button{font:inherit;font-size:12px;text-align:left;background:#0b1d31;color:#cfe2f5;border:1px solid #1d3a58;border-radius:10px;padding:6px 9px;cursor:pointer}
+.mia-ej button:hover{border-color:#2f8cff}
+.mia-f{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1d3a58;background:#0a1a2c}
+.mia-f textarea{flex:1;resize:none;font:inherit;font-size:16px;background:#0b1d31;color:#e8f1fa;border:1px solid #1d3a58;border-radius:10px;padding:8px 10px}
+.mia-f textarea:focus{outline:none;border-color:#2f8cff}
+.mia-f button{background:linear-gradient(180deg,#2f8cff,#1c62c4);color:#fff;border:0;border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer}
+.mia-f button:disabled{opacity:.5;cursor:wait}
+.mia-como{padding:6px 12px 10px;font-size:11.5px;color:#9fb6cc;border-top:1px solid #1d3a58}
+.mia-como summary{cursor:pointer;color:#a8d3ff}
+.mia-como p{margin:6px 0}
+
+@media (max-width:760px){
+  #mia{right:6px;bottom:calc(env(safe-area-inset-bottom,0px) + 68px)}
+  .mia-btn{width:72px;height:92px}
+  #mia.abierto{left:0;right:0;bottom:0;align-items:stretch}
+  #mia.abierto .mia-btn{display:none}
+  .mia-panel{width:100%;height:min(82vh,640px);border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+}
+@media (prefers-reduced-motion:reduce){#mia *,#mia{animation:none!important;transition:none!important}}
+@media print{#mia{display:none}}

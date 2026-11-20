@@ -3,7 +3,10 @@
 # ANTES de correrlo: crear en Cloudflare Zero Trust la aplicación de Access para asistente.meteoia.cl (ver docs/asistente_local.md).
 # El instalador verifica al final que el subdominio pida inicio de sesión; si responde sin protección, apaga el túnel.
 # Uso:  curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar_tunel.sh | bash
+# Modo público (MIA en la portada): sin Cloudflare Access; el límite de consultas lo aplica asistente_local.py.
+#   curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar_tunel.sh | MN_PUBLICO=1 bash
 set -e
+PUBLICO="${MN_PUBLICO:-0}"
 HOST="${MN_HOST_TUNEL:-asistente.meteoia.cl}"
 NOMBRE="meteoia-asistente"
 PUERTO="${MN_PUERTO:-8765}"
@@ -77,6 +80,22 @@ P
 launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
+if [ "$PUBLICO" = "1" ]; then
+  echo "5/5 Modo público: verificando que ${HOST} responda sin inicio de sesión…"
+  R=""
+  for i in $(seq 1 12); do
+    sleep 5
+    R=$(curl -s -o /dev/null --max-time 10 -w '%{http_code} %{redirect_url}' "https://$HOST/salud" || true)
+    case "$R" in 200*|30[0-9]*) break;; esac
+  done
+  case "$R" in
+    200*) echo "    Público: responde sin inicio de sesión. MIA queda disponible en la portada de meteoia.cl.";;
+    30[0-9]*cloudflareaccess.com*) echo "    Todavía pide inicio de sesión de Access. Elimine la aplicación de Access de $HOST en Cloudflare Zero Trust"
+                                   echo "    (o cambie su política a Bypass · Everyone) y MIA quedará disponible sin repetir este instalador.";;
+    *) echo "    Aún sin respuesta ($R). Revise $DEST/tunel.log y pruebe https://$HOST/salud";;
+  esac
+  echo "Registro: $DEST/tunel.log"; exit 0
+fi
 echo "5/5 Verificando que ${HOST} exija inicio de sesión (Cloudflare Access)…"
 R=""
 for i in $(seq 1 12); do

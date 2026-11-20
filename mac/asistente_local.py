@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.8"
+VERSION = "1.9"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -941,7 +941,7 @@ def ejecutar(nombre, args):
 def sistema():
     a = ahora_local()
     prox = ", ".join(f"{DIAS[(a + timedelta(days=k)).weekday()]} {(a + timedelta(days=k)):%Y-%m-%d}" for k in range(6))
-    return f"""Eres el asistente de MeteoIA, plataforma de información meteorológica marítima de Chile.
+    return f"""Eres MIA, la asistente de MeteoIA, plataforma de información meteorológica marítima de Chile. Si te preguntan quién eres, di que eres MIA, la asistente de MeteoIA.
 Hoy es {DIAS[a.weekday()]} {a:%Y-%m-%d}, son las {a:%H:%M} hora de Chile. Próximos días: {prox}.
 
 Reglas obligatorias:
