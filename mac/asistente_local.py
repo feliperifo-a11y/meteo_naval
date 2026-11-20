@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.4"
+VERSION = "1.5"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -87,9 +87,18 @@ def open_meteo(base, params, ttl=900):
 
 
 # ------------------------------------------------------------------ utilidades
+# Formas cortas o navales de nombrar lugares (se amplía con las preguntas reales de los usuarios)
+ALIAS = [(r"\bvalpo\b", "valparaiso"), (r"\bthno\b", "talcahuano"), (r"\b(pmo|pto montt)\b", "puerto montt"),
+         (r"\bpta arenas\b", "punta arenas"), (r"\bantofa\b", "antofagasta"), (r"\biqq\b", "iquique"),
+         (r"\bsan anto\b", "san antonio"), (r"\b(juan fernandez|archipielago juan fernandez)\b", "robinson crusoe"),
+         (r"\b(rapa nui|isla de pascua|pascua)\b", "isla pascua"), (r"\b(pto|pta)\b", lambda m: "puerto" if m.group(1) == "pto" else "punta")]
+
+
 def norm(s):
     s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower()
     s = re.sub(r"[^a-z0-9 ]+", " ", s)
+    for pat, rep in ALIAS:
+        s = re.sub(pat, rep, s)
     s = re.sub(r"\b(cp|bahia de|bahia|puerto|caleta|de|del|la|el|los|las)\b", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
@@ -457,13 +466,73 @@ def _buscar_ruta(zarpe, recalada):
     return mejor
 
 
+UMB = {"vientoA": 22, "vientoR": 34, "olaA": 2.5, "olaR": 4}   # umbrales base del módulo Ruta (RUTA_UMBRALES_BASE, build/ruta.js)
+MARGEN_COSTA = 5   # mn, el mismo margen por defecto del módulo Ruta
+_geo = {"t": 0, "costa": None, "puertos": []}
+_rutas_cache = {}
+
+
+def _geo_cargar():
+    """Costa incorporada y puertos SITPORT del módulo Ruta (mismos datos que la página)."""
+    if _geo["costa"] and time.time() - _geo["t"] < 86400:
+        return _geo
+    import ruta_mar
+    land = obtener(RAW + "data/geo/land.json", ttl=86400)
+    js = obtener(RAW + "build/ruta.js", ttl=86400, json_=False)
+    pl = obtener(RAW + "build/plantilla.html", ttl=86400, json_=False)
+    lista = json.loads(re.search(r"const RUTA_PUERTOS = (\[.*?\]);", js).group(1))
+    pos = json.loads(re.sub(r"([{,])(\d+):", r'\1"\2":', re.search(r"const BAHIA_POS = (\{.*?\});", pl).group(1)))
+    _geo.update(t=time.time(), costa=ruta_mar.Costa(land),
+                puertos=[(n, pos[str(i)][0], pos[str(i)][1]) for i, n in lista if str(i) in pos])
+    return _geo
+
+
+def _punto_ruta(nombre):
+    """Puerto SITPORT por nombre; si no, un lugar del Derrotero o una posición."""
+    g = _geo_cargar()
+    cand = sorted(((similitud(nombre, n), n, la, lo) for n, la, lo in g["puertos"]), key=lambda x: -x[0])
+    if cand and cand[0][0] >= 0.72:
+        return cand[0][1], cand[0][2], cand[0][3]
+    n, la, lo, _ = resolver(nombre)
+    return n, la, lo
+
+
+def _referencia(p, cache):
+    """Nombre del lugar del Derrotero más cercano a un punto de la traza (o su posición)."""
+    k = (round(p[0], 2), round(p[1], 2))
+    if k not in cache:
+        cerca = [(millas(p, (la, lo)), n) for n, la, lo, f in lugares() if f.startswith("Derrotero") and abs(la - p[0]) < 0.6]
+        d, n = min(cerca) if cerca else (999, "")
+        cache[k] = f"frente a {n}" if d <= 25 else gm(p[0], p[1])
+    return cache[k]
+
+
 def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
-    score, ruta, inv = _buscar_ruta(zarpe, recalada)
-    if not ruta or score < 0.72:
-        raise ValueError("No hay ruta tipo entre esos puertos. Rutas disponibles: " + "; ".join(r["nombre"] for r in rutas_tipo()))
     vel = float(velocidad_kt or 10)
     if not 2 <= vel <= 40:
         raise ValueError("Velocidad fuera de rango (2 a 40 kt).")
+    score, ruta, inv = _buscar_ruta(zarpe, recalada)
+    if ruta and score >= 0.72:   # ruta tipo con alternativas trazadas con el Derrotero
+        alternativas = [{"nombre": a["nombre"], "descripcion": a.get("resumen"),
+                         "traza": list(reversed(a["traza"])) if inv else a["traza"],
+                         "hitos": a.get("hitos", []), "pasos": a.get("pasos", [])} for a in ruta["alternativas"]]
+        nombre_ruta = ruta["nombre"] + (" (sentido inverso)" if inv else "")
+        fuente_traza = ruta.get("fuente", "rutas tipo MeteoIA")
+    else:                        # cualquier otro par: ruta por mar calculada, como el módulo Ruta de la página
+        import ruta_mar
+        za, zb = _punto_ruta(zarpe), _punto_ruta(recalada)
+        costa = _geo_cargar()["costa"]
+        a, b = ruta_mar.al_mar(costa, za[1:]), ruta_mar.al_mar(costa, zb[1:])
+        clave = (round(a[0], 3), round(a[1], 3), round(b[0], 3), round(b[1], 3))
+        if clave not in _rutas_cache:
+            _rutas_cache[clave] = ruta_mar.por_mar(costa, a, b, MARGEN_COSTA)
+        traza = _rutas_cache[clave]
+        if not traza:
+            raise ValueError(f"No encontré paso por mar entre {za[0]} y {zb[0]} con la costa incorporada.")
+        alternativas = [{"nombre": "Ruta por mar calculada", "traza": traza, "hitos": [], "pasos": [],
+                         "descripcion": f"Evita la tierra y se mantiene a {MARGEN_COSTA} mn o más de la costa, salvo al salir y al llegar"}]
+        nombre_ruta = f"{za[0]} – {zb[0]}"
+        fuente_traza = "ruta por mar calculada con la costa incorporada de MeteoIA (mismo método del módulo Ruta)."
     if salida:
         try:
             t0 = datetime.strptime(str(salida)[:16].replace("T", " "), "%Y-%m-%d %H:%M").replace(tzinfo=TZ)
@@ -477,25 +546,28 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
         av = _avisos_crudos().get("avisos", [])
     except Exception:
         av = []
+    refs = {}
 
     # 1. muestras a lo largo de cada alternativa (cada ~3 h de navegación, máximo 16 por alternativa)
     alts, todos = [], []
-    for alt in ruta["alternativas"]:
-        tr = list(reversed(alt["traza"])) if inv else alt["traza"]
+    for alt in alternativas:
+        tr = alt["traza"]
         acum = [0.0]
-        for a, b in zip(tr, tr[1:]):
-            acum.append(acum[-1] + millas(a, b))
+        for p1, p2 in zip(tr, tr[1:]):
+            acum.append(acum[-1] + millas(p1, p2))
         total = acum[-1]
         paso_mn = max(vel * 3, total / 15)
         objetivos = [min(total, k * paso_mn) for k in range(int(total // paso_mn) + 1)] + [total]
-        hitos = alt.get("hitos", [])
+        hitos = alt.get("hitos") or []
         mu, j = [], 0
         for d in objetivos:
-            while j < len(acum) - 1 and acum[j + 1] < d:
+            while j < len(acum) - 2 and acum[j + 1] < d:
                 j += 1
-            p = tr[j]
+            seg = acum[j + 1] - acum[j] if j + 1 < len(acum) else 0   # posición interpolada dentro del tramo
+            f = min(1, max(0, (d - acum[j]) / seg)) if seg else 0
+            p = [tr[j][0] + (tr[j + 1][0] - tr[j][0]) * f, tr[j][1] + (tr[j + 1][1] - tr[j][1]) * f] if seg else tr[j]
             eta = (t0 + timedelta(hours=d / vel, minutes=30)).replace(minute=0, second=0, microsecond=0)
-            cerca = min(hitos, key=lambda h: millas(p, (h[1], h[2])))[0] if hitos else ""
+            cerca = min(hitos, key=lambda h: millas(p, (h[1], h[2])))[0] if hitos else _referencia(p, refs)
             mu.append({"p": p, "eta": eta, "d": d, "ref": cerca})
         alts.append((alt, total, mu))
         todos.extend(m for m in mu if m["eta"] <= limite)
@@ -525,7 +597,7 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
                                         if i is not None else (None, None, None))
             m["ola"] = _var(hm, "wave_height", im)[0] if im is not None else None
 
-    # 3. resumen por alternativa
+    # 3. resumen por alternativa, con los umbrales y el puntaje del módulo Ruta (menor es mejor)
     res = []
     for alt, total, mu in alts:
         con = [m for m in mu if m.get("v") is not None or m.get("ola") is not None]
@@ -533,7 +605,8 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
         vien = [m for m in con if m.get("v") is not None]
         mo = max(olas, key=lambda m: m["ola"]) if olas else None
         mv = max(vien, key=lambda m: m["v"]) if vien else None
-        gruesa = [m for m in olas if m["ola"] >= 2.5]
+        rojo = sum(1 for m in con if (m.get("v") or 0) >= UMB["vientoR"] or (m.get("ola") or 0) >= UMB["olaR"])
+        amar = sum(1 for m in con if (m.get("v") or 0) >= UMB["vientoA"] or (m.get("ola") or 0) >= UMB["olaA"]) - rojo
         restric = []
         for pid in alt.get("pasos", []):
             p = pasos.get(pid, {})
@@ -541,25 +614,49 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
                 restric.append(f"{p.get('n')}: naves de menos de {p['velMin']} kt deben cruzarlo con corriente a favor ({p.get('ref')})")
         av_ruta = set()
         for m in mu:
-            for a in av:
-                for z in a.get("zonas", []):
+            for a_ in av:
+                for z in a_.get("zonas", []):
                     if _estado(z, m["eta"].astimezone(timezone.utc)) == "vigente" and cubre(z.get("geom"), m["p"][0], m["p"][1], tol=0.05):
-                        av_ruta.add(f"{a.get('tipo')} – {z.get('nombre')} ({a.get('codigo')})")
+                        av_ruta.add(f"{a_.get('tipo')} {a_.get('codigo') or ''} ({z.get('nombre')})".replace("  ", " "))
         res.append({
-            "alternativa": alt["nombre"], "descripcion": alt.get("resumen"),
+            "alternativa": alt["nombre"], "descripcion": alt.get("descripcion"),
             "distancia_mn": round(total), "duracion_h": round(total / vel, 1),
             "llegada_estimada": _dia_hora(t0 + timedelta(hours=total / vel)),
-            "ola_max": (f"{mo['ola']:.1f} m ({escala_armada(mo['ola'])}) el {mo['eta']:%d/%m %H:%M}, tramo \"{mo['ref']}\"".replace(".", ",", 1) if mo else "sin dato de oleaje en la traza"),
-            "viento_max": (f"{rumbo([mv['dir']])} {round(mv['v'])} kt, racha {round(mv['r'] or mv['v'])} kt, el {mv['eta']:%d/%m %H:%M}, tramo \"{mv['ref']}\"" if mv else "sin dato"),
-            "horas_con_mar_gruesa_o_mayor": (f"{len(gruesa)} de {len(olas)} puntos revisados" if olas else None),
+            "ola_max": (f"{mo['ola']:.1f} m ({escala_armada(mo['ola'])}) el {mo['eta']:%d/%m %H:%M}, {mo['ref']}".replace(".", ",", 1) if mo else "sin dato de oleaje en la traza"),
+            "viento_max": (f"{rumbo([mv['dir']])} {round(mv['v'])} kt, racha {round(mv['r'] or mv['v'])} kt, el {mv['eta']:%d/%m %H:%M}, {mv['ref']}" if mv else "sin dato"),
+            "puntos_restrictivos": rojo, "puntos_limitantes": amar, "puntos_revisados": len(con),
             "tramo_sin_pronostico": any(m["eta"] > limite for m in mu),
             "avisos_en_la_traza": sorted(av_ruta)[:5],
             "restricciones_por_velocidad": restric,
+            "_puntaje": rojo * 1000 + amar * 100 + len(av_ruta) * 150 + total / vel,
         })
-    return {"ruta": ruta["nombre"] + (" (sentido inverso)" if inv else ""), "zarpe": _dia_hora(t0),
-            "velocidad_kt": vel, "alternativas": res,
-            "fuente": "Trazas: " + ruta.get("fuente", "rutas tipo MeteoIA") + " Pronóstico: Open-Meteo (viento ECMWF IFS; oleaje modelo marino).",
-            "nota": "Trazas referenciales: no reemplazan la carta náutica ni el Derrotero. Muestreo cada ~3 h de navegación. Horas locales."}
+    if len(res) > 1:
+        min(res, key=lambda x: x["_puntaje"])["recomendada"] = True
+
+    # texto listo para el usuario
+    lineas = [f"Ruta {nombre_ruta}: zarpe {_dia_hora(t0)} a {str(vel).rstrip('0').rstrip('.').replace('.', ',')} kt (hora local)."]
+    for x in sorted(res, key=lambda x: x["_puntaje"]):
+        t = (f"\n{x['alternativa']}{' (recomendada)' if x.get('recomendada') else ''}: {x['distancia_mn']} mn, "
+             f"{str(x['duracion_h']).replace('.', ',')} h, llegada {x['llegada_estimada']}.")
+        t += f"\n  Ola máxima {x['ola_max']}. Viento máximo {x['viento_max']}."
+        if x["puntos_revisados"]:
+            t += (f"\n  Puntos sobre umbral: {x['puntos_restrictivos']} restrictivos y {x['puntos_limitantes']} limitantes "
+                  f"de {x['puntos_revisados']} revisados.")
+        if x["avisos_en_la_traza"]:
+            t += "\n  Avisos vigentes en la traza: " + "; ".join(x["avisos_en_la_traza"]) + "."
+        for r_ in x["restricciones_por_velocidad"]:
+            t += f"\n  Restricción: {r_}."
+        if x["tramo_sin_pronostico"]:
+            t += f"\n  Parte del trayecto queda fuera del horizonte de pronóstico ({HORIZONTE_DIAS} días)."
+        lineas.append(t)
+    lineas.append(f"\nUmbrales del módulo Ruta: viento {UMB['vientoA']}/{UMB['vientoR']} kt y ola "
+                  f"{str(UMB['olaA']).replace('.', ',')}/{UMB['olaR']} m (limitante/restrictivo).")
+    for x in res:
+        x.pop("_puntaje", None)
+    return {"resumen": "\n".join(lineas),
+            "ruta": nombre_ruta, "zarpe": _dia_hora(t0), "velocidad_kt": vel, "alternativas": res,
+            "fuente": "Trazas: " + fuente_traza + " Pronóstico: Open-Meteo (viento ECMWF IFS; oleaje modelo marino).",
+            "nota": "Trazas referenciales: no reemplazan la carta náutica ni el Derrotero. Muestreo cada ~3 h de navegación."}
 
 
 # ------------------------------------------------------------------ esquema de herramientas para el modelo
@@ -583,9 +680,9 @@ HERRAMIENTAS = {
     "pronostico_bahia": (pronostico_bahia, "Pronóstico escrito WRF + IA de una bahía (situación sinóptica, nubosidad, viento por día).", {
         "bahia": _p("Nombre de la bahía (ej. Talcahuano, Puerto Montt)"),
     }, ["bahia"]),
-    "comparar_rutas": (comparar_rutas, "Compara las alternativas de ruta entre dos puertos con el viento y oleaje previstos en el trayecto. Usar para 'mejor ruta'.", {
-        "zarpe": _p("Puerto de zarpe"),
-        "recalada": _p("Puerto de recalada"),
+    "comparar_rutas": (comparar_rutas, "Ruta de navegación entre dos puertos o lugares de Chile (cualquiera, de Arica a la Antártica): traza por mar, viento y oleaje previstos en el trayecto y, si hay alternativas, cuál conviene. Usar para 'ruta', 'mejor ruta', 'navegar de X a Y'.", {
+        "zarpe": _p("Puerto o lugar de zarpe"),
+        "recalada": _p("Puerto o lugar de recalada"),
         "velocidad_kt": _p("Velocidad de la nave en nudos (si no la dan, 10)", "number"),
         "salida": _p("Fecha y hora de zarpe 'AAAA-MM-DD HH:MM' hora local (opcional; si no, la próxima hora)"),
     }, ["zarpe", "recalada"]),
@@ -645,7 +742,7 @@ def _llamadas_en_texto(texto):
             pass
 
 
-DIRECTAS = {"condicion_punto", "avisos_vigentes"}
+DIRECTAS = {"condicion_punto", "avisos_vigentes", "comparar_rutas"}
 
 
 def _respuesta_directa(resultados):

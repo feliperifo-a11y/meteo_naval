@@ -9,7 +9,7 @@ El modelo **no calcula el pronóstico**: interpreta la pregunta, llama a una her
 | `condicion_punto` | Viento, racha, lluvia, visibilidad y oleaje por período (madrugada, mañana, tarde, noche) en un lugar, de hoy a 5 días | Open-Meteo: viento ECMWF IFS (GFS si falta); oleaje del modelo marino |
 | `avisos_vigentes` | Avisos vigentes y próximos que cubren un lugar | `data/avisos.json` del sitio |
 | `pronostico_bahia` | Pronóstico escrito WRF + IA de una bahía | `data/wrf_ia.json` |
-| `comparar_rutas` | Por cada alternativa de las rutas tipo: distancia, duración, llegada, ola y viento máximos con hora y tramo, avisos en la traza y restricciones por velocidad | `build/rutas_tipo.js` + Open-Meteo |
+| `comparar_rutas` | Entre cualquier par de puertos SITPORT o lugares del Derrotero: usa las alternativas de las rutas tipo cuando existen y, si no, traza la ruta por mar con el mismo método del módulo Ruta (`mac/ruta_mar.py`, traducción de `build/ruta_mar.js`, a 5 mn de la costa). Entrega distancia, duración, llegada, ola y viento máximos con hora y lugar, puntos sobre los umbrales del módulo Ruta (22/34 kt, 2,5/4 m), avisos en la traza y restricciones por velocidad | `build/rutas_tipo.js`, `data/geo/land.json` + Open-Meteo |
 
 Los lugares se buscan en el nomenclátor del Derrotero (`data/derrotero_lugares.json`), las estaciones costeras y los puertos de las rutas tipo. El estado del mar se nombra con la escala de la Armada.
 
