@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "2.1"
+VERSION = "2.2"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -492,6 +492,7 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
     return {"lugar": f"{punto[0]} ({gm(punto[1], punto[2])})" if punto else "todo el litoral",
             "resumen": " ".join(partes),
             "vigentes_ahora": vig, "proximos": prox, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
+            "_mapa": {"avisos": [{"tipo": a["tipo"], "zona": a["zona"], "estado": a["estado"]} for a in vig + prox]},
             "fuente": datos.get("fuente") or "Avisos del Servicio Meteorológico de la Armada (meteoarmada.directemar.cl), leídos por MeteoIA",
             "actualizado": hora_local(datos.get("actualizado", "")),
             "nota": "Horas locales de Chile. El aviso oficial es el publicado por DIRECTEMAR."}
@@ -717,6 +718,13 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
     if len(res) > 1:
         min(res, key=lambda x: x["_puntaje"])["recomendada"] = True
 
+    def _liviana(tr, maximo=300):   # traza para dibujar en la portada: a lo más ~300 puntos, 4 decimales
+        k = max(1, len(tr) // maximo)
+        pts = tr[::k] + ([tr[-1]] if (len(tr) - 1) % k else [])
+        return [[round(float(q[0]), 4), round(float(q[1]), 4)] for q in pts]
+    mapa = {"rutas": [{"nombre": x["alternativa"], "recomendada": bool(x.get("recomendada")) or len(res) == 1,
+                       "coords": _liviana(alt["traza"])} for (alt, _, _), x in zip(alts, res)]}
+
     # texto listo para el usuario
     lineas = [f"Ruta {nombre_ruta}: zarpe {_dia_hora(t0)} a {str(vel).rstrip('0').rstrip('.').replace('.', ',')} kt (hora local)."]
     for x in sorted(res, key=lambda x: x["_puntaje"]):
@@ -737,7 +745,7 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
                   f"{str(UMB['olaA']).replace('.', ',')}/{UMB['olaR']} m (limitante/restrictivo).")
     for x in res:
         x.pop("_puntaje", None)
-    return {"resumen": "\n".join(lineas),
+    return {"resumen": "\n".join(lineas), "_mapa": mapa,
             "ruta": nombre_ruta, "zarpe": _dia_hora(t0), "velocidad_kt": vel, "alternativas": res,
             "fuente": "Trazas: " + fuente_traza + " Pronóstico: Open-Meteo (viento ECMWF IFS; oleaje modelo marino).",
             "nota": "Trazas referenciales: no reemplazan la carta náutica ni el Derrotero. Muestreo cada ~3 h de navegación."}
@@ -1189,7 +1197,8 @@ def _preguntar(pregunta, historial=None):
                         args = {}
                 r = ejecutar(f.get("name"), args)
                 pos = r.pop("_pos", None)
-                usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos})
+                mapa = r.pop("_mapa", None)
+                usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos, "mapa": mapa})
                 resultados.append((f.get("name"), r, pos))
                 msgs.append({"role": "tool", "tool_name": f.get("name"), "content": json.dumps(r, ensure_ascii=False)[:6000]})
             directa = _respuesta_directa(resultados, {u["nombre"]: u["argumentos"] for u in usadas})
