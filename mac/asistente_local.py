@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.6"
+VERSION = "1.7"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -222,6 +222,47 @@ def lugares():
     return l
 
 
+def coordenadas(t):
+    """33°S 72°W · 33°30'S 72°15'W · 33 S 72 W · 33,5S 72,2W → (lat, lon)."""
+    t = str(t).upper().replace("º", "°").replace("’", "'").replace("′", "'")
+    pat = r"(\d+(?:[.,]\d+)?)\s*°?\s*(?:(\d+(?:[.,]\d+)?)\s*'?)?\s*([NS])"
+    m1 = re.search(pat, t)
+    m2 = re.search(pat.replace("[NS]", "[EWO]"), t[m1.end():] if m1 else "")
+    if not (m1 and m2):
+        return None
+    f = lambda g, mi: float(g.replace(",", ".")) + (float(mi.replace(",", ".")) / 60 if mi else 0)
+    la = f(m1.group(1), m1.group(2)) * (-1 if m1.group(3) == "S" else 1)
+    lo = f(m2.group(1), m2.group(2)) * (1 if m2.group(3) == "E" else -1)
+    return la, lo
+
+
+_zonas = {"t": 0, "z": []}
+ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
+
+
+def zonas():
+    if not _zonas["z"] or time.time() - _zonas["t"] > 86400:
+        try:
+            g = obtener(RAW + "data/geo/metarea.json", ttl=86400)
+            _zonas.update(t=time.time(), z=[{"id": f["properties"]["id"], "nombre": f["properties"].get("nombre", ""),
+                                            "lp": f["properties"].get("lp"), "geom": f["geometry"]}
+                                           for f in g.get("features", []) if f.get("properties", {}).get("id") in ROMANOS])
+        except Exception:
+            pass
+    return _zonas["z"]
+
+
+def zona(t):
+    """"zona IV", "área V", "zona 4" → subárea del Cuadro F (METAREA XV)."""
+    m = re.search(r"\b(?:zona|area|área|subarea|subárea)\s+([ivx]+|\d+)\b", str(t), re.I)
+    if not m:
+        return None
+    k = m.group(1).upper()
+    if k.isdigit():
+        k = ROMANOS[int(k) - 1] if 1 <= int(k) <= 10 else None
+    return next((z for z in zonas() if z["id"] == k and z.get("lp")), None)
+
+
 def resolver(lugar=None, lat=None, lon=None):
     """Devuelve (nombre, lat, lon, fuente) o lanza ValueError con sugerencias."""
     if lat is not None and lon is not None:
@@ -236,6 +277,19 @@ def resolver(lugar=None, lat=None, lon=None):
     m = re.match(r"^\s*(-?\d+(?:[.,]\d+)?)\s*[, ]\s*(-?\d+(?:[.,]\d+)?)\s*$", str(lugar))
     if m:
         return resolver(None, m.group(1).replace(",", "."), m.group(2).replace(",", "."))
+    c = coordenadas(lugar)
+    if c:
+        return resolver(None, c[0], c[1])
+    z = zona(lugar)
+    if z:
+        return (f"zona {z['id']} ({z['nombre']})", z["lp"][0], z["lp"][1], "Cuadro \"F\", subdivisión de METAREA XV")
+    # prioridad: puertos SITPORT y estaciones costeras (evita homónimos lejanos del Derrotero, como Puerto San Antonio en Magallanes)
+    try:
+        sc, n, la, lo = max(((similitud(lugar, n), n, la, lo) for n, la, lo in _geo_cargar()["puertos"]), key=lambda x: x[0])
+        if sc >= 0.9:
+            return (n, la, lo, "Puertos SITPORT")
+    except Exception:
+        pass
     cand = sorted(((similitud(lugar, n), n, la, lo, f) for n, la, lo, f in lugares()), key=lambda x: -x[0])
     if not cand or cand[0][0] < 0.72:
         sug = ", ".join(c[1] for c in cand[:5])
@@ -395,12 +449,28 @@ def _estado(z, ahora):
     return "vigente"
 
 
+def _aviso_en_zona(geom_aviso, zs):
+    """El aviso toca la subárea si cubre su punto de referencia o alguno de sus vértices."""
+    if not geom_aviso:
+        return False
+    g = zs["geom"]
+    anillo = (g["coordinates"][0][0] if g["type"] == "MultiPolygon" else g["coordinates"][0])
+    pts = [(zs["lp"][0], zs["lp"][1])] + [(y, x) for x, y in anillo[::max(1, len(anillo) // 60)]]
+    return any(cubre(geom_aviso, la, lo, tol=0.02) for la, lo in pts)
+
+
 def avisos_vigentes(lugar=None, lat=None, lon=None):
     datos = _avisos_crudos()
     ahora = datetime.now(timezone.utc)
-    punto = None
-    if lugar or (lat is not None and lon is not None):
-        punto = resolver(lugar, lat, lon)
+    punto, zsel, aviso_lugar = None, None, None
+    if lugar and zona(lugar):
+        zsel = zona(lugar)
+    elif lugar or (lat is not None and lon is not None):
+        try:
+            punto = resolver(lugar, lat, lon)
+        except ValueError:
+            aviso_lugar = f"No reconocí \"{lugar}\" como un lugar; muestro los avisos de todo el litoral."
+            lugar = None
     salida = []
     for a in datos.get("avisos", []):
         for z in a.get("zonas", []) or [{}]:
@@ -408,6 +478,8 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
             if not est:
                 continue
             if punto and not cubre(z.get("geom"), punto[1], punto[2]):
+                continue
+            if zsel and not _aviso_en_zona(z.get("geom"), zsel):
                 continue
             salida.append({"estado": est, "tipo": a.get("tipo"), "codigo": a.get("codigo"),
                            "zona": z.get("nombre") or a.get("sector"),
@@ -417,10 +489,11 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
                            "publicado": a.get("publicado")})
     vig = [a for a in salida if a["estado"] == "vigente"][:8]
     prox = [a for a in salida if a["estado"] == "próximo"][:8]
-    lugar_txt = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else punto[0]) if punto else "el litoral"
+    lugar_txt = ((_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else punto[0]) if punto
+                 else f"la zona {zsel['id']} ({zsel['nombre']})" if zsel else "el litoral")
     def linea(a):
         return f"{a['tipo']} {a['codigo'] or ''}, {a['zona']}, desde {a['desde'] or '–'} hasta {a['hasta'] or '–'}".replace("  ", " ")
-    partes = [f"Vigentes ahora en {lugar_txt}: " + ("; ".join(linea(a) for a in vig) if vig else "ninguno") + "."]
+    partes = ([aviso_lugar] if aviso_lugar else []) + [f"Vigentes ahora en {lugar_txt}: " + ("; ".join(linea(a) for a in vig) if vig else "ninguno") + "."]
     if prox:
         partes.append("Próximos (aún no comienzan): " + "; ".join(linea(a) for a in prox) + ".")
     return {"lugar": f"{punto[0]} ({gm(punto[1], punto[2])})" if punto else "todo el litoral",
@@ -886,7 +959,9 @@ Reglas obligatorias:
 5. Si la herramienta trae "resumen", cópialo casi textual, sin cambiar fechas, cifras ni el estado del mar, y sin generalizar a varios días. Un aviso "próximo" todavía no está vigente: dilo así.
 6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
 7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.
-8. Solo respondes sobre tiempo, mar, avisos y rutas en Chile. Ante otros temas, indica en una línea que solo atiendes consultas de meteorología marítima.""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
+8. Solo respondes sobre tiempo, mar, avisos, puertos y rutas en Chile. Las operaciones sobre el mar (helicópteros, buques, lanchas, buceo) sí son tu tema: usa condicion_punto para entregar viento, racha, visibilidad y estado de la mar, y deja que el usuario decida con sus propios límites. Ante temas ajenos, indica en una línea que solo atiendes consultas de meteorología marítima.
+9. Usa un tono cercano: empieza con "Hola," y, si corresponde, recomienda revisar la sección de meteoia.cl donde está el detalle.
+10. Para "zona central", "zona norte" u otras regiones sin nombre exacto, llama avisos_vigentes sin lugar. Para "zona I" a "zona X" pasa el texto tal cual (ej. "zona IV").""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
 
 def _ollama(mensajes):
@@ -971,9 +1046,10 @@ def _respuesta_directa(resultados, args_por_tool=None):
     args_por_tool = args_por_tool or {}
     n0 = resultados[0][0]
     partes, fuentes, recs, cierres = [_saludo(n0, resultados[0][1], args_por_tool.get(n0, {}))], [], [], []
+    con_avisos = any(n == "avisos_vigentes" for n, _, _ in resultados)
     for n, r, pos in resultados:
         partes.append(r["resumen"])
-        for x in _recomendaciones(n, r, pos):
+        for x in _recomendaciones(n, r, None if con_avisos and n != "avisos_vigentes" else pos):
             if x not in recs:
                 recs.append(x)
         if CIERRES.get(n) and CIERRES[n] not in cierres:
