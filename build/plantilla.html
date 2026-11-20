@@ -252,6 +252,14 @@ main{display:flex;gap:14px;padding:14px;align-items:flex-start}
 #layerBox .layers label{padding:2px 0;gap:6px}
 #layerBox .grp{margin:7px 0 2px}
 @media (max-width:1050px){main{flex-direction:column;align-items:stretch} .left,.left:has(#grpAv.plegado):has(#grpEst.plegado){width:auto} #mapWrap{order:-1;position:relative;top:auto;height:70vh;flex:none} .left:has(#grpAv.plegado):has(#grpEst.plegado) .plegado>.grpH{writing-mode:horizontal-tb;padding:12px 14px} .left:has(#grpAv.plegado):has(#grpEst.plegado) .plegado{width:auto;min-height:0} .left:has(#grpAv.plegado):has(#grpEst.plegado) .plegado>.grpH .btnPleg{order:0;margin-left:8px} }
+.vtabs{display:flex;gap:6px;padding:10px 14px 6px}
+.visT{flex:1;border:1px solid var(--line);background:var(--chip);color:inherit;border-radius:7px;padding:6px 0;font:600 12.5px system-ui,sans-serif;cursor:pointer}
+.visT[aria-selected=true]{background:#1f6feb;border-color:#1f6feb;color:#fff}
+#visGraf{padding:0 14px 8px}
+.visSvg{width:100%;height:78px;display:block;overflow:visible}
+.visSvg rect{fill:#1f6feb}
+.visSvg rect:hover{fill:#f2c200}
+.visEje{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-top:3px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 14px 10px}
 .kpi{background:var(--chip);border-radius:8px;padding:8px 6px;text-align:center}
 .kpi b{display:block;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -458,6 +466,18 @@ html.soloRuta #baseStatus{background:#0e2136f2;color:#e8f1fa;border:1px solid #1
         </table>
       </div>
       <div class="note" style="border-top:1px solid var(--line)"><b>Redes:</b> Capitanías de Puerto (●) y EMA Campbell (■), las mismas que dibuja el meteomapa, y red complementaria (◆): faros y estaciones de IFOP, Weather Underground y WeatherLink. <b>Criterio:</b> operativa ≤ 60 min; con retraso 1–6 h; no operativa &gt; 6 h. Si la fuente no informa la hora, se usa la del último cambio de valores (≈). <span class="flag">Sensor dudoso:</span> transmite con valores imposibles, en cero o sin variación (temperatura, humedad o viento ≥ 6 h; presión ≥ 3 h; viento en calma ≥ 24 h; se excluye humedad ≥ 99 %). Clic en una fila para ver la estación y sus datos en el mapa.</div>
+    </section>
+
+    <section class="card" id="grpVis" hidden>
+      <h2 class="grpH"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>3 · Visitas al sitio<span class="n" id="visTot"></span><button type="button" class="btnPleg" data-p="grpVis" title="Replegar panel" aria-expanded="true">‹</button></h2>
+      <div class="vtabs" id="visTabs" role="tablist" aria-label="Período de las visitas">
+        <button type="button" class="visT" data-p="dias" role="tab" aria-selected="true">Día</button>
+        <button type="button" class="visT" data-p="semanas" role="tab" aria-selected="false">Semana</button>
+        <button type="button" class="visT" data-p="meses" role="tab" aria-selected="false">Mes</button>
+      </div>
+      <div class="kpis" id="visKpi" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div id="visGraf"></div>
+      <div class="note" id="visNota"></div>
     </section>
   </div>
 
@@ -2006,6 +2026,58 @@ async function totalGoatCounter() {
     return Number.isFinite(n) && n > 0 ? n : null;
   } catch (e) { return null; }
 }
+// Panel de visitas por día, semana y mes. La serie la publica scripts/visitas.py desde la API de
+// GoatCounter; si todavía no hay archivo (falta el secreto GOATCOUNTER_TOKEN) el panel no se muestra.
+const VIS = { datos: null, per: 'dias', largo: { dias: 30, semanas: 16, meses: 12 }, nom: { dias: 'día', semanas: 'semana', meses: 'mes' },
+  ult: { dias: 'Último día', semanas: 'Última semana', meses: 'Último mes' } };
+function visEtiqueta(per, d) {
+  const f = new Date(d + 'T12:00:00');
+  if (per === 'meses') return f.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' });
+  const c = f.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
+  return per === 'semanas' ? 'sem. ' + c : c;
+}
+function pintarVisitas() {
+  const d = VIS.datos; if (!d) return;
+  const s = (d[VIS.per] || []).slice(-VIS.largo[VIS.per]);
+  const max = Math.max(1, ...s.map(x => x.n)), suma = s.reduce((a, x) => a + x.n, 0);
+  document.getElementById('visTot').textContent = nf(d.total, 0) + ' visitas';
+  document.getElementById('visKpi').innerHTML =
+    `<div class="kpi"><b>${nf(s.length ? s[s.length - 1].n : 0, 0)}</b><span>${VIS.ult[VIS.per]}</span></div>` +
+    `<div class="kpi"><b>${nf(Math.round(suma / Math.max(1, s.length)), 0)}</b><span>Promedio</span></div>` +
+    `<div class="kpi"><b>${nf(max, 0)}</b><span>Máximo</span></div>`;
+  const H = 34, an = 100 / Math.max(1, s.length);
+  document.getElementById('visGraf').innerHTML = s.length
+    ? `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" class="visSvg" role="img" aria-label="Visitas por ${VIS.nom[VIS.per]}">`
+      + s.map((x, i) => {
+        const h = Math.max(0.3, x.n / max * H);
+        return `<rect x="${(i * an + an * 0.14).toFixed(2)}" y="${(H - h).toFixed(2)}" width="${(an * 0.72).toFixed(2)}" height="${h.toFixed(2)}"><title>${escH(visEtiqueta(VIS.per, x.d))}: ${nf(x.n, 0)}</title></rect>`;
+      }).join('')
+      + `</svg><div class="visEje"><span>${escH(visEtiqueta(VIS.per, s[0].d))}</span><span>${escH(visEtiqueta(VIS.per, s[s.length - 1].d))}</span></div>`
+    : '<p class="note" style="padding:0">Todavía no hay datos para este período.</p>';
+  const act = d.actualizado ? new Date(d.actualizado).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '–';
+  document.getElementById('visNota').innerHTML = `<b>Fuente:</b> ${escH(d.fuente || 'GoatCounter')}. ${escH(d.zona || '')} Actualizado el ${escH(act)}`;
+}
+async function cargarVisitas() {
+  try {
+    const r = await fetch('data/visitas.json?v=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || !Array.isArray(j.dias)) return;
+    VIS.datos = j;
+    document.getElementById('grpVis').hidden = false;
+    pintarVisitas();
+  } catch (e) {}
+}
+document.getElementById('visTabs').addEventListener('click', e => {
+  const b = e.target.closest('.visT'); if (!b) return;
+  VIS.per = b.dataset.p;
+  document.querySelectorAll('#visTabs .visT').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  pintarVisitas();
+  if (window.mnEvento) window.mnEvento('visitas-periodo', VIS.per);
+});
+cargarVisitas();
+setInterval(cargarVisitas, 30 * 60000);
+
 // Contador de visitas: muestra el total de GoatCounter; si no responde, el contador propio (una visita por sesión).
 async function contarVisita(nueva) {
   const base = 'https://abacus.jasoncameron.dev', clave = 'feliperifo-meteo-naval/visitas';
