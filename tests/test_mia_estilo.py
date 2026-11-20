@@ -57,5 +57,31 @@ class NotaTiempoClima(unittest.TestCase):
         self.assertNotIn(a.NOTA_CLIMA, a.estilo_mia(RESP, "¿cómo estará el tiempo mañana?", None, OK))
 
 
+class WrfIaFueraDeServicio(unittest.TestCase):
+    def test_fuera_de_las_herramientas_por_defecto(self):
+        self.assertNotIn("pronostico_bahia", a.HERRAMIENTAS)
+        self.assertNotIn("pronostico_bahia", [e["function"]["name"] for e in a.ESQUEMA])
+        self.assertIn("error", a.ejecutar("pronostico_bahia", {"bahia": "Talcahuano"}))
+
+    def test_pronostico_vencido_se_rechaza(self):
+        from datetime import datetime
+        w = {"actualizado": "2026-11-16T13:43:18Z", "bahias": [{"nombre": "Talcahuano", "pronostico": {"dias": [
+            {"fecha": "2026-11-16"}, {"fecha": "2026-11-19"}]}}]}
+        dato0, ahora0 = a.dato, a.ahora_local
+        try:
+            a.dato = lambda *x, **k: w
+            a.ahora_local = lambda: datetime(2026, 11, 20, 16, 0, tzinfo=a.TZ)
+            with self.assertRaisesRegex(ValueError, "atrasado"):
+                a.pronostico_bahia("Talcahuano")
+            w["bahias"][0]["pronostico"]["dias"].append({"fecha": "2026-11-20"})   # 5.º día de una corrida vieja: igual atrasado
+            with self.assertRaisesRegex(ValueError, "atrasado"):
+                a.pronostico_bahia("Talcahuano")
+            w["actualizado"] = (datetime.now(a.timezone.utc) - a.timedelta(hours=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            a.ahora_local = lambda: datetime(2026, 11, 18, 9, 0, tzinfo=a.TZ)
+            self.assertEqual([d["fecha"] for d in a.pronostico_bahia("Talcahuano")["dias"]], ["2026-11-19", "2026-11-20"])
+        finally:
+            a.dato, a.ahora_local = dato0, ahora0
+
+
 if __name__ == '__main__':
     unittest.main()

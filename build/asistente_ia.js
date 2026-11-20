@@ -15,11 +15,11 @@ function crearAsistenteIA(L, map, h) {
       <button type="button">¿Cómo estará el mar en Valparaíso en tres días?</button>
       <button type="button">¿Hay avisos vigentes para Talcahuano?</button>
       <button type="button">Mejor ruta de Puerto Montt a Punta Arenas a 12 nudos, zarpando mañana a las 08:00</button>
-      <button type="button">Pronóstico WRF + IA de la bahía de Puerto Montt</button></div>
+      <button type="button">¿Cómo estará el viento en Puerto Montt el fin de semana?</button></div>
     <div class="asi-chat" aria-live="polite"></div>
     <form class="asi-f" hidden><textarea rows="2" maxlength="1000" placeholder="Pregunte por un lugar y día, avisos, una bahía o una ruta…"></textarea><button type="submit">Enviar</button></form>
     <details class="mar-crit"><summary>Cómo funciona</summary><div>
-      <p>Un modelo de lenguaje que corre en un equipo local (Ollama, sin servicios de pago) interpreta la pregunta y llama a una de cuatro herramientas: condición en un punto (Open-Meteo: viento ECMWF IFS, oleaje del modelo marino), avisos vigentes y próximos (los mismos de esta página), pronóstico WRF + IA de bahía y comparación de las alternativas de las rutas tipo. La respuesta se redacta solo con esos datos y cita la fuente y la hora de consulta.</p>
+      <p>Un modelo de lenguaje que corre en un equipo local (Ollama, sin servicios de pago) interpreta la pregunta y llama a una de cuatro herramientas: condición en un punto (Open-Meteo: viento ECMWF IFS, oleaje del modelo marino), avisos vigentes y próximos (los mismos de esta página), tendencia a 5 días, estado de puerto y comparación de las alternativas de las rutas tipo. La respuesta se redacta solo con esos datos y cita la fuente y la hora de consulta.</p>
       <p>Atiende una consulta a la vez (máximo 5 por minuto y 40 al día por persona); cada respuesta puede tardar de 10 a 40 s. El estado del mar se expresa con la escala de la Armada. Las trazas de ruta son referenciales y no reemplazan la carta náutica ni el Derrotero.</p>
       <p><b>Información referencial generada por IA con datos de modelos. No reemplaza los pronósticos ni los avisos oficiales de la Armada de Chile.</b></p></div></details>`;
   const wrap = document.getElementById('mapWrap');
