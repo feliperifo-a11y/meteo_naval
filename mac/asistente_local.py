@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.2"
+VERSION = "1.3"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -303,7 +303,22 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
         })
     if not periodos:
         raise ValueError("Open-Meteo no entregó datos para esa fecha.")
-    return {
+    dia = f"{DIAS[f.weekday()]} {f:%d/%m}"
+    lineas = []
+    for p in periodos:
+        t = f"{p['periodo'].split(' (')[0].capitalize()}: viento {p['viento_kt']}"
+        if p["racha_max_kt"]:
+            t += f", racha hasta {p['racha_max_kt']} kt"
+        if p["estado_del_mar"]:
+            t += f"; mar {p['estado_del_mar']}, oleaje {p['oleaje_m']}"
+        if p["precipitacion_mm"]:
+            t += f"; lluvia {str(p['precipitacion_mm']).replace('.', ',')} mm"
+        if p["visibilidad_min_km"] is not None and p["visibilidad_min_km"] < 5:
+            t += f"; visibilidad mínima {str(p['visibilidad_min_km']).replace('.', ',')} km"
+        lineas.append(t + ".")
+    nombre = (lugar.strip().title() if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
+    resumen = f"Pronóstico para {nombre}, {dia} (un solo día, hora local):\n" + "\n".join(lineas)
+    return {"resumen": resumen,
         "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
         "fecha": f"{DIAS[f.weekday()]} {f:%d/%m/%Y}", "hora": "local de Chile",
         "periodos": periodos,
@@ -606,7 +621,7 @@ Reglas obligatorias:
 2. Responde solo con los datos que devolvió la herramienta. Si devolvió "error", explícalo al usuario y no inventes.
 3. Viento en nudos (kt) con dirección (N, NE, E, SE, S, SW, W, NW), oleaje en metros con el estado del mar de la escala de la Armada (rizada, marejadilla, marejada, gruesa, muy gruesa). Usa rangos.
 4. Para "mejor ruta" usa comparar_rutas y recomienda la alternativa con menor oleaje y viento máximos, mencionando avisos y restricciones si las hay.
-5. Si la herramienta trae "resumen", básate en él. Un aviso "próximo" todavía no está vigente: dilo así.
+5. Si la herramienta trae "resumen", cópialo casi textual, sin cambiar fechas, cifras ni el estado del mar, y sin generalizar a varios días. Un aviso "próximo" todavía no está vigente: dilo así.
 6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
 7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
