@@ -35,3 +35,15 @@ Prueba sin modelo: `python3 asistente_local.py --probar`. Una pregunta por termi
 - No está publicado en internet. Para integrarlo a la página Desarrollo falta un túnel de Cloudflare protegido con Cloudflare Access.
 - Las rutas solo existen entre los puertos de las rutas tipo; las trazas son referenciales y no reemplazan la carta náutica ni el Derrotero.
 - Información referencial: no reemplaza los pronósticos ni los avisos oficiales de la Armada de Chile.
+
+## MIA en la portada (acceso público)
+
+MIA es la mascota de la portada (`index.html`) que abre un chat con este mismo asistente. Archivos: `build/mia.js`, `build/mia.css` (se incorporan con `scripts/construir_index.py`), `app/mia.webp` (animación), `app/mia.png` (versión fija para quien prefiere menos movimiento) y `app/mia_avatar.png`.
+
+Para que cualquier visitante pueda preguntar, `asistente.meteoia.cl` debe responder sin inicio de sesión:
+
+1. En Cloudflare Zero Trust → Access → Applications, eliminar la aplicación de `asistente.meteoia.cl` o cambiar su política a **Bypass · Everyone**.
+2. Si el túnel no está instalado, instalarlo en modo público: `curl -fsSL https://raw.githubusercontent.com/feliperifo-a11y/meteo_naval/main/mac/instalar_tunel.sh | MN_PUBLICO=1 bash`.
+3. Comprobar `https://asistente.meteoia.cl/salud` desde un navegador sin sesión: debe entregar `{"ok": true, …}`.
+
+El servidor sigue limitando 5 consultas por minuto y 40 por día por persona (IP que entrega Cloudflare), atiende una consulta a la vez y solo responde sobre meteorología marítima. Con el Mac apagado, MIA informa que está descansando y el resto de la portada no se ve afectado. `?mia` en la dirección abre el chat directamente.
