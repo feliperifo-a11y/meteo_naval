@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.9"
+VERSION = "2.0"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -953,7 +953,7 @@ Reglas obligatorias:
 6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
 7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.
 8. Solo respondes sobre tiempo, mar, avisos, puertos y rutas en Chile. Las operaciones sobre el mar (helicópteros, buques, lanchas, buceo) sí son tu tema: usa condicion_punto para entregar viento, racha, visibilidad y estado de la mar, y deja que el usuario decida con sus propios límites. Ante temas ajenos, indica en una línea que solo atiendes consultas de meteorología marítima.
-9. Usa un tono cercano: empieza con "Hola," y, si corresponde, recomienda revisar la sección de meteoia.cl donde está el detalle.
+9. Usa un tono cercano: empieza con "Hola," (el saludo con apodo y la nota sobre tiempo y clima los agrega el sistema; no los escribas tú) y, si corresponde, recomienda revisar la sección de meteoia.cl donde está el detalle.
 10. Para "zona central", "zona norte" u otras regiones sin nombre exacto, llama avisos_vigentes sin lugar. Para "zona I" a "zona X" pasa el texto tal cual (ej. "zona IV").""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
 
@@ -1087,7 +1087,69 @@ def _respuesta_directa(resultados, args_por_tool=None):
 _modelo_lock = threading.Lock()   # un usuario a la vez: el M1 de 8 GB no da para más
 
 
+
+# ------------------------------------------------------------------ estilo de MIA (saludo y nota tiempo / clima)
+# Se aplica en Python sobre la respuesta final, para que salga igual siempre, sin depender de que el modelo lo recuerde.
+_APODOS = {"amigo", "amiga", "amigui", "amiguito", "amiguita", "carreta", "manilla", "compadre", "comadre", "compa", "compita",
+           "hermano", "hermana", "hermanito", "hermanita", "bro", "broder", "brother", "socio", "socia", "loco", "loca",
+           "pana", "parce", "cumpa", "viejo", "vieja", "mijo", "mija", "flaco", "flaca", "jefe", "jefa", "capitán", "capitan",
+           "maestro", "maestra", "campeón", "campeon", "campeona", "crack", "cabro", "cabra", "chiquillo", "chiquilla",
+           "linda", "lindo", "bonita", "querida", "querido", "tía", "tia", "tío", "tio", "marino", "marinero", "marinera"}
+_NO_REPETIR = {"tonta", "tonto", "weona", "weón", "weon", "huevona", "huevón", "huevon", "idiota", "estúpida", "estupida",
+               "estúpido", "estupido", "fea", "feo", "inútil", "inutil", "mala", "malo", "bot", "robot", "máquina", "maquina",
+               "mia", "mía"}
+_PREG = {"como", "cómo", "que", "qué", "cual", "cuál", "cuando", "cuándo", "donde", "dónde", "quiero", "necesito", "me", "te",
+         "hay", "puedes", "podrías", "podrias", "sabes", "tienes", "una", "un", "la", "el", "en", "para", "por", "mañana",
+         "hoy", "ayuda", "consulta", "pregunta", "buenas", "buenos", "días", "dias", "tardes", "noches"}
+_SALUDO = re.compile(r"^\s*[¡!]*\s*(hola+|holi+|wena+s?|buenas|oe|oye|hey|qu[eé] tal|quiubo|qu[eé] onda)\b[\s,!¡.]*"
+                     r"(?P<apodo>[a-záéíóúñü]+)(?P<sig>\s*[,!.:;?]|\s*$)?", re.I)
+_CERCANO = re.compile(r"\b(hoy|mañana|manana|pasado mañana|ahora|esta (semana|tarde|noche)|fin de semana|finde|"
+                      r"lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|próxim[oa]s? días|en \d+ días)\b", re.I)
+NOTA_CLIMA = ("Un dato: lo que preguntas es el tiempo, no el clima. El tiempo es el estado de la atmósfera en un lugar y "
+              "momento concretos, como mañana en la playa, y cambia de un día a otro. El clima es el comportamiento promedio "
+              "de la atmósfera en un lugar durante muchos años (la Organización Meteorológica Mundial usa períodos de 30 años); "
+              "por ejemplo, que en la zona central de Chile los inviernos sean lluviosos y los veranos secos.")
+
+
+def apodo_saludo(pregunta):
+    """Apodo con que la persona saluda a MIA ("hola carreta", "wena amigo, …"), o None. Solo apodos amistosos."""
+    m = _SALUDO.match(pregunta or "")
+    if not m:
+        return None
+    a = m.group("apodo")
+    al = a.lower()
+    if al in _NO_REPETIR or al in _PREG:
+        return None
+    if al in _APODOS or m.group("sig"):     # apodo conocido, o una palabra suelta seguida de coma o signo
+        return a
+    return None
+
+
+def _sin_hola(texto):
+    t = re.sub(r"^\s*¡?hola\b[^,.!:\n]{0,30}[,.!:]?\s*", "", texto or "", flags=re.I)
+    return t[:1].upper() + t[1:] if t else t
+
+
+def estilo_mia(respuesta, pregunta, historial=None, herramientas=None):
+    """Saludo espejo y, si la persona dijo «clima» para un día cercano, la nota que distingue tiempo de clima."""
+    r = respuesta or ""
+    apodo = apodo_saludo(pregunta)
+    if apodo:
+        inicio = f"¡Hola, {apodo}! " + ("" if historial else "Tanto tiempo. ") + "Mira, aquí va la respuesta a tu pregunta:\n"
+        r = inicio + _sin_hola(r)
+    ok = any(not h.get("error") for h in (herramientas or []))
+    if ok and re.search(r"\bclimas?\b", pregunta or "", re.I) and _CERCANO.search(pregunta or ""):
+        r = r.rstrip() + "\n\n" + NOTA_CLIMA
+    return r
+
+
 def preguntar(pregunta, historial=None):
+    r = _preguntar(pregunta, historial)
+    r["respuesta"] = estilo_mia(r.get("respuesta"), pregunta, historial, r.get("herramientas"))
+    return r
+
+
+def _preguntar(pregunta, historial=None):
     t = time.time()
     msgs = [{"role": "system", "content": sistema()}]
     for h in (historial or [])[-6:]:
