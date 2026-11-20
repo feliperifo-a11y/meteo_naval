@@ -98,6 +98,7 @@ fi
 
 echo "3/4 Instalando el asistente…"
 curl -fsSL "$URL/asistente_local.py" -o "$DEST/asistente_local.py"
+curl -fsSL "$URL/ruta_mar.py" -o "$DEST/ruta_mar.py"
 curl -fsSL "$URL/desinstalar_asistente.sh" -o "$DEST/desinstalar_asistente.sh" && chmod +x "$DEST/desinstalar_asistente.sh"
 "$PY" -m py_compile "$DEST/asistente_local.py"
 HOSTS="127.0.0.1"
