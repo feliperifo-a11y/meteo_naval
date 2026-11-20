@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.7"
+VERSION = "1.8"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -376,19 +376,12 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
         raise ValueError("Open-Meteo no entregó datos para esa fecha.")
     dia = f"{DIAS[f.weekday()]} {f:%d/%m}"
     lineas = []
-    for p in periodos:
+    for p in periodos:   # solo viento y mar (pedido de Felipe: respuesta corta)
         t = f"{p['periodo'].split(' (')[0].capitalize()}: viento {p['viento_kt']}"
-        if p["racha_max_kt"]:
-            t += f", racha hasta {p['racha_max_kt']} kt"
-        if p["estado_del_mar"]:
-            t += f"; mar {p['estado_del_mar']}, oleaje {p['oleaje_m']}"
-        if p["precipitacion_mm"]:
-            t += f"; lluvia {str(p['precipitacion_mm']).replace('.', ',')} mm"
-        if p["visibilidad_min_km"] is not None and p["visibilidad_min_km"] < 5:
-            t += f"; visibilidad mínima {str(p['visibilidad_min_km']).replace('.', ',')} km"
+        t += f"; mar {p['estado_del_mar']} ({p['oleaje_m'].split(' m')[0]} m)" if p["estado_del_mar"] else "; mar sin dato"
         lineas.append(t + ".")
     nombre = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
-    resumen = f"Pronóstico para {nombre}, {dia} (un solo día, hora local):\n" + "\n".join(lineas)
+    resumen = f"{nombre}, {dia}:\n" + "\n".join(lineas)
     return {"resumen": resumen,
         "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
         "fecha": f"{DIAS[f.weekday()]} {f:%d/%m/%Y}", "hora": "local de Chile",
@@ -1002,8 +995,8 @@ def _saludo(nombre, r, args):
             return "Hola, sí: hay aviso vigente."
         return "Hola, por ahora no hay avisos vigentes, pero viene uno:" if "Próximos" in res else "Hola, por ahora no hay avisos vigentes."
     if nombre in ("condicion_punto", "tendencia_punto") and args.get("lat") is not None and not args.get("lugar"):
-        return "Hola, me la pones difícil con latitud y longitud, pero aquí va:"
-    return {"condicion_punto": "Hola, esto es lo que muestran los modelos:",
+        return "Hola, me la pones difícil con latitud y longitud, pero aquí va. Los modelos muestran para"
+    return {"condicion_punto": "Hola, esto es lo que muestran los modelos para",
             "tendencia_punto": "Hola, buena pregunta. Así viene la semana:",
             "comparar_rutas": "Hola, revisé la ruta:",
             "estado_puerto": "Hola, revisé SITPORT:"}.get(nombre, "Hola:")
@@ -1038,6 +1031,9 @@ def _recomendaciones(nombre, r, pos):
     return out
 
 
+CORTAS = {"condicion_punto"}   # respuesta mínima: viento y mar, recomendación y una línea de fuente
+
+
 def _respuesta_directa(resultados, args_por_tool=None):
     """Si todas las herramientas llamadas traen resumen redactado y no hubo errores, arma la respuesta sin el modelo:
     saludo y cierre en el tono de MeteoIA, el resumen de la herramienta tal cual, recomendaciones por regla y la fuente."""
@@ -1045,28 +1041,46 @@ def _respuesta_directa(resultados, args_por_tool=None):
         return None
     args_por_tool = args_por_tool or {}
     n0 = resultados[0][0]
-    partes, fuentes, recs, cierres = [_saludo(n0, resultados[0][1], args_por_tool.get(n0, {}))], [], [], []
     con_avisos = any(n == "avisos_vigentes" for n, _, _ in resultados)
-    for n, r, pos in resultados:
-        partes.append(r["resumen"])
+    otras = any(n != "avisos_vigentes" for n, _, _ in resultados)
+    # la consulta de avisos que acompaña a otra herramienta solo se muestra si hay avisos vigentes
+    usar = [(n, r, pos) for n, r, pos in resultados
+            if not (n == "avisos_vigentes" and otras and not r.get("vigentes_ahora"))]
+    corta = all(n in CORTAS or n == "avisos_vigentes" for n, _, _ in usar)
+    saludo = _saludo(n0, resultados[0][1], args_por_tool.get(n0, {}))
+    partes, fuentes, recs, cierres = [], [], [], []
+    for k, (n, r, pos) in enumerate(usar):
+        if k == 0 and saludo.endswith(" para"):
+            partes.append(saludo + " " + r["resumen"])   # "Hola, esto es lo que muestran los modelos para Valparaíso, sábado 21/11:"
+        else:
+            if k == 0:
+                partes.append(saludo)
+            partes.append(r["resumen"])
         for x in _recomendaciones(n, r, None if con_avisos and n != "avisos_vigentes" else pos):
             if x not in recs:
                 recs.append(x)
-        if CIERRES.get(n) and CIERRES[n] not in cierres:
+        if not corta and CIERRES.get(n) and CIERRES[n] not in cierres:
             cierres.append(CIERRES[n])
-        f = r.get("fuente", "")
-        if r.get("consultado"):
-            f += f", consultado {r['consultado']}"
-        elif r.get("actualizado"):
-            f += f", actualizado {r['actualizado']}"
+        if corta:
+            f = "Open-Meteo (ECMWF)" if n == "condicion_punto" else "avisos de DIRECTEMAR"
+            hora = (r.get("consultado") or "")[-5:] or (r.get("actualizado") or "")[-5:]
+            f += f", {hora}" if hora else ""
+        else:
+            f = r.get("fuente", "")
+            if r.get("consultado"):
+                f += f", consultado {r['consultado']}"
+            elif r.get("actualizado"):
+                f += f", actualizado {r['actualizado']}"
         if f not in fuentes:
             fuentes.append(f)
-    notas = {r.get("nota") for _, r, _ in resultados if r.get("nota")}
     texto = "\n\n".join(partes)
     if recs:
         texto += "\n\n" + " ".join(recs)
     if cierres:
         texto += "\n\n" + " ".join(cierres)
+    if corta:
+        return texto + "\n\nFuente: " + "; ".join(fuentes) + "."
+    notas = {r.get("nota") for _, r, _ in usar if r.get("nota")}
     return texto + "\n\n" + "\n".join("Fuente: " + f for f in fuentes) + ("\n" + " ".join(sorted(notas)) if notas else "")
 
 
