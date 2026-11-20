@@ -9,8 +9,8 @@
 #mia.pensando .mia-btn{animation:miaFlota 1.4s ease-in-out infinite}
 @keyframes miaFlota{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
-.mia-globo{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:230px;background:#fff;color:#0f2a44;border-radius:14px;padding:9px 30px 9px 12px;font-size:13px;font-weight:600;box-shadow:0 8px 22px rgba(0,0,0,.4);animation:miaEntra .35s ease-out}
-.mia-globo span{cursor:pointer}
+.mia-globo{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:min(285px,calc(100vw - 24px));background:#fff;color:#0f2a44;border-radius:14px;padding:9px 30px 9px 12px;font-size:13px;font-weight:600;box-shadow:0 8px 22px rgba(0,0,0,.4);animation:miaEntra .35s ease-out}
+.mia-globo span{cursor:pointer;white-space:pre-line}
 .mia-vuela.izq .mia-globo{right:auto;left:0}
 .mia-vuela.izq .mia-globo:after{right:auto;left:34px}
 .mia-globo:after{content:"";position:absolute;right:34px;bottom:-7px;border:7px solid transparent;border-top-color:#fff;border-bottom:0}
