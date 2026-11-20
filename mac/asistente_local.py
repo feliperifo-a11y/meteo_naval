@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "2.0"
+VERSION = "2.1"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -506,6 +506,16 @@ def pronostico_bahia(bahia):
         raise ValueError("No hay pronóstico WRF + IA para esa bahía. Disponibles: " + ", ".join(b["nombre"] for b in bs))
     b = cand[0][1]
     p = b.get("pronostico") or {}
+    hoy = ahora_local().strftime("%Y-%m-%d")
+    vigentes = [d for d in p.get("dias", []) if str(d.get("fecha", "")) >= hoy]
+    try:
+        horas = (datetime.now(timezone.utc) - datetime.fromisoformat(str(w.get("actualizado")).replace("Z", "+00:00"))).total_seconds() / 3600
+    except Exception:
+        horas = 1e9
+    if not vigentes or horas > 36:   # pronóstico vencido (corrida de más de 36 h): no se entrega como si fuera actual
+        raise ValueError("El pronóstico WRF + IA está atrasado (última actualización " + hora_local(w.get("actualizado", "")) +
+                         ") y no cubre hoy ni los días siguientes. Usa condicion_punto para ese lugar.")
+    p = dict(p, dias=vigentes)
     return {"bahia": b["nombre"], "zona": b.get("zona"), "resolucion_wrf": b.get("resolucion"),
             "inicializacion_utc": p.get("inicializacion_utc"),
             "situacion_sinoptica": p.get("situacion_sinoptica"),
@@ -918,6 +928,10 @@ HERRAMIENTAS = {
         "salida": _p("Fecha y hora de zarpe 'AAAA-MM-DD HH:MM' hora local (opcional; si no, la próxima hora)"),
     }, ["zarpe", "recalada"]),
 }
+
+# WRF + IA fuera de servicio mientras la fuente no publique meteogramas nuevos (nov 2026). Para reactivarlo: MN_WRF_IA=1.
+if os.environ.get("MN_WRF_IA", "0") != "1":
+    HERRAMIENTAS.pop("pronostico_bahia", None)
 
 ESQUEMA = [{"type": "function", "function": {"name": n, "description": d,
             "parameters": {"type": "object", "properties": props, "required": req}}}
@@ -1339,6 +1353,8 @@ def probar():
              ("pronostico_bahia", {"bahia": "Puerto Montt"}),
              ("comparar_rutas", {"zarpe": "Puerto Montt", "recalada": "Punta Arenas", "velocidad_kt": 12})]
     for n, a in casos:
+        if n not in HERRAMIENTAS:
+            continue
         t = time.time()
         r = ejecutar(n, a)
         print(f"\n=== {n} {a}  ({time.time() - t:.1f} s)")

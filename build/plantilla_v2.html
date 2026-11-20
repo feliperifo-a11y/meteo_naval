@@ -34,6 +34,8 @@ a{color:var(--acc2)}
 .nav a.nuevo{position:relative;border-color:#f2c230;box-shadow:0 0 0 1px rgba(242,194,48,.45),0 6px 20px rgba(242,194,48,.22)}
 .nav a.nuevo:hover{border-color:#ffd75a}
 .nav a .badge{position:absolute;top:-8px;right:-6px;background:#f2c230;color:#0a1a2c;font-size:10.5px;font-weight:800;letter-spacing:.6px;border-radius:999px;padding:2px 8px;box-shadow:0 2px 6px rgba(0,0,0,.35);animation:latido 2.4s ease-in-out infinite}
+.nav a.atraso{position:relative;border-color:#f0a030}
+.nav a .badge.atr{background:#f0a030;color:#2b1a00;animation:none}
 @keyframes latido{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.nav a .badge{animation:none}}
 .rail{position:fixed;left:0;top:96px;width:74px;display:flex;flex-direction:column;gap:4px;padding:6px 6px;z-index:900}
@@ -685,9 +687,33 @@ async function miniHielo() {
     pie.textContent = 'Concentración de hielo marino, Península Antártica' + (isNaN(dC) ? '' : ' · ' + dC.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })); return; }
   el.innerHTML = '<div class="vacioTxt" style="padding:12px">Sin datos de hielo por ahora.</div>';
 }
+// WRF y WRF + IA leen data/wrf_ia.json. Si la corrida tiene más de 36 h o no cubre hoy (la fuente dejó de publicar meteogramas), los dos
+// botones de la portada muestran «CON ATRASO» y la tarjeta lo explica; al volver los datos al día, el distintivo se quita solo.
+function marcarAtrasoWrf(w, hoy) {
+  const dias = (w.bahias || []).flatMap(b => ((b.pronostico || {}).dias || []).map(d => d.fecha)).filter(Boolean);
+  const ultimo = dias.sort().pop() || '';
+  const horas = w.actualizado ? (Date.now() - new Date(w.actualizado).getTime()) / 3600000 : Infinity;
+  if (ultimo >= hoy && horas <= 36) return null;   // al día: corrida de menos de 36 h que cubre hoy
+  const en = window.METEOIA_LANG === 'en', act = w.actualizado ? fmtDM(new Date(w.actualizado)) : '';
+  const tit = en ? `Delayed: no new WRF meteograms from the source since ${act}` : `Con atraso: la fuente no publica meteogramas WRF nuevos desde el ${act}`;
+  document.querySelectorAll('.nav a[href="ia.html"], .nav a[href="wrfia.html"]').forEach(a => {
+    if (a.querySelector('.badge')) return;
+    const b = document.createElement('span'); b.className = 'badge atr'; b.dataset.i18n = 'no'; b.textContent = en ? 'DELAYED' : 'CON ATRASO';
+    a.classList.add('atraso'); a.title = tit; a.prepend(b);
+  });
+  return act;
+}
 async function miniWrf() {
   try { const w = await leerJSON('data/wrf_ia.json'), hoy = hoyChile(), quiero = ['ARICA', 'ANTOFAGASTA', 'VALPARAISO', 'TALCAHUANO', 'PUERTOMONTT', 'PUNTAARENAS'];
-    const filas = quiero.map(q => w.bahias.find(b => b.codigo.startsWith(q + '_'))).filter(Boolean).map(b => { const d = ((b.pronostico || {}).dias || []).find(x => x.fecha === hoy) || ((b.pronostico || {}).dias || [])[0];
+    const atraso = marcarAtrasoWrf(w, hoy);
+    if (atraso != null) {
+      document.getElementById('miniWrf').innerHTML = window.METEOIA_LANG === 'en'
+        ? `<div class="vacioTxt" data-i18n="no">No WRF forecast for today: the source has not published new meteograms since ${escH(atraso)}. Meanwhile, check the marine forecasts and the ECMWF wind on the map.</div>`
+        : `<div class="vacioTxt">Sin pronóstico WRF para hoy: la fuente no publica meteogramas nuevos desde el ${escH(atraso)}. Mientras tanto, revise los pronósticos marítimos y el viento ECMWF del mapa.</div>`;
+      document.getElementById('wrfNota').textContent = 'Con atraso · se actualizará solo cuando la fuente vuelva a publicar';
+      return;
+    }
+    const filas = quiero.map(q => w.bahias.find(b => b.codigo.startsWith(q + '_'))).filter(Boolean).map(b => { const d = ((b.pronostico || {}).dias || []).find(x => x.fecha === hoy);
       return d ? `<div class="x">${svgNub(d.nubosidad, 22)}<b>${escH(b.nombre)}</b><span class="mn">${d.temp_min != null ? Math.round(d.temp_min) + '°' : '–'}</span><span class="mx">${d.temp_max != null ? Math.round(d.temp_max) + '°' : '–'}</span></div>` : ''; }).join('');
     document.getElementById('miniWrf').innerHTML = filas || '<div class="vacioTxt">Sin pronósticos por ahora.</div>';
     document.getElementById('wrfNota').textContent = 'Hoy · pronóstico por bahía generado con IA a partir del modelo WRF';
