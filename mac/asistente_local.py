@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.5"
+VERSION = "1.6"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -178,6 +178,10 @@ def _dia_hora(t):
     return f"{DIAS[t.weekday()]} {t:%d/%m %H:%M}"
 
 
+def _titulo(x):
+    return re.sub(r"\b(De|Del|La|Las|Los|El|Y)\b", lambda m: m.group(1).lower(), str(x).strip().title())
+
+
 def _a_lista(r):
     return r if isinstance(r, list) else [r]
 
@@ -208,6 +212,10 @@ def lugares():
             if len(a) == 2:
                 l.append((a[0], t[0][0], t[0][1], "Rutas tipo MeteoIA"))
                 l.append((a[1], t[-1][0], t[-1][1], "Rutas tipo MeteoIA"))
+            for alt in r["alternativas"]:   # golfos, canales, pasos y cabos con posición (hitos de las rutas tipo)
+                for h in alt.get("hitos", []):
+                    if not h[0].lower().startswith("frente a"):
+                        l.append((h[0], h[1], h[2], "Hitos de las rutas tipo (Derrotero)"))
     except Exception:
         pass
     _lugares.update(t=time.time(), l=l)
@@ -325,7 +333,7 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
         if p["visibilidad_min_km"] is not None and p["visibilidad_min_km"] < 5:
             t += f"; visibilidad mínima {str(p['visibilidad_min_km']).replace('.', ',')} km"
         lineas.append(t + ".")
-    nombre = (lugar.strip().title() if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
+    nombre = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
     resumen = f"Pronóstico para {nombre}, {dia} (un solo día, hora local):\n" + "\n".join(lineas)
     return {"resumen": resumen,
         "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
@@ -409,7 +417,7 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
                            "publicado": a.get("publicado")})
     vig = [a for a in salida if a["estado"] == "vigente"][:8]
     prox = [a for a in salida if a["estado"] == "próximo"][:8]
-    lugar_txt = punto[0] if punto else "el litoral"
+    lugar_txt = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else punto[0]) if punto else "el litoral"
     def linea(a):
         return f"{a['tipo']} {a['codigo'] or ''}, {a['zona']}, desde {a['desde'] or '–'} hasta {a['hasta'] or '–'}".replace("  ", " ")
     partes = [f"Vigentes ahora en {lugar_txt}: " + ("; ".join(linea(a) for a in vig) if vig else "ninguno") + "."]
@@ -659,6 +667,155 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
             "nota": "Trazas referenciales: no reemplazan la carta náutica ni el Derrotero. Muestreo cada ~3 h de navegación."}
 
 
+# ------------------------------------------------------------------ herramienta 5: tendencia de 5 días en un punto
+BLOQUES = (("madrugada", 0), ("mañana", 6), ("tarde", 12), ("noche", 18))
+ORDEN_MAR = ["rizada", "marejadilla", "marejada", "gruesa", "muy gruesa", "superior a muy gruesa (> 6 m)"]
+
+
+def tendencia_punto(lugar=None, lat=None, lon=None):
+    n, la, lo, fuente_lugar = resolver(lugar, lat, lon)
+    hoy = ahora_local().date()
+    comun = {"latitude": f"{la:.3f}", "longitude": f"{lo:.3f}", "timezone": "America/Santiago",
+             "start_date": hoy.isoformat(), "end_date": (hoy + timedelta(days=HORIZONTE_DIAS - 1)).isoformat()}
+    atm = open_meteo("https://api.open-meteo.com/v1/forecast", dict(comun,
+          hourly="wind_speed_10m,wind_direction_10m,wind_gusts_10m", models="ecmwf_ifs,gfs_global", wind_speed_unit="kn"))
+    try:
+        mar = open_meteo("https://marine-api.open-meteo.com/v1/marine", dict(comun, hourly="wave_height,wave_direction", cell_selection="sea"))
+    except Exception:
+        mar = {}
+    ha, hm = atm.get("hourly", {}), mar.get("hourly", {})
+    horas = ha.get("time", [])
+    ahora = ahora_local().replace(tzinfo=None)
+    bloques = []
+    for i0 in range(0, len(horas), 6):
+        t = datetime.fromisoformat(horas[i0])
+        if t + timedelta(hours=6) <= ahora:
+            continue
+        idx = range(i0, min(i0 + 6, len(horas)))
+        v = [_var(ha, "wind_speed_10m", i)[0] for i in idx]
+        d = [_var(ha, "wind_direction_10m", i)[0] for i in idx]
+        r = [_var(ha, "wind_gusts_10m", i)[0] for i in idx]
+        o = [hm.get("wave_height", [None] * len(horas))[i] for i in idx] if hm else []
+        vv, rr, oo = [x for x in v if x is not None], [x for x in r if x is not None], [x for x in o if x is not None]
+        if not vv:
+            continue
+        bloques.append({"t": t, "vmax": max(vv), "vmin": min(vv), "dir": rumbo(d), "dirs": d, "racha": max(rr) if rr else None,
+                        "ola": max(oo) if oo else None})
+    if not bloques:
+        raise ValueError("Open-Meteo no entregó datos para ese lugar.")
+    nb = lambda b: f"{DIAS[b['t'].weekday()][:3]} {b['t']:%d/%m} en la {dict(BLOQUES_H)[b['t'].hour]}"
+    # resumen por día
+    lineas = []
+    for dia in sorted({b["t"].date() for b in bloques}):
+        bs = [b for b in bloques if b["t"].date() == dia]
+        olas = [b["ola"] for b in bs if b["ola"] is not None]
+        txt = f"{DIAS[dia.weekday()].capitalize()} {dia:%d/%m}: viento {rumbo([x for b in bs for x in b['dirs']]) or ''} {round(min(b['vmin'] for b in bs))}/{round(max(b['vmax'] for b in bs))} kt"
+        rach = [b["racha"] for b in bs if b["racha"]]
+        if rach:
+            txt += f" (racha hasta {round(max(rach))} kt)"
+        if olas:
+            e1, e2 = escala_armada(min(olas)), escala_armada(max(olas))
+            txt += f"; mar {e1 if e1 == e2 else e1 + ' a ' + e2} ({rango(olas, 1)} m)"
+        lineas.append(txt.replace("viento  ", "viento ") + ".")
+    # mejor ventana: menor oleaje y viento combinados
+    cand = [b for b in bloques if b["ola"] is not None] or bloques
+    mejor = min(cand, key=lambda b: (b["ola"] or 0) + b["vmax"] / 10)
+    vent = f"Mejor ventana de los próximos días: {nb(mejor)}, viento {mejor['dir'] or ''} {round(mejor['vmax'])} kt"
+    if mejor["ola"] is not None:
+        vent += f", ola {str(round(mejor['ola'], 1)).replace('.', ',')} m ({escala_armada(mejor['ola'])})"
+    # cuándo cambia el estado del mar respecto de ahora
+    evol = None
+    olab = [b for b in bloques if b["ola"] is not None]
+    if olab:
+        k0 = ORDEN_MAR.index(escala_armada(olab[0]["ola"]))
+        for b in olab[1:]:
+            k = ORDEN_MAR.index(escala_armada(b["ola"]))
+            if k != k0:
+                evol = (f"La mar {'baja' if k < k0 else 'sube'} de {ORDEN_MAR[k0]} a {ORDEN_MAR[k]} desde el {nb(b)}.")
+                break
+        if not evol:
+            evol = f"La mar se mantiene {ORDEN_MAR[k0]} en todo el período."
+    nombre = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
+    resumen = f"Tendencia para {nombre}, próximos {HORIZONTE_DIAS} días (hora local):\n" + "\n".join(lineas) + "\n" + vent + "." + (("\n" + evol) if evol else "")
+    return {"resumen": resumen, "lugar": n, "posicion": gm(la, lo), "_pos": [n, la, lo],
+            "fuente": "Open-Meteo: viento ECMWF IFS (GFS si falta); oleaje del modelo marino de Open-Meteo",
+            "consultado": ahora_local().strftime("%d/%m/%Y %H:%M"),
+            "nota": "Estado del mar según escala de la Armada. Valores de modelo, no observaciones."}
+
+
+BLOQUES_H = [(0, "madrugada"), (6, "mañana"), (12, "tarde"), (18, "noche")]
+
+
+# ------------------------------------------------------------------ herramienta 6: estado de puerto (SITPORT)
+SITPORT_API = "https://orion.directemar.cl/sitport/back/users/"
+
+
+def _sitport():
+    try:
+        def post(nombre):
+            req = urllib.request.Request(SITPORT_API + nombre, data=b"", method="POST",
+                                         headers={"User-Agent": "MeteoIA-asistente-local/" + VERSION})
+            with urllib.request.urlopen(req, timeout=12, context=SSL) as r:
+                return json.loads(r.read()).get("recordset", [])
+        with _cache_lock:
+            c = _cache.get("sitport")
+            if c and time.time() - c[0] < 600:
+                return c[1]
+        d = {"bahias": post("consultaBahias"), "restricciones": post("consultaRestricciones"), "vivo": True,
+             "actualizado": datetime.now(timezone.utc).isoformat()}
+        with _cache_lock:
+            _cache["sitport"] = (time.time(), d)
+        return d
+    except Exception:
+        d = dato("restricciones.json", ttl=600)
+        d["vivo"] = False
+        return d
+
+
+def _txt(s):
+    s = str(s or "").replace("&GT;", ">").replace("&LT;", "<").replace("&AMP;", "&").replace("&gt;", ">").replace("&lt;", "<")
+    return re.sub(r"\s+", " ", s).strip(" -")
+
+
+def estado_puerto(puerto=None):
+    d = _sitport()
+    titulo = lambda x: re.sub(r"\b(De|Del|La|Las|Los|El|Y)\b", lambda m: m.group(1).lower(), x.title())
+    nombres = {b["IDBahia"]: titulo(_txt(b.get("NMBahia"))) for b in d.get("bahias", [])}
+    por = {}
+    for r in d.get("restricciones", []):
+        por.setdefault(r.get("bahia"), []).append(r)
+    origen = "consultado en vivo" if d.get("vivo") else f"copia de MeteoIA del {hora_local(d.get('actualizado', ''))}"
+    if puerto:
+        cand = sorted(((max(similitud(puerto, nm), similitud(puerto, _txt((por.get(i) or [{}])[0].get("GLBahia")))), i, nm)
+                       for i, nm in nombres.items()), key=lambda x: -x[0])
+        if not cand or cand[0][0] < 0.72:
+            raise ValueError("No encontré ese puerto en SITPORT. Indique el nombre de la bahía o puerto.")
+        _, bid, nm = cand[0]
+        lista = por.get(bid, [])
+        if not lista:
+            resumen = f"{nm}: sin restricciones vigentes en SITPORT."
+        else:
+            filas = []
+            for r in lista[:8]:
+                inst = " · ".join(x for x in (_txt(r.get("tipo")), _txt(r.get("NombreInstalacion"))) if x and x not in ("TODOS", "TODAS")) or "Toda la bahía"
+                f = f"- {_txt(r.get('MotivoRestriccion')).capitalize() or 'Restricción'} ({_txt(r.get('tiporestriccion')).lower()}): {titulo(inst)}"
+                det = _txt(r.get("Detalle")).rstrip(" .,")
+                if det and det != "-":
+                    f += f". Condición: {det.lower()}"
+                if r.get("NaveRecibe"):
+                    f += f". Naves: {_txt(r.get('NaveRecibe')).lower()}"
+                f += f". Desde {_txt(r.get('FCinicio'))[:17]}" + (f" hasta {_txt(r.get('FCTermino'))[:17]}" if r.get("FCTermino") else "")
+                filas.append(f)
+            resumen = f"{nm}: {len(lista)} restricci{'ón' if len(lista) == 1 else 'ones'} vigente{'' if len(lista) == 1 else 's'} en SITPORT.\n" + "\n".join(filas)
+    else:
+        con = sorted(((nombres.get(i) or titulo(_txt(l[0].get("GLBahia"))), l) for i, l in por.items()), key=lambda x: x[0])
+        resumen = (f"Puertos con restricciones vigentes en SITPORT ({len(con)}):\n" +
+                   "\n".join(f"- {nm}: {', '.join(sorted({_txt(r.get('MotivoRestriccion')).lower() for r in l if r.get('MotivoRestriccion')}))}" for nm, l in con)
+                   if con else "No hay restricciones vigentes en SITPORT.")
+    return {"resumen": resumen, "fuente": f"SITPORT, Autoridad Marítima (sitport.directemar.cl), {origen}",
+            "nota": "La condición de puerto oficial es la publicada por la Capitanía de Puerto en SITPORT."}
+
+
 # ------------------------------------------------------------------ esquema de herramientas para el modelo
 def _p(desc, tipo="string"):
     return {"type": tipo, "description": desc}
@@ -680,6 +837,14 @@ HERRAMIENTAS = {
     "pronostico_bahia": (pronostico_bahia, "Pronóstico escrito WRF + IA de una bahía (situación sinóptica, nubosidad, viento por día).", {
         "bahia": _p("Nombre de la bahía (ej. Talcahuano, Puerto Montt)"),
     }, ["bahia"]),
+    "tendencia_punto": (tendencia_punto, "Evolución de viento y oleaje en un lugar para los próximos 5 días: cuándo mejora o empeora, mejor ventana para zarpar o cruzar. Usar para '¿cuándo baja?', 'mejor hora/ventana', 'esta semana', 'fin de semana'.", {
+        "lugar": _p("Nombre del lugar, bahía, puerto, golfo o canal"),
+        "lat": _p("Latitud decimal (negativa al sur), solo si el usuario dio posición", "number"),
+        "lon": _p("Longitud decimal (negativa al oeste), solo si el usuario dio posición", "number"),
+    }, []),
+    "estado_puerto": (estado_puerto, "Condición de puerto y restricciones vigentes de la Autoridad Marítima (SITPORT) en un puerto, o en todos si no se indica. Usar para '¿puedo salir/zarpar?', 'puerto cerrado', 'restricciones'.", {
+        "puerto": _p("Nombre del puerto o bahía (opcional)"),
+    }, []),
     "comparar_rutas": (comparar_rutas, "Ruta de navegación entre dos puertos o lugares de Chile (cualquiera, de Arica a la Antártica): traza por mar, viento y oleaje previstos en el trayecto y, si hay alternativas, cuál conviene. Usar para 'ruta', 'mejor ruta', 'navegar de X a Y'.", {
         "zarpe": _p("Puerto o lugar de zarpe"),
         "recalada": _p("Puerto o lugar de recalada"),
@@ -717,7 +882,7 @@ Reglas obligatorias:
 1. Para cualquier pregunta sobre tiempo, mar, avisos o rutas, llama primero a una herramienta. Nunca respondas valores de memoria.
 2. Responde solo con los datos que devolvió la herramienta. Si devolvió "error", explícalo al usuario y no inventes.
 3. Viento en nudos (kt) con dirección (N, NE, E, SE, S, SW, W, NW), oleaje en metros con el estado del mar de la escala de la Armada (rizada, marejadilla, marejada, gruesa, muy gruesa). Usa rangos.
-4. Para "mejor ruta" usa comparar_rutas y recomienda la alternativa con menor oleaje y viento máximos, mencionando avisos y restricciones si las hay.
+4. Para "¿cuándo baja/mejora?", "mejor ventana" o "esta semana" usa tendencia_punto. Para "¿puedo salir/zarpar?" o "restricciones" usa estado_puerto (y si menciona un lugar, también condicion_punto). Para "mejor ruta" usa comparar_rutas y recomienda la alternativa con menor oleaje y viento máximos, mencionando avisos y restricciones si las hay.
 5. Si la herramienta trae "resumen", cópialo casi textual, sin cambiar fechas, cifras ni el estado del mar, y sin generalizar a varios días. Un aviso "próximo" todavía no está vigente: dilo así.
 6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
 7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.
@@ -742,16 +907,77 @@ def _llamadas_en_texto(texto):
             pass
 
 
-DIRECTAS = {"condicion_punto", "avisos_vigentes", "comparar_rutas"}
+DIRECTAS = {"condicion_punto", "avisos_vigentes", "comparar_rutas", "tendencia_punto", "estado_puerto"}
 
 
-def _respuesta_directa(resultados):
-    """Si todas las herramientas llamadas son de las que traen resumen redactado y no hubo errores, arma la respuesta sin el modelo."""
-    if not resultados or any(n not in DIRECTAS or r.get("error") or not r.get("resumen") for n, r in resultados):
+SITIO_URL = "meteoia.cl"
+CIERRES = {
+    "condicion_punto": "Para más detalle, abre el mapa en meteoia.cl y activa las capas de viento y oleaje.",
+    "tendencia_punto": "En el mapa de meteoia.cl puedes mover la hora de las capas de viento y oleaje para ver cómo evoluciona.",
+    "avisos_vigentes": "En la portada de meteoia.cl los avisos vigentes aparecen en rojo: haz clic en uno para ver hasta cuándo rige y su detalle.",
+    "comparar_rutas": "Si entras a RUTA en la página Desarrollo (meteoia.cl/dashboard.html) puedes trazarla con más información: abrigos, estaciones cercanas y mejor hora de zarpe.",
+    "estado_puerto": "En la página Desarrollo, el botón Capuertos muestra las restricciones de cada puerto en el mapa.",
+}
+
+
+def _saludo(nombre, r, args):
+    if nombre == "avisos_vigentes":
+        res = r.get("resumen", "")
+        if "Vigentes ahora en" in res and ": ninguno." not in res.split("\n")[0]:
+            return "Hola, sí: hay aviso vigente."
+        return "Hola, por ahora no hay avisos vigentes, pero viene uno:" if "Próximos" in res else "Hola, por ahora no hay avisos vigentes."
+    if nombre in ("condicion_punto", "tendencia_punto") and args.get("lat") is not None and not args.get("lugar"):
+        return "Hola, me la pones difícil con latitud y longitud, pero aquí va:"
+    return {"condicion_punto": "Hola, esto es lo que muestran los modelos:",
+            "tendencia_punto": "Hola, buena pregunta. Así viene la semana:",
+            "comparar_rutas": "Hola, revisé la ruta:",
+            "estado_puerto": "Hola, revisé SITPORT:"}.get(nombre, "Hola:")
+
+
+def _recomendaciones(nombre, r, pos):
+    """Recomendaciones por regla (no las inventa el modelo)."""
+    out = []
+    av = []
+    if nombre == "avisos_vigentes":
+        av = r.get("vigentes_ahora", [])
+    elif pos and nombre in ("condicion_punto", "tendencia_punto"):
+        try:
+            av = avisos_vigentes(lat=pos[1], lon=pos[2]).get("vigentes_ahora", [])
+            if av:
+                out.append("Atento: " + "; ".join(f"{a['tipo']} {a['codigo'] or ''} vigente hasta el {a['hasta']}".replace("  ", " ") for a in av[:3]) + ".")
+        except Exception:
+            pass
+    tipos = " ".join(str(a.get("tipo", "")).lower() for a in av)
+    if "marejada" in tipos:
+        out.append("Te recomiendo no acercarte al borde costero mientras esté vigente.")
+    if any(x in tipos for x in ("mal tiempo", "temporal", "viento")):
+        out.append("Si vas a navegar, revisa el aviso antes de zarpar.")
+    if nombre == "condicion_punto":
+        estados = re.findall(r"mar (rizada|marejadilla|marejada|gruesa|muy gruesa)", r.get("resumen", ""))
+        if any(e in ("gruesa", "muy gruesa") for e in estados):
+            out.append("Se ve movido: si vas a salir, revisa bien antes.")
+        elif estados and all(e in ("rizada", "marejadilla") for e in estados):
+            out.append("Buenas condiciones de mar, aprovecha.")
+    if nombre == "estado_puerto" and "restricci" in r.get("resumen", "") and "sin restricciones" not in r.get("resumen", ""):
+        out.append("Antes de salir, confirma con la Capitanía de Puerto: la condición puede cambiar durante el día.")
+    return out
+
+
+def _respuesta_directa(resultados, args_por_tool=None):
+    """Si todas las herramientas llamadas traen resumen redactado y no hubo errores, arma la respuesta sin el modelo:
+    saludo y cierre en el tono de MeteoIA, el resumen de la herramienta tal cual, recomendaciones por regla y la fuente."""
+    if not resultados or any(n not in DIRECTAS or r.get("error") or not r.get("resumen") for n, r, _ in resultados):
         return None
-    partes, fuentes = [], []
-    for n, r in resultados:
+    args_por_tool = args_por_tool or {}
+    n0 = resultados[0][0]
+    partes, fuentes, recs, cierres = [_saludo(n0, resultados[0][1], args_por_tool.get(n0, {}))], [], [], []
+    for n, r, pos in resultados:
         partes.append(r["resumen"])
+        for x in _recomendaciones(n, r, pos):
+            if x not in recs:
+                recs.append(x)
+        if CIERRES.get(n) and CIERRES[n] not in cierres:
+            cierres.append(CIERRES[n])
         f = r.get("fuente", "")
         if r.get("consultado"):
             f += f", consultado {r['consultado']}"
@@ -759,8 +985,13 @@ def _respuesta_directa(resultados):
             f += f", actualizado {r['actualizado']}"
         if f not in fuentes:
             fuentes.append(f)
-    notas = {r.get("nota") for _, r in resultados if r.get("nota")}
-    return "\n\n".join(partes) + "\n\n" + "\n".join("Fuente: " + f for f in fuentes) + ("\n" + " ".join(sorted(notas)) if notas else "")
+    notas = {r.get("nota") for _, r, _ in resultados if r.get("nota")}
+    texto = "\n\n".join(partes)
+    if recs:
+        texto += "\n\n" + " ".join(recs)
+    if cierres:
+        texto += "\n\n" + " ".join(cierres)
+    return texto + "\n\n" + "\n".join("Fuente: " + f for f in fuentes) + ("\n" + " ".join(sorted(notas)) if notas else "")
 
 
 _modelo_lock = threading.Lock()   # un usuario a la vez: el M1 de 8 GB no da para más
@@ -793,9 +1024,9 @@ def preguntar(pregunta, historial=None):
                 r = ejecutar(f.get("name"), args)
                 pos = r.pop("_pos", None)
                 usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos})
-                resultados.append((f.get("name"), r))
+                resultados.append((f.get("name"), r, pos))
                 msgs.append({"role": "tool", "tool_name": f.get("name"), "content": json.dumps(r, ensure_ascii=False)[:6000]})
-            directa = _respuesta_directa(resultados)
+            directa = _respuesta_directa(resultados, {u["nombre"]: u["argumentos"] for u in usadas})
             if directa:   # condición en un punto y avisos: se entrega el texto de la herramienta tal cual, sin reescribir
                 return {"respuesta": directa, "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
         return {"respuesta": "No logré completar la consulta. Intente formularla de otra manera, indicando lugar y día.",
