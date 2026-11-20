@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "1.3"
+VERSION = "1.4"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -623,7 +623,8 @@ Reglas obligatorias:
 4. Para "mejor ruta" usa comparar_rutas y recomienda la alternativa con menor oleaje y viento máximos, mencionando avisos y restricciones si las hay.
 5. Si la herramienta trae "resumen", cópialo casi textual, sin cambiar fechas, cifras ni el estado del mar, y sin generalizar a varios días. Un aviso "próximo" todavía no está vigente: dilo así.
 6. Respuesta breve en español formal: máximo 8 líneas. Termina con una línea "Fuente: …" con la fuente y la hora de consulta o actualización que entregó la herramienta.
-7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
+7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.
+8. Solo respondes sobre tiempo, mar, avisos y rutas en Chile. Ante otros temas, indica en una línea que solo atiendes consultas de meteorología marítima.""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
 
 def _ollama(mensajes):
@@ -644,6 +645,27 @@ def _llamadas_en_texto(texto):
             pass
 
 
+DIRECTAS = {"condicion_punto", "avisos_vigentes"}
+
+
+def _respuesta_directa(resultados):
+    """Si todas las herramientas llamadas son de las que traen resumen redactado y no hubo errores, arma la respuesta sin el modelo."""
+    if not resultados or any(n not in DIRECTAS or r.get("error") or not r.get("resumen") for n, r in resultados):
+        return None
+    partes, fuentes = [], []
+    for n, r in resultados:
+        partes.append(r["resumen"])
+        f = r.get("fuente", "")
+        if r.get("consultado"):
+            f += f", consultado {r['consultado']}"
+        elif r.get("actualizado"):
+            f += f", actualizado {r['actualizado']}"
+        if f not in fuentes:
+            fuentes.append(f)
+    notas = {r.get("nota") for _, r in resultados if r.get("nota")}
+    return "\n\n".join(partes) + "\n\n" + "\n".join("Fuente: " + f for f in fuentes) + ("\n" + " ".join(sorted(notas)) if notas else "")
+
+
 _modelo_lock = threading.Lock()   # un usuario a la vez: el M1 de 8 GB no da para más
 
 
@@ -654,7 +676,7 @@ def preguntar(pregunta, historial=None):
         if h.get("texto"):
             msgs.append({"role": "assistant" if h.get("rol") == "asistente" else "user", "content": str(h["texto"])[:1500]})
     msgs.append({"role": "user", "content": str(pregunta)[:1000]})
-    usadas = []
+    usadas, resultados = [], []
     with _modelo_lock:
         for _ in range(MAX_RONDAS):
             m = _ollama(msgs)
@@ -674,7 +696,11 @@ def preguntar(pregunta, historial=None):
                 r = ejecutar(f.get("name"), args)
                 pos = r.pop("_pos", None)
                 usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos})
+                resultados.append((f.get("name"), r))
                 msgs.append({"role": "tool", "tool_name": f.get("name"), "content": json.dumps(r, ensure_ascii=False)[:6000]})
+            directa = _respuesta_directa(resultados)
+            if directa:   # condición en un punto y avisos: se entrega el texto de la herramienta tal cual, sin reescribir
+                return {"respuesta": directa, "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
         return {"respuesta": "No logré completar la consulta. Intente formularla de otra manera, indicando lugar y día.",
                 "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
 
@@ -730,6 +756,27 @@ def ollama_ok():
         return False
 
 
+LIM_MIN, LIM_DIA = int(os.environ.get("MN_LIMITE_MIN", "5")), int(os.environ.get("MN_LIMITE_DIA", "40"))
+_uso, _uso_lock = {}, threading.Lock()
+
+
+def cupo(ip):
+    """Límite de consultas por persona (IP real que entrega Cloudflare). Devuelve None si puede preguntar, o el mensaje de espera."""
+    ahora = time.time()
+    with _uso_lock:
+        h = [x for x in _uso.get(ip, []) if ahora - x < 86400]
+        if len(h) >= LIM_DIA:
+            return f"Alcanzó el máximo de {LIM_DIA} consultas por día. Intente mañana."
+        if sum(1 for x in h if ahora - x < 60) >= LIM_MIN:
+            return f"Máximo {LIM_MIN} consultas por minuto. Espere un momento."
+        h.append(ahora)
+        _uso[ip] = h
+        if len(_uso) > 5000:   # limpieza ocasional
+            for k in [k for k, v in _uso.items() if not v or ahora - v[-1] > 86400]:
+                _uso.pop(k, None)
+    return None
+
+
 class Manejador(BaseHTTPRequestHandler):
     def _cors(self):
         o = self.headers.get("Origin", "")
@@ -773,6 +820,10 @@ class Manejador(BaseHTTPRequestHandler):
             p = str(j.get("pregunta", "")).strip()
             if not p:
                 return self._enviar(400, {"error": "Pregunta vacía"})
+            ip = self.headers.get("CF-Connecting-IP") or self.client_address[0]
+            espera = cupo(ip)
+            if espera:
+                return self._enviar(429, {"error": espera})
             if not _modelo_lock.acquire(timeout=90):
                 return self._enviar(503, {"error": "El asistente está respondiendo otra consulta. Intente en un momento."})
             _modelo_lock.release()

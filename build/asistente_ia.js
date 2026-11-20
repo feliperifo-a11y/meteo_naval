@@ -1,8 +1,8 @@
 // ============================ Asistente IA local (página Desarrollo) ============================
 // Chat con el asistente que corre en el Mac de la casa (mac/asistente_local.py + Ollama), publicado por un túnel de Cloudflare en
-// ASISTENTE_URL y protegido con Cloudflare Access. El modelo no calcula: llama a herramientas que leen los datos de MeteoIA y
+// ASISTENTE_URL (acceso libre, con límite de consultas por persona en el servidor). El modelo no calcula: llama a herramientas que leen los datos de MeteoIA y
 // Open-Meteo y redacta con esos números. Si el Mac está apagado o no hay sesión de Access, el panel lo indica y el resto de la página
-// sigue igual. La consulta va como text/plain para evitar la petición previa (OPTIONS), que Access bloquearía.
+// sigue igual. La consulta va como text/plain para evitar la petición previa (OPTIONS).
 const ASISTENTE_URL = 'https://asistente.meteoia.cl';
 function crearAsistenteIA(L, map, h) {
   const escH = h.escH;
@@ -20,7 +20,7 @@ function crearAsistenteIA(L, map, h) {
     <form class="asi-f" hidden><textarea rows="2" maxlength="1000" placeholder="Pregunte por un lugar y día, avisos, una bahía o una ruta…"></textarea><button type="submit">Enviar</button></form>
     <details class="mar-crit"><summary>Cómo funciona</summary><div>
       <p>Un modelo de lenguaje que corre en un equipo local (Ollama, sin servicios de pago) interpreta la pregunta y llama a una de cuatro herramientas: condición en un punto (Open-Meteo: viento ECMWF IFS, oleaje del modelo marino), avisos vigentes y próximos (los mismos de esta página), pronóstico WRF + IA de bahía y comparación de las alternativas de las rutas tipo. La respuesta se redacta solo con esos datos y cita la fuente y la hora de consulta.</p>
-      <p>Atiende una consulta a la vez; cada respuesta puede tardar de 10 a 40 s. El estado del mar se expresa con la escala de la Armada. Las trazas de ruta son referenciales y no reemplazan la carta náutica ni el Derrotero.</p>
+      <p>Atiende una consulta a la vez (máximo 5 por minuto y 40 al día por persona); cada respuesta puede tardar de 10 a 40 s. El estado del mar se expresa con la escala de la Armada. Las trazas de ruta son referenciales y no reemplazan la carta náutica ni el Derrotero.</p>
       <p><b>Información referencial generada por IA con datos de modelos. No reemplaza los pronósticos ni los avisos oficiales de la Armada de Chile.</b></p></div></details>`;
   const wrap = document.getElementById('mapWrap');
   wrap.appendChild(card);
@@ -52,8 +52,8 @@ function crearAsistenteIA(L, map, h) {
       q.focus();
     } catch (e) {
       // Sin sesión de Cloudflare Access el servidor redirige al inicio de sesión y el navegador lo informa como error de red.
-      est.innerHTML = `No hay conexión con el asistente. Si es la primera vez, <a href="${ASISTENTE_URL}/" target="_blank" rel="noopener">inicie sesión</a> con su correo autorizado y luego
-        <button type="button" class="asi-reint">reintente</button>. Si ya inició sesión, el equipo local puede estar apagado o sin internet.`;
+      est.innerHTML = `El asistente no está disponible en este momento: corre en un equipo local que puede estar apagado o sin internet.
+        <button type="button" class="asi-reint">Reintentar</button>`;
       est.querySelector('.asi-reint').onclick = conectar;
       form.hidden = true; ej.hidden = true;
     }
