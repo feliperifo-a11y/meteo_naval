@@ -279,7 +279,7 @@ jobs:
           mkdir -p _site/data/geo
           cp index.html dashboard.html carta.html rutas.html casosar.html ia.html wrfia.html monan.html pronosticos.html hielos.html nuevo.html sitemap.xml robots.txt version.txt sw.js sw-app.js favicon.ico apple-touch-icon.png apple-touch-icon-precomposed.png _site/
           cp -r app _site/
-          mkdir -p _site/media && cp media/meteoia_intro.mp4 media/meteoia_intro.jpg _site/media/
+          mkdir -p _site/media && cp media/meteoia_intro.mp4 media/meteoia_intro.jpg media/mia_intro.mp4 media/mia_intro.jpg _site/media/
           cp data/geo/talcahuano.geojson data/geo/talcahuano.kml _site/data/geo/
           cp data/geo/talcahuano_fondeos.geojson data/geo/talcahuano_fondeos.kml _site/data/geo/
           cp data/geo/valparaiso.geojson data/geo/valparaiso.kml data/geo/valparaiso_limites.json _site/data/geo/
