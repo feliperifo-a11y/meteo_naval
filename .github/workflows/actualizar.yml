@@ -322,7 +322,18 @@ jobs:
         with:
           path: _site
 
+      # GitHub a veces tarda en dejar visible el artefacto recién subido y deploy-pages consulta
+      # menos de un segundo después, con lo que responde "Found 0 artifact(s)" y la corrida falla
+      # sin que haya nada malo en el sitio. Se espera un poco y, si aun así ocurre, se reintenta.
+      - name: Esperar a que el artefacto quede visible
+        run: sleep 15
+
       - id: deploy
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Reintentar la publicación
+        if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
       - name: Latido semanal
