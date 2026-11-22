@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "2.2"
+VERSION = "2.3"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -452,7 +452,79 @@ def _aviso_en_zona(geom_aviso, zs):
     return any(cubre(geom_aviso, la, lo, tol=0.02) for la, lo in pts)
 
 
-def avisos_vigentes(lugar=None, lat=None, lon=None):
+CATEGORIAS = (("marejada", "marejadas"), ("temporal", "temporal"), ("mal tiempo", "mal tiempo"),
+              ("viento", "viento"), ("meteorol", "aviso meteorológico"))
+
+
+def _categoria(tipo):
+    t = norm(tipo or "")
+    for k, n in CATEGORIAS:
+        if norm(k) in t:
+            return n
+    return "otros avisos"
+
+
+def _cuando(iso):
+    """'lunes 24 a las 00:00' en hora de Chile."""
+    try:
+        t = datetime.fromisoformat(str(iso).replace("Z", "+00:00")).astimezone(TZ)
+    except Exception:
+        return None
+    return f"{DIAS[t.weekday()]} {t.day} a las {t:%H:%M}"
+
+
+def _zonas_txt(zs):
+    zs = list(dict.fromkeys(re.sub(r"\s*·\s*viento.*$", "", z or "").strip() for z in zs if z))
+    return zs[0] if len(zs) == 1 else ", ".join(zs[:-1]) + " y " + zs[-1] if zs else "el litoral"
+
+
+def _frases_avisos(items, ahora, solo_cat=None):
+    """Frases cortas por tipo de aviso: hasta cuándo rige cada uno y si le sigue otro del mismo tipo."""
+    por = {}
+    for a, z in items:
+        por.setdefault(_categoria(a.get("tipo")), []).append((a, z))
+    frases = []
+    for cat, lst in por.items():
+        if solo_cat and cat != solo_cat:
+            continue
+        vig = [(a, z) for a, z in lst if _estado(z, ahora) == "vigente"]
+        prox = [(a, z) for a, z in lst if _estado(z, ahora) == "próximo"]
+        nom = "Las marejadas" if cat == "marejadas" else f"El aviso de {cat}" if cat != "aviso meteorológico" else "El aviso meteorológico"
+        if vig:
+            grupos = {}
+            for a, z in vig:
+                grupos.setdefault(z.get("hasta") or "", []).append(z.get("nombre") or a.get("sector"))
+            partes = []
+            for h in sorted(grupos):
+                cuando = _cuando(h) if h else None
+                partes.append((f"hasta el {cuando}" if cuando else "sin hora de término informada") + f" en {_zonas_txt(grupos[h])}")
+            f = f"{nom} {'siguen' if cat == 'marejadas' else 'sigue'} vigente{'s' if cat == 'marejadas' else ''} " + "; y ".join(partes) + "."
+        else:
+            f = ""
+        if prox:
+            ini = min(z.get("desde") or "9" for _, z in prox)
+            fin = max(z.get("hasta") or "" for _, z in prox)
+            zs = _zonas_txt([z.get("nombre") or a.get("sector") for a, z in prox])
+            nombre_av = "aviso meteorológico" if cat == "aviso meteorológico" else f"aviso de {cat}"
+            fin_vig = max((z.get("hasta") or "") for _, z in vig) if vig else ""
+            try:
+                encadena = bool(fin_vig) and (datetime.fromisoformat(ini.replace("Z", "+00:00")) -
+                                              datetime.fromisoformat(fin_vig.replace("Z", "+00:00"))) <= timedelta(hours=12)
+            except Exception:
+                encadena = False
+            hasta_txt = f" hasta el {_cuando(fin)}" if fin else ""
+            if vig and encadena:
+                f += f" Ojo: al terminar sigue un nuevo {nombre_av}{hasta_txt}, en {zs}."
+            elif vig:
+                f += f" Además viene un nuevo {nombre_av} desde el {_cuando(ini)}{hasta_txt}, en {zs}."
+            else:
+                f += f"No hay {nombre_av} vigente ahora, pero viene uno desde el {_cuando(ini)}{hasta_txt}, en {zs}."
+        if f:
+            frases.append(f.strip())
+    return frases
+
+
+def avisos_vigentes(lugar=None, lat=None, lon=None, tipo=None):
     datos = _avisos_crudos()
     ahora = datetime.now(timezone.utc)
     punto, zsel, aviso_lugar = None, None, None
@@ -464,7 +536,10 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
         except ValueError:
             aviso_lugar = f"No reconocí \"{lugar}\" como un lugar; muestro los avisos de todo el litoral."
             lugar = None
-    salida = []
+    solo_cat = None
+    if tipo:
+        solo_cat = next((n for k, n in CATEGORIAS if norm(k) in norm(tipo) or norm(n) in norm(tipo)), None)
+    salida, items = [], []
     for a in datos.get("avisos", []):
         for z in a.get("zonas", []) or [{}]:
             est = _estado(z, ahora)
@@ -474,6 +549,7 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
                 continue
             if zsel and not _aviso_en_zona(z.get("geom"), zsel):
                 continue
+            items.append((a, z))
             salida.append({"estado": est, "tipo": a.get("tipo"), "codigo": a.get("codigo"),
                            "zona": z.get("nombre") or a.get("sector"),
                            "desde": hora_local(z.get("desde", "")) if z.get("desde") else None,
@@ -486,12 +562,17 @@ def avisos_vigentes(lugar=None, lat=None, lon=None):
                  else f"la zona {zsel['id']} ({zsel['nombre']})" if zsel else "el litoral")
     def linea(a):
         return f"{a['tipo']} {a['codigo'] or ''}, {a['zona']}, desde {a['desde'] or '–'} hasta {a['hasta'] or '–'}".replace("  ", " ")
-    partes = ([aviso_lugar] if aviso_lugar else []) + [f"Vigentes ahora en {lugar_txt}: " + ("; ".join(linea(a) for a in vig) if vig else "ninguno") + "."]
-    if prox:
-        partes.append("Próximos (aún no comienzan): " + "; ".join(linea(a) for a in prox) + ".")
+    frases = _frases_avisos(items, ahora, solo_cat)
+    donde = "" if lugar_txt == "el litoral" else f" para {lugar_txt}"
+    if not frases:
+        frases = [f"No hay avisos{' de ' + solo_cat if solo_cat else ''} vigentes ni próximos{donde}."]
+    elif donde:
+        frases[0] = frases[0][0].lower() + frases[0][1:]
+        frases[0] = f"Para {lugar_txt}: " + frases[0]
+    partes = ([aviso_lugar] if aviso_lugar else []) + frases
     return {"lugar": f"{punto[0]} ({gm(punto[1], punto[2])})" if punto else "todo el litoral",
             "resumen": " ".join(partes),
-            "vigentes_ahora": vig, "proximos": prox, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
+            "vigentes_ahora": [x for x in vig if not solo_cat or _categoria(x["tipo"]) == solo_cat], "proximos": prox, "_pos": [punto[0], punto[1], punto[2]] if punto else None,
             "_mapa": {"avisos": [{"tipo": a["tipo"], "zona": a["zona"], "estado": a["estado"]} for a in vig + prox]},
             "fuente": datos.get("fuente") or "Avisos del Servicio Meteorológico de la Armada (meteoarmada.directemar.cl), leídos por MeteoIA",
             "actualizado": hora_local(datos.get("actualizado", "")),
@@ -917,6 +998,7 @@ HERRAMIENTAS = {
         "lugar": _p("Nombre del lugar (opcional)"),
         "lat": _p("Latitud decimal (opcional)", "number"),
         "lon": _p("Longitud decimal (opcional)", "number"),
+        "tipo": _p("Tipo de aviso si el usuario lo menciona: marejadas, mal tiempo, temporal, viento o meteorológico (opcional)"),
     }, []),
     "pronostico_bahia": (pronostico_bahia, "Pronóstico escrito WRF + IA de una bahía (situación sinóptica, nubosidad, viento por día).", {
         "bahia": _p("Nombre de la bahía (ej. Talcahuano, Puerto Montt)"),
@@ -976,6 +1058,7 @@ Reglas obligatorias:
 7. No reemplazas el pronóstico ni los avisos oficiales de la Armada; si hay avisos vigentes, menciónalos primero.
 8. Solo respondes sobre tiempo, mar, avisos, puertos y rutas en Chile. Las operaciones sobre el mar (helicópteros, buques, lanchas, buceo) sí son tu tema: usa condicion_punto para entregar viento, racha, visibilidad y estado de la mar, y deja que el usuario decida con sus propios límites. Ante temas ajenos, indica en una línea que solo atiendes consultas de meteorología marítima.
 9. Usa un tono cercano: empieza con "Hola," (el saludo con apodo y la nota sobre tiempo y clima los agrega el sistema; no los escribas tú) y, si corresponde, recomienda revisar la sección de meteoia.cl donde está el detalle.
+11. Si preguntan por un tipo de aviso ("hasta cuándo hay marejadas", "¿hay temporal?"), llama avisos_vigentes con tipo (marejadas, mal tiempo, temporal, viento o meteorológico).
 10. Para "zona central", "zona norte" u otras regiones sin nombre exacto, llama avisos_vigentes sin lugar. Para "zona I" a "zona X" pasa el texto tal cual (ej. "zona IV").""" + (" /no_think" if "qwen3" in MODELO and "instruct" not in MODELO else "")
 
 
@@ -1012,6 +1095,7 @@ CIERRES = {
 
 def _saludo(nombre, r, args):
     if nombre == "avisos_vigentes":
+        return "Hola, revisé los avisos de la Armada."
         res = r.get("resumen", "")
         if "Vigentes ahora en" in res and ": ninguno." not in res.split("\n")[0]:
             return "Hola, sí: hay aviso vigente."
@@ -1053,7 +1137,7 @@ def _recomendaciones(nombre, r, pos):
     return out
 
 
-CORTAS = {"condicion_punto"}   # respuesta mínima: viento y mar, recomendación y una línea de fuente
+CORTAS = {"condicion_punto", "avisos_vigentes"}   # respuesta mínima: viento y mar, recomendación y una línea de fuente
 
 
 def _respuesta_directa(resultados, args_por_tool=None):
@@ -1084,7 +1168,7 @@ def _respuesta_directa(resultados, args_por_tool=None):
         if not corta and CIERRES.get(n) and CIERRES[n] not in cierres:
             cierres.append(CIERRES[n])
         if corta:
-            f = "Open-Meteo (ECMWF)" if n == "condicion_punto" else "avisos de DIRECTEMAR"
+            f = "Open-Meteo (ECMWF)" if n == "condicion_punto" else "avisos de la Armada (DIRECTEMAR)"
             hora = (r.get("consultado") or "")[-5:] or (r.get("actualizado") or "")[-5:]
             f += f", {hora}" if hora else ""
         else:
