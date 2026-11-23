@@ -26,8 +26,7 @@
   const EX = {
     'Inteligencia artificial para decisiones marítimas más seguras': 'Artificial intelligence for safer maritime decisions',
     'MeteoIA · Inteligencia artificial para decisiones marítimas más seguras': 'MeteoIA · Artificial intelligence for safer maritime decisions',
-    'Cargando datos…': 'Loading data…', 'Cargando…': 'Loading…', 'Instalar app gratis': 'Install free app', '▶ Ver video': '▶ Watch video',
-    'Desarrollo': 'Development', 'NUEVO': 'NEW', 'Con atraso · se actualizará solo cuando la fuente vuelva a publicar': 'Delayed · it will update on its own when the source publishes again', 'Desarrollo →': 'Development →',
+    'Cargando datos…': 'Loading data…', 'Cargando…': 'Loading…', 'Instalar app gratis': 'Install free app',     'Desarrollo': 'Development', 'NUEVO': 'NEW', 'Con atraso · se actualizará solo cuando la fuente vuelva a publicar': 'Delayed · it will update on its own when the source publishes again', 'Desarrollo →': 'Development →',
     'Nuevo: condiciones a lo largo de la ruta de su nave, con avisos y estado de puerto': 'New: conditions along your vessel’s route, with warnings and port status',
     // Mapa y capas
     'Mapa de viento y áreas marítimas': 'Wind and maritime areas map', 'Usa dos dedos para mover el mapa, o ábrelo en pantalla completa': 'Use two fingers to move the map, or open it full screen', 'Capas': 'Layers', 'Ver todo Chile': 'View all of Chile', 'Pantalla completa': 'Full screen',
@@ -91,7 +90,7 @@
     'Video de presentación de MeteoIA (50 s)': 'MeteoIA presentation video (50 s)', 'Sin fase declarada': 'No phase declared', 'Abrir ficha del caso →': 'Open case file →', 'Caso SAR': 'SAR case',
   };
   // Rótulos de dos líneas (texto, salto de línea, texto).
-  const PARES = { 'Pronósticos|Marítimos': ['Marine', 'Forecasts'], 'Carta de|Superficie': ['Surface', 'Chart'], 'Monitoreo|de Hielos': ['Ice', 'Monitoring'], 'Pronósticos|WRF': ['WRF', 'Forecasts'],
+  const PARES = { 'Trombas|marinas': ['Water', 'spouts'], 'Pronósticos|Marítimos': ['Marine', 'Forecasts'], 'Carta de|Superficie': ['Surface', 'Chart'], 'Monitoreo|de Hielos': ['Ice', 'Monitoring'], 'Pronósticos|WRF': ['WRF', 'Forecasts'],
     'Pronósticos|WRF + IA': ['WRF + AI', 'Forecasts'], 'Modelo|MONAN': ['MONAN', 'Model'], 'Caso|SAR': ['SAR', 'Case'], 'Rutas de|navegación': ['Navigation', 'Routes'] };
   const est = k => ({ operativa: 'operational', 'con retraso': 'delayed', 'no operativa': 'not operational' }[k] || k);
   const tiempo = s => s.replace(/ días$/, ' days');
