@@ -91,7 +91,7 @@ table.v thead th{color:var(--mut);font-weight:600;font-size:11px}
 <script>/*LEAFLET_JS*/</script>
 <script>
 /*DATA*/
-const FUENTE_MONAN = 'https://feliperifo-a11y.github.io/trombas_marinas/data/monan_campos.json';
+const FUENTE_MONAN = 'https://trombasmarinas.cl/data/monan_campos.json';
 const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nf = (v, d = 0) => (v == null || isNaN(v)) ? '–' : Number(v).toFixed(d).replace('.', ',');
 const sg = (v, d = 1) => v == null ? '–' : (v > 0 ? '+' : '') + nf(v, d);
