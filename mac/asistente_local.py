@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "2.3"
+VERSION = "2.4"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -330,11 +330,11 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
     comun = {"latitude": f"{la:.3f}", "longitude": f"{lo:.3f}", "timezone": "America/Santiago",
              "start_date": f.isoformat(), "end_date": f.isoformat()}
     atm = open_meteo("https://api.open-meteo.com/v1/forecast", dict(comun,
-          hourly="wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,visibility,pressure_msl",
+          hourly="wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,visibility,pressure_msl,temperature_2m",
           models="ecmwf_ifs,gfs_global", wind_speed_unit="kn"))
     try:
         mar = open_meteo("https://marine-api.open-meteo.com/v1/marine", dict(comun,
-              hourly="wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_direction",
+              hourly="wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_direction,sea_surface_temperature",
               cell_selection="sea"))
     except Exception:
         mar = {}
@@ -380,9 +380,22 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
         t = f"{p['periodo'].split(' (')[0].capitalize()}: viento {p['viento_kt']}"
         t += f"; mar {p['estado_del_mar']} ({p['oleaje_m'].split(' m')[0]} m)" if p["estado_del_mar"] else "; mar sin dato"
         lineas.append(t + ".")
+    # temperatura del aire (modelo atmosférico) y del agua de mar (modelo marino), para el día
+    taire = [x for x in (_var(ha, "temperature_2m", i)[0] for i in range(len(horas))) if x is not None]
+    tmar = [x for x in (hm.get("sea_surface_temperature") or []) if x is not None] if hm else []
+    temp = []
+    if taire:
+        temp.append(f"aire {round(min(taire))}/{round(max(taire))} °C" if round(min(taire)) != round(max(taire)) else f"aire {round(taire[0])} °C")
+    if tmar:
+        a_, b_ = round(min(tmar)), round(max(tmar))
+        temp.append(f"agua de mar {a_} °C" if a_ == b_ else f"agua de mar {a_}/{b_} °C")
+    if temp:
+        lineas.append("Temperatura: " + "; ".join(temp) + ".")
     nombre = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
     resumen = f"{nombre}, {dia}:\n" + "\n".join(lineas)
     return {"resumen": resumen,
+        "temperatura_aire_c": [round(min(taire), 1), round(max(taire), 1)] if taire else None,
+        "temperatura_agua_mar_c": [round(min(tmar), 1), round(max(tmar), 1)] if tmar else None,
         "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
         "fecha": f"{DIAS[f.weekday()]} {f:%d/%m/%Y}", "hora": "local de Chile",
         "periodos": periodos,
@@ -987,7 +1000,7 @@ def _p(desc, tipo="string"):
 
 
 HERRAMIENTAS = {
-    "condicion_punto": (condicion_punto, "Pronóstico de viento, racha, lluvia, visibilidad y oleaje en un lugar para un día (hoy hasta 5 días).", {
+    "condicion_punto": (condicion_punto, "Pronóstico de viento, oleaje y temperatura del aire y del agua de mar en un lugar para un día (hoy hasta 5 días). Usar también para preguntas de temperatura.", {
         "lugar": _p("Nombre del lugar, bahía, puerto o caleta (ej. Valparaíso, Isla Mocha)"),
         "lat": _p("Latitud decimal (negativa al sur), solo si el usuario dio posición", "number"),
         "lon": _p("Longitud decimal (negativa al oeste), solo si el usuario dio posición", "number"),
@@ -1249,9 +1262,24 @@ def estilo_mia(respuesta, pregunta, historial=None, herramientas=None):
     return r
 
 
+_DESPEDIDA = re.compile(r"\b(chao|chau|adi[oó]s|hasta luego|hasta pronto|hasta la pr[oó]xima|nos vemos|bye)\b", re.I)
+_GRACIAS = re.compile(r"^\W*(muchas\s+)?gracias\W*$", re.I)
+_TEMA = re.compile(r"\b(mar|viento|ola|oleaje|aviso|ruta|puerto|zarp|temperatura|lluvia|pron[oó]stico|marejada|bah[ií]a|wrf|tiempo)", re.I)
+CHAO = "¡Chao, nos vemos pronto! Buena navegación."
+
+
 def preguntar(pregunta, historial=None):
+    p = str(pregunta or "").strip()
+    if _GRACIAS.match(p):   # solo agradece
+        return {"respuesta": "¡De nada! " + CHAO, "herramientas": [], "segundos": 0, "modelo": MODELO}
+    resto = _DESPEDIDA.sub(" ", p)
+    resto = re.sub(r"\b(ok|okey|bueno|listo|gracias|muchas|vale|perfecto|entonces|y|amigo|mia)\b", " ", resto, flags=re.I)
+    if _DESPEDIDA.search(p) and len(re.findall(r"\w+", resto)) <= 1 and not _TEMA.search(p):   # solo se despide
+        return {"respuesta": CHAO, "herramientas": [], "segundos": 0, "modelo": MODELO}
     r = _preguntar(pregunta, historial)
     r["respuesta"] = estilo_mia(r.get("respuesta"), pregunta, historial, r.get("herramientas"))
+    if _DESPEDIDA.search(p):   # pregunta y se despide en el mismo mensaje
+        r["respuesta"] = (r.get("respuesta") or "").rstrip() + "\n\n" + CHAO
     return r
 
 
