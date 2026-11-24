@@ -38,7 +38,7 @@ SITIO = os.environ.get("MN_SITIO", "https://meteoia.cl/").rstrip("/") + "/"   # 
 ORIGENES = {"https://meteoia.cl", "https://www.meteoia.cl", "https://feliperifo-a11y.github.io"}
 HORIZONTE_DIAS = 5          # el sitio publica viento y oleaje de 0 a 120 h
 MAX_RONDAS = 4              # llamadas a herramientas por pregunta
-VERSION = "2.4"
+VERSION = "2.5"
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 
@@ -342,7 +342,10 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
     horas = ha.get("time", [])
     modelos_usados = set()
     periodos = []
+    hora_actual = ahora_local().hour if f == ahora_local().date() else -1
     for nom, h0, h1 in PERIODOS:
+        if h1 <= hora_actual:   # hoy: no mostrar períodos que ya pasaron
+            continue
         idx = [i for i, t in enumerate(horas) if h0 <= int(t[11:13]) < h1]
         if not idx:
             continue
@@ -393,7 +396,7 @@ def condicion_punto(lugar=None, lat=None, lon=None, fecha=None, dias=None):
         lineas.append("Temperatura: " + "; ".join(temp) + ".")
     nombre = (_titulo(lugar) if lugar and not re.match(r"^\s*-?\d", str(lugar)) else n)
     resumen = f"{nombre}, {dia}:\n" + "\n".join(lineas)
-    return {"resumen": resumen,
+    return {"resumen": resumen, "nombre": nombre, "dia": dia,
         "temperatura_aire_c": [round(min(taire), 1), round(max(taire), 1)] if taire else None,
         "temperatura_agua_mar_c": [round(min(tmar), 1), round(max(tmar), 1)] if tmar else None,
         "lugar": n, "posicion": gm(la, lo), "referencia_lugar": fuente_lugar, "_pos": [n, la, lo],
@@ -563,7 +566,7 @@ def avisos_vigentes(lugar=None, lat=None, lon=None, tipo=None):
             if zsel and not _aviso_en_zona(z.get("geom"), zsel):
                 continue
             items.append((a, z))
-            salida.append({"estado": est, "tipo": a.get("tipo"), "codigo": a.get("codigo"),
+            salida.append({"estado": est, "tipo": a.get("tipo"), "codigo": a.get("codigo"), "_hasta_iso": z.get("hasta"),
                            "zona": z.get("nombre") or a.get("sector"),
                            "desde": hora_local(z.get("desde", "")) if z.get("desde") else None,
                            "hasta": hora_local(z.get("hasta", "")) if z.get("hasta") else None,
@@ -796,7 +799,7 @@ def comparar_rutas(zarpe, recalada, velocidad_kt=10, salida=None):
             for a_ in av:
                 for z in a_.get("zonas", []):
                     if _estado(z, m["eta"].astimezone(timezone.utc)) == "vigente" and cubre(z.get("geom"), m["p"][0], m["p"][1], tol=0.05):
-                        av_ruta.add(f"{a_.get('tipo')} {a_.get('codigo') or ''} ({z.get('nombre')})".replace("  ", " "))
+                        av_ruta.add(f"{_categoria(a_.get('tipo')) if _categoria(a_.get('tipo')) == 'aviso meteorológico' else 'aviso de ' + _categoria(a_.get('tipo'))} ({z.get('nombre')})")
         res.append({
             "alternativa": alt["nombre"], "descripcion": alt.get("descripcion"),
             "distancia_mn": round(total), "duracion_h": round(total / vel, 1),
@@ -1121,6 +1124,24 @@ def _saludo(nombre, r, args):
             "estado_puerto": "Hola, revisé SITPORT:"}.get(nombre, "Hola:")
 
 
+def _atento(av):
+    """'Atento: hay aviso de marejadas hasta el viernes 27 a las 00:00 y aviso meteorológico hasta el miércoles 25 a las 22:00.'"""
+    fin = {}
+    for a in av:
+        c = _categoria(a.get("tipo"))
+        h = a.get("_hasta_iso") or ""
+        if c not in fin or h > fin[c]:
+            fin[c] = h
+    partes = []
+    for c, h in fin.items():
+        nom = "aviso meteorológico" if c == "aviso meteorológico" else f"aviso de {c}"
+        cu = _cuando(h) if h else None
+        partes.append(nom + (f" hasta el {cu}" if cu else ""))
+    if not partes:
+        return ""
+    return "Atento: hay " + (partes[0] if len(partes) == 1 else ", ".join(partes[:-1]) + " y " + partes[-1]) + "."
+
+
 def _recomendaciones(nombre, r, pos):
     """Recomendaciones por regla (no las inventa el modelo)."""
     out = []
@@ -1131,7 +1152,7 @@ def _recomendaciones(nombre, r, pos):
         try:
             av = avisos_vigentes(lat=pos[1], lon=pos[2]).get("vigentes_ahora", [])
             if av:
-                out.append("Atento: " + "; ".join(f"{a['tipo']} {a['codigo'] or ''} vigente hasta el {a['hasta']}".replace("  ", " ") for a in av[:3]) + ".")
+                out.append(_atento(av))
         except Exception:
             pass
     tipos = " ".join(str(a.get("tipo", "")).lower() for a in av)
@@ -1283,7 +1304,31 @@ def preguntar(pregunta, historial=None):
     return r
 
 
+_ctx = threading.local()
+_DIA = re.compile(r"\b(mañana|manana|pasado|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|fin de semana|finde|"
+                  r"en \d+ d[ií]as?|en (un|dos|tres|cuatro|cinco) d[ií]as?|\d{1,2}/\d{1,2}|semana)\b", re.I)
+_SOLO_TEMP = re.compile(r"\b(temperatura|grados|fr[ií]o|calor|tibia|helada)\b", re.I)
+_NO_TEMP = re.compile(r"\b(viento|ola|oleaje|mar gruesa|marejada|aviso|ruta|lluvia|navegar|zarpar)\b", re.I)
+
+
+def _respuesta_temperatura(r):
+    """Respuesta corta cuando solo se pregunta por la temperatura."""
+    ta, tm = r.get("temperatura_aire_c"), r.get("temperatura_agua_mar_c")
+    if not ta and not tm:
+        return None
+    f = lambda v: str(round(v)).replace(".", ",")
+    partes = []
+    if ta:
+        partes.append(f"el aire va de {f(ta[0])} a {f(ta[1])} °C" if round(ta[0]) != round(ta[1]) else f"el aire está en {f(ta[0])} °C")
+    if tm:
+        partes.append(f"el agua de mar está en {f(tm[0])} °C" if round(tm[0]) == round(tm[1]) else f"el agua de mar entre {f(tm[0])} y {f(tm[1])} °C")
+    hora = (r.get("consultado") or "")[-5:]
+    return (f"Hola, en {r.get('nombre')} el {r.get('dia')} " + " y ".join(partes) + "."
+            f"\n\nFuente: Open-Meteo (ECMWF y modelo marino){', ' + hora if hora else ''}.")
+
+
 def _preguntar(pregunta, historial=None):
+    _ctx.pregunta = str(pregunta or "")
     t = time.time()
     msgs = [{"role": "system", "content": sistema()}]
     for h in (historial or [])[-6:]:
@@ -1307,12 +1352,21 @@ def _preguntar(pregunta, historial=None):
                         args = json.loads(args)
                     except Exception:
                         args = {}
+                if f.get("name") == "condicion_punto" and not _DIA.search(_ctx.pregunta):
+                    args = {k: v for k, v in args.items() if k not in ("dias", "fecha")}   # sin día en la pregunta: hoy
                 r = ejecutar(f.get("name"), args)
                 pos = r.pop("_pos", None)
                 mapa = r.pop("_mapa", None)
                 usadas.append({"nombre": f.get("name"), "argumentos": args, "error": r.get("error"), "pos": pos, "mapa": mapa})
                 resultados.append((f.get("name"), r, pos))
                 msgs.append({"role": "tool", "tool_name": f.get("name"), "content": json.dumps(r, ensure_ascii=False)[:6000]})
+            q = _ctx.pregunta
+            if (_SOLO_TEMP.search(q) and not _NO_TEMP.search(q) and resultados
+                    and all(n in ("condicion_punto", "avisos_vigentes") for n, _, _ in resultados)):
+                rc = next((r for n, r, _ in resultados if n == "condicion_punto" and not r.get("error")), None)
+                solo = _respuesta_temperatura(rc) if rc else None
+                if solo:
+                    return {"respuesta": solo, "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
             directa = _respuesta_directa(resultados, {u["nombre"]: u["argumentos"] for u in usadas})
             if directa:   # condición en un punto y avisos: se entrega el texto de la herramienta tal cual, sin reescribir
                 return {"respuesta": directa, "herramientas": usadas, "segundos": round(time.time() - t, 1), "modelo": MODELO}
