@@ -1144,7 +1144,7 @@ setInterval(actualizarAlertas, 60000);
 // ============================ Pronóstico WRF + IA en el mapa ============================
 // Un símbolo de nubosidad por bahía (día de hoy, o el primero disponible); al pasar el cursor se ve el resumen.
 /*IA_COMUN*/
-let IA_DATOS = null, IA_DIA = 0;   // 0 = hoy, 1 = mañana, 2 = pasado mañana
+let IA_DATOS = null, IA_AJ = null, IA_DIA = 0;   // 0 = hoy, 1 = mañana, 2 = pasado mañana
 const hoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
 const sumarDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function diaIA(p) {
@@ -1159,9 +1159,19 @@ function tipIA(b, d) {
     `<div style="opacity:.75;font-size:11px;margin-bottom:3px">WRF ${escH(b.resolucion || '3 km')} + IA · ${fechaCorta(d.fecha)}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;font-weight:600">${svgNub(d.nubosidad, 18)}${escH(d.nubosidad || '–')}</div>` +
     (d.nubosidad_detalle ? `<div style="font-size:11.5px;opacity:.85">${escH(d.nubosidad_detalle)}</div>` : '') + t +
-    `<div style="margin-top:2px"><b>Viento:</b> ${escH(d.viento || '–')}</div>` +
+    `<div style="margin-top:2px"><b>Viento:</b> ${escH(d.viento || '–')}</div>` + ajusteIA(b, d) +
     (d.precipitacion ? `<div style="color:#1f5fa8">${escH(d.precipitacion)}</div>` : '') +
     `<div style="opacity:.65;font-size:10.5px;margin-top:3px">Referencial y experimental · clic para ver el pronóstico completo</div></div>`;
+}
+// Prueba: viento corregido por sesgo y racha estimada por bahía, aprendidos del boletín profesional (data/wrf_ia_ajuste.json).
+function ajusteIA(b, d) {
+  const a = IA_AJ && IA_AJ.bahias && IA_AJ.bahias[b.codigo], x = a && a.dias && a.dias[d.fecha];
+  if (!x || (x.viento_ajustado === x.viento_original && x.rachas_kt == null)) return '';
+  const v = x.viento_ajustado !== x.viento_original ? escH(x.viento_ajustado) : '';
+  const r = x.rachas_kt != null ? `rachas ${x.rachas_kt} kt` : '';
+  return `<div style="margin-top:3px;padding:3px 5px;border-left:3px solid #c77d1a;background:rgba(199,125,26,.08)">` +
+    `<b>Ajuste (prueba):</b> ${[v, r].filter(Boolean).join(', ')}` +
+    `<div style="opacity:.7;font-size:10px">Sesgo ${a.correccion_kt > 0 ? '+' : ''}${a.correccion_kt} kt y rachas aprendidos de ${a.n} días del boletín profesional</div></div>`;
 }
 // Etiqueta al estilo de los mapas de pronóstico por ciudad: ícono + nombre + mínima / máxima.
 // Se dibuja hacia el este del punto (sobre tierra) para no tapar la estación.
@@ -1218,7 +1228,11 @@ function pintarDiasIA() {
   box.querySelectorAll('button').forEach(bt => bt.onclick = () => { IA_DIA = +bt.dataset.n; refreshIA(); });
 }
 map.on('overlayadd overlayremove layeradd layerremove', e => { if (LAYERS.ia && e.layer === LAYERS.ia.lyr) pintarDiasIA(); });
-async function cargarIA() { try { IA_DATOS = await leerJSON('data/wrf_ia.json'); refreshIA(); } catch (e) {} }
+async function cargarIA() {
+  try { IA_DATOS = await leerJSON('data/wrf_ia.json'); } catch (e) { return; }
+  try { IA_AJ = await leerJSON('data/wrf_ia_ajuste.json'); } catch (e) { IA_AJ = null; }
+  refreshIA();
+}
 
 // ============================ Carta sinóptica: isobaras GFS + frentes de la carta ============================
 // data/carta.json (metadatos), data/carta_isobaras.json (líneas cada 4 hPa) y data/carta_frentes.png (frentes y
