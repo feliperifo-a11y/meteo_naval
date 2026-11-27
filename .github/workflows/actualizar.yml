@@ -197,6 +197,11 @@ jobs:
           python scripts/evaluacion_ia.py
           python scripts/comparar_borradores.py
 
+      - name: Ajuste WRF + IA por bahía (prueba, página Desarrollo) — sesgo de viento y rachas aprendidos del boletín profesional
+        continue-on-error: true
+        timeout-minutes: 2
+        run: python scripts/wrf_ia_ajuste.py
+
       - name: Verificación MONAN 3 km contra estaciones (corrida propia, repositorio trombas_marinas)
         # Trae el historial de data/monan_campos.json de trombas_marinas y compara cada día con las estaciones de la malla.
         continue-on-error: true
@@ -287,6 +292,7 @@ jobs:
           cp data/estaciones.json data/avisos.json data/estado.json data/seguimiento.json _site/data/
           cp data/derrotero_lugares.json _site/data/
           [ -f data/wrf_ia.json ] && cp data/wrf_ia.json _site/data/ || true
+          [ -f data/wrf_ia_ajuste.json ] && cp data/wrf_ia_ajuste.json _site/data/ || true
           [ -f data/oleaje.json ] && cp data/oleaje.json _site/data/ || true
           cp data/hielo_cubierta_*.png _site/data/ 2>/dev/null || true
           [ -f data/ww3/indice.json ] && mkdir -p _site/data/ww3 && cp data/ww3/indice.json data/ww3/f*.bin _site/data/ww3/ || true
