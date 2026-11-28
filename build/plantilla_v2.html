@@ -186,7 +186,7 @@ a{color:var(--acc2)}
   <section class="card"><h2>Monitoreo de hielos <a href="hielos.html">Ver mapa →</a></h2><div class="mini" id="miniHielo"></div><div class="miniLey"><span id="fechaHielo">Concentración de hielo marino, Península Antártica</span><div class="chips"><span><i style="background:#0064ff"></i>Sin hielo</span><span><i style="background:#8cffa0"></i>1–3</span><span><i style="background:#ffff00"></i>4–6</span><span><i style="background:#ff7d07"></i>7–8</span><span><i style="background:#ff0000"></i>9–10 décimos</span></div></div></section>
   <section class="card"><h2>Modelo WRF <a href="ia.html">Ver detalle →</a></h2><div class="wrfL" id="miniWrf"><div class="vacioTxt">Cargando…</div></div><div class="miniLey" id="wrfNota"></div></section>
 </div>
-<footer class="pie"><a href="mailto:meteoiachile@gmail.com?subject=Sugerencia%20MeteoIA">¿Sugerencias o comentarios? Escríbenos</a></footer>
+<footer class="pie"><a class="pieVideo" href="?video">▶ Ver el video de presentación</a> · <a href="mailto:meteoiachile@gmail.com?subject=Sugerencia%20MeteoIA">¿Sugerencias o comentarios? Escríbenos</a></footer>
 <script>/*LEAFLET_JS*/</script>
 <script>
 /*DATA*/
@@ -812,7 +812,10 @@ async function contarVisita(nueva) {
   caja.addEventListener('click', e => { if (e.target === caja) cerrar(); });
   bs.onclick = e => { e.stopPropagation(); v.muted = !v.muted; if (!v.muted) { if (v.ended) v.currentTime = 0; v.play().catch(() => {}); } rotulo(); };
   v.addEventListener('ended', () => setTimeout(cerrar, 1200));
-  // El video ya no tiene botón propio: sigue disponible agregando ?video a la dirección.
+  // El video se abre desde el enlace del pie o agregando ?video a la dirección.
+  window.verVideo = abrir;
+  const pieVid = document.querySelector('.pie .pieVideo');
+  if (pieVid) pieVid.onclick = e => { e.preventDefault(); abrir(); };
   if (new URLSearchParams(location.search).has('video')) abrir();
 })();
 </script>
