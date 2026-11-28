@@ -47,7 +47,7 @@ function crearRuta(L, map, ctx) {
       <label class="ruta-buque">Buque o embarcación<input name="buque" placeholder="Nombre del buque (opcional)" autocomplete="off" maxlength="80"></label>
       <label title="Opcional: se compara con la eslora máxima de canales y angosturas">Eslora (m)<input name="eslora" inputmode="decimal" placeholder="opcional" style="width:80px;min-width:80px"></label>
       <label title="Opcional: se compara con el calado máximo de canales y angosturas">Calado (m)<input name="calado" inputmode="decimal" placeholder="opcional" style="width:80px;min-width:80px"></label>
-      <label title="Opcional: altura sobre el agua del punto más alto. Se compara con el puntal aéreo máximo bajo cables y puentes">Puntal aéreo (m)<input name="aereo" inputmode="decimal" placeholder="opcional" style="width:90px;min-width:90px"></label>
+      <label title="Opcional: altura sobre el agua del punto más alto. Se compara con el calado aéreo máximo bajo cables y puentes">Calado aéreo (m)<input name="aereo" inputmode="decimal" placeholder="opcional" style="width:90px;min-width:90px"></label>
       <label class="ruta-c">Zarpe (lat, lon)<input name="a" placeholder="33 01,5 S  71 38,0 W" autocomplete="off"></label>
       <label class="ruta-c">Recalada (lat, lon)<input name="b" placeholder="36 42,0 S  73 07,0 W" autocomplete="off"></label>
       <label class="ruta-p">Puerto de zarpe<select name="pa"></select></label>
@@ -355,7 +355,7 @@ function crearRuta(L, map, ctx) {
     const p = [];
     if (x.eslora) p.push('eslora máxima ' + nf(x.eslora, 0) + ' m');
     if (x.calado) p.push('calado máximo ' + nf(x.calado, 1) + ' m' + (x.uka ? ' o UKA ' + nf(x.uka, 1) + ' m' : ''));
-    if (x.aereo) p.push('puntal aéreo máximo ' + nf(x.aereo, 1) + ' m');
+    if (x.aereo) p.push('calado aéreo máximo ' + nf(x.aereo, 1) + ' m');
     if (x.sentido) p.push('sentido normal de tránsito ' + SENTIDO_TXT[x.sentido]);
     return p.length ? p.join('; ') + '.' : 'La carta no indica límites de dimensiones.';
   }
@@ -364,7 +364,7 @@ function crearRuta(L, map, ctx) {
     const p = [];
     if (x.eslora && eslora && eslora > x.eslora) p.push('eslora');
     if (x.calado && calado && calado > x.calado) p.push('calado');
-    if (x.aereo && aereo && aereo > x.aereo) p.push('puntal aéreo');
+    if (x.aereo && aereo && aereo > x.aereo) p.push('calado aéreo');
     return p.join(' y ');
   }
   // Rumbo medio de la traza en el entorno del paso (± 2 puntos), para no depender de un solo tramo
@@ -389,7 +389,7 @@ function crearRuta(L, map, ctx) {
       } else prob.push(...excede(q));
       if (q.luz && !dia) prob.push('la hora de paso es de noche y exige luz diurna');
       if (q.velMin && Rr.v < q.velMin) prob.push(`a menos de ${q.velMin} kt debe cruzarse con corriente a favor`);
-      if (q.aereo && aereo && aereo > q.aereo) prob.push(`puntal aéreo ${nf(aereo, 1)} m sobre el máximo de ${nf(q.aereo, 1)} m`);
+      if (q.aereo && aereo && aereo > q.aereo) prob.push(`calado aéreo ${nf(aereo, 1)} m sobre el máximo de ${nf(q.aereo, 1)} m`);
       // Sentido: se avisa solo cuando la ruta lo cruza en contra (más de 90° de diferencia con el sentido prescrito)
       let contra = null;
       if (ap && ap.sentido && rv != null) {
@@ -846,7 +846,7 @@ function crearRuta(L, map, ctx) {
       `<p><b>${escH(x.q.n)}</b> · carta ${escH(x.q.carta)} · milla ${nf(x.mn, 0)} · paso estimado <b>${hf(x.eta)}</b> ${x.q.luz ? `<span class="sar-pill" style="background:${x.dia ? '#2e9d57' : '#d32f2f'}">${x.dia ? 'de día' : 'de noche'}</span>` : ''}` +
       `${x.prob.length ? `<br><span class="sar-error">Atención: ${escH(x.prob.join('; '))}.</span>` : ''}${x.ruta ? `<br><b>Con este buque: ${escH(x.ruta)}.</b>` : ''}<br><small>${escH(x.q.nota)} (${escH(x.q.ref)})</small>` +
       `${x.apac ? `<br><small><b>APAC:</b> ${x.apac.sentido ? `sentido normal ${escH(SENTIDO_TXT[x.apac.sentido])}${x.rv != null ? ` · la ruta lo cruza al rumbo ${Math.round(x.rv)}°` : ''}. ` : ''}${escH(x.apac.nota || '')} (${escH(x.apac.ref)})</small>` : ''}</p>`).join('') +
-      `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora, el calado y el puntal aéreo del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. El sentido normal de tránsito y los límites de puntal aéreo provienen de la Carta de Rutas Normales de Navegación de la APAC; entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
+      `<p class="sar-nota">${eslora || calado ? '' : 'Ingresa la eslora, el calado y el calado aéreo del buque para compararlos con los máximos. '}Restricciones de la tabla "Información operacional y restricciones en canales, pasos y angosturas" del Derrotero de la Costa de Chile. El sentido normal de tránsito y los límites de calado aéreo provienen de la Carta de Rutas Normales de Navegación de la APAC; entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado según la reglamentación vigente. Estoas y corrientes: no se calculan aquí.</p></div>`;
     // Pasos de la carta APAC que el Derrotero no sitúa: referencia, no se cruzan con la ruta
     if (selA) h += `<div class="sar-blq"><details class="ruta-apac"><summary>Otros pasos recomendados por los prácticos (APAC) <span class="ruta-inf-n">${APAC_SIN_POS.length} pasos · información no oficial</span></summary>` +
       APAC_SIN_POS.map(x => `<p><b>${escH(x.n)}</b><br><small>${escH(apacLim(x))}</small>${apacExcede(x) ? `<br><span class="sar-error">Este buque excede: ${escH(apacExcede(x))}.</span>` : ''}</p>`).join('') +
@@ -985,7 +985,7 @@ function crearRuta(L, map, ctx) {
         filas: selA.pasos.map(x => [x.q.n, x.q.carta, n0(x.mn), hf(x.eta), x.q.luz ? (x.dia ? 'de día' : 'de noche') : '–',
           x.apac && x.apac.sentido ? SENTIDO_TXT[x.apac.sentido] + (x.rv != null ? ` (ruta ${Math.round(x.rv)}°)` : '') : '–',
           [...x.prob, x.ruta].filter(Boolean).join('; ') || '–', x.q.nota + ' (' + x.q.ref + ')']) },
-        nota: (eslora || calado || aereo ? `Buque: ${[eslora ? 'eslora ' + nf(eslora, 0) + ' m' : '', calado ? 'calado ' + nf(calado, 1) + ' m' : '', aereo ? 'puntal aéreo ' + nf(aereo, 1) + ' m' : ''].filter(Boolean).join(', ')}. ` : '') + 'Sentido normal de tránsito y puntal aéreo: Carta de Rutas Normales de Navegación de la APAC, marzo de 2024. Entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
+        nota: (eslora || calado || aereo ? `Buque: ${[eslora ? 'eslora ' + nf(eslora, 0) + ' m' : '', calado ? 'calado ' + nf(calado, 1) + ' m' : '', aereo ? 'calado aéreo ' + nf(aereo, 1) + ' m' : ''].filter(Boolean).join(', ')}. ` : '') + 'Sentido normal de tránsito y calado aéreo: Carta de Rutas Normales de Navegación de la APAC, marzo de 2024. Entre el canal Chacao y las islas Diego Ramírez el pilotaje es obligatorio. La navegación por canales exige práctico o capitán habilitado. Estoas y corrientes no calculadas.' });
       sec.push({ titulo: 'Otros pasos recomendados por los prácticos (APAC)', tabla: { cab: ['Paso', 'Sentido APAC', 'Límites de la carta APAC', 'Este buque'], anchos: [1.6, 1.1, 3.4, 1.1],
         filas: APAC_SIN_POS.map(x => [x.n, x.sentido ? SENTIDO_TXT[x.sentido] : '–', apacLim(x), apacExcede(x) ? 'excede ' + apacExcede(x) : '–']) },
         nota: APAC_LEYENDA });

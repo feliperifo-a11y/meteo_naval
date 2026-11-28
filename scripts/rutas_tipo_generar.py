@@ -59,7 +59,7 @@ PASOS.update({
 # ---- Carta de Rutas Normales de Navegación de la APAC (Asociación de Prácticos Autorizados de Canales),
 # Canal Chacao a Islas Diego Ramírez, edición de marzo de 2024. Zona de pilotaje obligatorio.
 # Aporta el sentido de tránsito normal de cada paso y límites que el Derrotero no expresa como cifra
-# (puntal aéreo, manga, UKA). Donde ambas fuentes dan la misma cifra, coinciden.
+# (calado aéreo, manga, UKA). Donde ambas fuentes dan la misma cifra, coinciden.
 APAC_REF = 'Carta de Rutas Normales de Navegación, APAC, marzo de 2024'
 APAC = {
  'chacao':   {'sentido': 'E', 'aereo': 59},
